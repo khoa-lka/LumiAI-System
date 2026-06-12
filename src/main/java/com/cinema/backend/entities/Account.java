@@ -39,6 +39,4 @@ public class Account {
 
     @Column(name = "role_id")
     private Integer roleId;
-
-    
 }
