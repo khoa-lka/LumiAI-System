@@ -12,7 +12,7 @@ import java.util.Optional;
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping("/api/login")
-public class LoginController {
+public class AccountController {
 
     @Autowired
     private AccountRepository accountRepository;
