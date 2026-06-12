@@ -27,16 +27,18 @@ public class Movie {
     @Column(name = "genre")
     private String genre;
 
-    @Column(name = "duration")
+    @Column(name = "duration_minutes")
     private Integer duration;
 
     @Column(name = "synopsis")
     private String synopsis;
 
     @Column(name = "mainposter_url")
+    @com.fasterxml.jackson.annotation.JsonProperty("mainposter_url")
     private String mainposterUrl;
 
     @Column(name = "subposter_url")
+    @com.fasterxml.jackson.annotation.JsonProperty("subposter_url")
     private String subposterUrl;
 
     @Column(name = "director")
@@ -50,6 +52,9 @@ public class Movie {
 
     @Column(name = "release_date")
     private LocalDate releaseDate;
+
+    @Column(name = "age_rating")
+    private Integer ageRating;
 
     @Column(name = "rating")
     private Double rating;
@@ -150,6 +155,14 @@ public class Movie {
 
     public void setReleaseDate(LocalDate releaseDate) {
         this.releaseDate = releaseDate;
+    }
+
+    public Integer getAgeRating() {
+        return ageRating;
+    }
+
+    public void setAgeRating(Integer ageRating) {
+        this.ageRating = ageRating;
     }
 
     public Double getRating() {
