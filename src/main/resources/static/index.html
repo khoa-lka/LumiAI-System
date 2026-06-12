@@ -619,10 +619,7 @@
           <div class="icon-circle">🎁</div>
           <span>TIN ƯU ĐÃI</span>
         </div>
-        <div class="icon-menu-item" onclick="openAuthModal()">
-          <div class="icon-circle">👤</div>
-          <span>HỘI VIÊN LAS</span>
-        </div>
+        <div class="icon-menu-item" onclick="handleProfileTabAccess()"><div class="icon-circle">👤</div><span>HỘI VIÊN LAS</span></div>
       </div>
 
       <div class="main-wrapper">
@@ -1414,17 +1411,9 @@
                 <div class="sub-content-header-title">THÔNG TIN CHUNG</div>
                 <div class="profile-top-summary">
                   <div class="summary-avatar-zone">
-                    <div
-                      class="avatar-placeholder-img"
-                      style="
-                        background-color: #e71a0f;
-                        color: white;
-                        font-size: 28px;
-                        font-weight: bold;
-                      "
-                    >
-                      VY
-                    </div>
+                <div id="profile-summary-avatar" class="avatar-placeholder-img" style="background-color: #e71a0f; color: white; font-size: 28px; font-weight: bold;">VY</div>
+                    <button class="btn-avatar-change">Thay đổi</button>
+                  </div>
                     <button class="btn-avatar-change">Thay đổi</button>
                   </div>
                   <div class="summary-barcode-zone">
@@ -1451,7 +1440,9 @@
                 </div>
 
                 <div class="welcome-text-line">
-                  <strong>Xin chào Gia Vy,</strong>
+                  <strong
+                    >Xin chào <span id="profile-welcome-name"></span>,</strong
+                  >
                   <p>
                     Với trang này, bạn sẽ quản lý được tất cả thông tin tài
                     khoản của mình.
@@ -1463,7 +1454,9 @@
                     <p>
                       <strong>Cấp Độ Thẻ</strong>
                       <span class="member-star-icon">★</span>
-                      <span style="color: #0066cc; font-weight: 900"
+                      <span
+                        id="profile-star-role"
+                        style="color: #0066cc; font-weight: 900"
                         >MEMBER</span
                       >
                     </p>
@@ -1551,12 +1544,12 @@
                       class="profile-input-group"
                       style="grid-column: span 2"
                     >
-                      <label>Giới tính</label
+                      <label>Vai trò hệ thống</label
                       ><input
                         type="text"
-                        id="profile-field-gender"
+                        id="profile-field-role"
                         class="profile-readonly-input"
-                        value="Nữ"
+                        value=""
                         readonly
                       />
                     </div>
@@ -1880,14 +1873,9 @@
             id="form-login-panel"
           >
             <div class="cgv-form-group">
-              <label>Email hoặc số điện thoại</label>
-              <input
-                type="text"
-                id="auth-username"
-                class="cgv-input-text"
-                placeholder="nguyenngocgiavy1812@gmail.com"
-              />
-            </div>
+    <label>Email hoặc số điện thoại</label>
+    <input type="text" id="auth-username" class="cgv-input-text" placeholder="Nhập Email hoặc Số điện thoại..." autocomplete="off" />
+</div>
             <div class="cgv-form-group">
               <label>Mật khẩu</label>
               <input
@@ -2735,13 +2723,12 @@
       }
 
       function handleProfileTabAccess() {
-        if (!isUserLoggedInState) {
-          alert("Vui lòng đăng nhập hệ thống!");
-          openAuthModal();
-        } else {
-          switchCgvTab("panel-profile");
-        }
-      }
+  if (!isUserLoggedInState) {
+    openAuthModal(); // Chưa đăng nhập thì hiện bảng Modal
+  } else {
+    switchCgvTab("panel-profile"); // Đã đăng nhập thì đá thẳng sang trang cá nhân luôn
+  }
+}
 
       function submitCgvLogin() {
         const user = document.getElementById("auth-username").value.trim();
@@ -2754,44 +2741,138 @@
 
         if (!user || !pass)
           return alert("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
-        if (captchaInput.toUpperCase() !== currentLoginCaptcha.toUpperCase())
+        if (captchaInput.toUpperCase() !== currentLoginCaptcha.toUpperCase()) {
           return alert("Mã bảo vệ Captcha không chính xác!");
-        if (user !== "nguyenngocgiavy1812@gmail.com" || pass !== "123456")
-          return alert("Tài khoản hoặc mật khẩu không đúng!");
+        }
 
-        isUserLoggedInState = true;
-        alert(`Chào mừng thành viên: Gia Vy đăng nhập thành công!`);
-        closeAuthModal();
+        // Bắn dữ liệu POST động sang Spring Boot
+        fetch("http://localhost:8080/api/login/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: user, password: pass }),
+        })
+          .then((res) => {
+            if (!res.ok) {
+              return res.json().then((err) => {
+                throw new Error(err.message || "Thất bại!");
+              });
+            }
+            return res.json();
+          })
+          .then((resData) => {
+            if (resData.status === "success") {
+              isUserLoggedInState = true;
+              let uData = resData.data;
 
-        const authLinkBox = document.getElementById("top-bar-auth-link");
-        authLinkBox.removeAttribute("onclick");
-        authLinkBox.innerHTML = `
-            <span class="sub-nav-icon">👤</span> XIN CHÀO, GIA VY! 
-            <span onclick="handleCgvLogout(event)" style="color: #0066cc; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
-        `;
-        document.getElementById("top-bar-ticket-link").innerHTML =
-          `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
-        switchCgvTab("panel-profile");
+              alert(
+                `Chào mừng thành viên: ${uData.fullName} đăng nhập thành công!`,
+              );
+              closeAuthModal();
+
+              // Đổi chữ trên thanh Top-bar điều hướng
+              const authLinkBox = document.getElementById("top-bar-auth-link");
+              authLinkBox.onclick = () => switchCgvTab('panel-profile');
+  
+  // Thêm thuộc tính con trỏ chuột bàn tay để người dùng biết là click vào được nhé
+              authLinkBox.style.cursor = "pointer";
+              authLinkBox.innerHTML = `
+                    <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}! 
+                    <span onclick="handleCgvLogout(event)" style="color: #0066cc; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+                `;
+              document.getElementById("top-bar-ticket-link").innerHTML =
+                `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
+
+              // Đọc Role từ Database trả về
+              let roleString = "Khách hàng thành viên";
+              if (uData.roleId === 1) roleString = "Quản lý hệ thống (ADMIN)";
+              if (uData.roleId === 2) roleString = "Nhân viên cụm rạp (STAFF)";
+              if (document.getElementById("profile-summary-avatar")) {
+                document.getElementById("profile-summary-avatar").innerText =
+                  uData.fullName.split(" ").pop().substring(0, 2).toUpperCase();
+              }
+
+              // Đổ động dữ liệu thật vào trang Thông Tin Chung
+              const welcomeNameBox = document.getElementById("profile-welcome-name");
+              if (welcomeNameBox) {
+                welcomeNameBox.innerText = `Xin chào ${uData.fullName},`;
+              }
+
+              const starRoleBox = document.getElementById("profile-star-role");
+              if (starRoleBox) {
+                starRoleBox.innerText = uData.roleId === 1 ? "MANAGER / ADMIN" : "MEMBER";
+              }
+              document.getElementById("profile-field-name").value =
+                uData.fullName;
+              document.getElementById("profile-field-phone").value =
+                uData.phoneNumber;
+              document.getElementById("profile-field-email").value =
+                uData.email;
+              if (document.getElementById("profile-field-role")) {
+                document.getElementById("profile-field-role").value =
+                  roleString;
+              }
+
+              // Nhảy tab sang vùng cá nhân xem thành quả
+              switchCgvTab("panel-profile");
+            }
+          })
+          .catch((err) => alert("🚨 Lỗi đăng nhập: " + err.message));
       }
+
+      let temporaryRegisterEmail = "";
 
       function submitCgvRegister() {
         const name = document.getElementById("reg-name").value.trim();
         const phone = document.getElementById("reg-phone").value.trim();
         const email = document.getElementById("reg-email").value.trim();
         const password = document.getElementById("reg-password").value;
-        const captchaInput = document
-          .getElementById("reg-captcha")
-          .value.trim();
-        const currentRegCaptcha =
-          document.getElementById("reg-captcha-text").innerText;
+        const captchaInput = document.getElementById("reg-captcha").value.trim();
+        const currentRegCaptcha = document.getElementById("reg-captcha-text").innerText;
 
-        if (!name || !phone || !email || !password)
-          return alert("Vui lòng điền đầy đủ thông tin!");
-        if (captchaInput.toUpperCase() !== currentRegCaptcha.toUpperCase())
-          return alert("Mã xác thực Captcha đăng ký không khớp!");
+        // Lấy dữ liệu ngày sinh động từ các ô select trong HTML của em
+        const birthDay = document.getElementById("reg-birth-day").value;
+        const birthMonth = document.getElementById("reg-birth-month").value;
+        const birthYear = document.getElementById("reg-birth-year").value;
 
-        closeAuthModal();
-        openOtpModal();
+        if (!name || !phone || !email || !password || !birthDay || !birthMonth || !birthYear) {
+            return alert("Vui lòng điền đầy đủ thông tin và chọn ngày sinh!");
+        }
+        if (captchaInput.toUpperCase() !== currentRegCaptcha.toUpperCase()) {
+            return alert("Mã xác thực Captcha đăng ký không khớp!");
+        }
+
+        // Bắn gói JSON map chuẩn đét cấu trúc Object key phía Backend Java đang đợi
+        fetch("http://localhost:8080/api/register/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name: name,
+                phone: phone,
+                email: email,
+                password: password,
+                birthDay: birthDay,
+                birthMonth: birthMonth,
+                birthYear: birthYear
+            })
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "Đăng ký thất bại!") });
+            }
+            return res.json();
+        })
+        .then(resData => {
+            if (resData.status === "success") {
+                alert(resData.message + "\nHãy kiểm tra màn hình Console của Spring Boot để lấy mã OTP nhé!");
+                
+                // Giữ lại email thật vừa tạo để lát nữa truyền sang luồng xác thực OTP
+                temporaryRegisterEmail = resData.email; 
+                
+                closeAuthModal(); // Đóng form đăng ký
+                openOtpModal();   // Mở popup nhập mã số OTP lên
+            }
+        })
+        .catch(err => alert("🚨 Lỗi đăng ký: " + err.message));
       }
 
       function switchMovieFilterTab(filter) {
@@ -3105,8 +3186,35 @@
         document.getElementById("otp-modal").classList.remove("open");
       }
       function submitOtpVerification() {
-        alert("Xác thực thành công!");
-        closeOtpModal();
+        const otpInput = document.getElementById("otp-input-field").value.trim();
+
+        if (!otpInput) return alert("Vui lòng nhập mã OTP gồm 6 chữ số!");
+        if (!temporaryRegisterEmail) return alert("Hệ thống không tìm thấy email đăng ký hợp lệ!");
+
+        // Gửi mã đối chiếu lên API verify-otp của RegisterController
+        fetch("http://localhost:8080/api/register/verify-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: temporaryRegisterEmail,
+                otp: otpInput
+            })
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "Xác thực thất bại!") });
+            }
+            return res.json();
+        })
+        .then(resData => {
+            if (resData.status === "success") {
+                alert(resData.message); // Kích hoạt tài khoản hội viên LAS thành công!
+                closeOtpModal();        // Tắt modal OTP
+                openAuthModal();        // Quay lại màn hình đăng nhập để hội viên login nick mới
+                toggleAuthTab('login'); // Chuyển sẵn sang tab Đăng Nhập
+            }
+        })
+        .catch(err => alert("❌ Lỗi OTP: " + err.message));
       }
 
       function saveUpdatedProfileInformationData() {
@@ -3300,3 +3408,5 @@
     </div>
   </body>
 </html>
+
+
