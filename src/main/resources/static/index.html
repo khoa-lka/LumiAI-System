@@ -2962,14 +2962,50 @@
         document.getElementById("sum-movie-title").innerText =
           currentMovie || "-";
 
+        // ==========================================================================
+        // 🚀 ĐOẠN ĐÃ SỬA: KẾT NỐI API THẬT ĐỂ ĐỌC SUẤT CHIẾU THEO PHIM VÀ NGÀY 
+        // ==========================================================================
         const timeGrid = document.getElementById("cgv-showtime-grid");
-        if (timeGrid) {
-          timeGrid.innerHTML = "";
-          serverData.showtimes.forEach((t) => {
-            const activeClass = t === selectedShowtime ? "active" : "";
-            timeGrid.innerHTML += `<div class="showtime-btn ${activeClass}" onclick="selectTime('${t}')">${t}</div>`;
-          });
+        if (timeGrid && serverData.movies && serverData.movies.length > 0) {
+          // Tìm thực thể phim hiện tại dựa trên tên hiển thị ở combobox
+          const selectedMovieObj = serverData.movies.find(m => m.title === currentMovie);
+          
+          if (selectedMovieObj) {
+            const movieId = selectedMovieObj.movieId || selectedMovieObj.movie_id;
+            const dateStr = selectedDateStr; // Định dạng '2026-06-15' từ thanh trượt slider
+
+            // Gọi trực tiếp đến API ma trận lịch chiếu của ShowtimeController
+            fetch(`http://localhost:8080/api/showtimes/matrix?movieId=${movieId}&date=${dateStr}`)
+              .then(res => res.json())
+              .then(resData => {
+                timeGrid.innerHTML = "";
+                
+                // Nếu ngày này rạp chưa xếp lịch cho phim này
+                if (!resData.showtimes || resData.showtimes.length === 0) {
+                  timeGrid.innerHTML = `<p style="color:#777; font-size:13px; grid-column: span 4; text-align:center; padding: 10px 0;">Hôm nay rạp chưa có suất chiếu cho phim này rồi!</p>`;
+                  return;
+                }
+
+                // Duyệt qua danh sách suất chiếu thực tế từ SQL Server trả về
+                resData.showtimes.forEach((st) => {
+                  const activeClass = st.startTime === selectedShowtime ? "active" : "";
+                  // Hiển thị mốc giờ kèm theo loại phòng (IMAX/Standard) dựa trên roomId
+                  timeGrid.innerHTML += `
+                    <div class="showtime-btn ${activeClass}" onclick="selectedShowtime='${st.startTime}'; renderCgvInterface();">
+                        ${st.startTime}
+                        <span style="display:block; font-size:9px; opacity:0.6; margin-top:2px;">
+                            ${st.roomId === 1 ? 'Phòng 1 (IMAX)' : st.roomId === 2 ? 'Phòng 2 (2D)' : 'Phòng 3 (3D)'}
+                        </span>
+                    </div>`;
+                });
+              })
+              .catch(err => {
+                console.error("🚨 Không thể kết nối API lịch chiếu:", err);
+                timeGrid.innerHTML = `<p style="color:red; font-size:12px; grid-column: span 4; text-align:center;">Lỗi kết nối server lịch chiếu!</p>`;
+              });
+          }
         }
+        
         document.getElementById("sum-showtime").innerText =
           selectedShowtime || "-";
 
