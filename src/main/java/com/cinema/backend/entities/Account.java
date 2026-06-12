@@ -14,26 +14,31 @@ public class Account {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "account_id")
-    private Long accountId;
+    private Integer accountId;
 
-    @Column(name = "full_name", nullable = false)
-    private String fullName;
+    @Column(name = "fullname", nullable = false)
+    private String fullname;
 
-    @Column(name = "email", unique = true, nullable = false)
+    @Column(name = "email", nullable = false)
     private String email;
 
-    @Column(name = "phone_number", unique = true, nullable = false)
-    private String phoneNumber;
+    @Column(name = "phone", nullable = false, unique = true)
+    private String phone;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash; 
 
-    @Column(name = "date_of_birth")
+    @Column(name = "date_of_birth", nullable = false)
     private LocalDate dateOfBirth;
 
-    @Column(name = "created_date")
+    @Column(name = "created_date", nullable = false)
     private LocalDateTime createdDate;
 
-    @Column(name = "updated_date")
+    @Column(name = "updated_date", nullable = false)
     private LocalDateTime updatedDate;
+
+    @Column(name = "role_id")
+    private Integer roleId;
+
+    
 }
