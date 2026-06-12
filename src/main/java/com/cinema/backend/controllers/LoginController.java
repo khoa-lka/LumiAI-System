@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/api/login")
 public class LoginController {
 
@@ -18,7 +19,6 @@ public class LoginController {
 
     @PostMapping("/login")
     public ResponseEntity<?> handleLogin(@RequestBody Map<String, String> loginRequest) {
-        // Nhận thông tin đăng nhập (FE truyền email hoặc phone vào trường "identifier")
         String identifier = loginRequest.get("identifier"); 
         String password = loginRequest.get("password");
 
@@ -29,8 +29,8 @@ public class LoginController {
             ));
         }
 
-        // 1. Tìm tài khoản trong DB bằng Email hoặc Số điện thoại
-        Optional<Account> accountOpt = accountRepository.findByEmailOrPhoneNumber(identifier, identifier);
+        // Tìm tài khoản theo Email hoặc Số điện thoại
+        Optional<Account> accountOpt = accountRepository.findByEmailOrPhone(identifier, identifier);
 
         if (accountOpt.isEmpty()) {
             return ResponseEntity.status(401).body(Map.of(
@@ -41,7 +41,7 @@ public class LoginController {
 
         Account account = accountOpt.get();
 
-        // 2. Kiểm tra mật khẩu (So sánh chuỗi thô trực tiếp với password_hash để test kết nối DB)
+        // So sánh mật khẩu thô trực tiếp
         if (!account.getPasswordHash().equals(password)) {
             return ResponseEntity.status(401).body(Map.of(
                 "status", "fail",
@@ -49,17 +49,18 @@ public class LoginController {
             ));
         }
 
-        // 3. Đăng nhập thành công -> Trả về JSON cho Front-End
+        // Trả về đúng cấu trúc thông tin của Gia Vy để hiển thị lên UI Front-End
         return ResponseEntity.ok(Map.of(
-            "status", "success",
-            "message", "Đăng nhập thành công!",
-            "data", Map.of(
-                "accountId", account.getAccountId(),
-                "fullName", account.getFullName(),
-                "email", account.getEmail(),
-                "phoneNumber", account.getPhoneNumber(),
-                "token", "generated-jwt-token-string"
-            )
-        ));
+    "status", "success",
+    "message", "Đăng nhập thành công!",
+    "data", Map.of(
+        "accountId", account.getAccountId(),
+        "fullName", account.getFullname(),
+        "email", account.getEmail(),
+        "phoneNumber", account.getPhone(),
+        "roleId", account.getRoleId(), // 🚀 1: ADMIN, 2: STAFF, 3: CUSTOMER
+        "token", "generated-jwt-token-string"
+    )
+));
     }
 }
