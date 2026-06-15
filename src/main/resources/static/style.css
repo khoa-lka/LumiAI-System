@@ -1311,3 +1311,313 @@ header {
   text-decoration: none;
   font-size: 13px;
 }
+/* --- POPUP QUÊN MẬT KHẨU (PHONG CÁCH CGV CLASSIC) --- */
+.cgv-forgot-box {
+  background-color: #fdfcf7; /* Màu nền kem */
+  width: 500px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  position: relative;
+  font-family: Arial, sans-serif;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cgv-forgot-header-container {
+  border-bottom: 2px solid #cb352d; /* Đường kẻ ngang chuyển sang màu đỏ */
+  margin: 30px 40px 0 40px;
+}
+
+.cgv-forgot-header-tab {
+  background-color: #cb352d; /* Tab đổi sang màu đỏ giống nút Gởi */
+  display: inline-block;
+  padding: 12px 20px;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 6px 6px 0 0;
+}
+
+.cgv-forgot-body {
+  padding: 25px 40px 40px 40px;
+  text-align: left;
+}
+
+.cgv-forgot-body label {
+  display: block;
+  font-weight: bold;
+  font-size: 14px;
+  color: #333333;
+  margin-bottom: 8px;
+}
+
+.cgv-forgot-body label span {
+  color: #cb352d;
+} /* Dấu sao màu đỏ */
+
+.btn-cgv-forgot-submit {
+  background-color: #cb352d; /* Nút bấm đỏ gạch */
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 25px;
+  transition: background 0.2s;
+}
+
+.btn-cgv-forgot-submit:hover {
+  background-color: #a82721;
+}
+
+.cgv-forgot-back-link {
+  color: #cb352d;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.cgv-forgot-back-link:hover {
+  text-decoration: underline;
+}
+/* --- KHU VỰC CHỌN PHƯƠNG THỨC THANH TOÁN --- */
+.payment-selection-block {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.payment-selection-title {
+  background-color: #f8fafc;
+  padding: 10px 15px;
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: bold;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.payment-selection-body {
+  padding: 12px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.payment-option-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 12px;
+}
+
+.payment-option-row:hover {
+  background-color: #f8fafc;
+}
+
+/* Khi hình thức thanh toán được chọn */
+.payment-option-row.active {
+  border-color: #cbd5e1;
+  background-color: #f1f5f9;
+}
+
+/* Vòng tròn tích chọn phía trước */
+.option-check-circle {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: transparent;
+  box-sizing: border-box;
+}
+
+.payment-option-row.active .option-check-circle {
+  border-color: #cb352d;
+  color: #cb352d;
+  font-weight: bold;
+}
+
+/* Tạo Icon đại diện thương hiệu */
+.method-badge-icon {
+  width: 34px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 11px;
+  color: white;
+  user-select: none;
+  box-sizing: border-box;
+}
+.badge-mv {
+  background-color: #b93c26;
+  font-size: 12px;
+}
+.badge-apple {
+  background-color: #000000;
+  font-size: 10px;
+}
+.badge-momo {
+  background-color: #a50064;
+  font-size: 9px;
+  text-transform: lowercase;
+}
+.badge-payoo {
+  background-color: #2b78c9;
+  font-size: 9px;
+}
+
+.method-info-texts {
+  text-align: left;
+}
+
+.method-main-name {
+  font-size: 13.5px;
+  font-weight: bold;
+  color: #1e293b;
+}
+
+.method-sub-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+/* Hiệu ứng chuyển màu cho đánh giá sao */
+#star-rating-container .star {
+  transition: color 0.2s ease-in-out;
+}
+#star-rating-container .star:hover,
+#star-rating-container .star.hovered,
+#star-rating-container .star.selected {
+  color: #e5a93b; /* Màu vàng nổi bật của LAS Cinemas */
+}
+/* Thiết kế Nút Tab cho chi tiết phim */
+.detail-tab-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #888;
+  padding: 10px 15px 15px 15px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  outline: none;
+}
+.detail-tab-btn:hover {
+  color: #0066cc;
+}
+.detail-tab-btn.active {
+  color: #0066cc;
+  border-bottom: 2px solid #0066cc;
+}
+/* --- CSS CHO LUỒNG ĐẶT VÉ CHIA TABS --- */
+.booking-step {
+  display: none;
+  animation: fadeIn 0.3s ease-in-out;
+}
+.booking-step.active {
+  display: block;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.payment-selection-block {
+  margin-top: 25px;
+}
+.payment-selection-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  color: #111;
+}
+.payment-option-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+.payment-option-row.active {
+  border: 2px solid #e71a0f;
+  background: #fff5f5;
+}
+.option-check-circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: transparent;
+  margin-right: 15px;
+}
+.payment-option-row.active .option-check-circle {
+  background: #e71a0f;
+  color: white;
+  border-color: #e71a0f;
+}
+.method-badge-icon {
+  width: 45px;
+  height: 28px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  font-size: 11px;
+  margin-right: 15px;
+}
+.badge-mv {
+  background: #111;
+}
+.badge-apple {
+  background: #000;
+}
+.badge-momo {
+  background: #ae2070;
+}
+.badge-payoo {
+  background: #0088cc;
+}
+.method-info-texts {
+  text-align: left;
+}
+.method-main-name {
+  font-weight: bold;
+  font-size: 14px;
+  color: #333;
+}
+.method-sub-desc {
+  font-size: 11px;
+  color: #777;
+  margin-top: 3px;
+}
