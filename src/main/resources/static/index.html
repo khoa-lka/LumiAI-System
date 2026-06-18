@@ -777,7 +777,8 @@
             />
           </div>
 
-          <div class="cgv-movie-grid-spec" id="cgv-movie-list"></div>
+          <div class="cgv-movie-grid-spec" id="cgv-movie-list" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+    </div>
 
           <div
             style="
@@ -819,36 +820,8 @@
             ></div>
           </div>
 
-          <div
-            style="
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 20px;
-              margin-bottom: 30px;
-            "
-          >
-            <div style="border: 1px solid #ddd; background: #fff; padding: 5px">
-              <img
-                src="https://www.cgv.vn/media/banner/images/7/9/79k_u23_cinema_banner_1_.jpg"
-                style="width: 100%; display: block"
-                alt="Event 1"
-              />
-            </div>
-            <div style="border: 1px solid #ddd; background: #fff; padding: 5px">
-              <img
-                src="https://www.cgv.vn/media/banner/images/m/e/member_day_banner.jpg"
-                style="width: 100%; display: block"
-                alt="Event 2"
-              />
-            </div>
-            <div style="border: 1px solid #ddd; background: #fff; padding: 5px">
-              <img
-                src="https://www.cgv.vn/media/catalog/product/cache/1/image/1800x/71252117777b696995f019344547b749/p/h/phong_ve_uu_dai_240x350_1_.jpg"
-                style="width: 100%; display: block"
-                alt="Event 3"
-              />
-            </div>
-          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;" id="cgv-event-grid">
+    </div>
         </div>
 
         <div id="panel-movie-detail" class="cgv-panel">
@@ -2365,6 +2338,7 @@
             }
           })
           .catch((err) => console.error("🚨 Lỗi kết nối API phim:", err));
+          loadEventsFromDatabase();
       });
 
       function generateRandomCaptcha(length = 6) {
@@ -3738,7 +3712,7 @@ async function sendChatMessageToServer() {
     const ai = new GoogleGenAI({ apiKey: aiKey });
 
     const systemRule = `Bạn là trợ lý ảo thông minh mã nguồn LumiAI System của cụm rạp phim LAS Cinemas. 
-    Luật absolute số 1: Bạn CHỈ được tư vấn lịch chiếu, tên phòng dựa vào dgit add src/main/resources/static/index.htmlữ liệu thật ở mục 'DỮ LIỆU ĐỘNG TỪ DATABASE SQL SERVER'. Tuyệt đối không tự bịa giờ chiếu ảo. Nếu trong dữ liệu báo ngày đó không có suất chiếu hoặc sập server, hãy báo lỗi lịch sự.
+    Luật absolute số 1: Bạn CHỈ được tư vấn lịch chiếu, tên phòng dựa vào dgit add src/main/resources/static/index.html dữ liệu thật ở mục 'DỮ LIỆU ĐỘNG TỪ DATABASE SQL SERVER'. Tuyệt đối không tự bịa giờ chiếu ảo. Nếu trong dữ liệu báo ngày đó không có suất chiếu hoặc sập server, hãy báo lỗi lịch sự.
     Luật absolute số 2: Khi thấy khách hàng có nhu cầu muốn book vé, mua vé, chọn suất của một bộ phim cụ thể, bạn PHẢI kẹp cấu pháp điều hướng [BOOK: Tên Bộ Phim Chính Xác] vào cuối câu trả lời của mình.
     
     DỮ LIỆU ĐỘNG TỪ DATABASE SQL SERVER:\n${dbContext}`;
@@ -3822,6 +3796,29 @@ function confirmLogoutAction(e) {
     }
 }
 
+      function loadEventsFromDatabase() {
+    fetch("http://localhost:8080/api/events")
+        .then(response => response.json())
+        .then(events => {
+            const container = document.getElementById("cgv-event-grid");
+            if (!container) return;
+            
+            container.innerHTML = ""; // Xóa sạch dữ liệu cũ để tránh trùng lặp
+            
+            events.forEach(ev => {
+                // Kiểm tra ảnh, nếu ev.imageUrl bị trống thì lấy ảnh mặc định
+                const img = ev.imageUrl || 'https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png';
+                
+                container.innerHTML += `
+                    <div style="border: 1px solid #ddd; background: #fff; padding: 5px;">
+                        <img src="${img}" style="width: 100%; display: block;" alt="${ev.title}">
+                        
+                    </div>
+                `;
+            });
+        })
+        .catch(err => console.error("🚨 Lỗi khi tải sự kiện từ Database: ", err));
+}
     </script>
 
     <div class="cgv-modal-overlay" id="checkout-review-modal">
