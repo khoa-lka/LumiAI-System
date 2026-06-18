@@ -1531,14 +1531,12 @@
                       />
                     </div>
                     <div class="profile-input-group">
-                      <label>Ngày sinh</label
-                      ><input
-                        type="text"
-                        id="profile-field-birth"
-                        class="profile-readonly-input"
-                        value="18/12/2006"
-                        readonly
-                      />
+                      <label>Ngày sinh</label>
+                        <div class="birth-gender-row">
+                        <select class="select-birth profile-readonly-input" id="profile-birth-day" disabled style="padding: 8px; background: #f4f2ec; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; cursor: pointer;"></select>
+                        <select class="select-birth profile-readonly-input" id="profile-birth-month" disabled style="padding: 8px; background: #f4f2ec; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; cursor: pointer;"></select>
+                        <select class="select-birth profile-readonly-input" id="profile-birth-year" disabled style="padding: 8px; background: #f4f2ec; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; cursor: pointer;"></select>
+                        </div>
                     </div>
                     <div
                       class="profile-input-group"
@@ -2287,13 +2285,22 @@
         updateBannerMovement();
       }
 
+      
       // 🚀 ĐỒNG BỘ 1 CỔNG DOMCONTENTLOADED DUY NHẤT KHÔNG LỒNG NHAU LÀM SẬP TRANG
       window.addEventListener("DOMContentLoaded", () => {
         const daySelect = document.getElementById("reg-birth-day");
         const monthSelect = document.getElementById("reg-birth-month");
         const yearSelect = document.getElementById("reg-birth-year");
+        
+        // 🚀 THÊM 3 BIẾN ĐỂ HỨNG Ô CHỌN Ở TRANG SỬA HỒ SƠ
+        const proDay = document.getElementById("profile-birth-day");
+        const proMonth = document.getElementById("profile-birth-month");
+        const proYear = document.getElementById("profile-birth-year");
+
         generateCgvDateSlider();
         renderFnbMenu();
+
+        // Nạp số cho Form Đăng Ký (Nếu các thẻ tồn tại)
         if (daySelect && monthSelect && yearSelect) {
           for (let i = 1; i <= 31; i++) {
             daySelect.innerHTML += `<option value="${i}">${i}</option>`;
@@ -2303,6 +2310,21 @@
           }
           for (let i = 2026; i >= 1950; i--) {
             yearSelect.innerHTML += `<option value="${i}">${i}</option>`;
+          }
+        }
+
+        // ==========================================================================
+        // 🚀 ĐOẠN ĐÃ DÁN TÍCH HỢP: TỰ ĐỘNG NẠP SỐ CHO 3 Ô CHỌN TRANG SỬA HỒ SƠ
+        // ==========================================================================
+        if (proDay && proMonth && proYear) {
+          for (let i = 1; i <= 31; i++) {
+            proDay.innerHTML += `<option value="${i}">${i}</option>`;
+          }
+          for (let i = 1; i <= 12; i++) {
+            proMonth.innerHTML += `<option value="${i}">Tháng ${i}</option>`;
+          }
+          for (let i = 2026; i >= 1950; i--) {
+            proYear.innerHTML += `<option value="${i}">${i}</option>`;
           }
         }
 
@@ -2834,6 +2856,8 @@
             if (resData.status === "success") {
               isUserLoggedInState = true;
               let uData = resData.data;
+              
+              window.currentLoggedInId = uData.accountId;
 
               alert(
                 `Chào mừng thành viên: ${uData.fullName} đăng nhập thành công!`,
@@ -2853,6 +2877,14 @@
               document.getElementById("top-bar-ticket-link").innerHTML =
                 `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
 
+              // Lúc đăng nhập thành công, bóc tách chuỗi '2005-09-11' từ Java gửi lên để găm vào 3 ô select
+              if (uData.dateOfBirth || uData.date_of_birth) {
+                  const dob = uData.dateOfBirth || uData.date_of_birth;
+                  const [y, m, d] = dob.split("-");
+                  document.getElementById("profile-birth-day").value = parseInt(d);
+                  document.getElementById("profile-birth-month").value = parseInt(m);
+                  document.getElementById("profile-birth-year").value = parseInt(y);
+              }
               // Đọc Role từ Database trả về
               let roleString = "Khách hàng thành viên";
               if (uData.roleId === 1) roleString = "Quản lý hệ thống (ADMIN)";
@@ -2872,12 +2904,20 @@
               if (starRoleBox) {
                 starRoleBox.innerText = uData.roleId === 1 ? "MANAGER / ADMIN" : "MEMBER";
               }
-              document.getElementById("profile-field-name").value =
-                uData.fullName;
-              document.getElementById("profile-field-phone").value =
-                uData.phoneNumber;
-              document.getElementById("profile-field-email").value =
-                uData.email;
+              document.getElementById("profile-field-name").value = uData.fullName;
+              document.getElementById("profile-field-phone").value = uData.phoneNumber;
+              document.getElementById("profile-field-email").value = uData.email;
+              
+              // Để lúc đăng nhập nó đọc đúng ngày sinh từ DB đổ lên ô Input
+              if (uData.dateOfBirth) {
+                  // Đổi phom 'YYYY-MM-DD' từ Java sang 'DD/MM/YYYY' cho đúng giao diện của em
+                  const [y, m, d] = uData.dateOfBirth.split("-");
+                  document.getElementById("profile-field-birth").value = `${d}/${m}/${y}`;
+              } else if (uData.date_of_birth) {
+                  const [y, m, d] = uData.date_of_birth.split("-");
+                  document.getElementById("profile-field-birth").value = `${d}/${m}/${y}`;
+              }
+              
               if (document.getElementById("profile-field-role")) {
                 document.getElementById("profile-field-role").value =
                   roleString;
@@ -3185,7 +3225,6 @@
                   ? `<button class="btn-cgv-buy-ticket-spec" onclick="quickBookMovie('${m.title}')">🎟️ MUA VÉ</button>`
                   : `<button class="btn-cgv-buy-ticket-spec" style="background-color:#555; cursor:not-allowed;" disabled>📋 SẮP CHIẾU</button>`;
 
-              // ➔ SỬA LẠI MAP BIẾN GẠCH DƯỚI TỪ SQL/ENTITY ĐỔ XUỐNG
               let cleanImgUrl =
                 m.mainposter_url ||
                 m.mainposterUrl ||
@@ -3224,48 +3263,106 @@
         document.getElementById("sum-movie-title").innerText =
           currentMovie || "-";
 
+        // ==========================================================================
+        // 🛠️ FIX LOGIC ĐOẠN 1: TẢI SUẤT CHIẾU TỰ ĐỘNG TỪ DATABASE THEO PHIM & NGÀY
+        // ==========================================================================
         const timeGrid = document.getElementById("cgv-showtime-grid");
-        if (timeGrid) {
-          timeGrid.innerHTML = "";
-          serverData.showtimes.forEach((t) => {
-            const activeClass = t === selectedShowtime ? "active" : "";
-            timeGrid.innerHTML += `<div class="showtime-btn ${activeClass}" onclick="selectTime('${t}')">${t}</div>`;
-          });
-        }
-        document.getElementById("sum-showtime").innerText =
-          selectedShowtime || "-";
+        if (timeGrid && serverData.movies && serverData.movies.length > 0) {
+          const selectedMovieObj = serverData.movies.find(m => m.title === currentMovie);
+          
+          if (selectedMovieObj) {
+            const movieId = selectedMovieObj.movieId || selectedMovieObj.movie_id;
+            const dateStr = selectedDateStr; 
 
+            fetch(`http://localhost:8080/api/showtimes/matrix?movieId=${movieId}&date=${dateStr}`)
+              .then(res => res.json())
+              .then(resData => {
+                timeGrid.innerHTML = "";
+                
+                if (!resData.showtimes || resData.showtimes.length === 0) {
+                  timeGrid.innerHTML = `<p style="color:#777; font-size:13px; grid-column: span 4; text-align:center; padding: 10px 0;">Hôm nay rạp chưa xếp lịch chiếu phim này!</p>`;
+                  document.getElementById("cgv-seat-grid").innerHTML = `<p style="color:#777; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
+                  return;
+                }
+
+                resData.showtimes.forEach((st) => {
+                  // So khớp cả mốc giờ hiển thị để đánh dấu nút Active
+                  const isSelected = st.startTime === selectedShowtime;
+                  const activeClass = isSelected ? "active" : "";
+                  
+                  timeGrid.innerHTML += `
+                    <div class="showtime-btn ${activeClass}" onclick="selectCgvShowtimeSlot('${st.startTime}', ${st.showtimeId})">
+                        ${st.startTime}
+                        <span style="display:block; font-size:9px; opacity:0.6; margin-top:2px;">
+                            ${st.roomId === 1 ? 'Phòng 1 (IMAX)' : st.roomId === 2 ? 'Phòng 2 (2D)' : 'Phòng 3 (3D)'}
+                        </span>
+                    </div>`;
+                });
+              })
+              .catch(err => console.error("🚨 Lỗi tải lịch chiếu:", err));
+          }
+        }
+        
+        document.getElementById("sum-showtime").innerText = selectedShowtime || "-";
+
+        // ==========================================================================
+        // 🛠️ FIX LOGIC ĐOẠN 2: TỰ ĐỘNG VẼ SƠ ĐỒ GHẾ THEO SUẤT CHIẾU ĐANG CHỌN
+        // ==========================================================================
         const seatGrid = document.getElementById("cgv-seat-grid");
         if (seatGrid) {
+          if (!selectedShowtime || !window.currentSelectedShowtimeId) {
+            seatGrid.innerHTML = `<p style="color:#777; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
+            return;
+          }
+
+          // Gọi API thật (chúng ta sẽ xây dựng ở câu sau) để lấy trạng thái ghế của đúng suất chiếu đó
+          // Tạm thời sục vào bộ nhớ máy hoặc vẽ khung mẫu dựa theo roomId để Vy không bị trống màn hình
           seatGrid.innerHTML = "";
-          const activeSeatMap =
-            serverData.masterSeatStore[currentMovie]?.[selectedShowtime] || {};
+          
+          // Giả lập ma trận 10 cột dựa theo dữ liệu phòng của em để đảm bảo không lỗi UI
+          // Sau khi team gửi code Seat/Ticket, thầy sẽ cho hàm này gọi trực tiếp API sục DB 100%
+          const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+          for (let r = 0; r < rows.length; r++) {
+              for (let c = 1; r < 10; c++) {
+                  if (c > 10) break;
+                  const id = `${rows[r]}${c}`;
+                  
+                  let seatType = "Standard";
+                  if (rows[r] === 'E' || rows[r] === 'F' || rows[r] === 'G') seatType = "VIP";
+                  if (rows[r] === 'I' || rows[r] === 'J') seatType = "Sweetbox";
 
-          Object.keys(activeSeatMap).forEach((id) => {
-            const s = activeSeatMap[id];
-            let seatType = "Standard";
-            if (id.startsWith("C")) seatType = "VIP";
-            if (id.startsWith("D")) seatType = "Sweetbox";
+                  // Check giả lập trạng thái khả dụng từ DB mồi
+                  let status = "available";
+                  if (id === "F5" || id === "H10") status = "sold"; // Khớp với dữ liệu Đoạn 3 của em
 
-            const div = document.createElement("div");
-            div.className = `cgv-seat ${seatType} ${s.status}`;
-            div.innerText = id;
+                  const div = document.createElement("div");
+                  div.className = `cgv-seat ${seatType} ${status}`;
+                  div.innerText = id;
 
-            if (selectedSeats.includes(id)) div.classList.add("selected");
+                  if (selectedSeats.includes(id)) div.classList.add("selected");
 
-            if (!isHoldingState && s.status === "available") {
-              div.onclick = () => {
-                if (selectedSeats.includes(id))
-                  selectedSeats = selectedSeats.filter((x) => x !== id);
-                else selectedSeats.push(id);
-                calculateCgvCart();
-                renderCgvInterface();
-              };
-            }
-            seatGrid.appendChild(div);
-          });
+                  if (status === "available") {
+                      div.onclick = () => {
+                          if (selectedSeats.includes(id))
+                              selectedSeats = selectedSeats.filter((x) => x !== id);
+                          else selectedSeats.push(id);
+                          calculateCgvCart();
+                          renderCgvInterface();
+                      };
+                  }
+                  seatGrid.appendChild(div);
+              }
+          }
         }
       }
+
+// 🚀 HÀM BỔ TRỢ ĐIỀU PHỐI SUẤT CHIẾU (Thêm vào cuối thẻ <script> của em)
+    function selectCgvShowtimeSlot(timeStr, showtimeId) {
+        selectedShowtime = timeStr;
+        window.currentSelectedShowtimeId = showtimeId; // Lưu lại ID suất chiếu để sục DB ghế ngồi
+        selectedSeats = []; // Reset ghế đã chọn của suất cũ
+        renderCgvInterface();
+    }
 
       function generateCgvDateSlider() {
         const container = document.getElementById("cgv-dynamic-date-slider");
@@ -3353,6 +3450,7 @@
           .querySelectorAll(".profile-readonly-input")
           .forEach((input) => {
             input.removeAttribute("readonly");
+            input.removeAttribute("disabled");
             input.style.border = "1px solid var(--cgv-red)";
             input.style.background = "#fff";
           });
@@ -3399,15 +3497,63 @@
       }
 
       function saveUpdatedProfileInformationData() {
-        document
-          .querySelectorAll(".profile-readonly-input")
-          .forEach((input) => {
-            input.setAttribute("readonly", true);
-            input.style.border = "1px solid #ccc";
-            input.style.background = "#f4f2ec";
-          });
-        document.getElementById("btn-save-profile").style.display = "none";
-        alert("Cập nhật thông tin tài khoản mới thành công!");
+      const newName = document.getElementById("profile-field-name").value.trim();
+      const newPhone = document.getElementById("profile-field-phone").value.trim();
+      const newEmail = document.getElementById("profile-field-email").value.trim();
+    
+      // 🚀 BỐC DỮ LIỆU TỪ 3 Ô SELECT MỚI
+      const d = document.getElementById("profile-birth-day").value;
+      const m = document.getElementById("profile-birth-month").value;
+      const y = document.getElementById("profile-birth-year").value;
+      const newBirth = `${y}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`; // Gộp thành phom chuẩn 'YYYY-MM-DD'
+
+      const accountId = window.currentLoggedInId || 2; 
+
+      fetch("http://localhost:8080/api/profile/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            accountId: accountId,
+            fullName: newName,
+            phone: newPhone,
+            email: newEmail,
+            dateOfBirth: newBirth // Gửi phom chuẩn quốc tế này thì Backend cực kỳ sướng, không cần parse gạch chéo nữa
+        })
+      })
+      .then(res => res.json())
+      .then(resData => {
+          if (resData.status === "success") {
+            alert(resData.message);
+
+            // Khóa lại giao diện
+            document.querySelectorAll(".profile-readonly-input").forEach((input) => {
+                input.setAttribute("readonly", true);
+                input.setAttribute("disabled", true); // 🚀 KHÓA LẠI THẺ SELECT
+                input.style.border = "1px solid #ccc";
+                input.style.background = "#f4f2ec";
+            });
+            document.getElementById("btn-save-profile").style.display = "none";
+            
+            // Tra cứu lại để cập nhật tên chào mừng thương hiệu
+            fetch(`http://localhost:8080/api/profile/${accountId}`)
+                  .then(res => res.json())
+                  .then(profileRes => {
+                    if (profileRes.status === "success") {
+                        const updatedData = profileRes.data;
+                        document.getElementById("profile-welcome-name").innerText = `Xin chào ${updatedData.fullName},`;
+                        
+                        // Đổ lại dữ liệu mới vào 3 ô select sau khi lưu
+                        const [year, month, day] = updatedData.dateOfBirth.split("-");
+                        document.getElementById("profile-birth-day").value = parseInt(day);
+                        document.getElementById("profile-birth-month").value = parseInt(month);
+                        document.getElementById("profile-birth-year").value = parseInt(year);
+                    }
+                  });
+          } else {
+              alert("❌ Không thể lưu: " + resData.message);
+          }
+        })
+        .catch(err => alert("🚨 Lỗi kết nối cập nhật hồ sơ: " + err.message));
       }
 
       function loadShowtimesFromDatabase() {
