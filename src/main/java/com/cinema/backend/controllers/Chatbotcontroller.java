@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cinema.backend.entities.Gemini;
 
 @RestController
-public class Chatbotcontroller {
+public class ChatbotController {
     @Autowired
     private Gemini gemini;
 
