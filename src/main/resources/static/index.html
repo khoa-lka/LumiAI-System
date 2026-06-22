@@ -1817,15 +1817,22 @@
             <button class="cgv-tab-btn" id="tab-register-btn" onclick="toggleAuthTab('register')">Đăng Ký</button>
           </div>
 
-          <div class="cgv-auth-content auth-form-panel active" id="form-login-panel">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h2 style="font-family: 'Impact', sans-serif; color: #e71a0f; letter-spacing: 1px; margin: 0;">LAS CINEMAS LOGIN</h2>
-                <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Dành cho Hội viên, Nhân viên và Quản trị viên</p>
-            </div>
-
-            <div class="cgv-form-group" style="margin-bottom: 15px;">
-              <label style="font-weight: bold; font-size: 13px; color: #333; display: block; margin-bottom: 5px;">Tài khoản Hệ thống <span>*</span></label>
-              <input type="text" id="auth-username" class="cgv-input-text" placeholder="Nhập Email hoặc Số điện thoại đăng ký..." autocomplete="off" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px;" />
+          <div
+            class="cgv-auth-content auth-form-panel active"
+            id="form-login-panel"
+          >
+            <div class="cgv-form-group">
+    <label>Email hoặc số điện thoại</label>
+    <input type="text" id="auth-username" class="cgv-input-text" placeholder="Nhập Email hoặc Số điện thoại..." autocomplete="off" />
+</div>
+            <div class="cgv-form-group">
+              <label>Mật khẩu</label>
+              <input
+                type="password"
+                id="auth-password"
+                class="cgv-input-text"
+                placeholder="........."
+              />
             </div>
 
             <div class="cgv-form-group" style="margin-bottom: 15px;">
@@ -2014,6 +2021,1061 @@
         </div>
       </div>
     </div>
+
+    <script>
+      let serverData = { masterSeatStore: {}, movies: [], showtimes: [] };
+      let fnbMenu = [
+        {
+          id: "fnb1",
+          name: "LAS Combo Thần Thánh",
+          price: 85000,
+          icon: "🍿",
+          qty: 0,
+        },
+        {
+          id: "fnb2",
+          name: "My Combo (1 Bắp + 1 Nước)",
+          price: 65000,
+          icon: "🥤",
+          qty: 0,
+        },
+        {
+          id: "fnb3",
+          name: "Snack Khoai Tây Phô Mai",
+          price: 35000,
+          icon: "🍟",
+          qty: 0,
+        },
+      ];
+      let appliedVoucherDiscount = 0;
+      let userPastInvoices = [];
+      let selectedSeats = [];
+      let selectedShowtime = "";
+      let currentMovieFilter = "now_showing";
+      let fnbQty = 0;
+      let currentPriceTotal = 0;
+      let isHoldingState = false;
+      let timerInterval = null;
+      let isUserLoggedInState = false;
+      let cgvNavigationHistory = ["panel-movies"];
+      let activeSearchKeyword = "";
+      let selectedDateStr = "";
+      let currentBannerIndex = 0;
+      let totalBanners = 0;
+
+      // Hàm cào Banner từ Database Spring Boot
+      function loadBannersFromDatabase() {
+        fetch("/api/banners")
+          .then((response) => response.json())
+          .then((banners) => {
+            const carousel = document.getElementById("las-banner-carousel");
+            if (!carousel || !banners || banners.length === 0) return;
+
+            totalBanners = banners.length;
+            carousel.style.width = `${totalBanners * 100}%`;
+
+            let htmlContent = "";
+            banners.forEach((b) => {
+              let imgWidth = 100 / totalBanners;
+              htmlContent += `<img src="${b.imageUrl || b.image_url}" alt="${b.title}" style="width: ${imgWidth}%; height: 100%; object-fit: cover;">`;
+            });
+
+            carousel.innerHTML = htmlContent;
+          })
+          .catch((err) => console.error("🚨 Lỗi khi tải banner từ DB: ", err));
+      }
+
+      function updateBannerMovement() {
+        const carousel = document.getElementById("las-banner-carousel");
+        if (carousel) {
+          let percentage = -(currentBannerIndex * (100 / totalBanners));
+          carousel.style.transform = `translateX(${percentage}%)`;
+        }
+      }
+
+      function moveBannerRight() {
+        if (totalBanners === 0) return;
+        currentBannerIndex = (currentBannerIndex + 1) % totalBanners;
+        updateBannerMovement();
+      }
+
+      function moveBannerLeft() {
+        if (totalBanners === 0) return;
+        currentBannerIndex =
+          (currentBannerIndex - 1 + totalBanners) % totalBanners;
+        updateBannerMovement();
+      }
+
+      // 🚀 ĐỒNG BỘ 1 CỔNG DOMCONTENTLOADED DUY NHẤT KHÔNG LỒNG NHAU LÀM SẬP TRANG
+      window.addEventListener("DOMContentLoaded", () => {
+        const daySelect = document.getElementById("reg-birth-day");
+        const monthSelect = document.getElementById("reg-birth-month");
+        const yearSelect = document.getElementById("reg-birth-year");
+        generateCgvDateSlider();
+        renderFnbMenu();
+        if (daySelect && monthSelect && yearSelect) {
+          for (let i = 1; i <= 31; i++) {
+            daySelect.innerHTML += `<option value="${i}">${i}</option>`;
+          }
+          for (let i = 1; i <= 12; i++) {
+            monthSelect.innerHTML += `<option value="${i}">Tháng ${i}</option>`;
+          }
+          for (let i = 2026; i >= 1950; i--) {
+            yearSelect.innerHTML += `<option value="${i}">${i}</option>`;
+          }
+        }
+
+        // 1. Kích hoạt gọi API tải Banner từ Database lên vòng xoay quảng cáo luôn
+        loadBannersFromDatabase();
+        setInterval(moveBannerRight, 3000); // Kích hoạt bộ tự trượt 3 giây
+
+        // 2. Luồng gọi API tải phim từ Spring Boot
+        fetch("/api/sync-data")
+          .then((res) => {
+            if (!res.ok) throw new Error("Không thể kết nối API Spring Boot");
+            return res.json();
+          })
+          .then((msg) => {
+            if (msg && msg.type === "SYNC_DATA" && msg.data) {
+              serverData = msg.data;
+              const selectCombo = document.getElementById("cgv-combo-movie");
+              if (
+                selectCombo &&
+                serverData.movies &&
+                serverData.movies.length > 0
+              ) {
+                selectCombo.innerHTML = "";
+                serverData.movies.forEach((m) => {
+                  if (m.status === "now_showing") {
+                    selectCombo.innerHTML += `<option value="${m.title}">${m.title}</option>`;
+                  }
+                });
+              }
+              if (
+                !selectedShowtime &&
+                serverData.showtimes &&
+                serverData.showtimes.length > 0
+              ) {
+                selectedShowtime = serverData.showtimes[0];
+              }
+              renderCgvInterface();
+            }
+          })
+          .catch((err) => console.error("🚨 Lỗi kết nối API phim:", err));
+      });
+
+      function generateRandomCaptcha(length = 6) {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let result = "";
+        for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+      }
+      function generateNewLoginCaptcha() {
+        document.getElementById("login-captcha-text").innerText =
+          generateRandomCaptcha();
+      }
+      function generateNewRegisterCaptcha() {
+        document.getElementById("reg-captcha-text").innerText =
+          generateRandomCaptcha();
+      }
+      function generateForgotCaptcha() {
+        document.getElementById("forgot-captcha-text").innerText =
+          generateRandomCaptcha();
+      }
+
+      function toggleRegPasswordState() {
+        const passInput = document.getElementById("reg-password");
+        if (passInput) {
+          passInput.type = passInput.type === "password" ? "text" : "password";
+        }
+      }
+
+      function openAuthModal() {
+        document.getElementById("auth-modal").classList.add("open");
+        generateNewLoginCaptcha();
+        generateNewRegisterCaptcha();
+      }
+      function closeAuthModal() {
+        document.getElementById("auth-modal").classList.remove("open");
+      }
+
+      function renderFnbMenu() {
+        const container = document.getElementById("cgv-fnb-menu");
+        if (!container) return;
+        container.innerHTML = "";
+        fnbMenu.forEach((item, index) => {
+          container.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid #ddd; padding:15px; border-radius:8px; margin-bottom:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <div style="font-size:30px; background:#f4f2ec; width:60px; height:60px; display:flex; justify-content:center; align-items:center; border-radius:8px;">${item.icon}</div>
+                        <div style="text-align:left;">
+                            <div style="font-weight:bold; font-size:14px; color:#333;">${item.name}</div>
+                            <div style="color:#e71a0f; font-weight:bold; font-size:14px; margin-top:5px;">${item.price.toLocaleString("vi-VN")} đ</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <button style="width:30px; height:30px; border:1px solid #ccc; background:#fff; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, -1)">-</button>
+                        <span style="font-weight:bold; width:20px; text-align:center; font-size: 16px;">${item.qty}</span>
+                        <button style="width:30px; height:30px; border:1px solid #ccc; background:#fff; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, 1)">+</button>
+                    </div>
+                </div>`;
+        });
+      }
+
+      function updateComboQty(index, change) {
+        fnbMenu[index].qty += change;
+        if (fnbMenu[index].qty < 0) fnbMenu[index].qty = 0;
+
+        let totalFnbItems = fnbMenu.reduce((sum, item) => sum + item.qty, 0);
+        document.getElementById("sum-fnb").innerText = totalFnbItems + " Combo";
+
+        renderFnbMenu();
+        calculateCgvCart();
+      }
+
+      function toggleAuthTab(type) {
+        document.getElementById("tab-login-btn").classList.remove("active");
+        document.getElementById("tab-register-btn").classList.remove("active");
+        document.getElementById("form-login-panel").classList.remove("active");
+        document
+          .getElementById("form-register-panel")
+          .classList.remove("active");
+
+        if (type === "login") {
+          document.getElementById("tab-login-btn").classList.add("active");
+          document.getElementById("form-login-panel").classList.add("active");
+        } else if (type === "register") {
+          document.getElementById("tab-register-btn").classList.add("active");
+          document
+            .getElementById("form-register-panel")
+            .classList.add("active");
+        }
+      }
+
+      function viewMovieDetailText(title, genre) {
+        document.getElementById("detail-movie-title").innerText = title;
+        document.getElementById("detail-movie-genre").innerText = genre;
+
+        if (!serverData.movies || serverData.movies.length === 0) {
+          alert(
+            "Dự án đang tải dữ liệu phim từ SQL Server, vui lòng đợi vài giây!",
+          );
+          return;
+        }
+
+        const targetMovie = serverData.movies.find((m) => m.title === title);
+        if (targetMovie) {
+          if (document.getElementById("detail-movie-duration")) {
+            document.getElementById("detail-movie-duration").innerText =
+              targetMovie.duration || "-";
+          }
+          if (document.getElementById("detail-movie-country")) {
+            document.getElementById("detail-movie-country").innerText =
+              targetMovie.country || "Đang cập nhật";
+          }
+          if (document.getElementById("detail-movie-director")) {
+            document.getElementById("detail-movie-director").innerText =
+              targetMovie.director || "Đang cập nhật";
+          }
+          if (document.getElementById("detail-movie-performer")) {
+            document.getElementById("detail-movie-performer").innerText =
+              targetMovie.performer || "Đang cập nhật";
+          }
+
+          const posterBox = document.getElementById("detail-movie-poster-box");
+          if (posterBox) {
+            // Ưu tiên đọc phom CamelCase chuẩn từ Entity Java Movie gửi xuống
+            let subPoster =
+              targetMovie.subposterUrl ||
+              targetMovie.subposter_url ||
+              targetMovie.subposterurl;
+            let mainPoster =
+              targetMovie.mainposterUrl ||
+              targetMovie.mainposter_url ||
+              targetMovie.mainposterurl;
+            let backupImg =
+              targetMovie.img ||
+              "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
+
+            let validPoster = subPoster || mainPoster || backupImg;
+
+            // Tiến hành ép ảnh vào hình nền
+            posterBox.style.backgroundImage = `url("${validPoster}")`;
+            posterBox.style.backgroundSize = "cover"; // Sửa từ contain thành cover nhìn cho tràn khung ảnh đẹp mắt nhé
+            posterBox.style.backgroundRepeat = "no-repeat";
+            posterBox.style.backgroundPosition = "center";
+            posterBox.innerHTML = "";
+          }
+
+          const synopsisBox = document.getElementById("detail-movie-synopsis");
+          if (synopsisBox) {
+            synopsisBox.innerText =
+              targetMovie.synopsis ||
+              "Chưa có tóm tắt cho bộ phim điện ảnh này.";
+          }
+        }
+
+        const bookBtn = document.getElementById("btn-detail-book-now");
+        if (bookBtn) {
+          bookBtn.onclick = () => {
+            quickBookMovie(title);
+          };
+        }
+        switchCgvTab("panel-movie-detail");
+      }
+
+      function openCheckoutReview() {
+        const currentMovie = document.getElementById("cgv-combo-movie").value;
+        let fnbHtml = fnbMenu
+          .filter((i) => i.qty > 0)
+          .map(
+            (i) =>
+              `<p>+ ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString("vi-VN")} đ</p>`,
+          )
+          .join("");
+
+        document.getElementById("review-invoice-content").innerHTML = `
+            <p><strong>Phim:</strong> ${currentMovie}</p>
+            <p><strong>Suất chiếu:</strong> ${selectedDateStr} | ${selectedShowtime}</p>
+            <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
+            <p><strong>Bắp nước:</strong></p>
+            ${fnbHtml || "<p>Không có</p>"}
+            <hr style="margin: 10px 0;">
+            <p><strong>Tổng cộng (Chưa giảm):</strong> ${currentPriceTotal.toLocaleString("vi-VN")} đ</p>
+        `;
+
+        appliedVoucherDiscount = 0;
+        document.getElementById("voucher-input").value = "";
+        document.getElementById("review-final-total").innerText =
+          currentPriceTotal.toLocaleString("vi-VN") + " đ";
+        document.getElementById("checkout-review-modal").classList.add("open");
+      }
+
+      function closeCheckoutReview() {
+        document
+          .getElementById("checkout-review-modal")
+          .classList.remove("open");
+        appliedVoucherDiscount = 0;
+        calculateCgvCart();
+      }
+
+      function applyVoucher() {
+        const code = document
+          .getElementById("voucher-input")
+          .value.trim()
+          .toUpperCase();
+        if (code === "LAS20") {
+          appliedVoucherDiscount = 0.2;
+          alert("Áp dụng thành công Voucher giảm 20%!");
+        } else {
+          appliedVoucherDiscount = 0;
+          alert("Mã Voucher không hợp lệ hoặc đã hết hạn!");
+        }
+        const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
+        document.getElementById("review-final-total").innerText =
+          finalTotal.toLocaleString("vi-VN") + " đ";
+        calculateCgvCart();
+      }
+
+      function processToPaymentGateway() {
+        closeCheckoutReview();
+        const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
+        document.getElementById("qr-total-price").innerText =
+          finalTotal.toLocaleString("vi-VN") + " đ";
+
+        const qrData = `Thanh toan ve LAS - So tien: ${finalTotal} VND`;
+        document.getElementById("bank-qr-img").src =
+          `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+        document.getElementById("payment-redirect-modal").classList.add("open");
+      }
+
+      function closePaymentModal() {
+        document
+          .getElementById("payment-redirect-modal")
+          .classList.remove("open");
+      }
+
+      function executeFinalCheckout() {
+        const currentMovie = document.getElementById("cgv-combo-movie").value;
+        const currentEmail = document.getElementById("profile-field-email")
+          ? document.getElementById("profile-field-email").value
+          : "Hoang2026@gmail.com";
+
+        fetch("/api/seats/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            movie: currentMovie,
+            showtime: selectedShowtime,
+            seats: selectedSeats,
+            email: currentEmail,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            document
+              .getElementById("payment-redirect-modal")
+              .classList.remove("open");
+            if (data.success) {
+              const lasTicketId = data.ticketId.replace("CGV-", "LAS-");
+              const invoiceObj = {
+                id: lasTicketId,
+                movie: currentMovie,
+                date: selectedDateStr,
+                time: selectedShowtime,
+                seats: [...selectedSeats],
+                fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
+                total: currentPriceTotal * (1 - appliedVoucherDiscount),
+                status: "Đã thanh toán (VNPAY)",
+              };
+              userPastInvoices.unshift(invoiceObj);
+
+              alert("Giao dịch thành công! Vé đã được xuất.");
+              resetHoldState();
+              selectedSeats = [];
+              fnbMenu.forEach((i) => (i.qty = 0));
+              renderFnbMenu();
+              calculateCgvCart();
+
+              renderTransactionHistory();
+              switchCgvTab("panel-profile");
+              switchProfileSubTab("lichsu");
+            }
+          });
+      }
+
+      function cancelCurrentTransaction() {
+        if (
+          confirm(
+            "Bạn có chắc chắn muốn hủy giao dịch và bỏ giữ các ghế này không?",
+          )
+        ) {
+          const currentMovie = document.getElementById("cgv-combo-movie").value;
+          fetch("/api/seats/cancel", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              movie: currentMovie,
+              showtime: selectedShowtime,
+              seats: selectedSeats,
+            }),
+          }).then(() => {
+            resetHoldState();
+            selectedSeats = [];
+            fnbMenu.forEach((i) => (i.qty = 0));
+            renderFnbMenu();
+            calculateCgvCart();
+            renderCgvInterface();
+            alert("Đã hủy giao dịch và giải phóng ghế!");
+          });
+        }
+      }
+
+      function renderTransactionHistory() {
+        const historyZone = document.getElementById("cgv-invoice-zone");
+        if (userPastInvoices.length === 0) {
+          historyZone.innerHTML =
+            '<p style="color:#777; font-size: 13px;">Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.</p>';
+          return;
+        }
+
+        historyZone.innerHTML = "";
+        userPastInvoices.forEach((inv) => {
+          historyZone.innerHTML += `
+                <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; background: white; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="margin: 0 0 5px 0; color: var(--cgv-red);">${inv.movie}</h4>
+                        <p style="margin: 0; font-size: 13px; color: #555;">Mã ĐH: <b>${inv.id}</b> | Ngày: ${inv.date} | Trạng thái: <span style="color: green;">${inv.status}</span></p>
+                    </div>
+                    <button onclick="viewHistoryDetail('${inv.id}')" style="background: var(--cgv-gold); border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px;">Xem Chi Tiết</button>
+                </div>
+            `;
+        });
+      }
+
+      function viewHistoryDetail(invoiceId) {
+        const inv = userPastInvoices.find((i) => i.id === invoiceId);
+        if (!inv) return;
+
+        let fnbHtml = inv.fnb
+          .map((i) => `<li>${i.name} x${i.qty}</li>`)
+          .join("");
+
+        document.getElementById("history-detail-content").innerHTML = `
+            <p><strong>Mã vé:</strong> <span style="color:red;">${inv.id}</span></p>
+            <p><strong>Phim:</strong> ${inv.movie}</p>
+            <p><strong>Suất:</strong> ${inv.time} ngày ${inv.date}</p>
+            <hr style="margin: 10px 0;">
+            <p><strong>🎟️ Vé ghế ngồi:</strong> ${inv.seats.join(", ")}</p>
+            <p><strong>🍿 Bắp nước:</strong></p>
+            <ul>${fnbHtml || "<li>Không có</li>"}</ul>
+            <hr style="margin: 10px 0;">
+            <p style="font-size: 16px; text-align: right;"><strong>Thành tiền: <span style="color:red;">${inv.total.toLocaleString("vi-VN")} đ</span></strong></p>
+        `;
+        document.getElementById("history-detail-modal").classList.add("open");
+      }
+
+      function closeHistoryDetailModal() {
+        document
+          .getElementById("history-detail-modal")
+          .classList.remove("open");
+      }
+
+      function executeMovieRealTimeSearch() {
+        const inputField = document.getElementById("movie-search-input");
+        if (inputField) {
+          activeSearchKeyword = inputField.value.trim().toLowerCase();
+          renderCgvInterface();
+        }
+      }
+
+      function selectCgvBookingDate(dateStr) {
+        selectedDateStr = dateStr;
+        generateCgvDateSlider();
+        selectedSeats = [];
+        renderCgvInterface();
+      }
+
+      function handleCgvLogout(e) {
+        e.stopPropagation();
+        document.getElementById("logout-confirm-modal").classList.add("open");
+      }
+      function closeLogoutConfirmModal() {
+        document
+          .getElementById("logout-confirm-modal")
+          .classList.remove("open");
+      }
+      function confirmCgvLogoutAction() {
+        isUserLoggedInState = false;
+        closeLogoutConfirmModal();
+        const authLinkBox = document.getElementById("top-bar-auth-link");
+        authLinkBox.removeAttribute("style");
+        authLinkBox.onclick = openAuthModal;
+        authLinkBox.innerHTML = `<span class="sub-nav-icon">👤</span> ĐĂNG NHẬP/ ĐĂNG KÝ`;
+        document.getElementById("top-bar-ticket-link").innerHTML =
+          `<span class="sub-nav-icon">🎬</span> VÉ CỦA TÔI`;
+        switchCgvTab("panel-movies", "now_showing");
+      }
+
+      function handleTicketViewAccess() {
+        if (!isUserLoggedInState) {
+          alert("Vui lòng đăng nhập hệ thống!");
+          openAuthModal();
+        } else {
+          switchCgvTab("panel-profile");
+          switchProfileSubTab("lichsu");
+        }
+      }
+
+      function handleProfileTabAccess() {
+  if (!isUserLoggedInState) {
+    openAuthModal(); // Chưa đăng nhập thì hiện bảng Modal
+  } else {
+    switchCgvTab("panel-profile"); // Đã đăng nhập thì đá thẳng sang trang cá nhân luôn
+  }
+}
+
+      function submitCgvLogin() {
+        const user = document.getElementById("auth-username").value.trim();
+        const pass = document.getElementById("auth-password").value;
+        const captchaInput = document
+          .getElementById("login-captcha")
+          .value.trim();
+        const currentLoginCaptcha =
+          document.getElementById("login-captcha-text").innerText;
+
+        if (!user || !pass)
+          return alert("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
+        if (captchaInput.toUpperCase() !== currentLoginCaptcha.toUpperCase()) {
+          return alert("Mã bảo vệ Captcha không chính xác!");
+        }
+
+        // Bắn dữ liệu POST động sang Spring Boot
+        fetch("http://localhost:8080/api/login/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: user, password: pass }),
+        })
+          .then((res) => {
+            if (!res.ok) {
+              return res.json().then((err) => {
+                throw new Error(err.message || "Thất bại!");
+              });
+            }
+            return res.json();
+          })
+          .then((resData) => {
+            if (resData.status === "success") {
+              isUserLoggedInState = true;
+              let uData = resData.data;
+
+              alert(
+                `Chào mừng thành viên: ${uData.fullName} đăng nhập thành công!`,
+              );
+              closeAuthModal();
+
+              // Đổi chữ trên thanh Top-bar điều hướng
+              const authLinkBox = document.getElementById("top-bar-auth-link");
+              authLinkBox.onclick = () => switchCgvTab('panel-profile');
+  
+  // Thêm thuộc tính con trỏ chuột bàn tay để người dùng biết là click vào được nhé
+              authLinkBox.style.cursor = "pointer";
+              authLinkBox.innerHTML = `
+                    <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}! 
+                    <span onclick="handleCgvLogout(event)" style="color: #0066cc; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+                `;
+              document.getElementById("top-bar-ticket-link").innerHTML =
+                `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
+
+              // Đọc Role từ Database trả về
+              let roleString = "Khách hàng thành viên";
+              if (uData.roleId === 1) roleString = "Quản lý hệ thống (ADMIN)";
+              if (uData.roleId === 2) roleString = "Nhân viên cụm rạp (STAFF)";
+              if (document.getElementById("profile-summary-avatar")) {
+                document.getElementById("profile-summary-avatar").innerText =
+                  uData.fullName.split(" ").pop().substring(0, 2).toUpperCase();
+              }
+
+              // Đổ động dữ liệu thật vào trang Thông Tin Chung
+              const welcomeNameBox = document.getElementById("profile-welcome-name");
+              if (welcomeNameBox) {
+                welcomeNameBox.innerText = `Xin chào ${uData.fullName},`;
+              }
+
+              const starRoleBox = document.getElementById("profile-star-role");
+              if (starRoleBox) {
+                starRoleBox.innerText = uData.roleId === 1 ? "MANAGER / ADMIN" : "MEMBER";
+              }
+              document.getElementById("profile-field-name").value =
+                uData.fullName;
+              document.getElementById("profile-field-phone").value =
+                uData.phoneNumber;
+              document.getElementById("profile-field-email").value =
+                uData.email;
+              if (document.getElementById("profile-field-role")) {
+                document.getElementById("profile-field-role").value =
+                  roleString;
+              }
+
+              // Nhảy tab sang vùng cá nhân xem thành quả
+              switchCgvTab("panel-profile");
+            }
+          })
+          .catch((err) => alert("🚨 Lỗi đăng nhập: " + err.message));
+      }
+
+      let temporaryRegisterEmail = "";
+
+      function submitCgvRegister() {
+        const name = document.getElementById("reg-name").value.trim();
+        const phone = document.getElementById("reg-phone").value.trim();
+        const email = document.getElementById("reg-email").value.trim();
+        const password = document.getElementById("reg-password").value;
+        const captchaInput = document.getElementById("reg-captcha").value.trim();
+        const currentRegCaptcha = document.getElementById("reg-captcha-text").innerText;
+
+        // Lấy dữ liệu ngày sinh động từ các ô select trong HTML của em
+        const birthDay = document.getElementById("reg-birth-day").value;
+        const birthMonth = document.getElementById("reg-birth-month").value;
+        const birthYear = document.getElementById("reg-birth-year").value;
+
+        if (!name || !phone || !email || !password || !birthDay || !birthMonth || !birthYear) {
+            return alert("Vui lòng điền đầy đủ thông tin và chọn ngày sinh!");
+        }
+        if (captchaInput.toUpperCase() !== currentRegCaptcha.toUpperCase()) {
+            return alert("Mã xác thực Captcha đăng ký không khớp!");
+        }
+
+        // Bắn gói JSON map chuẩn đét cấu trúc Object key phía Backend Java đang đợi
+        fetch("http://localhost:8080/api/register/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name: name,
+                phone: phone,
+                email: email,
+                password: password,
+                birthDay: birthDay,
+                birthMonth: birthMonth,
+                birthYear: birthYear
+            })
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "Đăng ký thất bại!") });
+            }
+            return res.json();
+        })
+        .then(resData => {
+            if (resData.status === "success") {
+                alert(resData.message + "\nHãy kiểm tra màn hình Console của Spring Boot để lấy mã OTP nhé!");
+                
+                // Giữ lại email thật vừa tạo để lát nữa truyền sang luồng xác thực OTP
+                temporaryRegisterEmail = resData.email; 
+                
+                closeAuthModal(); // Đóng form đăng ký
+                openOtpModal();   // Mở popup nhập mã số OTP lên
+            }
+        })
+        .catch(err => alert("🚨 Lỗi đăng ký: " + err.message));
+      }
+
+      function switchMovieFilterTab(filter) {
+        const mainTitle = document.getElementById("tab-title-now");
+        const subTitle = document.getElementById("tab-title-coming");
+        currentMovieFilter = filter;
+        if (filter === "now_showing") {
+          if (mainTitle) mainTitle.className = "tab-title-main";
+          if (subTitle) subTitle.className = "tab-title-sub";
+          document.getElementById("bc-current-text").innerText =
+            "Phim Đang Chiếu";
+        } else {
+          if (mainTitle) mainTitle.className = "tab-title-sub";
+          if (subTitle) subTitle.className = "tab-title-main";
+          document.getElementById("bc-current-text").innerText =
+            "Phim Sắp Chiếu";
+        }
+        renderCgvInterface();
+      }
+
+      function quickBookMovie(movieTitle) {
+        switchCgvTab("panel-booking");
+        const selectCombo = document.getElementById("cgv-combo-movie");
+        if (selectCombo) {
+          selectCombo.value = movieTitle;
+          onMovieOrTimeChange();
+        }
+      }
+
+      function selectTime(t) {
+        if (isHoldingState) return alert("Hóa đơn đã khóa thanh toán!");
+        selectedShowtime = t;
+        selectedSeats = [];
+        calculateCgvCart();
+        renderCgvInterface();
+      }
+
+      // Định nghĩa hàm rỗng tránh lỗi chưa khai báo khi nút bấm gọi chéo
+      function calculateCgvCart() {}
+
+      function onMovieOrTimeChange() {
+        resetHoldState();
+        selectedSeats = [];
+        calculateCgvCart();
+        renderCgvInterface();
+      }
+
+      function switchCgvTab(panelId, filterType = "now_showing") {
+        if (cgvNavigationHistory[cgvNavigationHistory.length - 1] !== panelId) {
+          cgvNavigationHistory.push(panelId);
+        }
+        document.getElementById("bc-back-btn").style.display =
+          cgvNavigationHistory.length > 1 ? "inline-block" : "none";
+
+        document
+          .querySelectorAll(".cgv-panel")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById(panelId).classList.add("active");
+
+        const parentBc = document.getElementById("bc-parent-text");
+        const currentBc = document.getElementById("bc-current-text");
+
+        if (panelId === "panel-movies") {
+          document.getElementById("lnk-movies").classList.add("active");
+          switchMovieFilterTab(filterType);
+          if (document.getElementById("payment-sticky-bar"))
+            document.getElementById("payment-sticky-bar").style.display =
+              "none";
+        }
+
+        if (panelId === "panel-booking") {
+          if (parentBc) parentBc.innerText = "Đặt Vé Trực Tuyến";
+          if (currentBc) currentBc.innerText = "Chọn Suất Chiếu & Ghế Ngồi";
+          if (document.getElementById("payment-sticky-bar"))
+            document.getElementById("payment-sticky-bar").style.display =
+              "block";
+          generateCgvDateSlider();
+        } else if (panelId !== "panel-booking") {
+          if (document.getElementById("payment-sticky-bar"))
+            document.getElementById("payment-sticky-bar").style.display =
+              "none";
+        }
+
+        if (panelId === "panel-profile") {
+          if (parentBc) parentBc.innerText = "Thành Viên";
+          if (currentBc) currentBc.innerText = "Tài Khoản LAS";
+          switchProfileSubTab("chung");
+        }
+        renderCgvInterface();
+      }
+
+      function handleBreadcrumbBack() {
+        if (cgvNavigationHistory.length <= 1) return;
+        cgvNavigationHistory.pop();
+        const prevPage = cgvNavigationHistory[cgvNavigationHistory.length - 1];
+        switchCgvTab(prevPage);
+        cgvNavigationHistory.pop();
+      }
+
+      function goHomeFromBc() {
+        cgvNavigationHistory = ["panel-movies"];
+        switchCgvTab("panel-movies", "now_showing");
+      }
+
+      // ==========================================================================
+      // 🚀 HÀM VẼ GIAO DIỆN PHIM ĐÃ ĐỒNG BỘ MAP ĐÚNG BIẾN age_rating VÀ mainposter_url
+      // ==========================================================================
+      function renderCgvInterface() {
+        const movieZone = document.getElementById("cgv-movie-list");
+        const selectCombo = document.getElementById("cgv-combo-movie");
+        if (!movieZone || !selectCombo) return;
+
+        movieZone.innerHTML = "";
+        let rankCounter = 1;
+
+        serverData.movies.forEach((m) => {
+          if (m.status === currentMovieFilter) {
+            const matchesKeyword =
+              m.title.toLowerCase().includes(activeSearchKeyword) ||
+              m.genre.toLowerCase().includes(activeSearchKeyword);
+
+            if (activeSearchKeyword === "" || matchesKeyword) {
+              let ribbonColor = "ribbon-blue";
+              if (rankCounter === 1) ribbonColor = "ribbon-red";
+              if (rankCounter === 2) ribbonColor = "ribbon-orange";
+
+              let actionBtnHTML =
+                m.status === "now_showing"
+                  ? `<button class="btn-cgv-buy-ticket-spec" onclick="quickBookMovie('${m.title}')">🎟️ MUA VÉ</button>`
+                  : `<button class="btn-cgv-buy-ticket-spec" style="background-color:#555; cursor:not-allowed;" disabled>📋 SẮP CHIẾU</button>`;
+
+              // ➔ SỬA LẠI MAP BIẾN GẠCH DƯỚI TỪ SQL/ENTITY ĐỔ XUỐNG
+              let cleanImgUrl =
+                m.mainposter_url ||
+                m.mainposterUrl ||
+                m.mainposterurl ||
+                m.img ||
+                "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
+              let displayAge =
+                m.age_rating === 0 || m.ageRating === 0
+                  ? "P"
+                  : `T${m.age_rating || m.ageRating || (m.status === "now_showing" ? "16" : "P")}`;
+
+              movieZone.innerHTML += `
+                        <div class="movie-spec-card">
+                            <div class="poster-wrapper-box">
+                                <span class="age-label-badge">${displayAge}</span>
+                                <div class="rank-ribbon ${ribbonColor}">${rankCounter}</div>
+                                <div class="poster-main-body-img" onclick="viewMovieDetailText('${m.title}', '${m.genre}')" style="background: #111; width: 100%; height: 100%;">
+                                    <img src="${cleanImgUrl}" alt="${m.title}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                </div>
+                            </div>
+                            <div class="movie-spec-info-text">
+                                <h3 class="movie-spec-title" onclick="viewMovieDetailText('${m.title}', '${m.genre}')">${m.title}</h3>
+                                <p>Thể loại: <b>${m.genre}</b></p>
+                            </div>
+                            <div class="movie-spec-action-zone">${actionBtnHTML}</div>
+                        </div>
+                    `;
+              rankCounter++;
+            }
+          }
+        });
+
+        const currentMovie =
+          selectCombo.value ||
+          (selectCombo.options[0] ? selectCombo.options[0].value : "");
+        document.getElementById("sum-movie-title").innerText =
+          currentMovie || "-";
+
+        const timeGrid = document.getElementById("cgv-showtime-grid");
+        if (timeGrid) {
+          timeGrid.innerHTML = "";
+          serverData.showtimes.forEach((t) => {
+            const activeClass = t === selectedShowtime ? "active" : "";
+            timeGrid.innerHTML += `<div class="showtime-btn ${activeClass}" onclick="selectTime('${t}')">${t}</div>`;
+          });
+        }
+        document.getElementById("sum-showtime").innerText =
+          selectedShowtime || "-";
+
+        const seatGrid = document.getElementById("cgv-seat-grid");
+        if (seatGrid) {
+          seatGrid.innerHTML = "";
+          const activeSeatMap =
+            serverData.masterSeatStore[currentMovie]?.[selectedShowtime] || {};
+
+          Object.keys(activeSeatMap).forEach((id) => {
+            const s = activeSeatMap[id];
+            let seatType = "Standard";
+            if (id.startsWith("C")) seatType = "VIP";
+            if (id.startsWith("D")) seatType = "Sweetbox";
+
+            const div = document.createElement("div");
+            div.className = `cgv-seat ${seatType} ${s.status}`;
+            div.innerText = id;
+
+            if (selectedSeats.includes(id)) div.classList.add("selected");
+
+            if (!isHoldingState && s.status === "available") {
+              div.onclick = () => {
+                if (selectedSeats.includes(id))
+                  selectedSeats = selectedSeats.filter((x) => x !== id);
+                else selectedSeats.push(id);
+                calculateCgvCart();
+                renderCgvInterface();
+              };
+            }
+            seatGrid.appendChild(div);
+          });
+        }
+      }
+
+      function generateCgvDateSlider() {
+        const container = document.getElementById("cgv-dynamic-date-slider");
+        if (!container) return;
+        container.innerHTML = "";
+
+        container.style.display = "flex";
+        container.style.gap = "10px";
+        container.style.overflowX = "auto";
+        container.style.paddingBottom = "10px";
+
+        const daysOfWeek = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+        const now = new Date(2026, 5, 8);
+
+        for (let i = 0; i < 30; i++) {
+          const targetDate = new Date(2026, 5, 8);
+          targetDate.setDate(now.getDate() + i);
+
+          const month = (targetDate.getMonth() + 1).toString().padStart(2, "0");
+          const dateNum = targetDate.getDate().toString().padStart(2, "0");
+          const dayName = daysOfWeek[targetDate.getDay()];
+          const fullDateId = `2026-${month}-${dateNum}`;
+
+          if (i === 0 && !selectedDateStr) {
+            selectedDateStr = fullDateId;
+          }
+          const bg = selectedDateStr === fullDateId ? "#111" : "#fff";
+          const color = selectedDateStr === fullDateId ? "#fff" : "#555";
+          const border = selectedDateStr === fullDateId ? "#111" : "#ccc";
+
+          container.innerHTML += `
+                <div style="flex: 0 0 auto; min-width: 60px; background:${bg}; color:${color}; border:2px solid ${border}; border-radius:6px; cursor:pointer; text-align:center; padding: 10px 5px; box-sizing: border-box; transition: all 0.2s;" onclick="selectCgvBookingDate('${fullDateId}')">
+                    <div style="font-size:11px; margin-bottom: 2px;">${dayName}</div>
+                    <div style="font-size:22px; font-weight:bold; line-height: 1;">${dateNum}</div>
+                    <div style="font-size:11px; margin-top: 3px;">Th ${month}</div>
+                </div>
+            `;
+        }
+      }
+
+      function startCountdown(expiresAt) {
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          const remain = expiresAt - Date.now();
+          if (remain <= 0) {
+            clearInterval(timerInterval);
+            alert("Hết thời gian giữ ghế 5 phút!");
+            resetHoldState();
+            selectedSeats = [];
+            calculateCgvCart();
+          } else {
+            const minutes = Math.floor(remain / 60000);
+            const seconds = Math.floor((remain % 60000) / 1000);
+            document.getElementById("timer-string").innerText =
+              `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+          }
+        }, 1000);
+      }
+
+      function resetHoldState() {
+        clearInterval(timerInterval);
+        isHoldingState = false;
+        document.getElementById("hold-timer").style.display = "none";
+        document.getElementById("btn-main-action").innerText =
+          "Giữ Ghế Tạm Thời";
+        document.getElementById("btn-main-action").style.background = "#e71a0f";
+      }
+
+      function switchProfileSubTab(sub) {
+        document
+          .querySelectorAll(".arrow-btn")
+          .forEach((b) => b.classList.remove("active"));
+        ["chung", "chitiet", "matma", "the", "diem", "lichsu"].forEach((p) => {
+          const panel = document.getElementById("pro-panel-" + p);
+          if (panel) panel.classList.remove("active");
+        });
+        const currentBtn = document.getElementById("pro-subtab-btn-" + sub);
+        const currentPanel = document.getElementById("pro-panel-" + sub);
+        if (currentBtn) currentBtn.classList.add("active");
+        if (currentPanel) currentPanel.classList.add("active");
+      }
+
+      function activateEditableFormFields() {
+        document
+          .querySelectorAll(".profile-readonly-input")
+          .forEach((input) => {
+            input.removeAttribute("readonly");
+            input.style.border = "1px solid var(--cgv-red)";
+            input.style.background = "#fff";
+          });
+        document.getElementById("btn-save-profile").style.display = "block";
+      }
+
+      // Cấp OTP giả lập để luồng đăng ký không bị đứng hình
+      function openOtpModal() {
+        document.getElementById("otp-modal").classList.add("open");
+      }
+      function closeOtpModal() {
+        document.getElementById("otp-modal").classList.remove("open");
+      }
+      function submitOtpVerification() {
+        const otpInput = document.getElementById("otp-input-field").value.trim();
+
+        if (!otpInput) return alert("Vui lòng nhập mã OTP gồm 6 chữ số!");
+        if (!temporaryRegisterEmail) return alert("Hệ thống không tìm thấy email đăng ký hợp lệ!");
+
+        // Gửi mã đối chiếu lên API verify-otp của RegisterController
+        fetch("http://localhost:8080/api/register/verify-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: temporaryRegisterEmail,
+                otp: otpInput
+            })
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "Xác thực thất bại!") });
+            }
+            return res.json();
+        })
+        .then(resData => {
+            if (resData.status === "success") {
+                alert(resData.message); // Kích hoạt tài khoản hội viên LAS thành công!
+                closeOtpModal();        // Tắt modal OTP
+                openAuthModal();        // Quay lại màn hình đăng nhập để hội viên login nick mới
+                toggleAuthTab('login'); // Chuyển sẵn sang tab Đăng Nhập
+            }
+        })
+        .catch(err => alert("❌ Lỗi OTP: " + err.message));
+      }
+
+      function saveUpdatedProfileInformationData() {
+        document
+          .querySelectorAll(".profile-readonly-input")
+          .forEach((input) => {
+            input.setAttribute("readonly", true);
+            input.style.border = "1px solid #ccc";
+            input.style.background = "#f4f2ec";
+          });
+        document.getElementById("btn-save-profile").style.display = "none";
+        alert("Cập nhật thông tin tài khoản mới thành công!");
+      }
+    </script>
 
     <div class="cgv-modal-overlay" id="checkout-review-modal">
       <div
