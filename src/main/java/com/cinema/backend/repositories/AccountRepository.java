@@ -13,4 +13,8 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
     // Kiểm tra trùng lặp khi đăng ký thành viên mới
     boolean existsByEmail(String email);
     boolean existsByPhone(String phone);
+
+    // Check trùng với người KHÁC (loại trừ chính mình ra khi sửa)
+    boolean existsByEmailAndAccountIdNot(String email, Integer accountId);
+    boolean existsByPhoneAndAccountIdNot(String phone, Integer accountId);
 }
