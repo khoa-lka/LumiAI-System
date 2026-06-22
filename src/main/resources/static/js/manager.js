@@ -154,29 +154,76 @@ window.addEventListener("click", function (event) {
 
 // Hàm tải danh sách phim cho bảng Quản lý
 function loadManagerMovies() {
-  const tbody = document.getElementById("mp-movies-tbody"); // ID bảng chứa phim của manager
-  if (!tbody || typeof API === "undefined") return;
+  const tbody = document.getElementById("mp-movies-tbody");
+  if (!tbody) return;
+
+  // Hiện chữ Đang tải...
+  tbody.innerHTML =
+    '<tr><td colspan="8" style="text-align:center;">Đang tải danh sách phim từ Database...</td></tr>';
 
   API.getMovies()
     .then((movies) => {
-      console.log("Dữ liệu phim từ Backend:", movies);
-      tbody.innerHTML = "";
+      tbody.innerHTML = ""; // Xóa chữ đang tải
+
       movies.forEach((m) => {
-        // Render từng dòng dữ liệu (Code HTML giả định dựa theo logic chuẩn)
+        // Xử lý huy hiệu độ tuổi (P, C13, C16, C18)
+        let ageBadgeClass =
+          m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
+        let ageText = m.ageRating === 0 ? "P" : `T${m.ageRating}`;
+
+        // Xử lý trạng thái (now_showing, coming_soon, end_showing)
+        let statusClass = m.status === "now_showing" ? "active" : "inactive";
+        let statusText =
+          m.status === "now_showing"
+            ? "Đang chiếu"
+            : m.status === "coming_soon"
+              ? "Sắp chiếu"
+              : "Ngưng chiếu";
+        let rowClass =
+          m.status !== "now_showing" ? 'class="mp-row-inactive"' : "";
+
+        // Xử lý ảnh rỗng
+        let posterUrl = m.mainposterUrl
+          ? m.mainposterUrl
+          : "img/default-poster.jpg";
+
+        // Đổ HTML động
         tbody.innerHTML += `
-                    <tr>
-                        <td>${m.id || m.movieId || m.movie_id}</td>
-                        <td>${m.title}</td>
-                        <td>${m.status === "now_showing" ? '<span style="color:green;">Đang chiếu</span>' : '<span style="color:orange;">Sắp chiếu</span>'}</td>
+                    <tr ${rowClass}>
+                        <td style="text-align: center;">${m.movieId}</td>
                         <td>
-    <button onclick='openEditMovie(${JSON.stringify(m)})' style="cursor:pointer;">✏️ Sửa</button>
-    <button onclick="openMpDeleteModal()" style="cursor:pointer; color:red;">🗑️ Xóa</button>
-</td>
+                            <div class="mp-movie-info">
+                                <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
+                                <div>
+                                    <div class="mp-movie-title-vn">${m.title}</div>
+                                    <div class="mp-movie-title-en">${m.genre || "Đang cập nhật"}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${m.durationMinutes} phút</td>
+                        <td>
+                            <div class="mp-age-badges">
+                                <span class="mp-badge ${ageBadgeClass}">${ageText}</span>
+                            </div>
+                        </td>
+                        <td>${m.country || "N/A"}</td>
+                        <td><span class="mp-status ${statusClass}">${statusText}</span></td>
+                        <td>${m.releaseDate || "N/A"}</td>
+                        <td>
+                            <div class="mp-table-actions">
+                                <button class="mp-action-btn" title="Xem chi tiết">👁️</button>
+                                <button class="mp-action-btn" onclick='openEditMovie(${JSON.stringify(m)})' title="Sửa">✏️</button>
+                                <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
+                            </div>
+                        </td>
                     </tr>
                 `;
       });
     })
-    .catch((err) => console.error("Lỗi tải phim Manager:", err));
+    .catch((err) => {
+      console.error("Lỗi:", err);
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Lỗi kết nối CSDL: ${err.message}</td></tr>`;
+    });
 }
 
 // Hàm gửi dữ liệu Cập nhật phim (Gọi khi bấm nút LƯU trong Modal Sửa Phim)
