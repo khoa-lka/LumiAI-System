@@ -14,8 +14,9 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   // Nếu hợp lệ, tự động load danh sách phim
-  document.getElementById("mp-dynamic-title").innerText =
-    `Xin chào Manager: ${sessionStorage.getItem("fullName")}`;
+  const titleEl = document.getElementById("mp-dynamic-title");
+  if (titleEl)
+    titleEl.innerText = `Xin chào Manager: ${sessionStorage.getItem("fullName")}`;
   loadManagerMovies();
 });
 
@@ -62,7 +63,7 @@ function switchMpTab(tabId) {
   }
 }
 
-// --- 2. QUẢN LÝ MODAL & POPUP ---
+// --- 2. QUẢN LÝ MODAL & POPUP (CÁC MODAL KHÁC) ---
 function openMpDeleteModal() {
   const el = document.getElementById("mp-delete-modal");
   if (el) el.classList.add("open");
@@ -81,31 +82,6 @@ function closeCreatePromoModal() {
   if (el) el.classList.remove("open");
 }
 
-function openAddMovie() {
-  const el = document.getElementById("mp-add-movie-modal");
-  if (el) el.classList.add("open");
-}
-function closeAddMovie() {
-  const el = document.getElementById("mp-add-movie-modal");
-  if (el) el.classList.remove("open");
-}
-
-function openEditMovie() {
-  const el = document.getElementById("mp-edit-movie-modal");
-  if (el) {
-    // Điền dữ liệu vào form
-    document.getElementById("edit-movie-id").value = movieObj.id;
-    document.getElementById("edit-movie-title").value = movieObj.title;
-    document.getElementById("edit-movie-status").value = movieObj.status;
-
-    el.classList.add("open");
-  }
-}
-function closeEditMovie() {
-  const el = document.getElementById("mp-edit-movie-modal");
-  if (el) el.classList.remove("open");
-}
-
 // --- 3. ĐIỀU KHIỂN DROPDOWN (USER & NOTIFICATION) ---
 function toggleUserDropdown() {
   const dropdown = document.getElementById("mp-user-dropdown");
@@ -120,12 +96,13 @@ function toggleNotifDropdown() {
   if (bell) bell.classList.remove("has-new"); // Xóa chấm đỏ khi xem thông báo
 }
 
-// Lắng nghe sự kiện click toàn trang để đóng dropdown nếu bấm ra ngoài
+// LẮNG NGHE SỰ KIỆN CLICK TOÀN TRANG (GỘP CHUNG ĐÓNG DROPDOWN & MODAL)
 window.addEventListener("click", function (event) {
   const userDropdown = document.getElementById("mp-user-dropdown");
   const userProfile = document.querySelector(".mp-profile");
   const notifDropdown = document.getElementById("mp-notif-dropdown");
   const bellIcon = document.querySelector(".mp-bell");
+  const editMovieModal = document.getElementById("mp-edit-movie-modal");
 
   // Đóng User Dropdown
   if (
@@ -146,6 +123,11 @@ window.addEventListener("click", function (event) {
   ) {
     notifDropdown.classList.remove("open");
   }
+
+  // Bấm ra ngoài vùng nền mờ để đóng Modal Sửa Phim
+  if (event.target === editMovieModal) {
+    closeEditMovie();
+  }
 });
 
 // ==========================================================================
@@ -157,21 +139,18 @@ function loadManagerMovies() {
   const tbody = document.getElementById("mp-movies-tbody");
   if (!tbody) return;
 
-  // Hiện chữ Đang tải...
   tbody.innerHTML =
     '<tr><td colspan="8" style="text-align:center;">Đang tải danh sách phim từ Database...</td></tr>';
 
   API.getMovies()
     .then((movies) => {
-      tbody.innerHTML = ""; // Xóa chữ đang tải
-
+      tbody.innerHTML = "";
+      window.moviesList = movies; // Lưu tạm danh sách phim vào biến toàn cục để dùng cho việc sửa phim
       movies.forEach((m) => {
-        // Xử lý huy hiệu độ tuổi (P, C13, C16, C18)
         let ageBadgeClass =
           m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
         let ageText = m.ageRating === 0 ? "P" : `T${m.ageRating}`;
 
-        // Xử lý trạng thái (now_showing, coming_soon, end_showing)
         let statusClass = m.status === "now_showing" ? "active" : "inactive";
         let statusText =
           m.status === "now_showing"
@@ -182,42 +161,36 @@ function loadManagerMovies() {
         let rowClass =
           m.status !== "now_showing" ? 'class="mp-row-inactive"' : "";
 
-        // Xử lý ảnh rỗng
-        let posterUrl = m.mainposterUrl
-          ? m.mainposterUrl
+        let posterUrl = m.mainposter_url
+          ? m.mainposter_url
           : "img/default-poster.jpg";
 
-        // Đổ HTML động
+        // CHÚ Ý: Chỗ onClick nút Sửa phim đã được chuẩn hóa
         tbody.innerHTML += `
-                    <tr ${rowClass}>
-                        <td style="text-align: center;">${m.movieId}</td>
-                        <td>
-                            <div class="mp-movie-info">
-                                <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
-                                <div>
-                                    <div class="mp-movie-title-vn">${m.title}</div>
-                                    <div class="mp-movie-title-en">${m.genre || "Đang cập nhật"}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>${m.durationMinutes} phút</td>
-                        <td>
-                            <div class="mp-age-badges">
-                                <span class="mp-badge ${ageBadgeClass}">${ageText}</span>
-                            </div>
-                        </td>
-                        <td>${m.country || "N/A"}</td>
-                        <td><span class="mp-status ${statusClass}">${statusText}</span></td>
-                        <td>${m.releaseDate || "N/A"}</td>
-                        <td>
-                            <div class="mp-table-actions">
-                                <button class="mp-action-btn" title="Xem chi tiết">👁️</button>
-                                <button class="mp-action-btn" onclick='openEditMovie(${JSON.stringify(m)})' title="Sửa">✏️</button>
-                                <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+            <tr ${rowClass}>
+                <td style="text-align: center;">${m.movieId}</td>
+                <td>
+                    <div class="mp-movie-info">
+                        <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
+                        <div>
+                            <div class="mp-movie-title">${m.title}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>${m.duration} phút</td>
+                <td><div class="mp-age-badges"><span class="mp-badge ${ageBadgeClass}">${ageText}</span></div></td>
+                <td>${m.country || "N/A"}</td>
+                <td><span class="mp-status ${statusClass}">${statusText}</span></td>
+                <td>${m.releaseDate || "N/A"}</td>
+                <td>
+                    <div class="mp-table-actions">
+                        <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết">👁️</button>
+                        <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa">✏️</button>
+                        <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
+                    </div>
+                </td>
+            </tr>
+        `;
       });
     })
     .catch((err) => {
@@ -226,29 +199,210 @@ function loadManagerMovies() {
     });
 }
 
-// Hàm gửi dữ liệu Cập nhật phim (Gọi khi bấm nút LƯU trong Modal Sửa Phim)
-function submitEditMovieAction(event) {
-  if (event) event.preventDefault();
+// ==========================================================================
+// --- 5. LOGIC MODAL THÊM / SỬA PHIM MỚI NHẤT ---
+// ==========================================================================
 
-  // Giả định em có form với các ID tương ứng
-  // const title = document.getElementById("edit-movie-title").value;
+// MỞ FORM ĐỂ THÊM PHIM MỚI
+window.openAddMovie = function () {
+  // Reset form trước khi mở
+  document.getElementById("add-title").value = "";
+  document.getElementById("add-genre").value = "";
+  document.getElementById("add-duration").value = "";
+  document.getElementById("add-release").value = "";
+  document.getElementById("add-country").value = "";
+  document.getElementById("add-director").value = "";
+  document.getElementById("add-performer").value = "";
+  document.getElementById("add-synopsis").value = "";
+  document.getElementById("add-mainposter").value = "";
+  document.getElementById("add-subposter").value = "";
+  document.getElementById("add-age").value = "0";
+  document.querySelector(
+    'input[name="add_status"][value="now_showing"]',
+  ).checked = true;
 
-  // Payload mẫu gửi xuống backend
-  const updatedMovieData = {
-    // title: title
+  document.getElementById("mp-add-movie-modal").style.display = "flex";
+};
+
+window.closeAddMovie = function () {
+  const modal = document.getElementById("mp-add-movie-modal");
+  if (modal) modal.style.display = "none";
+};
+
+window.submitAddMovie = function () {
+  const movieData = {
+    // Đã sửa thành "add-title" (bỏ chữ -vn)
+    title: document.getElementById("add-title").value,
+    genre: document.getElementById("add-genre").value,
+    duration: parseInt(document.getElementById("add-duration").value) || 0,
+    director: document.getElementById("add-director").value,
+    country: document.getElementById("add-country").value,
+    performer: document.getElementById("add-performer").value,
+    synopsis: document.getElementById("add-synopsis").value,
+    mainposterUrl: document.getElementById("add-mainposter").value,
+    subposterUrl: document.getElementById("add-subposter").value,
+    releaseDate: document.getElementById("add-release").value,
+    ageRating: parseInt(document.getElementById("add-age").value) || 0,
+    status: document.querySelector('input[name="add_status"]:checked').value,
+    rating: 0.0,
   };
 
-  if (typeof API !== "undefined") {
-    API.updateMovie(updatedMovieData)
-      .then((data) => {
-        alert("Cập nhật phim thành công: " + (data.message || ""));
-        closeEditMovie();
-        loadManagerMovies(); // Tải lại bảng ngay lập tức
-      })
-      .catch((err) => {
-        alert("Sự cố cập nhật phim: " + err.message);
-      });
-  } else {
-    alert("Lỗi: Không tìm thấy api.js");
+  // Gọi API lưu dữ liệu
+  API.addMovie(movieData)
+    .then(() => {
+      alert("✅ Thêm phim thành công!");
+      closeAddMovie();
+      loadManagerMovies();
+    })
+    .catch((err) => alert("Lỗi khi thêm phim: " + err));
+};
+
+window.openUpdateMovie = function (id) {
+  // Tìm phim từ biến toàn cục window.moviesList
+  const movie = window.moviesList.find((item) => item.movieId === id);
+
+  if (!movie) {
+    console.error("Không tìm thấy dữ liệu cho phim ID:", id);
+    return;
   }
-}
+
+  // Gán dữ liệu vào form Update (Giữ nguyên của em)
+  document.getElementById("upd-movie-id").value = movie.movieId;
+  document.getElementById("upd-title").value = movie.title || "";
+  document.getElementById("upd-genre").value = movie.genre || "";
+  document.getElementById("upd-duration").value =
+    movie.durationMinutes || movie.duration || "";
+  document.getElementById("upd-release").value = movie.releaseDate || "";
+  document.getElementById("upd-country").value = movie.country || "";
+  document.getElementById("upd-director").value = movie.director || "";
+  document.getElementById("upd-performer").value = movie.performer || "";
+  document.getElementById("upd-synopsis").value = movie.synopsis || "";
+  document.getElementById("upd-mainposter").value =
+    movie.mainposterUrl || movie.mainposter_url || "";
+  document.getElementById("upd-subposter").value =
+    movie.subposterUrl || movie.subposter_url || "";
+  document.getElementById("upd-age").value = movie.ageRating || "0";
+
+  const statusRadio = document.querySelector(
+    `input[name="upd_status"][value="${movie.status}"]`,
+  );
+  if (statusRadio) statusRadio.checked = true;
+
+  document.getElementById("mp-update-movie-modal").style.display = "flex";
+};
+
+window.closeUpdateMovie = function () {
+  document.getElementById("mp-update-movie-modal").style.display = "none";
+};
+
+window.submitUpdateMovie = function () {
+  const movieData = {
+    movieId: parseInt(document.getElementById("upd-movie-id").value),
+
+    // Đã sửa thành "upd-title" (bỏ chữ -vn)
+    title: document.getElementById("upd-title").value,
+    genre: document.getElementById("upd-genre").value,
+    duration: parseInt(document.getElementById("upd-duration").value) || 0,
+    director: document.getElementById("upd-director").value,
+    country: document.getElementById("upd-country").value,
+    performer: document.getElementById("upd-performer").value,
+    synopsis: document.getElementById("upd-synopsis").value,
+    mainposterUrl: document.getElementById("upd-mainposter").value,
+    subposterUrl: document.getElementById("upd-subposter").value,
+    releaseDate: document.getElementById("upd-release").value,
+    ageRating: parseInt(document.getElementById("upd-age").value) || 0,
+    status: document.querySelector('input[name="upd_status"]:checked').value,
+  };
+
+  API.updateMovie(movieData)
+    .then(() => {
+      alert("✅ Cập nhật phim thành công!");
+      closeUpdateMovie();
+      loadManagerMovies();
+    })
+    .catch((err) => alert("Lỗi khi cập nhật phim: " + err));
+};
+
+// ==========================================================================
+// --- LOGIC XỬ LÝ XÓA PHIM ĐỘNG ---
+// ==========================================================================
+window.openMpDeleteModal = function (id) {
+  // Tìm thông tin phim dựa vào mảng danh sách toàn cục đã lưu lúc tải trang
+  const movie = window.moviesList.find((item) => item.movieId === id);
+  if (!movie) return;
+
+  // Gán ID và Tên phim vào popup xác nhận xóa
+  document.getElementById("delete-movie-id").value = movie.movieId;
+  document.getElementById("delete-movie-title").innerText = `"${movie.title}"`;
+
+  // Hiển thị modal xóa bằng cách đổi style display
+  document.getElementById("mp-delete-modal").style.display = "flex";
+};
+
+window.closeMpDeleteModal = function () {
+  document.getElementById("mp-delete-modal").style.display = "none";
+};
+
+window.submitDeleteMovie = function () {
+  const movieId = parseInt(document.getElementById("delete-movie-id").value);
+
+  // Gọi API xóa phim từ api.js
+  API.deleteMovie(movieId)
+    .then(() => {
+      alert("✅ Hệ thống đã gỡ phim thành công!");
+      closeMpDeleteModal();
+      loadManagerMovies(); // Tải lại bảng phim để cập nhật giao diện mới
+    })
+    .catch((err) => alert("Lỗi khi thực hiện xóa phim: " + err));
+};
+
+// ==========================================================================
+// --- LOGIC XỬ LÝ XEM CHI TIẾT PHIM (CON MẮT 👁️) ---
+// ==========================================================================
+window.openViewMovie = function (id) {
+  const movie = window.moviesList.find((item) => item.movieId === id);
+  if (!movie) {
+    console.error("Không tìm thấy dữ liệu của phim mang ID:", id);
+    return;
+  }
+
+  // Đổ toàn bộ dữ liệu vào các thẻ hiển thị trên Modal xem chi tiết
+  document.getElementById("view-title").innerText =
+    movie.title || "Chưa cập nhật";
+  document.getElementById("view-genre").innerText =
+    movie.genre || "Chưa cập nhật";
+  document.getElementById("view-duration").innerText =
+    movie.durationMinutes || movie.duration || "0";
+  document.getElementById("view-director").innerText =
+    movie.director || "Chưa cập nhật";
+  document.getElementById("view-country").innerText =
+    movie.country || "Chưa cập nhật";
+  document.getElementById("view-performer").innerText =
+    movie.performer || "Chưa cập nhật";
+  document.getElementById("view-release").innerText =
+    movie.releaseDate || "Chưa cập nhật";
+  document.getElementById("view-synopsis").innerText =
+    movie.synopsis || "Bộ phim này hiện chưa có bài tóm tắt nội dung ngắn.";
+
+  // Xử lý huy hiệu độ tuổi quy định
+  document.getElementById("view-age").innerText =
+    movie.ageRating === 0 ? "P" : `T${movie.ageRating}`;
+
+  // Dịch trạng thái hiển thị thân thiện với người dùng quản lý
+  document.getElementById("view-status").innerText =
+    movie.status === "now_showing" ? "Đang chiếu" : "Sắp chiếu";
+  document.getElementById("view-status").style.color =
+    movie.status === "now_showing" ? "#2e7d32" : "#f57c00";
+
+  // Xử lý link poster ảnh
+  const imgUrl =
+    movie.mainposterUrl || movie.mainposter_url || "img/default-poster.jpg";
+  document.getElementById("view-poster").src = imgUrl;
+
+  // Bật mở modal hiển thị lên màn hình
+  document.getElementById("mp-view-movie-modal").style.display = "flex";
+};
+
+window.closeViewMovie = function () {
+  document.getElementById("mp-view-movie-modal").style.display = "none";
+};

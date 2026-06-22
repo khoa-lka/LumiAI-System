@@ -298,10 +298,11 @@
             <button class="mp-btn-add" onclick="openAddMovie()">
               Thêm Phim Mới
             </button>
+
             <div class="mp-filters">
               <div class="mp-search-box">
-                <span class="mp-search-icon">🔍</span
-                ><input type="text" placeholder="Tìm kiếm phim" />
+                <span class="mp-search-icon">🔍</span>
+                <input type="text" placeholder="Tìm kiếm phim" />
               </div>
               <select class="mp-filter-select">
                 <option>Status</option>
@@ -314,67 +315,23 @@
               </select>
             </div>
           </div>
+
           <div class="mp-box" style="padding: 0; overflow: hidden">
             <table class="mp-table mp-movie-table">
               <thead style="background: #fdfcf7">
                 <tr>
-                  <th style="width: 40px; text-align: center">👍</th>
+                  <th style="width: 50px; text-align: center">ID</th>
                   <th>Movie Title (VN/EN)</th>
                   <th>Duration</th>
                   <th>Age Rating</th>
-                  <th>Genre</th>
+                  <th>Country</th>
                   <th>Status</th>
                   <th>Release Date</th>
                   <th style="text-align: center">Actions</th>
                 </tr>
               </thead>
-              <tbody id="mp-movies-tbody">
-                <tr>
-                  <td style="text-align: center">□</td>
-                  <td>
-                    <div class="mp-movie-info">
-                      <img
-                        src="https://www.cgv.vn/media/catalog/product/cache/1/thumbnail/190x260/2e2b8cd282892c71872b9e67d2cb5039/m/i/minions_2_-_payoff_poster_-_1_1_.jpg"
-                        class="mp-movie-poster"
-                        alt="Minions"
-                      />
-                      <div>
-                        <div class="mp-movie-title-vn">
-                          Minions: The Rise of Gru
-                        </div>
-                        <div class="mp-movie-title-en">
-                          Minions: The Rise of Gru
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>20:00</td>
-                  <td>
-                    <div class="mp-age-badges">
-                      <span class="mp-badge c18">C18</span
-                      ><span class="mp-badge c13">C13</span
-                      ><span class="mp-badge p">P</span>
-                    </div>
-                  </td>
-                  <td>Phim hoạt hình</td>
-                  <td><span class="mp-status active">active</span></td>
-                  <td>10/06/2026</td>
-                  <td>
-                    <div class="mp-table-actions">
-                      <button class="mp-action-btn">👁️</button>
-                      <button class="mp-action-btn" onclick="openEditMovie()">
-                        ✏️
-                      </button>
-                      <button
-                        class="mp-action-btn"
-                        onclick="openMpDeleteModal()"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
+
+              <tbody id="mp-movies-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -731,60 +688,498 @@
       </div>
     </div>
 
-    <div class="mp-modal-overlay" id="mp-edit-movie-modal">
-      <div class="mp-modal-box">
-        <div class="mp-modal-close" onclick="closeEditMovie()">✕</div>
+    <div
+      class="mp-modal-overlay"
+      id="mp-add-movie-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        class="mp-modal-box"
+        style="
+          background: white;
+          width: 750px;
+          padding: 25px;
+          border-radius: 8px;
+          max-height: 90vh;
+          overflow-y: auto;
+        "
+      >
+        <div
+          class="mp-modal-close"
+          onclick="closeAddMovie()"
+          style="cursor: pointer; float: right; font-weight: bold"
+        >
+          ✕
+        </div>
+        <div
+          class="mp-modal-header"
+          style="font-weight: bold; font-size: 18px; margin-bottom: 20px"
+        >
+          Thêm Phim Mới
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px">
+          <div class="mp-form-group">
+            <label>Tên phim (Tiếng Việt)</label
+            ><input type="text" id="add-title" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Thể loại</label
+            ><input type="text" id="add-genre" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Thời lượng (phút)</label
+            ><input type="number" id="add-duration" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Đạo diễn</label
+            ><input type="text" id="add-director" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Quốc gia</label
+            ><input type="text" id="add-country" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group" style="grid-column: span 2">
+            <label>Diễn viên</label
+            ><input type="text" id="add-performer" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group" style="grid-column: span 2">
+            <label>Tóm tắt (Synopsis)</label
+            ><textarea
+              id="add-synopsis"
+              class="cgv-input-text"
+              rows="2"
+            ></textarea>
+          </div>
+          <div class="mp-form-group">
+            <label>Poster chính (URL)</label
+            ><input type="text" id="add-mainposter" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Poster phụ (URL)</label
+            ><input type="text" id="add-subposter" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Ngày phát hành</label
+            ><input type="date" id="add-release" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Độ tuổi</label>
+            <select id="add-age" class="cgv-input-text">
+              <option value="0">P</option>
+              <option value="13">T13</option>
+              <option value="16">T16</option>
+              <option value="18">T18</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mp-form-group" style="margin-top: 15px">
+          <label>Trạng thái</label><br />
+          <input type="radio" name="add_status" value="now_showing" checked />
+          Đang chiếu
+          <input
+            type="radio"
+            name="add_status"
+            value="coming_soon"
+            style="margin-left: 15px"
+          />
+          Sắp chiếu
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px">
+          <button
+            class="btn-cgv-cancel"
+            onclick="closeAddMovie()"
+            style="flex: 1; cursor: pointer"
+          >
+            Hủy
+          </button>
+          <button
+            class="btn-cgv-submit"
+            onclick="submitAddMovie()"
+            style="flex: 1; cursor: pointer"
+          >
+            LƯU
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="mp-modal-overlay"
+      id="mp-update-movie-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        class="mp-modal-box"
+        style="
+          background: white;
+          width: 750px;
+          padding: 25px;
+          border-radius: 8px;
+          max-height: 90vh;
+          overflow-y: auto;
+        "
+      >
+        <input type="hidden" id="upd-movie-id" />
+
+        <div
+          class="mp-modal-close"
+          onclick="closeUpdateMovie()"
+          style="cursor: pointer; float: right; font-weight: bold"
+        >
+          ✕
+        </div>
+        <div
+          class="mp-modal-header"
+          style="font-weight: bold; font-size: 18px; margin-bottom: 20px"
+        >
+          Cập Nhật Phim
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px">
+          <div class="mp-form-group">
+            <label>Tên phim (Tiếng Việt)</label
+            ><input type="text" id="upd-title" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Thể loại</label
+            ><input type="text" id="upd-genre" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Thời lượng (phút)</label
+            ><input type="number" id="upd-duration" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Quốc gia</label
+            ><input type="text" id="upd-country" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Đạo diễn</label
+            ><input type="text" id="upd-director" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Phân loại độ tuổi</label>
+            <select id="upd-age" class="cgv-input-text">
+              <option value="0">P (Mọi lứa tuổi)</option>
+              <option value="13">T13</option>
+              <option value="16">T16</option>
+              <option value="18">T18</option>
+            </select>
+          </div>
+          <div class="mp-form-group" style="grid-column: span 2">
+            <label>Diễn viên</label
+            ><input type="text" id="upd-performer" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group" style="grid-column: span 2">
+            <label>Tóm tắt (Synopsis)</label
+            ><textarea
+              id="upd-synopsis"
+              class="cgv-input-text"
+              rows="2"
+            ></textarea>
+          </div>
+          <div class="mp-form-group">
+            <label>Poster chính (URL)</label
+            ><input type="text" id="upd-mainposter" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Poster phụ (URL)</label
+            ><input type="text" id="upd-subposter" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Ngày phát hành</label
+            ><input type="date" id="upd-release" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Trạng thái</label><br />
+            <input type="radio" name="upd_status" value="now_showing" /> Đang
+            chiếu
+            <input
+              type="radio"
+              name="upd_status"
+              value="coming_soon"
+              style="margin-left: 15px"
+            />
+            Sắp chiếu
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px">
+          <button
+            class="btn-cgv-cancel"
+            onclick="closeUpdateMovie()"
+            style="flex: 1; cursor: pointer"
+          >
+            Hủy
+          </button>
+          <button
+            class="btn-cgv-submit"
+            onclick="submitUpdateMovie()"
+            style="
+              flex: 1;
+              cursor: pointer;
+              background: #e71a0f;
+              color: white;
+              border: none;
+              padding: 10px;
+            "
+          >
+            LƯU CẬP NHẬT
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="mp-modal-overlay"
+      id="mp-delete-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        class="mp-delete-popup"
+        style="
+          background: white;
+          padding: 25px;
+          border-radius: 8px;
+          width: 450px;
+        "
+      >
+        <input type="hidden" id="delete-movie-id" />
+
+        <div
+          class="mp-delete-header"
+          style="
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: white;
+          "
+        >
+          Xác nhận xóa phim
+        </div>
+        <div
+          class="mp-delete-body"
+          style="margin-bottom: 20px; line-height: 1.5; color: #333"
+        >
+          Bạn có chắc chắn muốn xóa phim
+          <strong id="delete-movie-title" style="color: #e71a0f"></strong> khỏi
+          danh mục hoạt động? Hành động này có thể ảnh hưởng đến các lịch chiếu
+          chưa diễn ra.<br />Vui lòng xác nhận.
+        </div>
+        <div
+          class="mp-delete-footer"
+          style="display: flex; gap: 10px; justify-content: flex-end"
+        >
+          <button
+            class="mp-btn-cancel"
+            onclick="closeMpDeleteModal()"
+            style="
+              padding: 8px 15px;
+              cursor: pointer;
+              color: #333; /* Đổi chữ sang màu xám đậm để nổi trên nền sáng */
+              font-weight: bold; /* Cho chữ đậm lên chút nhìn cho nét */
+            "
+          >
+            HỦY
+          </button>
+          <button
+            class="mp-btn-confirm"
+            onclick="submitDeleteMovie()"
+            style="
+              padding: 8px 15px;
+              cursor: pointer;
+              background: #d32f2f;
+              color: white;
+              border: none;
+              border-radius: 4px;
+            "
+          >
+            XÓA NGAY
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="mp-modal-overlay"
+      id="mp-view-movie-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        class="mp-modal-box"
+        style="
+          background: white;
+          width: 700px;
+          padding: 25px;
+          border-radius: 8px;
+          max-height: 90vh;
+          overflow-y: auto;
+        "
+      >
+        <div
+          class="mp-modal-close"
+          onclick="closeViewMovie()"
+          style="cursor: pointer; float: right; font-weight: bold"
+        >
+          ✕
+        </div>
         <div
           class="mp-modal-header"
           style="
+            font-weight: bold;
             font-size: 18px;
-            font-weight: bold;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 15px;
             margin-bottom: 20px;
-            color: #e71a0f;
+            color: #333;
+            border-bottom: 2px solid #fdfcf7;
+            padding-bottom: 10px;
           "
         >
-          Chỉnh sửa Phim
+          Chi Tiết Phim
         </div>
-        <div class="mp-form-group" style="margin-bottom: 15px">
-          <label
+
+        <div style="display: flex; gap: 25px">
+          <div style="flex: 1; text-align: center">
+            <img
+              id="view-poster"
+              src=""
+              alt="Poster Phim"
+              style="
+                width: 100%;
+                max-width: 200px;
+                border-radius: 6px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+              "
+            />
+          </div>
+
+          <div
             style="
-              display: block;
-              font-weight: bold;
-              font-size: 13px;
-              margin-bottom: 5px;
+              flex: 2;
+              display: grid;
+              grid-template-columns: 1fr;
+              gap: 12px;
+              font-size: 14px;
+              color: #444;
             "
-            >Tên phim (VN)</label
           >
-          <input
-            type="text"
-            id="edit-movie-title"
-            style="
-              width: 100%;
-              padding: 10px;
-              border: 1px solid #ccc;
-              border-radius: 4px;
-              box-sizing: border-box;
-            "
-          />
+            <div>
+              <strong>Tên phim:</strong>
+              <span
+                id="view-title"
+                style="font-size: 16px; color: #e71a0f; font-weight: bold"
+              ></span>
+            </div>
+            <div><strong>Thể loại:</strong> <span id="view-genre"></span></div>
+            <div>
+              <strong>Thời lượng:</strong> <span id="view-duration"></span> phút
+            </div>
+            <div>
+              <strong>Đạo diễn:</strong> <span id="view-director"></span>
+            </div>
+            <div>
+              <strong>Quốc gia:</strong> <span id="view-country"></span>
+            </div>
+            <div>
+              <strong>Diễn viên:</strong> <span id="view-performer"></span>
+            </div>
+            <div>
+              <strong>Ngày phát hành:</strong> <span id="view-release"></span>
+            </div>
+            <div>
+              <strong>Độ tuổi quy định:</strong>
+              <span
+                id="view-age"
+                style="
+                  background: #e71a0f;
+                  color: white;
+                  padding: 2px 6px;
+                  border-radius: 4px;
+                  font-weight: bold;
+                "
+              ></span>
+            </div>
+            <div>
+              <strong>Trạng thái hệ thống:</strong>
+              <span id="view-status" style="font-weight: bold"></span>
+            </div>
+          </div>
         </div>
-        <button
-          class="mp-btn-action"
+
+        <div
           style="
-            width: 100%;
-            background: #e71a0f;
-            color: white;
-            border: none;
-            padding: 12px;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
+            margin-top: 25px;
+            border-top: 1px dashed #ddd;
+            padding-top: 15px;
           "
-          onclick="submitEditMovieAction(event)"
         >
-          LƯU THAY ĐỔI
-        </button>
+          <strong style="color: #111">Tóm tắt nội dung (Synopsis):</strong>
+          <p
+            id="view-synopsis"
+            style="
+              color: #666;
+              line-height: 1.6;
+              margin-top: 8px;
+              text-align: justify;
+              white-space: pre-line;
+            "
+          ></p>
+        </div>
+
+        <div style="margin-top: 20px; text-align: right">
+          <button
+            class="btn-cgv-cancel"
+            onclick="closeViewMovie()"
+            style="padding: 8px 25px; cursor: pointer"
+          >
+            Đóng lại
+          </button>
+        </div>
       </div>
     </div>
 
@@ -847,9 +1242,6 @@
       }
       function toggleUserDropdown() {
         document.getElementById("mp-user-dropdown").classList.toggle("open");
-      }
-      function closeEditMovie() {
-        document.getElementById("mp-edit-movie-modal").classList.remove("open");
       }
     </script>
   </body>
