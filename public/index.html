@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>LAS Cinemas Vietnam - Official Premium Interface</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="global-viewport-container">
+
+    <!-- ========================================================= -->
+    <!-- 1. HEADER & TOP NAVIGATION                                -->
+    <!-- ========================================================= -->
+    <div class="cgv-top-utility-wrapper">
+        <div class="cgv-top-sub-nav">
+            <div class="sub-nav-container">
+                <div class="sub-nav-links-right">
+                    <a href="#" class="sub-nav-item" onclick="switchCgvTab('panel-news')">
+                        <span class="sub-nav-icon">🎫</span> TIN MỚI & ƯU ĐÃI
+                    </a>
+                    <a href="#" class="sub-nav-item" id="top-bar-ticket-link" onclick="handleTicketViewAccess()">
+                        <span class="sub-nav-icon">🎬</span> VÉ CỦA TÔI
+                    </a>
+                    <a href="#" class="sub-nav-item" id="top-bar-auth-link" onclick="openAuthModal()">
+                        <span class="sub-nav-icon">👤</span> ĐĂNG NHẬP/ ĐĂNG KÝ
+                    </a>
+                    <div class="lang-selector-box">
+                        <span class="lang-btn lang-vn">VN</span>
+                        <span class="lang-btn lang-en" style="background: #ccc; color: #333;">EN</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-container">
+            <div class="logo" onclick="switchCgvTab('panel-movies', 'now_showing')">LAS<span>CINEMAS</span></div>
+            <div class="nav-menu">
+                <div class="nav-item-wrapper">
+                    <a href="#" class="nav-link active" id="lnk-movies" onclick="switchCgvTab('panel-movies', 'now_showing')">Phim</a>
+                    <div class="dropdown-menu">
+                        <a href="#" class="dropdown-item" onclick="switchCgvTab('panel-movies', 'now_showing')">Phim Đang Chiếu</a>
+                        <a href="#" class="dropdown-item" onclick="switchCgvTab('panel-movies', 'coming_soon')">Phim Sắp Chiếu</a>
+                    </div>
+                </div>
+                <div class="nav-item-wrapper">
+                    <a href="#" class="nav-link" id="lnk-profile" onclick="handleProfileTabAccess()">Thành Viên</a>
+                    <div class="dropdown-menu">
+                        <a href="#" class="dropdown-item" onclick="openAuthModal()">Tài Khoản LAS</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="cgv-red-line"></div>
+    </header>
+
+    <div class="las-sub-icon-menu-bar">
+        <div class="icon-menu-item" onclick="switchCgvTab('panel-movies', 'now_showing')"><div class="icon-circle">🎬</div><span>PHIM ĐANG CHIẾU</span></div>
+        <div class="icon-menu-item" onclick="switchCgvTab('panel-booking')"><div class="icon-circle">🎟️</div><span>MUA VÉ NHANH</span></div>
+        <div class="icon-menu-item" onclick="switchCgvTab('panel-news')"><div class="icon-circle">🎁</div><span>TIN ƯU ĐÃI</span></div>
+        <div class="icon-menu-item" onclick="openAuthModal()"><div class="icon-circle">👤</div><span>HỘI VIÊN LAS</span></div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 2. MAIN CONTENT WRAPPER (Chứa tất cả các trang)           -->
+    <!-- ========================================================= -->
+    <div class="main-wrapper">
+
+        <!-- ----------------------------------------------------- -->
+        <!-- KHU VỰC A: DÀNH CHO KHÁCH HÀNG (CUSTOMER PANELS)      -->
+        <!-- ----------------------------------------------------- -->
+        
+        <!-- Tab: Phim -->
+        <div id="panel-movies" class="cgv-panel active">
+            <div class="cgv-breadcrumb-bar" style="display: flex; align-items: center; gap: 5px;">
+                <span class="bc-link" onclick="handleBreadcrumbBack()" style="cursor: pointer; font-weight: bold; color: #e71a0f; margin-right: 10px; display: none;" id="bc-back-btn">⬅ Trở lại</span>
+                <span class="bc-link" onclick="goHomeFromBc()" style="cursor: pointer;">🏠</span> &gt; 
+                <span id="bc-parent-text">Phim</span> &gt; 
+                <span class="current-bc" id="bc-current-text">Phim Đang Chiếu</span>
+            </div>
+
+            <div style="width: 100%; margin: 0 auto 30px auto; position: relative; background: #111111; min-height: 400px; display: flex; align-items: center; justify-content: center; border: 4px solid #111111; box-shadow: 0 6px 16px rgba(0,0,0,0.15);">
+                <img src="https://www.cgv.vn/media/banner/images/v/n/vnpay_cgv_1100x80.jpg" alt="LAS Promotion Banner" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                <div style="position: absolute; left: 25px; top: 50%; transform: translateY(-50%); color: #fff; font-size: 42px; cursor: pointer; user-select: none; opacity: 0.7; font-weight: bold;">‹</div>
+                <div style="position: absolute; right: 25px; top: 50%; transform: translateY(-50%); color: #fff; font-size: 42px; cursor: pointer; user-select: none; opacity: 0.7; font-weight: bold;">›</div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: center; margin: 40px auto; width: 100%;">
+                <div style="flex: 1; height: 2px; background: linear-gradient(to left, #222, transparent);"></div>
+                <h2 style="font-family: 'Impact', 'Arial Black', sans-serif; font-size: 36px; letter-spacing: 2px; color: #111; margin: 0 25px; text-transform: uppercase; font-weight: 900; line-height: 1;">MOVIE SELECTION</h2>
+                <div style="flex: 1; height: 2px; background: linear-gradient(to right, #222, transparent);"></div>
+            </div>
+
+            <div class="cgv-movie-tab-header">
+                <h1 class="tab-title-main" id="tab-title-now" onclick="switchMovieFilterTab('now_showing')">Phim Đang Chiếu</h1>
+                <span class="tab-title-sub" id="tab-title-coming" onclick="switchMovieFilterTab('coming_soon')">PHIM SẮP CHIẾU</span>
+            </div>
+
+            <div class="cgv-search-bar-container">
+                <span class="search-title-lbl">Tìm Kiếm Phim Nhanh:</span>
+                <input type="text" id="movie-search-input" class="cgv-search-input" placeholder="Nhập tên phim hoặc thể loại bạn muốn tìm kiếm..." oninput="executeMovieRealTimeSearch()" autocomplete="new-password">
+            </div> 
+            
+            <div class="cgv-movie-grid-spec" id="cgv-movie-list"></div>
+
+            <div style="display: flex; align-items: center; justify-content: center; margin: 50px auto 20px auto; width: 100%;">
+                <div style="flex: 1; height: 2px; background: linear-gradient(to left, #222, transparent);"></div>
+                <h2 style="font-family: 'Impact', 'Arial Black', sans-serif; font-size: 36px; letter-spacing: 2px; color: #111; margin: 0 25px; text-transform: uppercase; font-weight: 900; line-height: 1;">EVENT</h2>
+                <div style="flex: 1; height: 2px; background: linear-gradient(to right, #222, transparent);"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+                <div style="border: 1px solid #ddd; background: #fff; padding: 5px;"><img src="https://www.cgv.vn/media/banner/images/7/9/79k_u23_cinema_banner_1_.jpg" style="width:100%; display:block;" alt="Event 1"></div>
+                <div style="border: 1px solid #ddd; background: #fff; padding: 5px;"><img src="https://www.cgv.vn/media/banner/images/m/e/member_day_banner.jpg" style="width:100%; display:block;" alt="Event 2"></div>
+                <div style="border: 1px solid #ddd; background: #fff; padding: 5px;"><img src="https://www.cgv.vn/media/catalog/product/cache/1/image/1800x/71252117777b696995f019344547b749/p/h/phong_ve_uu_dai_240x350_1_.jpg" style="width:100%; display:block;" alt="Event 3"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Chi tiết phim -->
+        <div id="panel-movie-detail" class="cgv-panel">
+            <div class="section-title">Chi Tiết Phim Sinh Động</div>
+            <div class="movie-detail-tabs" style="display: flex; gap: 30px; border-bottom: 1px solid #eee; margin-bottom: 25px;">
+                <button id="tab-btn-info" class="detail-tab-btn active" onclick="switchMovieDetailTab('info')">Thông tin phim</button>
+                <button id="tab-btn-review" class="detail-tab-btn" onclick="switchMovieDetailTab('review')">Đánh giá</button>
+            </div>
+            
+            <div id="detail-tab-info" class="detail-tab-content" style="display: flex; gap: 30px; text-align: left;">
+                <div style="width: 240px; height: 340px; background: #222; color: #e5a93b; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 4px;">🎬 LARGE POSTER</div>
+                <div class="movie-detail-info" style="flex: 1;">
+                    <h2 id="detail-movie-title" style="margin: 0 0 15px 0; color: #e71a0f; font-size: 24px; font-weight: bold;">-</h2>
+                    <p style="margin: 8px 0; font-size: 14px;"><strong>Thể loại: </strong><span id="detail-movie-genre" style="color:#0066cc; font-weight: bold;">-</span></p>
+                    <p style="margin: 8px 0; font-size: 14px;"><strong>Thời lượng: </strong> 135 phút (2 tiếng 15 phút)</p>
+                    <p style="margin: 8px 0; font-size: 14px;"><strong>Định dạng phòng: </strong> 2D l 3D l IMAX l GOLD CLASS</p>
+                    <p style="margin: 8px 0; font-size: 14px;"><strong>Đạo diễn: </strong> Christopher Nolan l <strong>Diễn viên: </strong> Hollywood Stars</p>
+                    <p style="margin: 20px 0 8px 0; font-weight: bold; font-size: 15px; color: #111;">Tóm tắt nội dung phim:</p>
+                    <p style="color: #555; line-height: 1.6; text-align: justify; font-size: 13.5px; margin: 0;">Chào mừng bạn đến với chuyên trang tóm tắt nội dung siêu phẩm điện ảnh đỉnh cao đang khởi chiếu tại cụm rạp LAS Cinemas Vietnam. Tác phẩm hứa đem đến những trải nghiệm bùng nổ cảm xúc kỹ xảo hoành tráng cùng cốt truyện thăng hoa cho người hâm mộ.</p>
+                    <button id="btn-detail-book-now" onclick="handleBookNowClick()" style="background: #e71a0f; color: white; border: none; padding: 12px 40px; font-size: 15px; font-weight: bold; margin-top: 25px; cursor: pointer; border-radius: 4px; box-shadow: 0 4px 6px rgba(231,26,15,0.3);">MUA VÉ NGAY</button>        
+                </div>
+            </div>
+
+            <div id="detail-tab-review" class="detail-tab-content" style="display: none; text-align: left;">
+                <div class="review-input-box" style="background: #fcf8ee; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 30px;">
+                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 15px; color: #333;">Chọn mức độ hài lòng của bạn:</div>
+                    <div class="star-rating" id="star-rating-container" style="font-size: 32px; cursor: pointer; color: #ccc; margin-bottom: 15px; user-select: none;">
+                        <span class="star" data-value="1">★</span><span class="star" data-value="2">★</span><span class="star" data-value="3">★</span><span class="star" data-value="4">★</span><span class="star" data-value="5">★</span>
+                    </div>
+                    <textarea id="review-comment-text" rows="4" style="width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: inherit; font-size: 14px;" placeholder="Chia sẻ cảm nhận của bạn về bộ phim này..."></textarea>
+                    <button onclick="submitReview()" style="background: #e71a0f; color: white; border: none; padding: 12px 25px; font-size: 14px; font-weight: bold; margin-top: 15px; cursor: pointer; border-radius: 4px; box-shadow: 0 4px 6px rgba(231,26,15,0.3);">GỬI ĐÁNH GIÁ</button>
+                </div>
+                <h4 style="font-size: 16px; margin-bottom: 15px; color: #333;">Cộng đồng đánh giá</h4>
+                <div id="reviews-list" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="padding: 15px; border-bottom: 1px solid #eee; background: #fff; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <strong style="color: #0066cc;">Khán giả ẩn danh</strong>
+                            <span style="color: #e5a93b; font-size: 16px;">★★★★★</span>
+                        </div>
+                        <p style="margin: 0; font-size: 14px; color: #444; line-height: 1.5;">Phim quá hay, kỹ xảo đỉnh cao! Chắc chắn sẽ rủ bạn bè đi xem lại lần nữa tại LAS Cinemas.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Đặt vé -->
+        <div id="panel-booking" class="cgv-panel">
+            <div class="las-step-bar-container">
+                <div class="step-item active">1. CHỌN GHẾ</div>
+                <div class="step-item">2. BẮP NƯỚC</div>
+                <div class="step-item">3. THANH TOÁN</div>
+                <div class="step-item">4. THÔNG TIN VÉ</div>
+            </div>
+
+            <div class="booking-two-columns-layout">
+                <div class="left-interactive-column">
+                    <div id="booking-step-1" class="booking-step active">
+                        <div class="select-box-wrapper">
+                            <h3 style="color:#e71a0f; font-weight: bold; margin-top:0;">1. Chọn Phim Trực Thuộc</h3>
+                            <select id="cgv-combo-movie" style="width:100%; padding:10px; font-size:14px; border: 1px solid #777; border-radius:4px;" onchange="onMovieOrTimeChange()"></select>
+                        </div>
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color:#111; text-align: left;">2. Chọn Ngày Chiếu Phim</div>
+                        <div class="cgv-date-selector-wrapper">
+                            <div class="cgv-date-slider-container" id="cgv-dynamic-date-slider"></div>
+                        </div>
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color:#111; text-align: left;">3. Chọn Suất Chiếu Hôm Nay</div>
+                        <div style="background: #fafafa; border: 1px solid #e0e0e0; padding: 15px; margin-bottom: 25px; border-radius: 4px;">
+                            <div class="showtime-grid" id="cgv-showtime-grid"></div>
+                        </div>
+                        <div class="countdown-timer" id="hold-timer" style="background: #fff3cd; color: #856404; padding: 12px; border: 1px solid #ffeeba; font-weight: bold; margin-bottom: 25px; border-radius: 4px; display: none; justify-content: space-between; align-items: center;">
+                            <span>⚠️ Ghế đang được giữ tạm thời trong: <strong id="timer-string" style="font-size: 16px; color: red;">05:00</strong></span>
+                            <button onclick="cancelCurrentTransaction()" style="background: #e71a0f; color: white; border: none; padding: 5px 12px; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 12px;">Hủy giữ</button>
+                        </div>
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px; color:#111; text-align: left;">4. Chọn Ghế Ngồi Phòng Chiếu</div>
+                        <div class="cinema-room">
+                            <div class="screen-curve"></div>
+                            <div class="screen-text">MÀN HÌNH (SCREEN)</div>
+                            <div class="seat-grid" id="cgv-seat-grid"></div>
+                            <div class="seat-legend">
+                                <div class="legend-item"><div class="legend-box" style="background:#666;"></div> Standard</div>
+                                <div class="legend-item"><div class="legend-box" style="background:#b31010;"></div> VIP</div>
+                                <div class="legend-item"><div class="legend-box" style="background:#e25b8b;"></div> Sweetbox</div>
+                                <div class="legend-item"><div class="legend-box" style="background:var(--cgv-gold);"></div> Đang giữ</div>
+                                <div class="legend-item"><div class="legend-box" style="background:var(--cgv-red);"></div> Ghế chọn</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="booking-step-2" class="booking-step">
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px; color:#111; text-align: left;">5. Chọn Tiện Ích Combo Bắp Nước</div>
+                        <div class="fnb-container" id="cgv-fnb-menu" style="display: flex; flex-direction: column;"></div>
+                    </div>
+
+                    <div id="booking-step-3" class="booking-step">
+                        <h3 style="border-bottom: 2px solid #222; padding-bottom: 10px; color: #e71a0f; margin-top: 0;">RÀ SOÁT HÓA ĐƠN</h3>
+                        <div id="review-invoice-content" style="line-height: 1.6; font-size: 14px; margin-bottom: 15px; text-align: left;"></div>
+                        
+                        <div style="background: #f4f2ec; padding: 15px; margin-bottom: 15px; border: 1px dashed #ccc; text-align: left;">
+                            <strong>Mã Voucher (Nhập LAS20 để giảm 20%):</strong>
+                            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                                <input type="text" id="voucher-input" class="cgv-input-text" style="flex:1;" placeholder="Nhập mã giảm giá">
+                                <button onclick="applyVoucher()" class="btn-cgv-submit" style="width: auto; margin-top: 0;">ÁP DỤNG</button>
+                            </div>
+                        </div>
+
+                        <div class="payment-selection-block">
+                            <div class="payment-selection-title">Hình thức thanh toán</div>
+                            <div class="payment-selection-body">
+                                <div class="payment-option-row active" onclick="selectPaymentGatewayType('qr', this)">
+                                    <div class="option-check-circle">✓</div>
+                                    <div class="method-badge-icon badge-mv">Mv</div>
+                                    <div class="method-info-texts">
+                                        <div class="method-main-name">Chuyển khoản / Quét mã QR</div>
+                                        <div class="method-sub-desc">Tự động xuất mã vé trong 30s sau khi chuyển khoản</div>
+                                    </div>
+                                </div>
+                                <div class="payment-option-row" onclick="selectPaymentGatewayType('applepay', this)">
+                                    <div class="option-check-circle">✓</div>
+                                    <div class="method-badge-icon badge-apple">Pay</div>
+                                    <div class="method-info-texts">
+                                        <div class="method-main-name">Apple Pay</div>
+                                    </div>
+                                </div>
+                                <div class="payment-option-row" onclick="selectPaymentGatewayType('momo', this)">
+                                    <div class="option-check-circle">✓</div>
+                                    <div class="method-badge-icon badge-momo">momo</div>
+                                    <div class="method-info-texts">
+                                        <div class="method-main-name">Ví MoMo</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="booking-step-4" class="booking-step">
+                        <div id="final-ticket-result"></div>
+                    </div>
+                </div>
+
+                <div class="right-invoice-sticky-column">
+                    <div class="invoice-info-card">
+                        <h3 style="margin: 0 0 15px 0; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 10px; color:#e5a93b;">THÔNG TIN PHIM</h3>
+                        <p style="margin: 10px 0;">🎬 Phim: <strong id="sum-movie-title" style="color:#ffffff;">-</strong></p>
+                        <p style="margin: 10px 0;">🕒 Suất: <strong id="sum-showtime" style="color: var(--cgv-gold);">-</strong></p>
+                        <p style="margin: 10px 0;">💺 Ghế: <strong id="sum-seats" style="color: var(--cgv-gold);">Chưa chọn</strong></p>
+                        <p style="margin: 10px 0;">🍿 Bắp nước: <strong id="sum-fnb" style="color:#ffffff;">0 Combo</strong></p>
+                    </div>
+                    <div class="invoice-total-card">
+                        <span style="font-size: 12px; font-weight: bold; color: #666666; display: block; margin-bottom: 5px; text-transform: uppercase;">TỔNG ĐƠN HÀNG</span>
+                        <div id="sum-total" style="font-size: 28px; font-weight: 900; color: #e71a0f;">0 đ</div>
+                    </div>
+                    <div class="action-flow-buttons-row">
+                        <button class="btn-flow-back" onclick="goHomeFromBc()">←</button>
+                        <button class="btn-flow-next" id="btn-main-action" onclick="handleMainAction()">Tiếp tục</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Tin tức -->
+        <div id="panel-news" class="cgv-panel">
+            <div style="text-align: center; font-size: 24px; font-weight: bold; color: #111; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 25px 0;">— TIN MỚI VÀ ƯU ĐÃI —</div>
+            <div class="news-grid-layout">
+                <div class="news-promo-card">
+                    <div class="news-card-img-holder" style="background-image: url('https://www.cgv.vn/media/catalog/product/cache/1/image/1800x/71252117777b696995f019344547b749/p/h/phong_ve_uu_dai_240x350_1_.jpg'); background-size: cover;"></div>
+                    <div class="news-card-date">📅 05/06/2026 - 10/06/2026</div>
+                    <div class="news-card-title-text">Đeo Phone Chắc Tay - Nhận Quà Khủng Liền Tay</div>
+                </div>
+                <div class="news-promo-card">
+                    <div class="news-card-img-holder" style="background: #a1dbf1; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#0c6291; font-size: 14px;">DORAEMON KEYCHAIN</div>
+                    <div class="news-card-date">📅 06/06/2026 - 12/06/2026</div>
+                    <div class="news-card-title-text">Xem Phim Doraemon Nhận Ngay Móc Khóa Xinh Xắn</div>
+                </div>
+                <div class="news-promo-card">
+                    <div class="news-card-img-holder" style="background: #b5e2b5; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#184a18; font-size: 14px;">VEXERE VOUCHER 25%</div>
+                    <div class="news-card-date">📅 05/06/2026 - 22/07/2026</div>
+                    <div class="news-card-title-text">Đổi Điểm LAS Rewards Nhận Voucher Giảm 25% Vexere</div>
+                </div>
+                <div class="news-promo-card">
+                    <div class="news-card-img-holder" style="background: #f1b2b2; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#6b1212; font-size: 14px;">4 SẢN PHẨM KHÁC NHAU</div>
+                    <div class="news-card-date">📅 01/06/2026 - 31/08/2026</div>
+                    <div class="news-card-title-text">Đổi Quà Khủng Nhận Ngay Bộ Sưu Tập Bình Nước Cinema</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Hồ sơ người dùng -->
+        <div id="panel-profile" class="cgv-panel">
+            <div class="cgv-profile-layout">
+                <div class="profile-arrow-sidebar">
+                    <h2 class="sidebar-main-title">TÀI KHOẢN LAS</h2>
+                    <div class="arrow-menu-list">
+                        <button class="arrow-btn active" id="pro-subtab-btn-chung" onclick="switchProfileSubTab('chung')">THÔNG TIN CHUNG</button>
+                        <button class="arrow-btn" id="pro-subtab-btn-chitiet" onclick="switchProfileSubTab('chitiet')">CHI TIẾT TÀI KHOẢN</button>
+                        <button class="arrow-btn" id="pro-subtab-btn-matma" onclick="switchProfileSubTab('matma')">CÀI MẶT MÃ THANH TOÁN</button>
+                        <button class="arrow-btn" id="pro-subtab-btn-the" onclick="switchProfileSubTab('the')">THẺ THÀNH VIÊN</button>
+                        <button class="arrow-btn" id="pro-subtab-btn-diem" onclick="switchProfileSubTab('diem')">ĐIỂM THƯỞNG</button>
+                        <button class="arrow-btn" id="pro-subtab-btn-lichsu" onclick="switchProfileSubTab('lichsu')">LỊCH SỬ GIAO DỊCH</button>
+                    </div>
+                </div>
+
+                <div class="profile-content-display">
+                    <div id="pro-panel-chung" class="profile-sub-content active">
+                        <div class="sub-content-header-title">THÔNG TIN CHUNG</div>
+                        <div class="profile-top-summary">
+                            <div class="summary-avatar-zone">
+                                <div class="avatar-placeholder-img" id="profile-avatar">👤</div>
+                                <button class="btn-black-action">Thay đổi</button>
+                            </div>
+                            <div class="summary-barcode-zone">
+                                <div style="font-size: 12px; color: #333; text-align: right;">Thẻ thành viên</div>
+                                <div class="mock-barcode-img">
+                                    <div><div class="line-bar"></div><div class="line-bar thick"></div><div class="line-bar"></div><div class="line-bar thick"></div><div class="line-bar"></div></div>
+                                    <span class="barcode-label">Barcode</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="welcome-text-line">
+                            <strong style="font-size: 14px;" id="profile-greeting">Xin chào Khách,</strong><br>
+                            Với trang này, bạn sẽ quản lý được tất cả thông tin tài khoản của mình.
+                        </div>
+
+                        <div class="cgv-membership-dashboard-table">
+                            <div class="dashboard-column info-col">
+                                <p><span>Cấp Độ Thẻ</span> <span><span style="color:#e5a93b;">★</span> <span style="color:#0066cc; font-weight: bold;">MEMBER</span></span></p>
+                                <p><span>Tổng Chi Tiêu</span> <span>0 đ</span></p>
+                                <p><span>Điểm LAS</span> <span>0 P</span></p>
+                            </div>
+                            <div class="dashboard-column action-col">
+                                <span style="font-size: 11px; color: #555; text-transform: uppercase;">Thẻ Thành Viên</span>
+                                <span style="font-size: 28px; font-weight: 900; color: #e71a0f;">1</span>
+                                <button class="btn-black-action" style="margin-top: 0;" onclick="switchProfileSubTab('the')">Xem</button>
+                            </div>
+                        </div>
+
+                        <div class="account-details-section">
+                            <div style="font-size: 14px; color: #333; margin-bottom: 15px;">Thông tin tài khoản</div>
+                            <div class="details-sub-row">
+                                <span style="font-size: 12px; color: #555; text-transform: uppercase;">LIÊN HỆ</span>
+                                <button class="btn-black-action" style="margin: 0;" onclick="activateEditableFormFields()">Thay đổi</button>
+                            </div>
+                            <div class="profile-input-forms-grid">
+                                <div class="profile-input-group"><label>Họ và tên</label><input type="text" id="profile-field-name" class="profile-readonly-input" value="" readonly></div>
+                                <div class="profile-input-group"><label>Số điện thoại</label><input type="text" id="profile-field-phone" class="profile-readonly-input" value="" readonly></div>
+                                <div class="profile-input-group"><label>Địa chỉ Email</label><input type="text" id="profile-field-email" class="profile-readonly-input" value="" readonly></div>
+                                <div class="profile-input-group"><label>Ngày sinh</label><input type="text" id="profile-field-birth" class="profile-readonly-input" value="" readonly></div>
+                                <div class="profile-input-group" style="grid-column: span 2;"><label>Giới tính</label><input type="text" id="profile-field-gender" class="profile-readonly-input" value="" readonly></div>
+                            </div>
+                            <button class="btn-cgv-submit" id="btn-save-profile" style="display: none; width: 100%; margin-top: 25px;" onclick="saveUpdatedProfileInformationData()">LƯU THÔNG TIN KHÁCH HÀNG</button>
+                        </div>
+                    </div>
+
+                    <div id="pro-panel-chitiet" class="profile-sub-content"><div class="sub-content-header-title">CHI TIẾT TÀI KHOẢN</div><p style="padding: 20px; color:#666;">Cấu hình dữ liệu hồ sơ nâng cao.</p></div>
+                    <div id="pro-panel-matma" class="profile-sub-content"><div class="sub-content-header-title">CÀI MẶT MÃ THANH TOÁN</div><p style="padding: 20px; color:#666;">Thiết lập mã PIN giao dịch bảo mật.</p></div>
+                    <div id="pro-panel-the" class="profile-sub-content"><div class="sub-content-header-title">THẺ THÀNH VIÊN CARD</div><p style="padding: 20px; color:#666;">Mã thẻ cứng vật lý định danh thành viên.</p></div>
+                    <div id="pro-panel-diem" class="profile-sub-content"><div class="sub-content-header-title">ĐIỂM THƯỞNG TÍCH LŨY</div><p style="padding: 20px; color:#666;">Số điểm LAS point đang tích lũy.</p></div>
+                    <div id="pro-panel-lichsu" class="profile-sub-content">
+                        <div class="sub-content-header-title">LỊCH SỬ GIAO DỊCH VÉ</div>
+                        <div id="cgv-invoice-zone" style="padding: 15px;"><p style="color:#777; font-size: 13px;">Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ----------------------------------------------------- -->
+        <!-- KHU VỰC B: CHÍNH SÁCH VÀ THÔNG TIN (INFO PANELS)      -->
+        <!-- ----------------------------------------------------- -->
+        
+        <!-- Giới thiệu -->
+        <div id="panel-about" class="cgv-panel">
+            <div style="text-align: center; font-size: 24px; font-weight: bold; color: #111; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 25px 0;">— GIỚI THIỆU VỀ LAS CINEMAS —</div>
+            <div class="about-container">
+                <p><strong>LAS Cinemas</strong> tự hào là hệ thống rạp chiếu phim hiện đại do <strong>LumiAI System</strong> phát triển.</p>
+            </div>
+        </div>
+
+        <!-- Điều khoản chung -->
+        <div id="panel-terms" class="cgv-panel">
+            <div style="text-align: center; font-size: 24px; font-weight: bold; color: #111; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 25px 0;">— ĐIỀU KHOẢN CHUNG —</div>
+            <div class="about-container">
+                <p>Chào mừng bạn đến với website <strong>las.vn</strong>.</p>
+            </div>
+        </div>
+
+        <!-- Điều khoản giao dịch -->
+        <div id="panel-transaction-terms" class="cgv-panel">
+            <div style="text-align: center; font-size: 24px; font-weight: bold; color: #111; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 25px 0;">— ĐIỀU KHOẢN GIAO DỊCH TRỰC TUYẾN —</div>
+            <div class="about-container" style="max-height: 500px; overflow-y: auto; padding-right: 15px;">
+                <p>Chào mừng Quý Khách Hàng đến với hệ thống đặt vé trực tuyến của <strong>CÔNG TY TNHH CJ LAS VIỆT NAM</strong>.</p>
+            </div>
+        </div>
+
+        <!-- Chính sách bảo mật -->
+        <div id="panel-privacy-policy" class="cgv-panel">
+            <div style="text-align: center; font-size: 24px; font-weight: bold; color: #111; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 25px 0;">— CHÍNH SÁCH BẢO MẬT THÔNG TIN CÁ NHÂN —</div>
+            <div class="about-container" style="max-height: 500px; overflow-y: auto; padding-right: 15px;">
+                <p>Chào mừng bạn đến với <strong>CÔNG TY TNHH CJ LAS VIỆT NAM</strong>.</p>
+            </div>
+        </div>
+
+        <!-- Nội quy rạp -->
+        <div id="panel-cinema-rules" class="cgv-panel">
+            <div style="text-align: center; font-size: 24px; font-weight: bold; color: #111; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 25px 0;">— NHỮNG QUY ĐỊNH TẠI RẠP PHIM LAS CINEMAS —</div>
+            <div class="about-container" style="max-height: 500px; overflow-y: auto; padding-right: 15px;">
+                <h4 style="color: #e71a0f; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 0;">I. NỘI QUY PHÒNG CHIẾU</h4>
+                <ul style="color: #444; line-height: 1.8; font-size: 14px;">
+                    <li>Không quay phim, chụp ảnh.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- FAQ -->
+        <div id="panel-faq" class="cgv-panel">
+            <div style="text-align: center; font-size: 24px; font-weight: bold; color: #111; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 25px 0;">— CÂU HỎI THƯỜNG GẶP (FAQ) —</div>
+            <div class="about-container" style="max-height: 600px; overflow-y: auto; padding-right: 15px;">
+                <h4 style="color: #e71a0f; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 0;">I. THÔNG TIN VỀ PHIM & SUẤT CHIẾU</h4>
+            </div>
+        </div>
+
+        <!-- ----------------------------------------------------- -->
+        <!-- KHU VỰC C: QUẢN TRỊ VIÊN & NHÂN VIÊN (INTERNAL)       -->
+        <!-- ----------------------------------------------------- -->
+
+        <!-- PANEL: ADMIN (Quản trị hệ thống) -->
+        <div id="panel-admin-dashboard" class="cgv-panel" style="display: none; background: #f4f6f9; padding: 0;">
+            <div class="admin-layout">
+                <div class="admin-sidebar">
+                    <h2 class="admin-logo">⚙️ QUẢN TRỊ RẠP</h2>
+                    <ul class="admin-nav-list">
+                        <li class="admin-nav-item" id="nav-admin-ban" onclick="switchAdminTab('ban')">🚫 Account Ban/Unban</li>
+                        <li class="admin-nav-item" id="nav-admin-permission" onclick="switchAdminTab('permission')">🔐 Permission Mapping</li>
+                        <li class="admin-nav-item" id="nav-admin-config" onclick="switchAdminTab('config')">⚙️ Core System Config</li>
+                        <li class="admin-nav-item" id="nav-admin-syslog" onclick="switchAdminTab('syslog')">📋 System Log Viewer</li>
+                        <li class="admin-nav-item" id="nav-admin-banner" onclick="switchAdminTab('banner')">🖼️ Banner Config</li>
+                        <li class="admin-nav-item" id="nav-admin-faq" onclick="switchAdminTab('faq')">❓ FAQ Management</li>
+                        <li class="admin-nav-item" id="nav-admin-webhook" onclick="switchAdminTab('webhook')">🔗 Webhook Log Viewer</li>
+                        <li class="admin-nav-item" id="nav-admin-db" onclick="switchAdminTab('db')">💾 Database Backup</li>
+                    </ul>
+                </div>
+                <div class="admin-main-content">
+                    <div id="admin-tab-overview" class="admin-tab-section active">
+                        <h3 class="admin-section-title">BÁO CÁO KẾT QUẢ KINH DOANH TRONG NGÀY</h3>
+                        <p style="color: #666;">Chọn các chức năng bên menu trái để xem chi tiết.</p>
+                    </div>
+                    
+                    <div id="admin-tab-ban" class="admin-tab-section" style="display: none;">
+                        <h3 class="admin-section-title">ACCOUNT BAN/UNBAN</h3>
+                        <div class="admin-table-wrapper">
+                            <table class="admin-data-table">
+                                <thead><tr><th>ID</th><th>Email</th><th>Chức vụ</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
+                                <tbody id="admin-ban-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="admin-tab-permission" class="admin-tab-section" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; margin-bottom: 25px; padding-bottom: 10px;">
+                            <h3 class="admin-section-title" style="border: none; margin: 0; padding: 0;">PERMISSION MAPPING</h3>
+                            <button class="btn-cgv-submit" style="width: auto; margin: 0; padding: 8px 15px; font-size: 13px;">+ THÊM QUYỀN MỚI</button>
+                        </div>
+                        <div class="admin-table-wrapper">
+                            <table class="admin-data-table">
+                                <thead><tr><th>Vai trò (Role)</th><th>Phân hệ (Module)</th><th>Cấp độ truy cập</th><th>Hành động</th></tr></thead>
+                                <tbody id="admin-permission-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="admin-tab-config" class="admin-tab-section" style="display: none;">
+                        <h3 class="admin-section-title">CORE SYSTEM CONFIG</h3>
+                        <div class="admin-table-wrapper">
+                            <table class="admin-data-table">
+                                <thead><tr><th>Khóa cấu hình (Key)</th><th>Giá trị (Value)</th><th>Mô tả chức năng</th><th>Hành động</th></tr></thead>
+                                <tbody id="admin-config-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="admin-tab-banner" class="admin-tab-section" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; margin-bottom: 25px; padding-bottom: 10px;">
+                            <h3 class="admin-section-title" style="border: none; margin: 0; padding: 0;">BANNER CONFIG</h3>
+                            <button class="btn-cgv-submit" style="width: auto; margin: 0; padding: 8px 15px; font-size: 13px;">+ UPLOAD BANNER</button>
+                        </div>
+                        <div class="admin-table-wrapper">
+                            <table class="admin-data-table">
+                                <thead><tr><th>Hình ảnh Demo</th><th>Tiêu đề Banner</th><th>Đường dẫn (Link)</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
+                                <tbody id="admin-banner-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="admin-tab-syslog" class="admin-tab-section" style="display: none;">
+                        <h3 class="admin-section-title">SYSTEM LOG VIEWER</h3>
+                        <div class="admin-table-wrapper">
+                            <table class="admin-data-table">
+                                <thead><tr><th>Thời gian</th><th>Hành động</th><th>Người dùng</th><th>Trạng thái</th></tr></thead>
+                                <tbody id="admin-syslog-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="admin-tab-faq" class="admin-tab-section" style="display: none;">
+                        <h3 class="admin-section-title">FAQ MANAGEMENT</h3>
+                        <div class="admin-table-wrapper">
+                            <table class="admin-data-table">
+                                <thead><tr><th>Câu hỏi</th><th>Trả lời</th><th>Hành động</th></tr></thead>
+                                <tbody id="admin-faq-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="admin-tab-webhook" class="admin-tab-section" style="display: none;">
+                        <h3 class="admin-section-title">WEBHOOK LOG</h3>
+                        <div class="admin-table-wrapper">
+                            <table class="admin-data-table">
+                                <thead><tr><th>Thời gian</th><th>Nguồn</th><th>Payload Dữ liệu</th><th>HTTP Status</th></tr></thead>
+                                <tbody id="admin-webhook-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="admin-tab-db" class="admin-tab-section" style="display: none;">
+                        <h3 class="admin-section-title">DATABASE BACKUP / RESTORE</h3>
+                        <div class="admin-table-wrapper">
+                            <table class="admin-data-table">
+                                <thead><tr><th>Mã bản sao lưu</th><th>Ngày giờ</th><th>Dung lượng</th><th>Hình thức</th><th>Thao tác</th></tr></thead>
+                                <tbody id="admin-db-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL: MANAGER (Quản lý Rạp - Chứa 4 Tabs) -->
+        <div id="panel-manager-dashboard" class="cgv-panel" style="display: none; padding: 0;">
+            <div class="manager-pro-layout">
+                
+                <!-- SIDEBAR MANAGER -->
+                <div class="mp-sidebar">
+                    <div class="mp-logo-zone">
+                        <div class="mp-logo-icon">🎬</div>
+                        CinemaManager Pro
+                    </div>
+                    <ul class="mp-nav-list">
+                        <li class="mp-nav-item active" id="mp-nav-dashboard" onclick="switchMpTab('dashboard')">
+                            <span class="mp-nav-icon">📊</span>
+                            <div class="mp-nav-text"><strong>Dashboard</strong><span class="mp-nav-subtext">Tổng quan</span></div>
+                        </li>
+                        <li class="mp-nav-item" id="mp-nav-movies" onclick="switchMpTab('movies')">
+                            <span class="mp-nav-icon">🎞️</span>
+                            <div class="mp-nav-text">Quản lý<span class="mp-nav-subtext">Danh mục Phim</span></div>
+                        </li>
+                        <li class="mp-nav-item" id="mp-nav-matrix" onclick="switchMpTab('matrix')">
+                            <span class="mp-nav-icon">📅</span>
+                            <div class="mp-nav-text">Ma trận<span class="mp-nav-subtext">Lịch chiếu</span></div>
+                        </li>
+                        <li class="mp-nav-item" id="mp-nav-fnb" onclick="switchMpTab('fnb')">
+                            <span class="mp-nav-icon">🍿</span>
+                            <div class="mp-nav-text">Kho &<span class="mp-nav-subtext">Dịch vụ F&B</span></div>
+                        </li>
+                        <li class="mp-nav-item" id="mp-nav-promo" onclick="switchMpTab('promo')">
+                            <span class="mp-nav-icon">🎟️</span>
+                            <div class="mp-nav-text">Chiến dịch<span class="mp-nav-subtext">Khuyến mãi</span></div>
+                        </li>
+                        <li class="mp-nav-item" id="mp-nav-audit" onclick="switchMpTab('audit')">
+                            <span class="mp-nav-icon">📈</span>
+                            <div class="mp-nav-text">Báo cáo &<span class="mp-nav-subtext">Kiểm toán</span></div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- MAIN CONTENT MANAGER -->
+                <div class="mp-main-content" style="position: relative;">
+                    
+                    <!-- Header dùng chung -->
+                    <div class="mp-header">
+                        <h2 class="mp-title" id="mp-dynamic-title">Tổng quan hoạt động rạp</h2>
+                        <div class="mp-header-utils">
+                            <div class="mp-date-badge">20/06/2026</div>
+                            
+                            <div class="mp-bell" onclick="toggleNotifDropdown()">
+                                🔔
+                            </div>
+                            
+                            <div class="mp-notif-dropdown" id="mp-notif-dropdown">
+                                <div class="mp-notif-header">Thông báo mới</div>
+                                <div class="mp-notif-item"><span>🎟️</span> <div><strong>Sắp chiếu: 'Minions: The Rise of Gru' (Phòng 2)</strong><br>2 phút trước</div></div>
+                                <div class="mp-notif-item"><span>📅</span> <div><strong>Lịch chiếu mới cần phê duyệt</strong><br>10 phút trước</div></div>
+                                <div class="mp-notif-item"><span>📦</span> <div><strong>Nhập kho F&B hoàn tất</strong><br>1 giờ trước</div></div>
+                                <button class="mp-notif-btn">Xem tất cả</button>
+                            </div>
+
+                            <div class="mp-profile" style="cursor: pointer; position: relative;" onclick="toggleUserDropdown()">
+                                <div class="mp-avatar">👨‍💼</div>
+                                <div class="mp-user-info">
+                                    <span class="mp-user-name">Nguyễn Văn A ▾</span>
+                                    <span class="mp-user-role">Quản lý</span>
+                                </div>
+                                
+                                <div class="mp-user-dropdown" id="mp-user-dropdown">
+                                    <div class="mp-user-dropdown-header">Chào, Nguyễn Văn A</div>
+                                    <div class="mp-dropdown-item">👤 Hồ sơ cá nhân</div>
+                                    <div class="mp-dropdown-item">⚙️ Cài đặt tài khoản</div>
+                                    <div class="mp-dropdown-item">↩️ Hoạt động gần đây</div>
+                                    <div class="mp-dropdown-item">❓ Hỗ trợ</div>
+                                    <div class="mp-dropdown-item logout" onclick="confirmCgvLogoutAction()">→ Đăng xuất</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 1: DASHBOARD TỔNG QUAN -->
+                    <div id="mp-tab-dashboard" class="mp-tab-section active">
+                        <div class="mp-metrics-grid">
+                            <div class="mp-card">
+                                <div class="mp-card-icon">💰</div>
+                                <div class="mp-card-info">
+                                    <div class="mp-card-title">Doanh thu hôm nay</div>
+                                    <div class="mp-card-value">125,000,000 <span style="font-size: 12px; font-weight: normal;">VND</span></div>
+                                    <div class="mp-trend-up">↗ +15% vs hôm qua</div>
+                                </div>
+                            </div>
+                            <div class="mp-card">
+                                <div class="mp-card-icon">🎟️</div>
+                                <div class="mp-card-info">
+                                    <div class="mp-card-title">Vé đã xuất</div>
+                                    <div class="mp-card-value">1,240 <span style="font-size: 14px; font-weight: normal;">vé</span></div>
+                                </div>
+                            </div>
+                            <div class="mp-card">
+                                <div class="mp-card-icon">💺</div>
+                                <div class="mp-card-info">
+                                    <div class="mp-card-title">Tỷ lệ lấp đầy ghế</div>
+                                    <div class="mp-card-value">78%</div>
+                                    <div class="mp-progress-bar"><div class="mp-progress-fill"></div></div>
+                                </div>
+                            </div>
+                            <div class="mp-card">
+                                <div class="mp-card-icon">🍿</div>
+                                <div class="mp-card-info">
+                                    <div class="mp-card-title">Combo F&B bán ra</div>
+                                    <div class="mp-card-value">450 <span style="font-size: 14px; font-weight: normal;">combo</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mp-charts-zone">
+                            <div class="mp-box">
+                                <h3 class="mp-box-title">Biến động doanh thu 7 ngày gần nhất</h3>
+                                <div class="mp-bar-chart">
+                                    <div class="mp-y-axis"><span>100M</span><span>75M</span><span>50M</span><span>25M</span><span>0</span></div>
+                                    <div class="mp-bar" style="height: 25%; background: #ef5350;"><span class="mp-bar-label">14/06</span></div>
+                                    <div class="mp-bar" style="height: 55%; background: #ff9800;"><span class="mp-bar-label">15/06</span></div>
+                                    <div class="mp-bar" style="height: 40%; background: #ffca28;"><span class="mp-bar-label">16/06</span></div>
+                                    <div class="mp-bar" style="height: 65%; background: #26a69a;"><span class="mp-bar-label">17/06</span></div>
+                                    <div class="mp-bar" style="height: 90%; background: #42a5f5;"><span class="mp-bar-label">18/06</span></div>
+                                    <div class="mp-bar" style="height: 80%; background: #ab47bc;"><span class="mp-bar-label">19/06</span></div>
+                                    <div class="mp-bar" style="height: 60%; background: #26a69a;"><span class="mp-bar-label">20/06</span></div>
+                                </div>
+                            </div>
+                            <div class="mp-box">
+                                <h3 class="mp-box-title">Cơ cấu doanh thu</h3>
+                                <div class="mp-donut-chart">
+                                    <div class="mp-donut-circle">
+                                        <div class="mp-donut-hole"></div>
+                                        <div class="mp-donut-labels"><span class="mp-label-30">30%</span><span class="mp-label-70">70%</span></div>
+                                    </div>
+                                </div>
+                                <div class="mp-legend">
+                                    <div class="mp-legend-item"><div class="mp-dot" style="background: #1976d2;"></div> Vé xem phim</div>
+                                    <div class="mp-legend-item"><div class="mp-dot" style="background: #f57c00;"></div> Bắp nước</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mp-box">
+                            <h3 class="mp-box-title">Top 5 phim thịnh hành nhất</h3>
+                            <table class="mp-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tên phim</th><th>Phân loại tuổi</th><th style="text-align: center;">Tổng số suất chiếu</th><th style="text-align: center;">Lượng vé bán ra</th><th style="text-align: right;">Tổng doanh thu</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><strong>Mắt Biếc</strong></td><td>T16</td><td style="text-align: center;">58</td><td style="text-align: center;">272</td><td style="text-align: right;">125,000 VND</td></tr>
+                                    <tr><td><strong>Lật Mặt 7</strong></td><td>T13</td><td style="text-align: center;">29</td><td style="text-align: center;">331</td><td style="text-align: right;">115,000 VND</td></tr>
+                                    <tr><td><strong>Mai</strong></td><td>T18</td><td style="text-align: center;">30</td><td style="text-align: center;">250</td><td style="text-align: right;">87,000 VND</td></tr>
+                                    <tr><td><strong>Doraemon 2026</strong></td><td>P</td><td style="text-align: center;">20</td><td style="text-align: center;">350</td><td style="text-align: right;">50,000 VND</td></tr>
+                                    <tr><td><strong>Bố Già</strong></td><td>T13</td><td style="text-align: center;">19</td><td style="text-align: center;">300</td><td style="text-align: right;">20,000 VND</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: QUẢN LÝ PHIM -->
+                    <div id="mp-tab-movies" class="mp-tab-section" style="display: none;">
+                        <div class="mp-action-bar">
+                            <button class="mp-btn-add">Thêm Phim Mới</button>
+                            <div class="mp-filters">
+                                <div class="mp-search-box"><span class="mp-search-icon">🔍</span><input type="text" placeholder="Tìm kiếm phim"></div>
+                                <select class="mp-filter-select"><option>Status</option></select>
+                                <select class="mp-filter-select"><option>Genre</option></select>
+                                <select class="mp-filter-select"><option>Age Rating</option></select>
+                            </div>
+                        </div>
+                        <div class="mp-box" style="padding: 0; overflow: hidden;">
+                            <table class="mp-table mp-movie-table">
+                                <thead style="background: #fdfcf7;">
+                                    <tr>
+                                        <th style="width: 40px; text-align: center;">👍</th><th>Movie Title (VN/EN)</th><th>Duration</th><th>Age Rating</th><th>Genre</th><th>Status</th><th>Release Date</th><th style="text-align: center;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="text-align: center;">□</td>
+                                        <td>
+                                            <div class="mp-movie-info">
+                                                <img src="https://www.cgv.vn/media/catalog/product/cache/1/thumbnail/190x260/2e2b8cd282892c71872b9e67d2cb5039/m/i/minions_2_-_payoff_poster_-_1_1_.jpg" class="mp-movie-poster" alt="Minions">
+                                                <div><div class="mp-movie-title-vn">Minions: The Rise of Gru</div><div class="mp-movie-title-en">Minions: The Rise of Gru</div></div>
+                                            </div>
+                                        </td>
+                                        <td>20:00</td><td><div class="mp-age-badges"><span class="mp-badge c18">C18</span><span class="mp-badge c13">C13</span><span class="mp-badge p">P</span></div></td>
+                                        <td>Phim hoạt hình</td><td><span class="mp-status active">active</span></td><td>10/06/2026</td>
+                                        <td><div class="mp-table-actions"><button class="mp-action-btn">👁️</button><button class="mp-action-btn">✏️</button><button class="mp-action-btn" onclick="openMpDeleteModal()">🗑️</button></div></td>
+                                    </tr>
+                                    <tr class="mp-row-inactive">
+                                        <td style="text-align: center;">□</td>
+                                        <td>
+                                            <div class="mp-movie-info">
+                                                <img src="https://www.cgv.vn/media/catalog/product/cache/1/thumbnail/190x260/2e2b8cd282892c71872b9e67d2cb5039/t/h/thor_love_and_thunder_payoff_poster_1_.jpg" class="mp-movie-poster" alt="Thor">
+                                                <div><div class="mp-movie-title-vn">Thor: Tình yêu và Sấm sét</div><div class="mp-movie-title-en">Thor: Love and Thunder</div></div>
+                                            </div>
+                                        </td>
+                                        <td>20:30</td><td><div class="mp-age-badges"><span class="mp-badge c18">C18</span><span class="mp-badge c13">C13</span><span class="mp-badge p">P</span></div></td>
+                                        <td>Phim hành động</td><td><span class="mp-status inactive">inactive</span></td><td>12/06/2026</td>
+                                        <td><div class="mp-table-actions"><button class="mp-action-btn">👁️</button><button class="mp-action-btn" onclick="openEditMovie()">✏️</button><button class="mp-action-btn" onclick="openMpDeleteModal()">🗑️</button></div></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: MA TRẬN LỊCH CHIẾU -->
+                    <div id="mp-tab-matrix" class="mp-tab-section" style="display: none;">
+                        <div class="mp-action-bar">
+                            <div style="font-weight: bold; color: #333; cursor: pointer;">Lịch chiếu ∨</div>
+                            <div class="mp-filters">
+                                <div class="mp-date-picker">📅 20/06/2026</div>
+                                <button class="mp-btn-add">Tạo suất chiếu mới</button>
+                                <button class="mp-btn-outline">Auto-Schedule</button>
+                            </div>
+                        </div>
+                        <div class="mp-matrix-container">
+                            <div class="mp-matrix-header">
+                                <div class="mp-matrix-room-col"></div>
+                                <div class="mp-matrix-timeline">
+                                    <span>08:00</span><span>09:00</span><span>10:00</span><span>11:00</span><span>12:00</span><span>13:00</span><span>14:00</span><span>16:00</span><span>17:00</span><span>18:00</span><span>19:00</span><span>20:00</span><span>21:00</span><span>22:00</span><span>23:00</span>
+                                </div>
+                            </div>
+                            <div class="mp-matrix-row">
+                                <div class="mp-matrix-room-col"><span class="mp-matrix-room-name">Screen 1</span></div>
+                                <div class="mp-matrix-tracks">
+                                    <div class="mp-track-block mp-bg-yellow" style="left: 3%; width: 25%;"><strong>Minions</strong><br>20:00<br>75/120 Ghế</div>
+                                    <div class="mp-track-block mp-bg-gray" style="left: 31%; width: 5%;">Dọn<br>phòng</div>
+                                    <div class="mp-track-block mp-bg-green" style="left: 38%; width: 8%;"></div>
+                                    <div class="mp-gap-text" style="left: 48%; width: 5%;">15 min</div>
+                                    <div class="mp-track-block mp-bg-blue" style="left: 55%; width: 25%;"><strong>Thor</strong><br>20:00</div>
+                                    <div class="mp-track-block mp-bg-gray" style="left: 85%; width: 5%;">Dọn<br>phòng</div>
+                                </div>
+                            </div>
+                            <div class="mp-matrix-row">
+                                <div class="mp-matrix-room-col"><span class="mp-matrix-room-name">Screen 2</span></div>
+                                <div class="mp-matrix-tracks">
+                                    <div class="mp-track-block mp-bg-yellow" style="left: 4%; width: 18%;"><strong>Minions</strong><br>20:00<br>75/120 Ghế</div>
+                                    <div class="mp-gap-text" style="left: 23%; width: 5%;">15 min</div>
+                                    <div class="mp-track-block mp-bg-blue" style="left: 29%; width: 15%;"><strong>Thor</strong><br>20:00<br>75/120 Ghế</div>
+                                    <div class="mp-track-block mp-bg-blue" style="left: 46%; width: 7%;"><strong>Ti...</strong><br>16:00</div>
+                                    <div class="mp-track-block mp-bg-blue mp-conflict-box" style="left: 55%; width: 20%;">
+                                        <div class="mp-conflict-tooltip"><div class="mp-icon-error">!</div><div><strong>Xung đột lịch chiếu!</strong><br><span style="font-weight: normal; color: #666;">Phòng chiếu đã có suất khác</span></div></div>
+                                        <strong>Thor</strong><br>20:00<br>75/120 Ghế
+                                    </div>
+                                    <div class="mp-track-block mp-bg-red mp-conflict-box" style="left: 68%; width: 15%; z-index: 6;"><strong>Conan</strong><br>20:00<br>75/20 Ghế</div>
+                                    <div class="mp-track-block mp-bg-gray" style="left: 86%; width: 5%;">Dọn<br>phòng</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: KHO F&B -->
+                    <div id="mp-tab-fnb" class="mp-tab-section" style="display: none;">
+                        <div class="mp-fnb-header-controls">
+                            <div class="mp-fnb-top-row">
+                                <h3 style="margin:0; font-size: 16px; color: #111;">F&B Services & Inventory Control</h3>
+                                <div class="mp-fnb-actions">
+                                    <button class="mp-btn-add">Thêm sản phẩm mới</button>
+                                    <button class="mp-btn-add" style="background: #d32f2f;">Nhập hàng</button>
+                                    <button class="mp-btn-add" style="background: #c62828;">Tái cung ứng</button>
+                                </div>
+                            </div>
+                            <div class="mp-fnb-bottom-row">
+                                <div class="mp-search-box"><span class="mp-search-icon">🔍</span><input type="text" placeholder="Search"></div>
+                                <div class="mp-filters">
+                                    <select class="mp-filter-select" style="width: 120px;"><option>Type</option></select>
+                                    <select class="mp-filter-select" style="width: 120px;"><option>Status</option></select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mp-box" style="padding: 0; position: relative;">
+                            <table class="mp-table mp-fnb-table">
+                                <thead style="background: #fdfcf7;">
+                                    <tr>
+                                        <th style="width: 40px; text-align: center;"><input type="checkbox"></th>
+                                        <th style="width: 60px; text-align: center;">Hình ảnh</th>
+                                        <th>Tên sản phẩm</th>
+                                        <th>Loại</th>
+                                        <th>Mô tả chi tiết</th>
+                                        <th style="text-align: right;">Giá bán</th>
+                                        <th style="text-align: center;">Tồn kho<br><span style="font-size:10px; font-weight:normal;">(Hiện tại/Tối)</span></th>
+                                        <th style="text-align: center;">Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="text-align: center;"><input type="checkbox"></td>
+                                        <td style="text-align: center;"><div style="font-size:24px;">🍿</div></td>
+                                        <td><strong>Bắp ngọt L</strong></td><td>Bắp rang</td><td style="color:#777; font-size:12px;">Bắp ngô, đường, bơ</td>
+                                        <td style="text-align: right; font-weight:bold;">65,000 VND</td><td style="text-align: center;">120kg / 30kg</td><td style="text-align: center;"><span class="mp-status active">ACTIVE</span></td>
+                                    </tr>
+                                    <tr class="mp-fnb-low-stock-row">
+                                        <td style="text-align: center;"><input type="checkbox"></td>
+                                        <td style="text-align: center;"><div style="font-size:24px;">🥤</div></td>
+                                        <td><strong>Coca-Cola M</strong></td><td>Nước ngọt</td><td style="color:#777; font-size:12px;">Hương vị nguyên bản</td>
+                                        <td style="text-align: right; font-weight:bold;">38,000 VND</td>
+                                        <td style="text-align: center;"><strong>25/40</strong> <span class="mp-badge-lowstock">Low Stock</span></td>
+                                        <td style="text-align: center;"><span class="mp-status active">ACTIVE</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align: center;"><input type="checkbox"></td>
+                                        <td style="text-align: center;"><div style="font-size:24px;">🥤</div></td>
+                                        <td><strong>Pepsi L</strong></td><td>Nước ngọt</td><td style="color:#777; font-size:12px;">Hương vị nguyên bản</td>
+                                        <td style="text-align: right; font-weight:bold;">38,000 VND</td><td style="text-align: center;">15/40</td><td style="text-align: center;"><span class="mp-status active">ACTIVE</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="mp-fnb-tooltip">
+                                <div style="color:#f57c00; font-size:16px;">⚠️</div>
+                                <div><strong>Coca-Cola M:</strong> Tồn kho thấp<br><span style="color:#666;">&lt; mức tối thiểu (còn 25 đơn vị)</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- TAB 5: CHIẾN DỊCH KHUYẾN MÃI -->
+                    <div id="mp-tab-promo" class="mp-tab-section" style="display: none;">
+                        <div class="mp-action-bar">
+                            <button class="mp-btn-add" onclick="openCreatePromoModal()">Tạo chiến dịch mới</button>
+                            <div class="mp-filters">
+                                <div class="mp-search-box"><span class="mp-search-icon">🔍</span><input type="text" placeholder="Tìm tên chiến dịch..."></div>
+                                <select class="mp-filter-select"><option>Type</option></select>
+                                <select class="mp-filter-select"><option>Status</option></select>
+                            </div>
+                        </div>
+                        <div class="mp-box" style="padding: 0;">
+                            <table class="mp-table">
+                                <thead style="background: #fdfcf7;">
+                                    <tr>
+                                        <th style="width: 30px;"><input type="checkbox"></th>
+                                        <th>Hình ảnh</th><th>Tên chiến dịch / Mã Promo</th><th>Loại giảm giá</th><th>Giá trị</th><th>Thời gian áp dụng</th><th>Điều kiện</th><th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><input type="checkbox"></td><td>🎟️</td><td><strong>Mừng AI 45K</strong><br>LUMIAI45K</td><td>Giảm giá cố định</td><td>45,000 VND</td><td>01/06 - 31/07/2026</td><td>Hóa đơn >= 150k</td><td><span class="mp-promo-status status-active">ACTIVE</span></td></tr>
+                                    <tr class="mp-promo-expired"><td><input type="checkbox"></td><td>🍿</td><td><strong>Combo Mùa Hè</strong><br>SUMMER2026</td><td>Voucher Combo</td><td>1 Combo</td><td>01/05 - 20/06/2026</td><td>Voucher vật lý</td><td><span class="mp-promo-status status-expired">EXPIRED</span></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Cảnh báo hết hạn -->
+                        <div class="mp-fnb-tooltip" style="bottom: 20px; right: 20px;">
+                            <div style="color:#f57c00; font-size:16px;">⚠️</div>
+                            <div><strong>Mã Voucher: SUMMER2026 - Đã hết hạn.</strong><br><span style="color:#666;">Tỷ lệ sử dụng thấp < dự kiến (chỉ 91 đơn vị)</span></div>
+                        </div>
+                    </div>
+                    <!-- TAB 6: BÁO CÁO & KIỂM TOÁN -->
+                    <div id="mp-tab-audit" class="mp-tab-section" style="display: none;">
+                        <div class="mp-report-filter">
+                            <select class="mp-select-sm"><option>Doanh thu/Đối soát</option></select>
+                            <select class="mp-select-sm"><option>DatePicker</option></select>
+                            <select class="mp-select-sm"><option>VNPAY/PayOS</option></select>
+                            <button class="mp-btn-report mp-btn-export">Xuất báo cáo (PDF/Excel)</button>
+                            <button class="mp-btn-report mp-btn-audit">Đối soát Ngay</button>
+                        </div>
+
+                        <div class="mp-report-grid">
+                            <div class="mp-report-card">Doanh thu hôm nay (20/06/2026)<br><strong style="font-size:18px;">125,000,000 VND</strong></div>
+                            <div class="mp-report-card">Tỷ lệ Lấp đầy Suất chiếu<br><strong style="font-size:18px;">78%</strong></div>
+                            <div class="mp-report-card">Hiệu suất F&B Combo<br><strong style="font-size:18px;">150</strong></div>
+                            <div class="mp-report-card">Đối soát Ngày trước (19/06)<br><strong style="font-size:14px;">125,000,000 VND</strong></div>
+                        </div>
+
+                        <div class="mp-charts-zone">
+                            <div class="mp-box">
+                                <h3 class="mp-box-title">Biến động Doanh thu 7 Ngày gần nhất</h3>
+                                <div style="height:200px; background: #f9f9f9; border-radius:4px; display:flex; align-items:flex-end; justify-content:center; color:#999;">[Vùng biểu đồ Area Chart]</div>
+                            </div>
+                            <div class="mp-box">
+                                <h3 class="mp-box-title">Cơ cấu Doanh thu</h3>
+                                <div style="height:200px; display:flex; align-items:center; justify-content:center;">
+                                    <div class="mp-donut-circle" style="width:120px; height:120px;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mp-box">
+                            <table class="mp-table">
+                                <thead>
+                                    <tr><th>Date</th><th>POS Revenue</th><th>Cổng TTTT Revenue</th><th>Chênh lệch</th><th>Trạng thái Đối soát</th><th>Hành động</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>06/06/2026</td><td>125,000,000 VND</td><td>550,000 VND</td><td style="color:red;">-125,004</td><td><span class="mp-audit-status status-error">Lỗi Chênh lệch</span></td><td>📝</td></tr>
+                                    <tr><td>20/06/2026</td><td>125,000,000 VND</td><td>350,000 VND</td><td style="color:red;">-23,091</td><td><span class="mp-audit-status status-error">Lỗi Chênh lệch</span></td><td>📝</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL: STAFF (Tác vụ nhân viên) -->
+        <div id="panel-staff-dashboard" class="cgv-panel" style="display: none; padding: 20px; background: #fff; border: 1px solid #ddd;">
+            <div style="border-bottom: 2px solid #0066cc; padding-bottom: 10px; margin-bottom: 15px;">
+                <h2 style="color: #0066cc; margin: 0;">📋 HỆ THỐNG TÁC VỤ NHÂN VIÊN (STAFF PANEL)</h2>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div style="background: #eef6ff; padding: 20px; border-radius: 4px; text-align: center;">
+                    <h3>🎟️ Quét Mã Soát Vé Khách Hàng</h3>
+                    <input type="text" placeholder="Nhập mã vé (Ví dụ: LAS-12345)..." style="padding: 10px; width: 70%; margin-bottom: 10px;"><br>
+                    <button style="background:#0066cc; color:#fff; border:none; padding:10px 20px; cursor:pointer; font-weight:bold;">XÁC NHẬN VÉ</button>
+                </div>
+                <div style="background: #eef6ff; padding: 20px; border-radius: 4px; text-align: center;">
+                    <h3>🍿 Quầy Concession (Bắp Nước)</h3>
+                    <button style="background:#111; color:#fff; border:none; padding:10px 20px; cursor:pointer;">Xuất Combo Khách Đặt</button>
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- KẾT THÚC MAIN WRAPPER -->
+
+    <!-- ========================================================= -->
+    <!-- 3. FOOTER                                                 -->
+    <!-- ========================================================= -->
+    <footer style="background-color: #fdfcf7; border-top: 2px solid #222; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 100%;">
+        <div style="width: 100%; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; padding: 40px 20px; box-sizing: border-box; text-align: left; background-color: #fdfcf7;">
+            <div>
+                <h4 style="font-size: 16px; color: #333; margin: 0 0 15px 0; font-weight: bold;">LumiAI System</h4>
+                <ul style="list-style: none; padding: 0; margin: 0; font-size: 14px; line-height: 2.2; color: #555;">
+                    <li style="cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#e71a0f'" onmouseout="this.style.color='#555'" onclick="switchCgvTab('panel-about')">Giới Thiệu</li>
+                </ul>
+            </div>
+            <div>
+                <h4 style="font-size: 16px; color: #333; margin: 0 0 15px 0; font-weight: bold;">Điều khoản sử dụng</h4>
+                <ul style="list-style: none; padding: 0; margin: 0; font-size: 14px; line-height: 2.2; color: #555;">
+                    <li style="cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#e71a0f'" onmouseout="this.style.color='#555'" onclick="switchCgvTab('panel-terms')">Điều Khoản Chung</li>
+                    <li style="cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#e71a0f'" onmouseout="this.style.color='#555'" onclick="switchCgvTab('panel-transaction-terms')">Điều Khoản Giao Dịch</li>
+                    <li style="cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#e71a0f'" onmouseout="this.style.color='#555'" onclick="switchCgvTab('panel-privacy-policy')">Chính Sách Bảo Mật</li>
+                    <li style="cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#e71a0f'" onmouseout="this.style.color='#555'" onclick="switchCgvTab('panel-cinema-rules')">Những Quy Định Tại Rạp Phim</li>
+                    <li style="cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#e71a0f'" onmouseout="this.style.color='#555'" onclick="switchCgvTab('panel-faq')">Câu Hỏi Thường Gặp</li>
+                </ul>
+            </div>
+            <div style="text-align: left;">
+                <h4 style="font-size: 16px; color: #333; margin: 0 0 15px 0; font-weight: bold;">Kết nối với chúng tôi</h4>
+                <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+                    <div style="width: 36px; height: 36px; background: #3b5998; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: bold; cursor: pointer;">f</div>
+                    <div style="width: 36px; height: 36px; background: #c4302b; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; cursor: pointer;">▶</div>
+                    <div style="width: 36px; height: 36px; background: #e1306c; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; cursor: pointer;">📷</div>
+                    <div style="width: 36px; height: 36px; background: #0088CC; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold; cursor: pointer;">Zalo</div>
+                </div>
+                <div style="border: 2px solid #0066cc; border-radius: 6px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 8px; background: #fff; cursor: pointer;">
+                    <div style="background: #0066cc; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold;">✓</div>
+                    <div>
+                        <div style="color: #0066cc; font-weight: bold; font-size: 13px; line-height: 1;">ĐÃ THÔNG BÁO</div>
+                        <div style="color: #0066cc; font-size: 10px; font-weight: bold; line-height: 1.2;">BỘ CÔNG THƯƠNG</div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h4 style="font-size: 16px; color: #333; margin: 0 0 15px 0; font-weight: bold;">Chăm sóc khách hàng</h4>
+                <p style="font-size: 14px; margin: 0 0 10px 0; color: #555;">Hotline: 1900 6017</p>
+                <p style="font-size: 14px; margin: 0 0 10px 0; color: #555; line-height: 1.5;">Giờ làm việc: 8:00 - 22:00 (Tất cả các<br>ngày bao gồm cả Lễ Tết)</p>
+                <p style="font-size: 14px; margin: 0; color: #555;">Email hỗ trợ: hoidap@las.vn</p>
+            </div>
+        </div>
+        <div style="background: #222; color: #aaa; padding: 25px 0; font-size: 12px; text-align: left; border-top: 1px solid #333; width:100%;">
+            <div style="width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; box-sizing: border-box; display: flex; gap: 20px; align-items: flex-start;">
+                <div style="font-size: 28px; font-weight: bold; color: #555; letter-spacing: -1px; line-height: 1;">LAS GROUP</div>
+                <div style="line-height: 1.6;">
+                    <p style="margin: 0; font-weight: bold; color: #ddd; font-size: 13px;">CÔNG TY TNHH CJ LAS VIỆT NAM</p>
+                    <p style="margin: 5px 0 0 0;">Giấy Chứng nhận đăng ký doanh nghiệp: 0303675393 đăng ký lần đầu ngày 31/7/2008, được cấp bởi Sở Kế hoạch và Đầu tư Thành phố Hồ Chí Minh</p>
+                    <p style="margin: 2px 0 0 0;"><b>Địa chỉ:</b> Lầu 2, số 7/28, đường Thành Thái, phường Diên Hồng, Thành phố Hồ Chí Minh, Việt Nam</p>
+                    <p style="margin: 2px 0 0 0;"><b>Đường dây nóng (Hotline):</b> 1900 6017 l <b>COPYRIGHT 2026 LAS CO., LTD. ALL RIGHTS RESERVED</b></p>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<!-- ========================================================= -->
+<!-- 4. MODALS & POPUPS (Mỗi Modal chỉ xuất hiện 1 lần duy nhất) -->
+<!-- ========================================================= -->
+
+<!-- Auth Modal (Login/Register) -->
+<div class="cgv-modal-overlay" id="auth-modal">
+    <div class="cgv-auth-split-box">
+        <div class="cgv-modal-close" onclick="closeAuthModal()">✕</div>
+        <div class="auth-left-form">
+            <div class="cgv-auth-tabs">
+                <button class="cgv-tab-btn active" id="tab-login-btn" onclick="toggleAuthTab('login')">Đăng Nhập</button>
+                <button class="cgv-tab-btn" id="tab-register-btn" onclick="toggleAuthTab('register')">Đăng Ký</button>
+            </div>
+            
+            <!-- Panel Đăng Nhập -->
+            <div class="cgv-auth-content auth-form-panel active" id="form-login-panel">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="font-family: 'Impact', sans-serif; color: #e71a0f; letter-spacing: 1px; margin: 0;">LAS CINEMAS LOGIN</h2>
+                    <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Dành cho Hội viên, Nhân viên và Quản trị viên</p>
+                </div>
+                <div class="cgv-form-group" style="margin-bottom: 15px;">
+                    <label style="font-weight: bold; font-size: 13px; color: #333; display: block; margin-bottom: 5px;">Tài khoản Hệ thống <span>*</span></label>
+                    <input type="text" id="auth-username" class="cgv-input-text" placeholder="Nhập Email hoặc Số điện thoại đăng ký..." autocomplete="off" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px;">
+                </div>
+                <div class="cgv-form-group" style="margin-bottom: 15px;">
+                    <label style="font-weight: bold; font-size: 13px; color: #333; display: block; margin-bottom: 5px;">Mật khẩu mật mã <span>*</span></label>
+                    <div style="position: relative;">
+                        <input type="password" id="auth-password" class="cgv-input-text" placeholder="Nhập mật khẩu an toàn..." autocomplete="new-password" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px;">
+                    </div>
+                </div>
+                <div class="cgv-form-group" style="margin-bottom: 20px;">
+                    <label style="font-weight: bold; font-size: 13px; color: #333; display: block; margin-bottom: 5px;">Xác thực mã bảo vệ Captcha <span>*</span></label>
+                    <div class="captcha-row" style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" class="cgv-input-text captcha-input" id="login-captcha" placeholder="Nhập ký tự..." style="width: 50%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; text-transform: uppercase;">
+                        <div class="captcha-img-box" style="display: flex; align-items: center; justify-content: space-between; border: 1px solid #ccc; background: #f4f2ec; padding: 5px 10px; border-radius: 4px; flex-grow: 1; height: 38px; box-sizing: border-box;">
+                            <span class="captcha-text" id="login-captcha-text" style="letter-spacing: 3px; font-family: 'Georgia', serif; font-weight: bold; font-style: italic; font-size: 20px; color: #111; user-select: none;">IXBLT1</span>
+                            <div class="captcha-refresh" onclick="generateNewLoginCaptcha()" style="color: #e71a0f; font-size: 20px; cursor: pointer; user-select: none; font-weight: bold;">↻</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-cgv-submit" onclick="submitCgvLogin(event)" style="width: 100%; background: #e71a0f; color: white; border: none; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; border-radius: 4px; box-shadow: 0 4px 6px rgba(231,26,15,0.2); transition: all 0.2s;">ĐĂNG NHẬP VÀO HỆ THỐNG</button>
+                <div class="cgv-auth-footer" style="margin-top: 15px; text-align: center; font-size: 13px;">
+                    <a href="#" onclick="openForgotModal(); closeAuthModal();" style="color: #0066cc; text-decoration: none;">Bạn muốn tìm lại mật khẩu bảo mật?</a>
+                </div>
+            </div>
+
+            <!-- Panel Đăng Ký -->
+            <div class="cgv-auth-content auth-form-panel" id="form-register-panel">
+                <div class="scrollable-register-form">
+                    <div class="cgv-form-group"><label>Tên<span>*</span></label><input type="text" id="reg-name" class="cgv-input-text" placeholder="Tên"></div>
+                    <div class="cgv-form-group"><label>Số điện thoại<span>*</span></label><input type="text" id="reg-phone" class="cgv-input-text" placeholder="Số điện thoại"></div>
+                    <div class="cgv-form-group"><label>Email<span>*</span></label><input type="email" id="reg-email" class="cgv-input-text" placeholder="Email"></div>
+                    <div class="cgv-form-group">
+                        <label>Mật khẩu<span>*</span></label>
+                        <div style="position: relative;"><input type="password" id="reg-password" class="cgv-input-text" placeholder="Mật khẩu"><span class="toggle-password-icon" onclick="toggleRegPasswordState()">👁️</span></div>
+                    </div>
+                    <div class="cgv-form-group">
+                        <label>Ngày sinh<span>*</span></label>
+                        <div class="birth-gender-row">
+                            <select class="select-birth" id="reg-birth-day"><option value="">Ngày</option></select>
+                            <select class="select-birth" id="reg-birth-month"><option value="">Tháng</option></select>
+                            <select class="select-birth" id="reg-birth-year"><option value="">Năm</option></select>
+                            <span style="margin: 0 5px; color:#e71a0f;">*</span>
+                            <label class="radio-lbl"><input type="radio" name="gender" value="Nam"> Nam</label>
+                            <label class="radio-lbl"><input type="radio" name="gender" value="Nữ" checked> Nữ</label>
+                        </div>
+                    </div>
+                    <div class="cgv-form-group">
+                        <label>Vui lòng nhập ký tự bên dưới <span>*</span></label>
+                        <div class="captcha-row">
+                            <input type="text" id="reg-captcha" class="cgv-input-text captcha-input">
+                            <div class="captcha-img-box"><span class="captcha-text" id="reg-captcha-text">O3JGB</span><div class="captcha-refresh" onclick="generateNewRegisterCaptcha()">↻</div></div>
+                        </div>
+                    </div>
+                    <div class="policy-checkboxes">
+                        <label class="check-item"><input type="checkbox" class="reg-policy"> <span>Bằng việc bấm nút "Đăng Ký" bên dưới. Tôi đồng ý...</span></label>
+                        <label class="check-item"><input type="checkbox" class="reg-policy"> <span>Thông tin cá nhân cung cấp tại đây là chính xác...</span></label>
+                        <label class="check-item"><input type="checkbox" class="reg-policy"> <span>Tôi đồng ý với <b>Điều Khoản Sử Dụng Của CGV</b></span></label>
+                    </div>
+                    <button class="btn-cgv-submit" style="margin-top: 20px;" onclick="submitCgvRegister(event)">ĐĂNG KÝ</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-right-banner">
+            <div class="slider-arrow arrow-left">‹</div>
+            <div class="banner-slide-content">
+                <div class="banner-illustration"><div class="coin coin-main">★</div><div class="coin coin-sub1"></div><div class="coin coin-sub2"></div></div>
+                <h3 class="banner-title">CHƯƠNG TRÌNH TÍCH ĐIỂM</h3>
+                <p style="font-size:12px; color:#555; margin:0 0 15px 0;">1 điểm = 1.000 VND l tại rạp phim trên toàn quốc</p>
+                <div class="dot-indicators"><span class="dot"></span><span class="dot active"></span><span class="dot"></span></div>
+            </div>
+            <div class="slider-arrow arrow-right">›</div>
+        </div>
+    </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="cgv-modal-overlay" id="forgot-modal">
+    <div class="cgv-forgot-box">
+        <div class="cgv-forgot-header-container"><div class="cgv-forgot-header-tab">Bạn muốn tìm lại mật khẩu?</div></div>
+        <div class="cgv-forgot-body">
+            <div class="cgv-form-group"><label>Email hoặc số điện thoại <span>*</span></label><input type="text" id="forgot-email-input" class="cgv-input-text" style="border: 1px solid #222;" placeholder=""></div>
+            <div class="cgv-form-group" style="margin-top: 20px;">
+                <label>Vui lòng nhập ký tự bên dưới <span>*</span></label>
+                <div class="captcha-row">
+                    <input type="text" id="forgot-captcha-input" class="cgv-input-text cgv-forgot-captcha-box" style="width: 180px; border: 1px solid #222;" placeholder="">
+                    <div class="captcha-img-box" style="flex-grow: 1; justify-content: space-between; border: 1px solid #ccc; background: #fff;">
+                        <span class="captcha-text" id="forgot-captcha-text" style="letter-spacing: 3px; font-family: 'Times New Roman', serif; font-style: italic; font-size: 26px; color: #111;">PM7MMI</span>
+                        <div class="captcha-refresh" onclick="generateForgotCaptcha()" style="color: #d38b4d; font-size: 24px;">↻</div>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-cgv-forgot-submit" onclick="executeForgotRequestSubmit()">GỞI </button>
+            <div style="margin-top: 25px;"><a href="#" class="cgv-forgot-back-link" onclick="closeForgotModal(); openAuthModal(); toggleAuthTab('login');">&laquo; Quay lại trang đăng nhập</a></div>
+        </div>
+    </div>
+</div>
+
+<!-- OTP Modal -->
+<div class="cgv-modal-overlay" id="otp-modal">
+    <div class="cgv-auth-split-box" style="width: 450px; flex-direction: column; padding: 25px; background: #fcf8ee; border-radius: 4px; border: 2px solid #222;">
+        <div class="cgv-modal-close" onclick="closeOtpModal()">✕</div>
+        <h3 style="text-align: center; color: #e71a0f; margin: 0 0 10px 0; font-weight: bold;">XÁC THỰC MÃ OTP</h3>
+        <p style="font-size: 13px; text-align: center; color: #555; line-height: 1.5;">Hệ thống bảo mật đã kích hoạt gửi mã OTP gồm 6 số. Vui lòng nhập để hoàn thành luồng đăng ký tài khoản thành viên.</p>
+        <div class="cgv-form-group" style="text-align: center; margin: 20px 0;">
+            <input type="text" id="otp-input-field" class="cgv-input-text" placeholder="Nhập mã số OTP gồm 6 chữ số" style="text-align: center; font-size: 16px; letter-spacing: 2px;">
+        </div>
+        <button class="btn-cgv-submit" onclick="submitOtpVerification()">XÁC NHẬN KÍCH HOẠT HỒ SƠ</button>
+    </div>
+</div>
+
+<!-- Logout Confirm Modal -->
+<div class="cgv-modal-overlay" id="logout-confirm-modal">
+    <div class="cgv-auth-split-box" style="width: 420px; flex-direction: column; padding: 25px; background: #fcf8ee; text-align: center; border: 2px solid #222; border-radius: 4px;">
+        <h3 style="color: #e71a0f; margin: 0 0 12px 0; font-weight: bold;">CẢNH BÁO ĐĂNG XUẤT</h3>
+        <p style="font-size: 14px; color: #333; margin-bottom: 25px; line-height: 1.4;">Bạn có chắc chắn muốn đăng xuất thoát phiên làm việc an toàn này khỏi LAS Cinemas không?</p>
+        <div style="display: flex; gap: 15px;">
+            <button class="btn-cgv-submit" style="background: #777; margin: 0;" onclick="closeLogoutConfirmModal()">HỦY BỎ</button>
+            <button class="btn-cgv-submit" style="background: #e71a0f; margin: 0;" onclick="confirmCgvLogoutAction()">ĐỒNG Ý THOÁT</button>
+        </div>
+    </div>
+</div>
+
+<!-- Checkout Review Modal -->
+<div class="cgv-modal-overlay" id="checkout-review-modal">
+    <div class="cgv-auth-split-box" style="width: 560px; flex-direction: column; padding: 25px; background: white; max-height: 90vh; overflow-y: auto;">
+        <h3 style="border-bottom: 2px solid #222; padding-bottom: 10px; color: #e71a0f;">RÀ SOÁT HÓA ĐƠN</h3>
+        <div id="review-invoice-content" style="line-height: 1.6; font-size: 14px; margin-bottom: 15px;"></div>
+        
+        <div style="background: #f4f2ec; padding: 15px; margin-bottom: 15px; border: 1px dashed #ccc;">
+            <strong>Mã Voucher (Nhập LAS20 để giảm 20%):</strong>
+            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                <input type="text" id="voucher-input" class="cgv-input-text" style="flex:1;" placeholder="Nhập mã giảm giá">
+                <button onclick="applyVoucher()" class="btn-cgv-submit" style="width: auto; margin-top: 0;">ÁP DỤNG</button>
+            </div>
+        </div>
+
+        <div class="payment-selection-block">
+            <div class="payment-selection-title">Hình thức thanh toán</div>
+            <div class="payment-selection-body">
+                <div class="payment-option-row active" onclick="selectPaymentGatewayType('qr', this)">
+                    <div class="option-check-circle">✓</div><div class="method-badge-icon badge-mv">Mv</div>
+                    <div class="method-info-texts"><div class="method-main-name">Chuyển khoản / Quét mã QR</div></div>
+                </div>
+                <div class="payment-option-row" onclick="selectPaymentGatewayType('applepay', this)">
+                    <div class="option-check-circle">✓</div><div class="method-badge-icon badge-apple">Pay</div>
+                    <div class="method-info-texts"><div class="method-main-name">Apple Pay</div></div>
+                </div>
+                <div class="payment-option-row" onclick="selectPaymentGatewayType('momo', this)">
+                    <div class="option-check-circle">✓</div><div class="method-badge-icon badge-momo">momo</div>
+                    <div class="method-info-texts"><div class="method-main-name">Ví MoMo</div></div>
+                </div>
+                <div class="payment-option-row" onclick="selectPaymentGatewayType('card', this)">
+                    <div class="option-check-circle">✓</div><div class="method-badge-icon badge-payoo">Payoo</div>
+                    <div class="method-info-texts"><div class="method-main-name">Thẻ ATM / Thẻ quốc tế</div></div>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; margin-bottom: 20px;">
+            <span>TỔNG TIỀN THANH TOÁN:</span><span id="review-final-total" style="color: #e71a0f;">0 đ</span>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn-cgv-submit" style="background: #777; margin-top: 0;" onclick="closeCheckoutReview()">QUAY LẠI</button>
+            <button class="btn-cgv-submit" style="margin-top: 0;" onclick="processToPaymentGateway()">XÁC NHẬN THANH TOÁN</button>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Redirect Modal -->
+<div class="cgv-modal-overlay" id="payment-redirect-modal">
+    <div style="background: white; padding: 30px; text-align: center; border-radius: 8px; border: 2px solid #0066cc; width: 400px; position: relative;">
+        <div class="cgv-modal-close" onclick="closePaymentModal()" style="color: #333; top: 10px; right: 15px;">✕</div>
+        <h2 style="color: #0066cc; margin-top: 0; margin-bottom: 5px;">Thanh Toán VNPAY-QR</h2>
+        <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Quét mã QR bằng ứng dụng ngân hàng để thanh toán</p>
+        <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; display: inline-block; background: #f9f9f9;">
+            <img id="bank-qr-img" src="" alt="QR Code" style="width: 200px; height: 200px; border: 1px solid #ccc; display: block; margin: 0 auto;">
+            <div style="margin-top: 15px; font-size: 20px; font-weight: bold; color: #e71a0f;" id="qr-total-price">0 đ</div>
+        </div>
+        <p style="font-size: 13px; color: #333; margin-top: 15px;">Trạng thái: <span style="color: #f57c00; font-weight: bold;">Đang chờ người dùng quét mã...</span></p>
+        <div style="display: flex; gap: 12px; margin-top: 20px; width: 100%;">
+            <button class="btn-cgv-submit" style="background: #777; margin: 0; flex: 1; padding: 12px 0;" onclick="backToPaymentSelection()">QUAY LẠI</button>
+            <button class="btn-cgv-submit" style="background: #10B981; margin: 0; flex: 1; padding: 12px 0;" onclick="executeFinalCheckout()">ĐÃ CHUYỂN KHOẢN THÀNH CÔNG</button>
+        </div>
+    </div>
+</div>
+
+<!-- History Detail Modal -->
+<div class="cgv-modal-overlay" id="history-detail-modal">
+    <div class="cgv-auth-split-box" style="width: 450px; flex-direction: column; padding: 25px; background: #fdfcf7;">
+        <div class="cgv-modal-close" onclick="closeHistoryDetailModal()">✕</div>
+        <h3 style="color: #222; text-align: center;">CHI TIẾT HÓA ĐƠN VÉ</h3>
+        <div id="history-detail-content" style="background: white; padding: 15px; border: 1px solid #ddd; margin-top: 15px;"></div>
+    </div>
+</div>
+
+<!-- Admin Add Movie Modal -->
+<div class="cgv-modal-overlay" id="admin-add-movie-modal">
+    <div class="cgv-auth-split-box" style="width: 500px; flex-direction: column; padding: 25px; background: white;">
+        <div class="cgv-modal-close" onclick="closeAdminMovieModal()">✕</div>
+        <h3 style="color: #e71a0f; margin-top: 0; border-bottom: 2px solid #222; padding-bottom: 10px;">THÊM MỚI PHIM</h3>
+        <div class="cgv-form-group"><label>Tên phim gốc <span>*</span></label><input type="text" id="admin-input-title" class="cgv-input-text" placeholder="Nhập tên phim..."></div>
+        <div class="cgv-form-group"><label>Thể loại <span>*</span></label><input type="text" id="admin-input-genre" class="cgv-input-text" placeholder="VD: Hành Động, Hài Hước..."></div>
+        <div class="cgv-form-group">
+            <label>Trạng thái phát hành <span>*</span></label>
+            <select id="admin-input-status" class="cgv-input-text"><option value="now_showing">Đang chiếu</option><option value="coming_soon">Sắp chiếu</option></select>
+        </div>
+        <button class="btn-cgv-submit" onclick="submitAddNewMovie()">LƯU VÀO HỆ THỐNG</button>
+    </div>
+</div>
+
+<!-- Manager Delete Movie Modal -->
+<div class="cgv-modal-overlay" id="mp-delete-modal">
+    <div class="mp-delete-popup">
+        <div class="mp-delete-header">Xác nhận xóa phim</div>
+        <div class="mp-delete-body">
+            Bạn có chắc chắn muốn xóa phim 'Thor: Tình yêu và Sấm sét' khỏi danh mục hoạt động? Hành động này có thể ảnh hưởng đến các lịch chiếu chưa diễn ra.<br>Vui lòng xác nhận.
+        </div>
+        <div class="mp-delete-footer">
+            <button class="mp-btn-cancel" onclick="closeMpDeleteModal()">HỦY</button>
+            <button class="mp-btn-confirm" onclick="closeMpDeleteModal(); alert('Đã xóa phim thành công!')">XÓA NGAY</button>
+        </div>
+    </div>
+</div>
+<div class="mp-modal-overlay" id="mp-add-movie-modal">
+    <div class="mp-modal-box" style="width: 500px;">
+        <div class="mp-modal-close" onclick="closeAddMovie()">✕</div>
+        <div class="mp-modal-header">Thêm Phim Mới</div>
+        <div class="mp-form-group">
+            <label>Tên phim (VN/EN)</label>
+            <div style="display:flex; gap:10px;">
+                <input type="text" class="cgv-input-text" placeholder="Tiếng Việt">
+                <input type="text" class="cgv-input-text" placeholder="English">
+            </div>
+        </div>
+        <div class="mp-form-group"><label>Thời lượng (phút)</label><input type="text" class="cgv-input-text"></div>
+        <div class="mp-form-group"><label>Ảnh Poster</label><div class="mp-upload-zone">⬆️</div></div>
+        <div class="mp-form-group"><label>Ngày phát hành</label><input type="date" class="cgv-input-text"></div>
+        <div class="mp-form-group"><label>Trạng thái</label>
+            <input type="radio" name="status" checked> Hoạt động 
+            <input type="radio" name="status"> Không hoạt động
+        </div>
+        <button class="btn-cgv-submit" onclick="closeAddMovie()">Lưu</button>
+    </div>
+</div>
+<div class="mp-modal-overlay" id="mp-edit-movie-modal">
+    <div class="mp-modal-box" style="width: 500px;">
+        <div class="mp-modal-close" onclick="closeEditMovie()">✕</div>
+        <div class="mp-modal-header">Chỉnh sửa Phim: Thor: Tình yêu và Sấm sét</div>
+        <div class="mp-form-group">
+            <label>Tên phim (VN/EN)</label>
+            <div style="display:flex; gap:10px;">
+                <input type="text" class="cgv-input-text" value="Thor: Tình yêu và Sấm sét">
+                <input type="text" class="cgv-input-text" value="Thor: Love and Thunder">
+            </div>
+        </div>
+        <div class="mp-form-group"><label>Thời lượng (phút)</label><input type="text" class="cgv-input-text" value="120"></div>
+        <div class="mp-form-group"><label>Ảnh Poster</label><div class="mp-upload-zone" style="padding:10px;"><img src="https://www.cgv.vn/media/catalog/product/cache/1/thumbnail/190x260/2e2b8cd282892c71872b9e67d2cb5039/t/h/thor_love_and_thunder_payoff_poster_1_.jpg" style="height:50px;"></div></div>
+        <div class="mp-form-group"><label>Ngày phát hành</label><input type="date" class="cgv-input-text" value="2026-06-12"></div>
+        <div class="mp-form-group"><label>Phân loại độ tuổi</label><select class="cgv-input-text"><option>C18</option></select></div>
+        <div class="mp-form-group"><label>Trạng thái</label>
+            <input type="radio" name="edit-status"> Hoạt động 
+            <input type="radio" name="edit-status" checked> Không hoạt động
+        </div>
+        <button class="btn-cgv-submit" onclick="closeEditMovie()">Lưu</button>
+    </div>
+</div>
+<div class="cgv-modal-overlay" id="mp-create-promo-modal">
+    <div class="mp-modal-box">
+        <div class="mp-modal-close" onclick="closeCreatePromoModal()">✕</div>
+        <div class="mp-modal-header">Create new promotion/discount</div>
+        <div class="mp-modal-sub">Generate and distribute coupon codes for special events, targeted customers, or marketing campaigns.</div>
+        
+        <div class="mp-input-group">
+            <label>Promotion code</label>
+            <div class="mp-flex-row">
+                <input type="text" class="cgv-input-text" placeholder="Generate promotion code">
+                <button class="mp-btn-generate">+ Generate code</button>
+            </div>
+        </div>
+        <div class="mp-flex-row">
+            <div class="mp-input-group" style="flex:1;"><label>Discount type</label><select class="mp-filter-select" style="width:100%"><option>Select type</option></select></div>
+            <div class="mp-input-group" style="flex:1;"><label>Value</label><input type="text" class="cgv-input-text" placeholder="Amount"></div>
+        </div>
+        <div class="mp-flex-row">
+            <div class="mp-input-group" style="flex:1;"><label>Start date</label><input type="date" class="cgv-input-text"></div>
+            <div class="mp-input-group" style="flex:1;"><label>End date</label><input type="date" class="cgv-input-text"></div>
+        </div>
+        <div class="mp-input-group"><label>Usage limit</label><input type="number" class="cgv-input-text" placeholder="Enter limit"></div>
+        <div class="mp-flex-row">
+            <button class="mp-btn-outline" style="flex:1;" onclick="closeCreatePromoModal()">Cancel</button>
+            <button class="mp-btn-action" style="flex:1; margin-top:0;">Create promotion</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- 5. SCRIPTS (Khu vực nhúng file JS)                        -->
+<!-- ========================================================= -->
+<script src="js/state.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/manager.js"></script>
+<script src="js/booking.js"></script>
+<script src="js/ui.js"></script>
+
+</body>
+</html>
