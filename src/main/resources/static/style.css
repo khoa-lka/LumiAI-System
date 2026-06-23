@@ -3130,3 +3130,34 @@ header {
   background: #e8f5e9;
   color: #2e7d32;
 }
+
+/* Khung upload file */
+.mp-upload-zone {
+  border: 2px dashed #ccc;
+  padding: 20px;
+  text-align: center;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #f9f9f9;
+}
+.mp-upload-zone:hover {
+  border-color: #e71a0f;
+  background: #fff5f5;
+}
+
+/* Nút hủy/lưu màu sắc */
+.mp-btn-cancel {
+  background: #eee;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.mp-btn-confirm {
+  background: #e71a0f;
+  color: white;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
