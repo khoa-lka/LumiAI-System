@@ -239,8 +239,8 @@ window.submitAddMovie = function () {
     country: document.getElementById("add-country").value,
     performer: document.getElementById("add-performer").value,
     synopsis: document.getElementById("add-synopsis").value,
-    mainposterUrl: document.getElementById("add-mainposter").value,
-    subposterUrl: document.getElementById("add-subposter").value,
+    mainposter_url: document.getElementById("add-mainposter").value,
+    subposter_url: document.getElementById("add-subposter").value,
     releaseDate: document.getElementById("add-release").value,
     ageRating: parseInt(document.getElementById("add-age").value) || 0,
     status: document.querySelector('input[name="add_status"]:checked').value,
@@ -307,8 +307,8 @@ window.submitUpdateMovie = function () {
     country: document.getElementById("upd-country").value,
     performer: document.getElementById("upd-performer").value,
     synopsis: document.getElementById("upd-synopsis").value,
-    mainposterUrl: document.getElementById("upd-mainposter").value,
-    subposterUrl: document.getElementById("upd-subposter").value,
+    mainposter_url: document.getElementById("upd-mainposter").value,
+    subposter_url: document.getElementById("upd-subposter").value,
     releaseDate: document.getElementById("upd-release").value,
     ageRating: parseInt(document.getElementById("upd-age").value) || 0,
     status: document.querySelector('input[name="upd_status"]:checked').value,
@@ -406,3 +406,26 @@ window.openViewMovie = function (id) {
 window.closeViewMovie = function () {
   document.getElementById("mp-view-movie-modal").style.display = "none";
 };
+
+// Tính toán thời gian thực
+// Hàm lấy ngày hiện tại định dạng DD/MM/YYYY
+function displayCurrentDate() {
+  const today = new Date();
+
+  // Lấy ngày, tháng, năm và thêm số 0 phía trước nếu < 10 (ví dụ: 06 thay vì 6)
+  const day = String(today.getDate()).padStart(2, "0");
+  const month = String(today.getMonth() + 1).padStart(2, "0"); // Tháng trong JS chạy từ 0-11 nên phải +1
+  const year = today.getFullYear();
+
+  // Ghép chuỗi theo định dạng DD/MM/YYYY
+  const formattedDate = `${day}/${month}/${year}`;
+
+  // Gán vào thẻ HTML
+  const dateBadge = document.getElementById("mp-current-date");
+  if (dateBadge) {
+    dateBadge.innerText = formattedDate;
+  }
+}
+
+// Chạy hàm này ngay khi trang web vừa tải xong giao diện
+document.addEventListener("DOMContentLoaded", displayCurrentDate);

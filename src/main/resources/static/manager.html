@@ -80,7 +80,7 @@
             Tổng quan hoạt động rạp
           </h2>
           <div class="mp-header-utils">
-            <div class="mp-date-badge">20/06/2026</div>
+            <div class="mp-date-badge" id="mp-current-date">--/--/----</div>
             <div class="mp-bell" onclick="toggleNotifDropdown()">🔔</div>
 
             <div class="mp-notif-dropdown" id="mp-notif-dropdown">
@@ -302,16 +302,35 @@
             <div class="mp-filters">
               <div class="mp-search-box">
                 <span class="mp-search-icon">🔍</span>
-                <input type="text" placeholder="Tìm kiếm phim" />
+                <input
+                  type="text"
+                  id="mp-search-input"
+                  placeholder="Tìm kiếm phim"
+                  oninput="filterMovies()"
+                />
               </div>
-              <select class="mp-filter-select">
-                <option>Status</option>
+              <select
+                class="mp-filter-select"
+                id="mp-filter-status"
+                onchange="filterMovies()"
+              >
+                <option value="all">Status</option>
+                <option value="now_showing">Đang chiếu</option>
+                <option value="coming_soon">Sắp chiếu</option>
+                <option value="end_showing">Ngừng chiếu</option>
               </select>
-              <select class="mp-filter-select">
-                <option>Genre</option>
-              </select>
-              <select class="mp-filter-select">
-                <option>Age Rating</option>
+              <select
+                class="mp-filter-select"
+                id="mp-filter-genre"
+                onchange="filterMovies()"
+              >
+                <option value="all">Genre</option>
+                <option value="animation">Animation</option>
+                <option value="sci-fi">Sci-fi</option>
+                <option value="adventure">Adventure</option>
+                <option value="crime">Crime</option>
+                <option value="horror">Horror</option>
+                <option value="mystery">Mystery</option>
               </select>
             </div>
           </div>
