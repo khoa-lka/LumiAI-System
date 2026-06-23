@@ -51,16 +51,17 @@ const API = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(movieData),
     }).then(handleResponse),
+
   updateMovie: (movieData) =>
     fetch(`${BASE_URL}/movies/update`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(movieData),
     }).then(handleResponse),
+
   deleteMovie: (movieId) =>
-    fetch(`${BASE_URL}/movies/delete/${movieId}`, { method: "DELETE" }).then(
-      handleResponse,
-    ),
+    fetch(`${BASE_URL}/movies?id=${movieId}`, { method: "DELETE" }) // Hoặc ${BASE_URL}/movies/delete?id=${movieId} tùy Servlet của em
+      .then(handleResponse),
 
   // 3. EVENTS & BANNERS
   getEvents: () => fetch(`${BASE_URL}/events`).then(handleResponse),
