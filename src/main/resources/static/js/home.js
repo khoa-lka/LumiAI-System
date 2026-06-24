@@ -688,14 +688,16 @@ function switchMovieFilterTab(filter) {
   const mainTitle = document.getElementById("tab-title-now");
   const subTitle = document.getElementById("tab-title-coming");
   currentMovieFilter = filter;
+  const bcCurrentTextEl = document.getElementById("bc-current-text");
+
   if (filter === "now_showing") {
     if (mainTitle) mainTitle.className = "tab-title-main";
     if (subTitle) subTitle.className = "tab-title-sub";
-    document.getElementById("bc-current-text").innerText = "Phim Đang Chiếu";
+    if (bcCurrentTextEl) bcCurrentTextEl.innerText = "Phim Đang Chiếu";
   } else {
     if (mainTitle) mainTitle.className = "tab-title-sub";
     if (subTitle) subTitle.className = "tab-title-main";
-    document.getElementById("bc-current-text").innerText = "Phim Sắp Chiếu";
+    if (bcCurrentTextEl) bcCurrentTextEl.innerText = "Phim Sắp Chiếu";
   }
   window.renderCgvInterface();
 }
@@ -730,8 +732,13 @@ function switchCgvTab(panelId, filterType = "now_showing") {
   if (cgvNavigationHistory[cgvNavigationHistory.length - 1] !== panelId) {
     cgvNavigationHistory.push(panelId);
   }
-  document.getElementById("bc-back-btn").style.display =
-    cgvNavigationHistory.length > 1 ? "inline-block" : "none";
+
+  const bcBackBtnEl = document.getElementById("bc-back-btn");
+  if (bcBackBtnEl) {
+    bcBackBtnEl.style.display =
+      cgvNavigationHistory.length > 1 ? "inline-block" : "none";
+  }
+
   document
     .querySelectorAll(".cgv-panel")
     .forEach((p) => p.classList.remove("active"));
@@ -743,8 +750,10 @@ function switchCgvTab(panelId, filterType = "now_showing") {
 
   const parentBc = document.getElementById("bc-parent-text");
   const currentBc = document.getElementById("bc-current-text");
+
   if (panelId === "panel-movies") {
-    document.getElementById("lnk-movies").classList.add("active");
+    const lnkMoviesEl = document.getElementById("lnk-movies");
+    if (lnkMoviesEl) lnkMoviesEl.classList.add("active");
     switchMovieFilterTab(filterType);
     if (document.getElementById("payment-sticky-bar"))
       document.getElementById("payment-sticky-bar").style.display = "none";
