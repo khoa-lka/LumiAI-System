@@ -2062,7 +2062,75 @@
       let selectedDateStr = "";
       let currentBannerIndex = 0;
       let totalBanners = 0;
+let currentForgotIdentifier = "";
 
+function openForgotModal() {
+    document.getElementById("forgot-modal").classList.add("open");
+    document.getElementById("forgot-step-1").style.display = "block";
+    document.getElementById("forgot-step-2").style.display = "none";
+    document.getElementById("forgot-identifier").value = "";
+    document.getElementById("forgot-otp-input").value = "";
+    document.getElementById("forgot-new-password").value = "";
+}
+
+function closeForgotModal() {
+    document.getElementById("forgot-modal").classList.remove("open");
+}
+
+// Gọi API gửi OTP
+function requestForgotOtp() {
+    const identifier = document.getElementById("forgot-identifier").value.trim();
+    if (!identifier) return alert("Vui lòng nhập Email hoặc Số điện thoại!");
+
+    fetch("http://localhost:8080/api/forgot-password/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: identifier })
+    })
+    .then(res => res.json().then(data => ({ status: res.status, body: data })))
+    .then(res => {
+        if (res.status === 200) {
+            alert(res.body.message + "\n(Hãy kiểm tra Console của Spring Boot)");
+            currentForgotIdentifier = identifier;
+            // Chuyển sang Bước 2
+            document.getElementById("forgot-step-1").style.display = "none";
+            document.getElementById("forgot-step-2").style.display = "block";
+        } else {
+            alert("Lỗi: " + res.body.message);
+        }
+    })
+    .catch(err => alert("Lỗi kết nối Server!"));
+}
+
+// Gọi API Đổi mật khẩu
+function submitNewPassword() {
+    const otp = document.getElementById("forgot-otp-input").value.trim();
+    const newPassword = document.getElementById("forgot-new-password").value;
+
+    if (!otp || !newPassword) return alert("Vui lòng điền đầy đủ OTP và Mật khẩu mới!");
+
+    fetch("http://localhost:8080/api/forgot-password/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            identifier: currentForgotIdentifier, 
+            otp: otp, 
+            newPassword: newPassword 
+        })
+    })
+    .then(res => res.json().then(data => ({ status: res.status, body: data })))
+    .then(res => {
+        if (res.status === 200) {
+            alert(res.body.message);
+            closeForgotModal();
+            openAuthModal(); // Mở lại bảng đăng nhập cho khách login
+            toggleAuthTab('login');
+        } else {
+            alert("Lỗi: " + res.body.message);
+        }
+    })
+    .catch(err => alert("Lỗi kết nối Server!"));
+}
       // Hàm cào Banner từ Database Spring Boot
       function loadBannersFromDatabase() {
         fetch("/api/banners")
@@ -3077,6 +3145,35 @@
       }
     </script>
 
+<div class="cgv-modal-overlay" id="forgot-modal">
+  <div class="cgv-auth-split-box" style="width: 450px; flex-direction: column; padding: 25px; background: #fdfcf7; border: 2px solid #222; border-radius: 4px;">
+    <div class="cgv-modal-close" onclick="closeForgotModal()" style="position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; font-weight: bold;">✕</div>
+    
+    <h3 style="color: #e71a0f; text-align: center; margin-bottom: 20px;">TÌM LẠI MẬT KHẨU</h3>
+    
+    <div id="forgot-step-1">
+        <div class="cgv-form-group">
+            <label>Nhập Email hoặc Số điện thoại đăng ký <span style="color:red">*</span></label>
+            <input type="text" id="forgot-identifier" class="cgv-input-text" placeholder="Email / Số điện thoại..." />
+        </div>
+        <button class="btn-cgv-submit" onclick="requestForgotOtp()" style="margin-top: 15px;">GỬI MÃ XÁC THỰC OTP</button>
+    </div>
+
+    <div id="forgot-step-2" style="display: none;">
+        <p style="font-size: 13px; color: #0066cc; margin-bottom: 15px; text-align: center;">Mã OTP đã được gửi! Vui lòng kiểm tra.</p>
+        <div class="cgv-form-group">
+            <label>Mã OTP (6 chữ số) <span style="color:red">*</span></label>
+            <input type="text" id="forgot-otp-input" class="cgv-input-text" placeholder="Nhập mã OTP..." style="letter-spacing: 2px;" />
+        </div>
+        <div class="cgv-form-group">
+            <label>Mật khẩu mới <span style="color:red">*</span></label>
+            <input type="password" id="forgot-new-password" class="cgv-input-text" placeholder="Nhập mật khẩu mới..." />
+        </div>
+        <button class="btn-cgv-submit" onclick="submitNewPassword()" style="margin-top: 15px; background: #10b981;">ĐỔI MẬT KHẨU</button>
+    </div>
+
+  </div>
+</div>
     <div class="cgv-modal-overlay" id="checkout-review-modal">
       <div
         class="cgv-auth-split-box"
@@ -3229,6 +3326,7 @@
         </button>
       </div>
     </div>
+
 
     <div class="cgv-modal-overlay" id="history-detail-modal">
       <div
