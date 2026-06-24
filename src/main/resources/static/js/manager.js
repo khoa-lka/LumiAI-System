@@ -231,8 +231,54 @@ function loadManagerMovies() {
   // 🌟 ĐÃ SỬA: Dùng chuẩn xác hàm API.getMovies() của em để không bị lỗi biến mất phim
   API.getMovies()
     .then((movies) => {
-      window.moviesList = movies; // Lưu danh sách gốc vào biến toàn cục
-      renderMoviesTable(movies); // Tiến hành vẽ bảng dữ liệu lần đầu
+      tbody.innerHTML = "";
+      window.moviesList = movies; // Lưu tạm danh sách phim vào biến toàn cục để dùng cho việc sửa phim
+      movies.forEach((m) => {
+        let ageBadgeClass =
+          m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
+        let ageText = m.ageRating === 0 ? "P" : `T${m.ageRating}`;
+
+        let statusClass = m.status === "now_showing" ? "active" : "inactive";
+        let statusText =
+          m.status === "now_showing"
+            ? "Đang chiếu"
+            : m.status === "coming_soon"
+              ? "Sắp chiếu"
+              : "Ngưng chiếu";
+        let rowClass =
+          m.status !== "now_showing" ? 'class="mp-row-inactive"' : "";
+
+        let posterUrl = m.mainposter_url
+          ? m.mainposter_url
+          : "img/default-poster.jpg";
+
+        // CHÚ Ý: Chỗ onClick nút Sửa phim đã được chuẩn hóa
+        tbody.innerHTML += `
+            <tr ${rowClass}>
+                <td style="text-align: center;">${m.movieId}</td>
+                <td>
+                    <div class="mp-movie-info">
+                        <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
+                        <div>
+                            <div class="mp-movie-title">${m.title}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>${m.duration} phút</td>
+                <td><div class="mp-age-badges"><span class="mp-badge ${ageBadgeClass}">${ageText}</span></div></td>
+                <td>${m.country || "N/A"}</td>
+                <td><span class="mp-status ${statusClass}">${statusText}</span></td>
+                <td>${m.releaseDate || "N/A"}</td>
+                <td>
+                    <div class="mp-table-actions">
+                        <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết">👁️</button>
+                        <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa">✏️</button>
+                        <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+      });
     })
     .catch((err) => {
       console.error("Lỗi:", err);

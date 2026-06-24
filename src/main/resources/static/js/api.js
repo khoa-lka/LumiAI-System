@@ -59,8 +59,9 @@ const API = {
       body: JSON.stringify(movieData),
     }).then(handleResponse),
 
+  // 🚀 ĐÃ SỬA: Khớp chuẩn xác Path Variable dạng /delete/{id} với MovieController.java của bạn
   deleteMovie: (movieId) =>
-    fetch(`${BASE_URL}/movies?id=${movieId}`, { method: "DELETE" }) // Hoặc ${BASE_URL}/movies/delete?id=${movieId} tùy Servlet của em
+    fetch(`${BASE_URL}/movies/delete/${movieId}`, { method: "DELETE" })
       .then(handleResponse),
 
   // 3. EVENTS & BANNERS
@@ -72,12 +73,18 @@ const API = {
     fetch(`${BASE_URL}/showtimes/matrix?movieId=${movieId}&date=${date}`).then(
       handleResponse,
     ),
+
+  // 🚀 ĐÃ THÊM: Gọi API lấy trạng thái danh sách ghế thực tế của suất chiếu
+  getSeatsByShowtime: (showtimeId) => 
+    fetch(`${BASE_URL}/seats/matrix?showtimeId=${showtimeId}`).then(handleResponse),
+
   checkoutTickets: (checkoutData) =>
     fetch(`${BASE_URL}/seats/checkout`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(checkoutData),
     }).then(handleResponse),
+
   cancelBooking: (cancelData) =>
     fetch(`${BASE_URL}/seats/cancel`, {
       method: "POST",

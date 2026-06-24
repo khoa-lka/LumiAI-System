@@ -76,15 +76,6 @@ function submitCgvLogin(event) {
           document.getElementById("top-bar-ticket-link").innerHTML =
             `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
 
-          // Cập nhật ngày sinh
-          if (uData.dateOfBirth || uData.date_of_birth) {
-            const dob = uData.dateOfBirth || uData.date_of_birth;
-            const [y, m, d] = dob.split("-");
-            document.getElementById("profile-birth-day").value = parseInt(d);
-            document.getElementById("profile-birth-month").value = parseInt(m);
-            document.getElementById("profile-birth-year").value = parseInt(y);
-          }
-
           let roleString = "Khách hàng thành viên";
           if (uData.roleId === 2) roleString = "Nhân viên cụm rạp (STAFF)";
 
@@ -93,31 +84,37 @@ function submitCgvLogin(event) {
               uData.fullName.split(" ").pop().substring(0, 2).toUpperCase();
           }
 
-          const welcomeNameBox = document.getElementById(
-            "profile-welcome-name",
-          );
-          if (welcomeNameBox)
-            welcomeNameBox.innerText = `Xin chào ${uData.fullName},`;
+          const welcomeNameBox = document.getElementById("profile-welcome-name");
+          if (welcomeNameBox) welcomeNameBox.innerText = `Xin chào ${uData.fullName},`;
 
           const starRoleBox = document.getElementById("profile-star-role");
           if (starRoleBox) starRoleBox.innerText = "MEMBER";
 
           document.getElementById("profile-field-name").value = uData.fullName;
-          document.getElementById("profile-field-phone").value =
-            uData.phoneNumber;
+          document.getElementById("profile-field-phone").value = uData.phoneNumber;
           document.getElementById("profile-field-email").value = uData.email;
-
-          if (uData.dateOfBirth) {
-            const [y, m, d] = uData.dateOfBirth.split("-");
-            document.getElementById("profile-field-birth").value =
-              `${d}/${m}/${y}`;
-          }
 
           if (document.getElementById("profile-field-role")) {
             document.getElementById("profile-field-role").value = roleString;
           }
 
-          // Nhảy sang tab Profile của khách hàng
+          // ==========================================================================
+          // 🚀 ĐOẠN ĐÃ SỬA ĐÈ: Ép nạp nóng dữ liệu thật từ DB lên 3 ô select dropdown
+          // trước khi thực hiện chuyển tab để triệt tiêu trạng thái hiển thị mặc định 2026
+          // ==========================================================================
+          if (uData.dateOfBirth) {
+            const [year, month, day] = uData.dateOfBirth.split("-");
+            if (document.getElementById("profile-birth-day")) document.getElementById("profile-birth-day").value = parseInt(day);
+            if (document.getElementById("profile-birth-month")) document.getElementById("profile-birth-month").value = parseInt(month);
+            if (document.getElementById("profile-birth-year")) document.getElementById("profile-birth-year").value = parseInt(year);
+            
+            // Đồng bộ luôn ô input text bọc lót nếu giao diện của team có dùng
+            if (document.getElementById("profile-field-birth")) {
+              document.getElementById("profile-field-birth").value = `${day}/${month}/${year}`;
+            }
+          }
+
+          // Nhảy sang tab Profile của khách hàng an toàn
           switchCgvTab("panel-profile");
         }
       } else {
@@ -252,6 +249,10 @@ function saveUpdatedProfileInformationData() {
               parseInt(month);
             document.getElementById("profile-birth-year").value =
               parseInt(year);
+              
+            if (document.getElementById("profile-field-birth")) {
+              document.getElementById("profile-field-birth").value = `${day}/${month}/${year}`;
+            }
           }
         });
       } else {
@@ -319,6 +320,7 @@ function generateRandomCaptcha(length = 6) {
   return result;
 }
 
+// Cập nhật Captcha
 function generateNewLoginCaptcha() {
   document.getElementById("login-captcha-text").innerText =
     generateRandomCaptcha();

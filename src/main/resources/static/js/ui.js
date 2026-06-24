@@ -27,7 +27,8 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 // --- CÁC HÀM UI ---
-function switchCgvTab(panelId, filterType = "now_showing") {
+// 🚀 SỬA: Thêm từ khóa "async" vào đầu hàm để kích hoạt cơ chế đợi đồng bộ dữ liệu
+async function switchCgvTab(panelId, filterType = "now_showing") {
   if (cgvNavigationHistory[cgvNavigationHistory.length - 1] !== panelId) {
     cgvNavigationHistory.push(panelId);
   }
@@ -43,6 +44,36 @@ function switchCgvTab(panelId, filterType = "now_showing") {
     switchMovieFilterTab(filterType);
   } else if (panelId === "panel-profile") {
     switchProfileSubTab("chung");
+    
+    // Bốc ID người dùng đang lưu trong bộ nhớ máy ra để xử lý
+    const loggedInId = sessionStorage.getItem("accountId") || window.currentLoggedInId;
+    
+    if (loggedInId && typeof API !== "undefined" && typeof API.getProfile === "function") {
+      API.getProfile(loggedInId)
+        .then((profileRes) => {
+          if (profileRes.status === "success") {
+            const updatedData = profileRes.data;
+            
+            // 1. Đồng bộ các trường thông tin chữ lên UI giao diện trước
+            if (document.getElementById("profile-field-name")) document.getElementById("profile-field-name").value = updatedData.fullName;
+            if (document.getElementById("profile-field-email")) document.getElementById("profile-field-email").value = updatedData.email;
+            
+            // 🚀 FIX LỖI 1: Đổi từ updatedData.phoneNumber thành updatedData.phone theo đúng ProfileController.java
+            if (document.getElementById("profile-field-phone")) {
+              document.getElementById("profile-field-phone").value = updatedData.phone || "";
+            }
+            
+            // 🚀 FIX LỖI 2: Ép kiểu số parseInt() để ô select dropdown chịu nhảy giá trị từ DB mượt mà
+            if (updatedData.dateOfBirth) {
+              const [year, month, day] = updatedData.dateOfBirth.split("-");
+              if (document.getElementById("profile-birth-day")) document.getElementById("profile-birth-day").value = parseInt(day, 10);
+              if (document.getElementById("profile-birth-month")) document.getElementById("profile-birth-month").value = parseInt(month, 10);
+              if (document.getElementById("profile-birth-year")) document.getElementById("profile-birth-year").value = parseInt(year, 10);
+            }
+          }
+        })
+        .catch((err) => console.error("🚨 Lỗi tự động đồng bộ dữ liệu hồ sơ cá nhân:", err));
+    }
   }
 }
 

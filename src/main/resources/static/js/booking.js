@@ -30,15 +30,68 @@ function selectTime(t) {
   if (isHoldingState) return alert("Hóa đơn đã khóa thanh toán!");
   selectedShowtime = t;
   selectedSeats = [];
-  calculateCgvCart();
-  renderCgvInterface();
+  
+  // Gọi hàm loadSeatMap động để đồng bộ dữ liệu ghế đã bán từ Server
+  loadSeatMap(t);
+}
+
+function loadSeatMap(showtimeId) {
+  // Biến hiển thị trạng thái chờ cho người dùng (nếu cần)
+  const seatGrid = document.getElementById("cgv-seat-grid");
+  if (seatGrid) seatGrid.innerHTML = "<p style='color:#fff; padding:20px;'>Đang tải sơ đồ ghế thực tế...</p>";
+
+  // Gọi sang hàm API.getSeatsByShowtime đã thêm trong api.js
+  API.getSeatsByShowtime(showtimeId)
+    .then((bookedSeatsList) => {
+      // bookedSeatsList nhận về từ Spring Boot sẽ là mảng các ghế đã bán, ví dụ: ["A1", "C3", "C4"]
+      
+      // Lấy tên bộ phim hiện tại đang chọn trong dropdown combo
+      const currentMovie = document.getElementById("cgv-combo-movie").value;
+      
+      // Kiểm tra nếu bộ nhớ tạm serverData chưa khởi tạo cấu trúc, ta tự tạo cho đỡ lỗi
+      if (!serverData.masterSeatStore[currentMovie]) {
+        serverData.masterSeatStore[currentMovie] = {};
+      }
+      
+      // Lấy sơ đồ ghế cố định sẵn có trong local state ra
+      const activeSeatMap = serverData.masterSeatStore[currentMovie][showtimeId] || {};
+      
+      // Duyệt qua toàn bộ các ghế cố định trên màn hình để đồng bộ trạng thái
+      Object.keys(activeSeatMap).forEach((id) => {
+        // Nếu mã ghế (id) nằm trong danh sách ghế đã bán từ DB gửi lên -> Đổi status thành "sold"
+        if (bookedSeatsList.includes(id)) {
+          activeSeatMap[id].status = "sold";
+        } else {
+          // Ngược lại, nếu không có ai mua thì trả lại trạng thái trống "available"
+          activeSeatMap[id].status = "available";
+        }
+      });
+      
+      // Lưu lại sơ đồ đã đồng bộ vào state tổng
+      serverData.masterSeatStore[currentMovie][showtimeId] = activeSeatMap;
+
+      // Chạy tính toán lại giỏ hàng và render giao diện chuẩn lên màn hình
+      calculateCgvCart();
+      renderCgvInterface();
+    })
+    .catch((err) => {
+      console.error("🚨 Lỗi đồng bộ dữ liệu ghế từ Server:", err);
+      // Nếu lỗi mạng hoặc server chưa viết API, vẫn cho render giao diện mặc định để không chết App
+      calculateCgvCart();
+      renderCgvInterface();
+    });
 }
 
 function onMovieOrTimeChange() {
   resetHoldState();
   selectedSeats = [];
-  calculateCgvCart();
-  renderCgvInterface();
+  
+  if (selectedShowtime) {
+    loadSeatMap(selectedShowtime);
+  } else {
+    calculateCgvCart();
+    renderCgvInterface();
+  }
 }
 
 function calculateCgvCart() {
