@@ -159,6 +159,10 @@ window.addEventListener("DOMContentLoaded", () => {
     switchCgvTab("panel-movies", "now_showing");
   }
 
+  if (typeof window.renderLasPromoGrid === "function") {
+    window.renderLasPromoGrid();
+  }
+
   window.fetchSyncData();
 });
 
@@ -1345,11 +1349,12 @@ window.lasPromoList = [
 ];
 
 // Hàm tự động vẽ danh sách ưu đãi động ra ngoài trang chủ
+// Tìm hàm này và sửa lại 2 dòng đầu hàm như sau:
 window.renderLasPromoGrid = function () {
-  const promoContainer = document.getElementById("cgv-event-grid");
-  if (!promoContainer) return;
+  // 🌟 FIX: Chỉ lấy duy nhất khung chứa của Tab Tin Tức, không lấy khung EVENT trang chủ nữa
+  const promoNewsContainer = document.getElementById("cgv-event-grid-news");
 
-  // 🚀 Cào dữ liệu động trực tiếp từ Database SQL Server qua Spring Boot
+  // Cào dữ liệu động trực tiếp từ Database SQL Server qua Spring Boot
   fetch("http://localhost:8080/api/promos")
     .then((res) => {
       if (!res.ok) throw new Error("Không thể kết nối API ưu đãi");
@@ -1358,33 +1363,37 @@ window.renderLasPromoGrid = function () {
     .then((promosList) => {
       console.log("🎁 Đã nhận danh sách ưu đãi động từ Database:", promosList);
 
-      // Ghim mảng trả về vào window toàn cục để hàm click xem chi tiết tìm được id
       window.lasPromoList = promosList;
 
-      promoContainer.innerHTML = "";
+      // 🌟 FIX: Chỉ xóa rỗng khung bên tab Tin tức trước khi vẽ
+      if (promoNewsContainer) promoNewsContainer.innerHTML = "";
+
       window.lasPromoList.forEach((item) => {
-        // Chuẩn hóa đường link ảnh hoặc text fallback đề phòng DB bị null
         let validImg =
-          item.imageUrl ||
-          item.image_url ||
-          "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
+          item.imageUrl || item.image_url || item.image || item.img || "";
+        validImg = validImg.trim();
 
-        let imgHTML = validImg.startsWith("http")
-          ? `<div class="news-card-img-holder" style="background-image: url('${validImg}'); background-size: cover; height: 200px;"></div>`
-          : `<div class="news-card-img-holder" style="background: #a1dbf1; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0c6291; font-size: 14px; height: 200px;">${validImg}</div>`;
+        let dateString = `${item.startDate || item.start_date || "05/06/2026"} - ${item.endDate || item.end_date || "12/06/2026"}`;
 
-        // Tạo chuỗi hiển thị khoảng ngày áp dụng lấy từ trường dữ liệu DATE của SQL Server
-        let dateString = `${item.startDate || item.start_date} - ${item.endDate || item.end_date}`;
+        let imgHTML =
+          validImg.startsWith("http") ||
+          validImg.includes("/") ||
+          validImg.includes(".")
+            ? `<div class="news-card-img-holder" style="background-image: url('${validImg}'); background-size: cover; background-position: center; height: 200px; width: 100%; display: block;"></div>`
+            : `<div class="news-card-img-holder" style="background: #a1dbf1; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0c6291; font-size: 14px; height: 200px; width: 100%; text-align: center; padding: 0 10px; box-sizing: border-box;">${validImg || "LAS CINEMA"}</div>`;
 
-        promoContainer.innerHTML += `
-          <div class="news-promo-card" onclick="window.viewPromoDetailText('${item.id}')" style="cursor: pointer; background: #fff; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; transition: transform 0.2s;">
+        let cardHTML = `
+          <div class="news-promo-card" onclick="window.viewPromoDetailText('${item.id}')" style="cursor: pointer; background: #fff; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; transition: transform 0.2s; display: block; margin-bottom: 10px;">
               ${imgHTML}
               <div style="padding: 15px; text-align: left;">
                   <div class="news-card-date" style="color: #666; font-size: 12px; margin-bottom: 5px;">📅 ${dateString}</div>
-                  <div class="news-card-title-text" style="font-weight: bold; font-size: 14px; color: #111; line-height: 1.4;">${item.title}</div>
+                  <div class="news-card-title-text" style="font-weight: bold; font-size: 14px; color: #111; line-height: 1.4;">${item.title || "Chương trình ưu đãi"}</div>
               </div>
           </div>
         `;
+
+        // 🌟 FIX: Chỉ đổ thẻ card vào khung Tab Tin tức, giữ nguyên vẹn mục EVENT thô ngoài trang chủ
+        if (promoNewsContainer) promoNewsContainer.innerHTML += cardHTML;
       });
     })
     .catch((err) =>
@@ -1392,43 +1401,86 @@ window.renderLasPromoGrid = function () {
     );
 };
 
-// Hàm kích hoạt nhảy sang tab chi tiết ưu đãi và đổ dữ liệu
+// ==========================================================================
+// 🌟 THAY THẾ HOÀN TOÀN HÀM VIEWPROMODETAILTEXT CŨ THÀNH BẢN PRO NÀY:
+// ==========================================================================
 window.viewPromoDetailText = function (promoId) {
-  // Đồng bộ ép kiểu dữ liệu về chuỗi hoặc số để so sánh khớp với ID dưới DB gửi lên
+  if (!window.lasPromoList) return;
+
+  // Tìm kiếm đối tượng bài viết ưu đãi khớp với ID click chuột
   const targetPromo = window.lasPromoList.find(
     (p) => String(p.id) === String(promoId),
   );
   if (!targetPromo) return;
 
-  document.getElementById("detail-promo-title").innerText = targetPromo.title;
-  document.getElementById("detail-promo-date").innerText =
-    "Thời gian áp dụng: " +
-    (targetPromo.startDate || targetPromo.start_date) +
-    " đến " +
-    (targetPromo.endDate || targetPromo.end_date);
-  document.getElementById("detail-promo-content").innerHTML =
-    targetPromo.content;
+  // 1. Đồng bộ Tiêu đề bài viết khuyên mãi
+  const titleEl = document.getElementById("detail-promo-title");
+  if (titleEl) {
+    titleEl.innerText = targetPromo.title || "Chương trình ưu đãi đặc biệt";
+  }
 
-  const imgBoxEl = document.getElementById("detail-promo-img-box");
-  if (imgBoxEl) {
-    let validImg = targetPromo.imageUrl || targetPromo.image_url || "";
-    if (validImg.startsWith("http")) {
-      imgBoxEl.style.backgroundImage = `url('${validImg}')`;
-      imgBoxEl.style.backgroundSize = "cover";
-      imgBoxEl.innerText = "";
+  // 2. Bọc giáp lỗi hiển thị ngày tháng (Quét sạch mọi kiểu đặt tên của Java & SQL)
+  const dateEl = document.getElementById("detail-promo-date");
+  if (dateEl) {
+    let start = targetPromo.startDate || targetPromo.start_date || "";
+    let end = targetPromo.endDate || targetPromo.end_date || "";
+    if (start && end) {
+      dateEl.innerText = "Thời gian áp dụng: " + start + " đến " + end;
+    } else if (targetPromo.date) {
+      dateEl.innerText = "Thời gian áp dụng: " + targetPromo.date;
     } else {
-      imgBoxEl.style.background = "#a1dbf1";
-      imgBoxEl.style.backgroundImage = "none";
-      imgBoxEl.innerText = validImg || "LAS";
+      dateEl.innerText = "Thời gian áp dụng: Đang diễn ra trong tháng";
     }
   }
+
+  // 3. Đổ nội dung mô tả chi tiết chương trình ưu đãi rạp phim
+  const contentEl = document.getElementById("detail-promo-content");
+  if (contentEl) {
+    contentEl.innerHTML =
+      targetPromo.content || "Chưa có nội dung mô tả chi tiết chương trình.";
+  }
+
+  // 4. FIX TRIỆT ĐỂ LỖI POSTER: Vẽ ảnh full kích thước, xóa sạch chữ "IMAGE" thô
+  // Tìm khối số 4 xử lý ảnh trong hàm window.viewPromoDetailText và sửa lại như sau:
+  // 4. FIX TRIỆT ĐỂ LỖI POSTER: Sử dụng thẻ img trực tiếp để lấy trọn vẹn 100% hình ảnh không bị cắt tỉa
+  const imgBoxEl = document.getElementById("detail-promo-img-box");
+  if (imgBoxEl) {
+    let validImg =
+      targetPromo.imageUrl ||
+      targetPromo.image_url ||
+      targetPromo.image ||
+      targetPromo.img ||
+      "";
+    validImg = validImg.trim();
+
+    if (
+      validImg.startsWith("http") ||
+      validImg.includes("/") ||
+      validImg.includes(".")
+    ) {
+      imgBoxEl.style.background = "none";
+      imgBoxEl.style.backgroundImage = "none";
+
+      // Sử dụng chiều rộng 100% của khung trái (360px) và để height tự động tính toán theo tỉ lệ đứng
+      imgBoxEl.innerHTML = `<img src="${validImg}" style="width: 100%; height: auto; display: block; object-fit: cover;">`;
+    } else {
+      imgBoxEl.style.background = "#a1dbf1";
+      imgBoxEl.style.display = "flex";
+      imgBoxEl.style.alignItems = "center";
+      imgBoxEl.style.justifyContent = "center";
+      imgBoxEl.style.color = "#0c6291";
+      imgBoxEl.style.fontWeight = "bold";
+      imgBoxEl.style.minHeight = "450px"; // Tạo chiều cao giả lập đứng nếu không có ảnh
+      imgBoxEl.innerHTML = `<b>${validImg || "LAS CINEMA"}</b>`;
+    }
+  }
+
+  // Kích hoạt điều hướng nhảy chuyển phân vùng hiển thị Tab Panel
   window.switchCgvTab("panel-news-detail");
 };
 
-// Tìm đến sự kiện tải trang sẵn có (DOMContentLoaded) ở cuối file home.js của em, thêm dòng này vào:
 window.addEventListener("DOMContentLoaded", () => {
-  // ... các hàm có sẵn của em (generateCgvDateSlider, fetchSyncData...)
-  window.renderLasPromoGrid(); // 🌟 Gọi hàm vẽ tin tức ưu đãi lên trang chủ
+  window.renderLasPromoGrid();
 });
 
 function generateCgvDateSlider() {
@@ -1563,6 +1615,81 @@ function saveUpdatedProfileInformationData() {
   });
   document.getElementById("btn-save-profile").style.display = "none";
   alert("Cập nhật thông tin tài khoản mới thành công!");
+}
+
+let currentForgotIdentifier = "";
+
+function openForgotModal() {
+  document.getElementById("forgot-modal").classList.add("open");
+  document.getElementById("forgot-step-1").style.display = "block";
+  document.getElementById("forgot-step-2").style.display = "none";
+  document.getElementById("forgot-identifier").value = "";
+  document.getElementById("forgot-otp-input").value = "";
+  document.getElementById("forgot-new-password").value = "";
+}
+
+function closeForgotModal() {
+  document.getElementById("forgot-modal").classList.remove("open");
+}
+
+// Gọi API gửi OTP
+function requestForgotOtp() {
+  const identifier = document.getElementById("forgot-identifier").value.trim();
+  if (!identifier) return alert("Vui lòng nhập Email hoặc Số điện thoại!");
+
+  fetch("http://localhost:8080/api/forgot-password/request", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ identifier: identifier }),
+  })
+    .then((res) =>
+      res.json().then((data) => ({ status: res.status, body: data })),
+    )
+    .then((res) => {
+      if (res.status === 200) {
+        alert(res.body.message + "\n(Hãy kiểm tra Console của Spring Boot)");
+        currentForgotIdentifier = identifier;
+        // Chuyển sang Bước 2
+        document.getElementById("forgot-step-1").style.display = "none";
+        document.getElementById("forgot-step-2").style.display = "block";
+      } else {
+        alert("Lỗi: " + res.body.message);
+      }
+    })
+    .catch((err) => alert("Lỗi kết nối Server!"));
+}
+
+// Gọi API Đổi mật khẩu
+function submitNewPassword() {
+  const otp = document.getElementById("forgot-otp-input").value.trim();
+  const newPassword = document.getElementById("forgot-new-password").value;
+
+  if (!otp || !newPassword)
+    return alert("Vui lòng điền đầy đủ OTP và Mật khẩu mới!");
+
+  fetch("http://localhost:8080/api/forgot-password/reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      identifier: currentForgotIdentifier,
+      otp: otp,
+      newPassword: newPassword,
+    }),
+  })
+    .then((res) =>
+      res.json().then((data) => ({ status: res.status, body: data })),
+    )
+    .then((res) => {
+      if (res.status === 200) {
+        alert(res.body.message);
+        closeForgotModal();
+        openAuthModal(); // Mở lại bảng đăng nhập cho khách login
+        toggleAuthTab("login");
+      } else {
+        alert("Lỗi: " + res.body.message);
+      }
+    })
+    .catch((err) => alert("Lỗi kết nối Server!"));
 }
 
 window.switchCgvTab = switchCgvTab;

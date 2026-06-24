@@ -1,8 +1,13 @@
 // js/auth.js
 
 // --- 1. QUẢN LÝ MODAL ---
+// Tìm hàm openAuthModal() ở đầu file auth.js và sửa thành:
 function openAuthModal() {
   document.getElementById("auth-modal").classList.add("open");
+  
+  // 🚀 ĐÃ SỬA: Chủ động gọi trực tiếp hàm sinh mã ngay khi mở Modal
+  if (typeof generateNewLoginCaptcha === "function") generateNewLoginCaptcha();
+  if (typeof generateNewRegisterCaptcha === "function") generateNewRegisterCaptcha();
 }
 function closeAuthModal() {
   document.getElementById("auth-modal").classList.remove("open");
@@ -321,15 +326,28 @@ function generateRandomCaptcha(length = 6) {
 }
 
 // Cập nhật Captcha
+// Tìm cụm hàm Captcha ở cuối file auth.js và thay thế toàn bộ bằng đoạn này:
 function generateNewLoginCaptcha() {
-  document.getElementById("login-captcha-text").innerText =
-    generateRandomCaptcha();
+  const el = document.getElementById("login-captcha-text");
+  if (el) {
+    el.innerText = generateRandomCaptcha();
+  }
 }
+
 function generateNewRegisterCaptcha() {
-  document.getElementById("reg-captcha-text").innerText =
-    generateRandomCaptcha();
+  const el = document.getElementById("reg-captcha-text");
+  if (el) {
+    el.innerText = generateRandomCaptcha();
+  }
 }
+
 function generateForgotCaptcha() {
-  document.getElementById("forgot-captcha-text").innerText =
-    generateRandomCaptcha();
+  const el = document.getElementById("forgot-captcha-text");
+  if (el) {
+    el.innerText = generateRandomCaptcha();
+  }
 }
+
+// 🚀 ĐÃ THÊM: Ép trình duyệt đưa hàm ra phạm vi window tối cao, dẹp bỏ hoàn toàn lỗi undefined nút bấm
+window.generateNewLoginCaptcha = generateNewLoginCaptcha;
+window.generateNewRegisterCaptcha = generateNewRegisterCaptcha;
