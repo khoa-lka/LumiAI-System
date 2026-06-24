@@ -939,103 +939,127 @@
             <div class="step-item">🎟️ 4. Thông tin vé</div>
           </div>
 
-          <div class="booking-two-columns-layout">
-            <div class="left-interactive-column">
+          <div class="booking-two-columns-layout" style="display: flex; gap: 25px; align-items: flex-start; margin-top: 15px;">
     
-    <div class="booking-step active" id="booking-step-1">
-        <div class="select-box-wrapper">...</div>
-        <div class="cgv-date-selector-wrapper">...</div>
-        <div class="showtime-grid" id="cgv-showtime-grid">...</div>
-        <div class="countdown-timer" id="hold-timer">...</div>
-        <div class="cinema-room">...</div>
+    <div class="left-interactive-column" style="flex: 1; min-width: 0;">
+        
+        <div id="booking-step-1" class="booking-step active">
+            <div class="select-box-wrapper" style="background: #ffffff; border: 1px solid #e0e0e0; padding: 20px; border-radius: 6px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); text-align: left;">
+                <h3 style="color:#e71a0f; font-weight: bold; margin-top:0; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px;">1. Chọn Phim Trực Thuộc</h3>
+                <select id="cgv-combo-movie" style="width:100%; padding:11px; font-size:14px; border: 1px solid #ccc; border-radius:4px; background: #fff; cursor: pointer; outline: none;" onchange="onMovieOrTimeChange()">
+                    <option value="">-- Đang tải danh sách phim khả dụng từ Database... --</option>
+                </select>
+            </div>
+
+            <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color:#111; text-align: left; text-transform: uppercase;">2. Chọn Ngày Chiếu Phim</div>
+            <div class="cgv-date-selector-wrapper" style="margin-bottom: 20px;">
+                <div class="cgv-date-slider-container" id="cgv-dynamic-date-slider" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px;"></div>
+            </div>
+            
+            <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color:#111; text-align: left; text-transform: uppercase;">3. Chọn Suất Chiếu Hôm Nay</div>
+            <div style="background: #fafafa; border: 1px solid #e0e0e0; padding: 20px; margin-bottom: 20px; border-radius: 6px; text-align: left;">
+                <div class="showtime-grid" id="cgv-showtime-grid" style="display: flex; gap: 12px; flex-wrap: wrap;"></div>
+            </div>
+
+            <div class="countdown-timer" id="hold-timer" style="background: #fff3cd; color: #856404; padding: 12px 18px; border: 1px solid #ffeeba; font-weight: bold; margin-bottom: 20px; border-radius: 4px; display: none; justify-content: space-between; align-items: center; font-size: 13.5px;">
+                <span>⚠️ Ghế đang được giữ tạm thời trong: <strong id="timer-string" style="font-size: 16px; color: #e71a0f; margin-left: 5px;">05:00</strong></span>
+                <button onclick="cancelCurrentTransaction()" style="background: #e71a0f; color: white; border: none; padding: 6px 14px; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 12px; text-transform: uppercase; transition: background 0.2s;">Hủy giữ</button>
+            </div>
+
+            <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px; color:#111; text-align: left; text-transform: uppercase;">4. Chọn Ghế Ngồi Phòng Chiếu</div>
+            <div class="cinema-room" style="background: #fdfcf7; border: 1px solid #e0e0e0; padding: 30px 20px; border-radius: 6px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                <div class="screen-curve" style="width: 85%; height: 25px; background: #222222; color: #ffffff; margin: 0 auto 35px auto; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border-radius: 0 0 20px 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); letter-spacing: 2px;">
+                    MÀN HÌNH CHÍNH (SCREEN)
+                </div>
+                
+                <div class="seat-grid" id="cgv-seat-grid" style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 10px; max-width: 540px; margin: 0 auto;"></div>
+                
+                <div class="seat-legend" style="display: flex; justify-content: center; gap: 18px; margin-top: 30px; font-size: 12px; font-weight: bold; flex-wrap: wrap; border-top: 1px dashed #ddd; padding-top: 18px; color: #555;">
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 6px;"><div class="legend-box" style="width:16px; height:16px; background:#666; border-radius:4px;"></div> Standard</div>
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 6px;"><div class="legend-box" style="width:16px; height:16px; background:#b31010; border-radius:4px;"></div> Ghế VIP</div>
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 6px;"><div class="legend-box" style="width:16px; height:16px; background:#e25b8b; border-radius:4px;"></div> Sweetbox</div>
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 6px;"><div class="legend-box" style="width:16px; height:16px; background:var(--cgv-gold, #cca23b); border-radius:4px;"></div> Đang giữ</div>
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 6px;"><div class="legend-box" style="width:16px; height:16px; background:var(--cgv-red, #e71a0f); border-radius:4px;"></div> Ghế chọn</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="booking-step-2" class="booking-step">
+            <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px; color:#111; text-align: left; text-transform: uppercase;">5. Chọn Tiện Ích Combo Bắp Nước</div>
+            <div class="fnb-container" id="cgv-fnb-menu" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        </div>
+
+        <div id="booking-step-3" class="booking-step">
+            <h3 style="border-bottom: 2px solid #222; padding-bottom: 10px; color: #e71a0f; margin-top: 0; font-size: 16px; font-weight: bold; text-transform: uppercase;">RÀ SOÁT HÓA ĐƠN CHI TIẾT</h3>
+            <div id="review-invoice-content" style="line-height: 1.7; font-size: 14px; margin-bottom: 20px; text-align: left; background: #fff; padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px;"></div>
+            
+            <div style="background: #f4f2ec; padding: 18px; margin-bottom: 25px; border: 1px dashed #bba; text-align: left; border-radius: 6px;">
+                <strong style="color: #333; font-size: 13.5px;">Mã Voucher ưu đãi (Nhập <span style="color:#e71a0f; font-weight:bold;">LAS20</span> để nhận giảm giá 20%):</strong>
+                <div style="display: flex; gap: 10px; margin-top: 8px;">
+                    <input type="text" id="voucher-input" class="cgv-input-text" style="flex:1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; font-size: 13px;" placeholder="Ví dụ: LAS20">
+                    <button onclick="applyVoucher()" class="btn-cgv-submit" style="width: auto; margin-top: 0; padding: 0 20px; font-weight: bold; background: #111; color:#fff; border:none; border-radius:4px; cursor:pointer;">ÁP DỤNG</button>
+                </div>
+            </div>
+
+            <div class="payment-selection-block" style="text-align: left;">
+                <div class="payment-selection-title" style="font-weight: bold; font-size: 14px; color: #111; margin-bottom: 12px; text-transform: uppercase;">Hình thức thanh toán cổng trực tuyến</div>
+                <div class="payment-selection-body" style="display: flex; flex-direction: column; gap: 10px;">
+                    
+                    <div class="payment-option-row active" onclick="selectPaymentGatewayType('qr', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; background: #fff; cursor: pointer; transition: all 0.2s;">
+                        <div class="option-check-circle" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e71a0f; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #e71a0f;">✓</div>
+                        <div class="method-badge-icon badge-mv" style="background: #1a73e8; color: white; padding: 4px 8px; font-weight: bold; font-size: 12px; border-radius: 4px; min-width: 32px; text-align: center;">QR</div>
+                        <div class="method-info-texts" style="flex: 1;">
+                            <div class="method-main-name" style="font-weight: bold; color: #333; font-size: 13.5px;">Chuyển khoản / Quét mã QR Quốc Gia</div>
+                            <div class="method-sub-desc" style="color: #666; font-size: 12px; margin-top: 2px;">Hệ thống tự động rà soát giao dịch và xuất vé trong vòng 30s</div>
+                        </div>
+                    </div>
+
+                    <div class="payment-option-row" onclick="selectPaymentGatewayType('applepay', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; background: #fff; cursor: pointer; transition: all 0.2s; opacity: 0.8;">
+                        <div class="option-check-circle" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 11px; color: transparent;">✓</div>
+                        <div class="method-badge-icon badge-apple" style="background: #000000; color: white; padding: 4px 8px; font-weight: bold; font-size: 12px; border-radius: 4px; min-width: 32px; text-align: center;">Pay</div>
+                        <div class="method-info-texts">
+                            <div class="method-main-name" style="font-weight: bold; color: #333; font-size: 13.5px;">Apple Pay</div>
+                        </div>
+                    </div>
+
+                    <div class="payment-option-row" onclick="selectPaymentGatewayType('momo', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; background: #fff; cursor: pointer; transition: all 0.2s; opacity: 0.8;">
+                        <div class="option-check-circle" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 11px; color: transparent;">✓</div>
+                        <div class="method-badge-icon badge-momo" style="background: #a50064; color: white; padding: 4px 8px; font-weight: bold; font-size: 11px; border-radius: 4px; min-width: 32px; text-align: center; text-transform: lowercase;">momo</div>
+                        <div class="method-info-texts">
+                            <div class="method-main-name" style="font-weight: bold; color: #333; font-size: 13.5px;">Ví Điện Tử MoMo</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="booking-step-4" class="booking-step">
+            <div id="final-ticket-result"></div>
+        </div>
     </div>
 
-              <div class="booking-step" id="booking-step-2">
-              <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px;">
-                5. Chọn Tiện Ích Combo Bắp Nước
-              </div>
-                <div class="fnb-container" id="cgv-fnb-menu" style="grid-template-columns: 1fr; gap: 12px"></div>
-              </div>
+    <div class="right-invoice-sticky-column" style="width: 340px; background: #222222; border-radius: 8px; padding: 22px; color: #ffffff; position: sticky; top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); box-sizing: border-box;">
+        
+        <div class="invoice-info-card" style="text-align: left; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 15px 0; font-size: 15px; border-bottom: 2px solid #e71a0f; padding-bottom: 8px; color:#e5a93b; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">THÔNG TIN ĐƠN VÉ</h3>
+            <p style="margin: 11px 0; font-size: 13.5px; line-height: 1.4;">🎬 Phim: <strong id="sum-movie-title" style="color:#ffffff; margin-left: 5px;">-</strong></p>
+            <p style="margin: 11px 0; font-size: 13.5px; line-height: 1.4;">🕒 Suất: <strong id="sum-showtime" style="color: #cca23b; margin-left: 5px;">-</strong></p>
+            <p style="margin: 11px 0; font-size: 13.5px; line-height: 1.4;">💺 Ghế: <strong id="sum-seats" style="color: #cca23b; margin-left: 5px;">Chưa chọn</strong></p>
+            <p style="margin: 11px 0; font-size: 13.5px; line-height: 1.4;">🍿 F&B: <strong id="sum-fnb" style="color:#ffffff; margin-left: 5px;">0 Combo</strong></p>
+        </div>
+        
+        <div class="invoice-total-card" style="text-align: left; margin-bottom: 25px;">
+            <span style="font-size: 11px; font-weight: bold; color: #aaaaaa; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">TỔNG CHI PHÍ HOÁ ĐƠN</span>
+            <div id="sum-total" style="font-size: 30px; font-weight: 900; color: #e71a0f; font-family: monospace; letter-spacing: -0.5px;">0 đ</div>
+        </div>
+        
+        <div class="action-flow-buttons-row" style="display: flex; gap: 12px; width: 100%;">
+            <button class="btn-flow-back" onclick="goHomeFromBc()" style="flex: 0 0 50px; height: 42px; background: #444; color: #fff; border: none; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.2s;">←</button>
+            <button class="btn-flow-next" id="btn-main-action" onclick="handleMainAction()" style="flex: 1; height: 42px; background: #e71a0f; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; transition: background 0.2s;">Tiếp tục</button>
+        </div>
+    </div>
 
-              <div class="booking-step" id="booking-step-3">
-                <h3 style="color:#e71a0f; text-align:center;">Vui lòng kiểm tra hóa đơn bên phải và xác nhận thanh toán!</h3>
-              </div>
-
-              <div class="booking-step" id="booking-step-4">
-              <div id="final-ticket-result"></div>
-              </div>
-
-            </div>
-
-            <div class="right-invoice-sticky-column">
-              <div class="invoice-info-card">
-                <h3
-                  style="
-                    margin: 0 0 15px 0;
-                    font-size: 18px;
-                    border-bottom: 1px solid #333;
-                    padding-bottom: 10px;
-                    color: #e5a93b;
-                  "
-                >
-                  THÔNG TIN PHIM
-                </h3>
-                <p style="margin: 10px 0">
-                  🎬 Phim:
-                  <strong id="sum-movie-title" style="color: #ffffff">-</strong>
-                </p>
-                <p style="margin: 10px 0">
-                  🕒 Suất:
-                  <strong id="sum-showtime" style="color: var(--cgv-gold)"
-                    >-</strong
-                  >
-                </p>
-                <p style="margin: 10px 0">
-                  💺 Ghế:
-                  <strong id="sum-seats" style="color: var(--cgv-gold)"
-                    >Chưa chọn</strong
-                  >
-                </p>
-                <p style="margin: 10px 0">
-                  🍿 Bắp nước:
-                  <strong id="sum-fnb" style="color: #ffffff">0 Combo</strong>
-                </p>
-              </div>
-
-              <div class="invoice-total-card">
-                <span
-                  style="
-                    font-size: 12px;
-                    font-weight: bold;
-                    color: #666666;
-                    display: block;
-                    margin-bottom: 5px;
-                    text-transform: uppercase;
-                  "
-                  >TỔNG ĐƠN HÀNG</span
-                >
-                <div
-                  id="sum-total"
-                  style="font-size: 28px; font-weight: 900; color: #e71a0f"
-                >
-                  0 đ
-                </div>
-              </div>
-
-              <div class="action-flow-buttons-row">
-                <button class="btn-flow-back" onclick="goHomeFromBc()">
-                  ←
-                </button>
-                <button
-                  class="btn-flow-next"
-                  id="btn-main-action"
-                  onclick="handleMainAction()"
-                >
-                  Tiếp tục
-                </button>
-              </div>
-            </div>
-          </div>
+</div>
         </div>
 
         <div id="panel-news" class="cgv-panel">
@@ -2062,7 +2086,75 @@
       let selectedDateStr = "";
       let currentBannerIndex = 0;
       let totalBanners = 0;
+let currentForgotIdentifier = "";
 
+function openForgotModal() {
+    document.getElementById("forgot-modal").classList.add("open");
+    document.getElementById("forgot-step-1").style.display = "block";
+    document.getElementById("forgot-step-2").style.display = "none";
+    document.getElementById("forgot-identifier").value = "";
+    document.getElementById("forgot-otp-input").value = "";
+    document.getElementById("forgot-new-password").value = "";
+}
+
+function closeForgotModal() {
+    document.getElementById("forgot-modal").classList.remove("open");
+}
+
+// Gọi API gửi OTP
+function requestForgotOtp() {
+    const identifier = document.getElementById("forgot-identifier").value.trim();
+    if (!identifier) return alert("Vui lòng nhập Email hoặc Số điện thoại!");
+
+    fetch("http://localhost:8080/api/forgot-password/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: identifier })
+    })
+    .then(res => res.json().then(data => ({ status: res.status, body: data })))
+    .then(res => {
+        if (res.status === 200) {
+            alert(res.body.message + "\n(Hãy kiểm tra Console của Spring Boot)");
+            currentForgotIdentifier = identifier;
+            // Chuyển sang Bước 2
+            document.getElementById("forgot-step-1").style.display = "none";
+            document.getElementById("forgot-step-2").style.display = "block";
+        } else {
+            alert("Lỗi: " + res.body.message);
+        }
+    })
+    .catch(err => alert("Lỗi kết nối Server!"));
+}
+
+// Gọi API Đổi mật khẩu
+function submitNewPassword() {
+    const otp = document.getElementById("forgot-otp-input").value.trim();
+    const newPassword = document.getElementById("forgot-new-password").value;
+
+    if (!otp || !newPassword) return alert("Vui lòng điền đầy đủ OTP và Mật khẩu mới!");
+
+    fetch("http://localhost:8080/api/forgot-password/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            identifier: currentForgotIdentifier, 
+            otp: otp, 
+            newPassword: newPassword 
+        })
+    })
+    .then(res => res.json().then(data => ({ status: res.status, body: data })))
+    .then(res => {
+        if (res.status === 200) {
+            alert(res.body.message);
+            closeForgotModal();
+            openAuthModal(); // Mở lại bảng đăng nhập cho khách login
+            toggleAuthTab('login');
+        } else {
+            alert("Lỗi: " + res.body.message);
+        }
+    })
+    .catch(err => alert("Lỗi kết nối Server!"));
+}
       // Hàm cào Banner từ Database Spring Boot
       function loadBannersFromDatabase() {
         fetch("/api/banners")
@@ -3077,6 +3169,35 @@
       }
     </script>
 
+<div class="cgv-modal-overlay" id="forgot-modal">
+  <div class="cgv-auth-split-box" style="width: 450px; flex-direction: column; padding: 25px; background: #fdfcf7; border: 2px solid #222; border-radius: 4px;">
+    <div class="cgv-modal-close" onclick="closeForgotModal()" style="position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; font-weight: bold;">✕</div>
+    
+    <h3 style="color: #e71a0f; text-align: center; margin-bottom: 20px;">TÌM LẠI MẬT KHẨU</h3>
+    
+    <div id="forgot-step-1">
+        <div class="cgv-form-group">
+            <label>Nhập Email hoặc Số điện thoại đăng ký <span style="color:red">*</span></label>
+            <input type="text" id="forgot-identifier" class="cgv-input-text" placeholder="Email / Số điện thoại..." />
+        </div>
+        <button class="btn-cgv-submit" onclick="requestForgotOtp()" style="margin-top: 15px;">GỬI MÃ XÁC THỰC OTP</button>
+    </div>
+
+    <div id="forgot-step-2" style="display: none;">
+        <p style="font-size: 13px; color: #0066cc; margin-bottom: 15px; text-align: center;">Mã OTP đã được gửi! Vui lòng kiểm tra.</p>
+        <div class="cgv-form-group">
+            <label>Mã OTP (6 chữ số) <span style="color:red">*</span></label>
+            <input type="text" id="forgot-otp-input" class="cgv-input-text" placeholder="Nhập mã OTP..." style="letter-spacing: 2px;" />
+        </div>
+        <div class="cgv-form-group">
+            <label>Mật khẩu mới <span style="color:red">*</span></label>
+            <input type="password" id="forgot-new-password" class="cgv-input-text" placeholder="Nhập mật khẩu mới..." />
+        </div>
+        <button class="btn-cgv-submit" onclick="submitNewPassword()" style="margin-top: 15px; background: #10b981;">ĐỔI MẬT KHẨU</button>
+    </div>
+
+  </div>
+</div>
     <div class="cgv-modal-overlay" id="checkout-review-modal">
       <div
         class="cgv-auth-split-box"
@@ -3230,6 +3351,7 @@
       </div>
     </div>
 
+
     <div class="cgv-modal-overlay" id="history-detail-modal">
       <div
         class="cgv-auth-split-box"
@@ -3282,10 +3404,16 @@
 </div>
 
 <script src="js/state.js"></script>
-<script src="js/api.js"></script>   <script src="js/ui.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/booking.js"></script>
-<script src="js/admin.js"></script>
+
+  <!-- 2. Nhúng file trang chủ ngay sau state.js để dùng chung 'serverData' không bị trùng lặp -->
+  <!-- Thêm đuôi ?v=... để diệt tận gốc lỗi dính cache file cũ của Chrome/Edge -->
+  <script src="js/home.js?v=lasCinemas2026"></script>
+
+  <!-- 3. Các file giao diện và tính năng chạy sau cùng -->
+  <script src="js/api.js"></script>   
+  <script src="js/ui.js"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
+  <script src="js/auth.js"></script>
+  <script src="js/admin.js"></script>
   </body>
 </html>
 

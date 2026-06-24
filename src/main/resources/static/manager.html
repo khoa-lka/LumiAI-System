@@ -309,6 +309,7 @@
                   oninput="filterMovies()"
                 />
               </div>
+
               <select
                 class="mp-filter-select"
                 id="mp-filter-status"
@@ -319,18 +320,19 @@
                 <option value="coming_soon">Sắp chiếu</option>
                 <option value="end_showing">Ngừng chiếu</option>
               </select>
+              </select>
+
               <select
                 class="mp-filter-select"
                 id="mp-filter-genre"
                 onchange="filterMovies()"
               >
                 <option value="all">Genre</option>
-                <option value="animation">Animation</option>
-                <option value="sci-fi">Sci-fi</option>
-                <option value="adventure">Adventure</option>
-                <option value="crime">Crime</option>
-                <option value="horror">Horror</option>
-                <option value="mystery">Mystery</option>
+                <option value="Action">Hành động</option>
+                <option value="Horror">Kinh dị</option>
+                <option value="Romance">Tình cảm</option>
+                <option value="Comedy">Hài hước</option>
+                <option value="Animation">Hoạt hình</option>
               </select>
             </div>
           </div>
@@ -737,6 +739,137 @@
         <div
           class="mp-modal-close"
           onclick="closeAddMovie()"
+          style="cursor: pointer; float: right; font-weight: bold"
+        >
+          ✕
+        </div>
+        <div
+          class="mp-modal-header"
+          style="font-weight: bold; font-size: 18px; margin-bottom: 20px"
+        >
+          Thêm Phim Mới
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px">
+          <div class="mp-form-group">
+            <label>Tên phim (Tiếng Việt)</label
+            ><input type="text" id="add-title" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Thể loại</label
+            ><input type="text" id="add-genre" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Thời lượng (phút)</label
+            ><input type="number" id="add-duration" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Đạo diễn</label
+            ><input type="text" id="add-director" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Quốc gia</label
+            ><input type="text" id="add-country" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group" style="grid-column: span 2">
+            <label>Diễn viên</label
+            ><input type="text" id="add-performer" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group" style="grid-column: span 2">
+            <label>Tóm tắt (Synopsis)</label
+            ><textarea
+              id="add-synopsis"
+              class="cgv-input-text"
+              rows="2"
+            ></textarea>
+          </div>
+          <div class="mp-form-group">
+            <label>Poster chính (URL)</label
+            ><input type="text" id="add-mainposter" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Poster phụ (URL)</label
+            ><input type="text" id="add-subposter" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Ngày phát hành</label
+            ><input type="date" id="add-release" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Độ tuổi</label>
+            <select id="add-age" class="cgv-input-text">
+              <option value="0">P</option>
+              <option value="13">T13</option>
+              <option value="16">T16</option>
+              <option value="18">T18</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mp-form-group" style="margin-top: 15px">
+          <label>Trạng thái</label><br />
+          <input type="radio" name="add_status" value="now_showing" checked />
+          Đang chiếu
+          <input
+            type="radio"
+            name="add_status"
+            value="coming_soon"
+            style="margin-left: 15px"
+          />
+          Sắp chiếu
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px">
+          <button
+            class="btn-cgv-cancel"
+            onclick="closeAddMovie()"
+            style="flex: 1; cursor: pointer"
+          >
+            Hủy
+          </button>
+          <button
+            class="btn-cgv-submit"
+            onclick="submitAddMovie()"
+            style="flex: 1; cursor: pointer"
+          >
+            LƯU
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="mp-modal-overlay"
+      id="mp-update-movie-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        class="mp-modal-box"
+        style="
+          background: white;
+          width: 750px;
+          padding: 25px;
+          border-radius: 8px;
+          max-height: 90vh;
+          overflow-y: auto;
+        "
+      >
+        <input type="hidden" id="upd-movie-id" />
+
+        <div
+          class="mp-modal-close"
+          onclick="closeUpdateMovie()"
           style="cursor: pointer; float: right; font-weight: bold"
         >
           ✕
