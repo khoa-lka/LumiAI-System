@@ -1313,6 +1313,124 @@ window.resetHoldState = function () {
   window.currentBookingStep = 1;
 };
 
+// ==========================================================================
+// MẢNG DỮ LIỆU TIN TỨC & ƯU ĐÃI ĐỘNG (CÓ THỂ LẤY TỪ BACKEND HOẶC MOCK TẠM)
+// ==========================================================================
+window.lasPromoList = [
+  {
+    id: "promo1",
+    title: "Đeo Phone Chắc Tay - Nhận Quà Khủng Liền Tay",
+    date: "05/06/2026 - 10/06/2026",
+    image:
+      "https://www.cgv.vn/media/catalog/product/cache/1/image/1800x/71252117777b696995f019344547b749/p/h/phong_ve_uu_dai_240x350_1_.jpg",
+    content:
+      "Chào mừng quý khách đến với ngày hội phụ kiện tại LAS Cinemas! Chỉ cần mang theo điện thoại có ốp lưng độc lạ khi mua vé xem phim, bạn sẽ có cơ hội bốc thăm trúng thưởng các phần quà công nghệ cực khủng như tai nghe không dây, sạc dự phòng thông minh và hàng ngàn voucher bắp nước miễn phí.<br><br><b>Điều kiện áp dụng:</b> Áp dụng cho mọi hội viên LAS đặt vé trực tuyến hoặc trực tiếp tại quầy trong khung thời gian diễn ra sự kiện.",
+  },
+  {
+    id: "promo2",
+    title: "Xem Phim Doraemon Nhận Ngay Móc Khóa Xinh Xắn",
+    date: "06/06/2026 - 12/06/2026",
+    image: "DORAEMON KEYCHAIN", // Sử dụng text nếu không có ảnh gốc
+    content:
+      "Siêu phẩm hoạt hình Doraemon đã chính thức đổ bộ! Khi mua combo bắp nước bất kỳ kèm theo 02 vé xem phim Doraemon phiên bản điện ảnh mới nhất, quý khách sẽ được tặng ngay 01 chiếc móc khóa Doraemon giới hạn độc quyền từ nhà phát hành.<br><br><b>Lưu ý:</b> Số lượng quà tặng có hạn, chương trình có thể kết thúc sớm hơn dự kiến nếu hết quà tại quầy.",
+  },
+  {
+    id: "promo3",
+    title: "Đổi Điểm LAS Rewards Nhận Voucher Giảm 25% Vexere",
+    date: "05/06/2026 - 22/07/2026",
+    image: "VEXERE VOUCHER 25%",
+    content:
+      "Sự kết hợp bùng nổ giữa LAS Cinemas và Vexere! Chỉ với 50 điểm thưởng tích lũy trên hệ thống LAS Rewards, bạn có thể đổi lấy ngay mã giảm giá giảm 25% (tối đa 50.000đ) khi đặt vé xe khách trực tuyến trên nền tảng Vexere.<br><br><b>Cách thức nhận mã:</b> Vào mục Đổi quà trên ứng dụng, chọn Voucher Vexere và bấm Xác nhận.",
+  },
+];
+
+// Hàm tự động vẽ danh sách ưu đãi động ra ngoài trang chủ
+window.renderLasPromoGrid = function () {
+  const promoContainer = document.getElementById("cgv-event-grid");
+  if (!promoContainer) return;
+
+  // 🚀 Cào dữ liệu động trực tiếp từ Database SQL Server qua Spring Boot
+  fetch("http://localhost:8080/api/promos")
+    .then((res) => {
+      if (!res.ok) throw new Error("Không thể kết nối API ưu đãi");
+      return res.json();
+    })
+    .then((promosList) => {
+      console.log("🎁 Đã nhận danh sách ưu đãi động từ Database:", promosList);
+
+      // Ghim mảng trả về vào window toàn cục để hàm click xem chi tiết tìm được id
+      window.lasPromoList = promosList;
+
+      promoContainer.innerHTML = "";
+      window.lasPromoList.forEach((item) => {
+        // Chuẩn hóa đường link ảnh hoặc text fallback đề phòng DB bị null
+        let validImg =
+          item.imageUrl ||
+          item.image_url ||
+          "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
+
+        let imgHTML = validImg.startsWith("http")
+          ? `<div class="news-card-img-holder" style="background-image: url('${validImg}'); background-size: cover; height: 200px;"></div>`
+          : `<div class="news-card-img-holder" style="background: #a1dbf1; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0c6291; font-size: 14px; height: 200px;">${validImg}</div>`;
+
+        // Tạo chuỗi hiển thị khoảng ngày áp dụng lấy từ trường dữ liệu DATE của SQL Server
+        let dateString = `${item.startDate || item.start_date} - ${item.endDate || item.end_date}`;
+
+        promoContainer.innerHTML += `
+          <div class="news-promo-card" onclick="window.viewPromoDetailText('${item.id}')" style="cursor: pointer; background: #fff; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; transition: transform 0.2s;">
+              ${imgHTML}
+              <div style="padding: 15px; text-align: left;">
+                  <div class="news-card-date" style="color: #666; font-size: 12px; margin-bottom: 5px;">📅 ${dateString}</div>
+                  <div class="news-card-title-text" style="font-weight: bold; font-size: 14px; color: #111; line-height: 1.4;">${item.title}</div>
+              </div>
+          </div>
+        `;
+      });
+    })
+    .catch((err) =>
+      console.error("🚨 Lỗi khi kéo dữ liệu ưu đãi từ SQL Server: ", err),
+    );
+};
+
+// Hàm kích hoạt nhảy sang tab chi tiết ưu đãi và đổ dữ liệu
+window.viewPromoDetailText = function (promoId) {
+  // Đồng bộ ép kiểu dữ liệu về chuỗi hoặc số để so sánh khớp với ID dưới DB gửi lên
+  const targetPromo = window.lasPromoList.find(
+    (p) => String(p.id) === String(promoId),
+  );
+  if (!targetPromo) return;
+
+  document.getElementById("detail-promo-title").innerText = targetPromo.title;
+  document.getElementById("detail-promo-date").innerText =
+    "Thời gian áp dụng: " +
+    (targetPromo.startDate || targetPromo.start_date) +
+    " đến " +
+    (targetPromo.endDate || targetPromo.end_date);
+  document.getElementById("detail-promo-content").innerHTML =
+    targetPromo.content;
+
+  const imgBoxEl = document.getElementById("detail-promo-img-box");
+  if (imgBoxEl) {
+    let validImg = targetPromo.imageUrl || targetPromo.image_url || "";
+    if (validImg.startsWith("http")) {
+      imgBoxEl.style.backgroundImage = `url('${validImg}')`;
+      imgBoxEl.style.backgroundSize = "cover";
+      imgBoxEl.innerText = "";
+    } else {
+      imgBoxEl.style.background = "#a1dbf1";
+      imgBoxEl.style.backgroundImage = "none";
+      imgBoxEl.innerText = validImg || "LAS";
+    }
+  }
+  window.switchCgvTab("panel-news-detail");
+};
+
+// Tìm đến sự kiện tải trang sẵn có (DOMContentLoaded) ở cuối file home.js của em, thêm dòng này vào:
+window.addEventListener("DOMContentLoaded", () => {
+  // ... các hàm có sẵn của em (generateCgvDateSlider, fetchSyncData...)
+  window.renderLasPromoGrid(); // 🌟 Gọi hàm vẽ tin tức ưu đãi lên trang chủ
+});
+
 function generateCgvDateSlider() {
   const container = document.getElementById("cgv-dynamic-date-slider");
   if (!container) return;
