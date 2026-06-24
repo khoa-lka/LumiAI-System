@@ -928,30 +928,32 @@
           </div>
         </div>
 
-        <div id="panel-news-detail" class="cgv-panel" style="display: none;">
-  <div class="section-title" style="text-align: center; font-size: 24px; font-weight: bold; color: #e71a0f; text-transform: uppercase; margin: 30px 0 20px 0;">
+<div id="panel-news-detail" class="cgv-panel">
+  <div class="section-title" style="text-align: center; font-size: 24px; font-weight: bold; color: #e71a0f; text-transform: uppercase; margin: 30px 0 20px 0; letter-spacing: 1px;">
       Chi Tiết Chương Trình Ưu Đãi
   </div>
   
-  <div class="promo-detail-container" style="display: flex; gap: 40px; text-align: left; background: #fdfcf7; border: 1px solid #e0e0e0; padding: 30px; border-radius: 8px;">
-      <div id="detail-promo-img-box" style="width: 300px; height: 300px; background: #222; color: #e5a93b; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-          IMAGE
-      </div>
+  <div class="promo-detail-container" style="display: flex; gap: 35px; max-width: 950px; margin: 0 auto; background: #fdfcf7; border: 1px solid #e0e0e0; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); align-items: flex-start;">
       
-      <div class="promo-detail-info" style="flex: 1;">
-          <h2 id="detail-promo-title" style="margin: 0 0 10px 0; color: #e71a0f; font-size: 22px; font-weight: bold; line-height: 1.4;">
+      <div id="detail-promo-img-box" style="width: 360px; flex-shrink: 0; border-radius: 6px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background: #222;">
+          </div>
+      
+      <div class="promo-detail-info" style="flex: 1; text-align: left;">
+          <h2 id="detail-promo-title" style="margin: 0 0 12px 0; color: #e71a0f; font-size: 22px; font-weight: bold; line-height: 1.4; border-bottom: 2px solid #e71a0f; padding-bottom: 10px;">
               -
           </h2>
           <p id="detail-promo-date" style="margin: 0 0 20px 0; font-size: 13.5px; color: #666; font-style: italic; font-weight: bold;">
               Thời gian áp dụng: -
           </p>
-          <div id="detail-promo-content" style="color: #444; line-height: 1.7; font-size: 14.5px; text-align: justify; margin-bottom: 25px;">
+          <div id="detail-promo-content" style="color: #444; line-height: 1.7; font-size: 14.5px; text-align: justify; margin-bottom: 30px;">
               Nội dung chương trình khuyến mãi...
           </div>
           
-          <button class="btn-cgv-submit" style="width: auto; padding: 12px 35px; background: #333; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;" onclick="window.switchCgvTab('panel-news')">
-              Quay lại danh sách
-          </button>
+          <div style="text-align: left;">
+              <button class="btn-cgv-submit" style="width: auto; padding: 12px 40px; background: #333; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;" onclick="window.switchCgvTab('panel-news')">
+                  ← Quay lại danh sách
+              </button>
+          </div>
       </div>
   </div>
 </div>
@@ -1104,7 +1106,7 @@
           >
             — TIN MỚI VÀ ƯU ĐÃI —
           </div>
-
+<div class="news-grid-layout" id="cgv-event-grid-news" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;"></div>
           
         </div>
 
