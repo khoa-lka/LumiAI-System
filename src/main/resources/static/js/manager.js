@@ -146,46 +146,38 @@ function renderMoviesTable(movies) {
     return;
   }
 
-  movies.forEach((m) => {
-    let ageBadgeClass =
-      m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
+  // Thay thế đoạn vẽ bảng trong hàm renderMoviesTable thành đoạn này:
+  movies.forEach((m, index) => { // 🚀 ĐÃ SỬA: Thêm index để đếm số thứ tự
+    let ageBadgeClass = m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
     let ageText = m.ageRating === 0 ? "P" : `T${m.ageRating}`;
     let statusClass = m.status === "now_showing" ? "active" : "inactive";
-    let statusText =
-      m.status === "now_showing"
-        ? "Đang chiếu"
-        : m.status === "coming_soon"
-          ? "Sắp chiếu"
-          : "Ngưng chiếu";
+    let statusText = m.status === "now_showing" ? "Đang chiếu" : m.status === "coming_soon" ? "Sắp chiếu" : "Ngưng chiếu";
     let rowClass = m.status !== "now_showing" ? 'class="mp-row-inactive"' : "";
-    let posterUrl = m.mainposter_url
-      ? m.mainposter_url
-      : "img/default-poster.jpg";
+    let posterUrl = m.mainposter_url ? m.mainposter_url : "img/default-poster.jpg";
 
     tbody.innerHTML += `
-        <tr ${rowClass}>
-            <td style="text-align: center;">${m.movieId}</td>
-            <td>
-                <div class="mp-movie-info">
-                    <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
-                    <div>
-                        <div class="mp-movie-title">${m.title}</div>
-                    </div>
-                </div>
-            </td>
-            <td>${m.duration} phút</td>
-            <td><div class="mp-age-badges"><span class="mp-badge ${ageBadgeClass}">${ageText}</span></div></td>
-            <td>${m.country || "N/A"}</td>
-            <td><span class="mp-status ${statusClass}">${statusText}</span></td>
-            <td>${m.releaseDate || "N/A"}</td>
-            <td>
-                <div class="mp-table-actions">
-                    <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết">👁️</button>
-                    <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa">✏️</button>
-                    <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
-                </div>
-            </td>
-        </tr>
+      <tr ${rowClass}>
+          <td style="text-align: center; font-weight: bold;">${index + 1}</td> <td>
+              <div class="mp-movie-info">
+                  <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
+                  <div>
+                      <div class="mp-movie-title">${m.title}</div>
+                  </div>
+              </div>
+          </td>
+          <td>${m.duration} phút</td>
+          <td><div class="mp-age-badges"><span class="mp-badge ${ageBadgeClass}">${ageText}</span></div></td>
+          <td>${m.country || "N/A"}</td>
+          <td><span class="mp-status ${statusClass}">${statusText}</span></td>
+          <td>${m.releaseDate || "N/A"}</td>
+          <td>
+              <div class="mp-table-actions">
+                  <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết">👁️</button>
+                  <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa">✏️</button>
+                  <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
+              </div>
+          </td>
+      </tr>
     `;
   });
 }
@@ -221,6 +213,7 @@ function filterMovies() {
 window.filterMovies = filterMovies;
 
 // Hàm tải danh sách phim gốc cho bảng Quản lý
+
 function loadManagerMovies() {
   const tbody = document.getElementById("mp-movies-tbody");
   if (!tbody) return;
@@ -228,34 +221,26 @@ function loadManagerMovies() {
   tbody.innerHTML =
     '<tr><td colspan="8" style="text-align:center;">Đang tải danh sách phim từ Database...</td></tr>';
 
-  // 🌟 ĐÃ SỬA: Dùng chuẩn xác hàm API.getMovies() của em để không bị lỗi biến mất phim
+  // Gọi API lấy danh sách phim chuẩn chỉnh từ Spring Boot
   API.getMovies()
     .then((movies) => {
       tbody.innerHTML = "";
-      window.moviesList = movies; // Lưu tạm danh sách phim vào biến toàn cục để dùng cho việc sửa phim
-      movies.forEach((m) => {
-        let ageBadgeClass =
-          m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
+      window.moviesList = movies; // Lưu tạm danh sách phim vào biến toàn cục để dùng cho bộ lọc filter
+
+      // Duyệt danh sách phim và gán index tăng dần làm số thứ tự (STT) tự động cập nhật
+      movies.forEach((m, index) => { 
+        let ageBadgeClass = m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
         let ageText = m.ageRating === 0 ? "P" : `T${m.ageRating}`;
 
         let statusClass = m.status === "now_showing" ? "active" : "inactive";
-        let statusText =
-          m.status === "now_showing"
-            ? "Đang chiếu"
-            : m.status === "coming_soon"
-              ? "Sắp chiếu"
-              : "Ngưng chiếu";
-        let rowClass =
-          m.status !== "now_showing" ? 'class="mp-row-inactive"' : "";
+        let statusText = m.status === "now_showing" ? "Đang chiếu" : m.status === "coming_soon" ? "Sắp chiếu" : "Ngưng chiếu";
+        let rowClass = m.status !== "now_showing" ? 'class="mp-row-inactive"' : "";
 
-        let posterUrl = m.mainposter_url
-          ? m.mainposter_url
-          : "img/default-poster.jpg";
+        let posterUrl = m.mainposterUrl || m.mainposter_url || "img/default-poster.jpg";
 
-        // CHÚ Ý: Chỗ onClick nút Sửa phim đã được chuẩn hóa
         tbody.innerHTML += `
             <tr ${rowClass}>
-                <td style="text-align: center;">${m.movieId}</td>
+                <td style="text-align: center; font-weight: bold;">${index + 1}</td> 
                 <td>
                     <div class="mp-movie-info">
                         <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
@@ -264,7 +249,7 @@ function loadManagerMovies() {
                         </div>
                     </div>
                 </td>
-                <td>${m.duration} phút</td>
+                <td>${m.duration || m.durationMinutes || 0} phút</td>
                 <td><div class="mp-age-badges"><span class="mp-badge ${ageBadgeClass}">${ageText}</span></div></td>
                 <td>${m.country || "N/A"}</td>
                 <td><span class="mp-status ${statusClass}">${statusText}</span></td>
