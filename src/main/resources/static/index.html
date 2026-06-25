@@ -1754,49 +1754,45 @@
             <button class="cgv-tab-btn active" id="tab-login-btn" onclick="toggleAuthTab('login')">Đăng Nhập</button>
             <button class="cgv-tab-btn" id="tab-register-btn" onclick="toggleAuthTab('register')">Đăng Ký</button>
           </div>
+          
+    <div class="cgv-auth-content auth-form-panel active" id="form-login-panel">
+      <div class="cgv-form-group">
+        <label>Email hoặc số điện thoại</label>
+        <input type="text" id="auth-username" class="cgv-input-text" placeholder="Nhập Email hoặc Số điện thoại..."
+          autocomplete="off" />
+      </div>
 
-          <div
-            class="cgv-auth-content auth-form-panel active"
-            id="form-login-panel"
-          >
-            <div class="cgv-form-group">
-    <label>Email hoặc số điện thoại</label>
-    <input type="text" id="auth-username" class="cgv-input-text" placeholder="Nhập Email hoặc Số điện thoại..." autocomplete="off" />
-</div>
-            <div class="cgv-form-group">
-              <label>Mật khẩu</label>
-              <input
-                type="password"
-                id="auth-password"
-                class="cgv-input-text"
-                placeholder="........."
-              />
-            </div>
+      <div class="cgv-form-group">
+        <label>Mật khẩu</label>
+        <input type="password" id="auth-password" class="cgv-input-text" placeholder="........." />
+      </div>
 
-            <div class="cgv-form-group" style="margin-bottom: 15px;">
-              <label style="font-weight: bold; font-size: 13px; color: #333; display: block; margin-bottom: 5px;">Mật khẩu mật mã <span>*</span></label>
-              <input type="password" id="auth-password" class="cgv-input-text" placeholder="Nhập mật khẩu an toàn..." autocomplete="new-password" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px;" />
-            </div>
-
-            <div class="cgv-form-group" style="margin-bottom: 20px;">
-              <label style="font-weight: bold; font-size: 13px; color: #333; display: block; margin-bottom: 5px;">Xác thực mã bảo vệ Captcha <span>*</span></label>
-              <div class="captcha-row" style="display: flex; gap: 10px; align-items: center;">
-                <input type="text" class="cgv-input-text captcha-input" id="login-captcha" placeholder="Nhập ký tự..." style="width: 50%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; text-transform: uppercase;" />
-                <div class="captcha-img-box" style="display: flex; align-items: center; justify-content: space-between; border: 1px solid #ccc; background: #f4f2ec; padding: 5px 10px; border-radius: 4px; flex-grow: 1; height: 38px; box-sizing: border-box;">
-                  <span class="captcha-text" id="login-captcha-text" style="letter-spacing: 3px; font-family: 'Georgia', serif; font-weight: bold; font-style: italic; font-size: 20px; color: #111; user-select: none;">IXBLT1</span>
-                  <div class="captcha-refresh" onclick="generateNewLoginCaptcha()" style="color: #e71a0f; font-size: 20px; cursor: pointer; user-select: none; font-weight: bold;">↻</div>
-                </div>
-              </div>
-            </div>
-
-            <button class="btn-cgv-submit" onclick="submitCgvLogin(event)" style="width: 100%; background: #e71a0f; color: white; border: none; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; border-radius: 4px; box-shadow: 0 4px 6px rgba(231,26,15,0.2); transition: all 0.2s;">
-                ĐĂNG NHẬP VÀO HỆ THỐNG
-            </button>
-            
-            <div class="cgv-auth-footer" style="margin-top: 15px; text-align: center; font-size: 13px;">
-              <a href="#" onclick="openForgotModal(); closeAuthModal();" style="color: #0066cc; text-decoration: none;">Bạn muốn tìm lại mật khẩu bảo mật?</a>
-            </div>
+      <div class="cgv-form-group" style="margin-bottom: 20px;">
+        <label style="font-weight: bold; font-size: 13px; color: #333; display: block; margin-bottom: 5px;">Xác thực mã bảo
+          vệ Captcha <span>*</span></label>
+        <div class="captcha-row" style="display: flex; gap: 10px; align-items: center;">
+          <input type="text" class="cgv-input-text captcha-input" id="login-captcha" placeholder="Nhập ký tự..."
+            style="width: 50%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; text-transform: uppercase;" />
+          <div class="captcha-img-box"
+            style="display: flex; align-items: center; justify-content: space-between; border: 1px solid #ccc; background: #f4f2ec; padding: 5px 10px; border-radius: 4px; flex-grow: 1; height: 38px; box-sizing: border-box;">
+            <span class="captcha-text" id="login-captcha-text"
+              style="letter-spacing: 3px; font-family: 'Georgia', serif; font-weight: bold; font-style: italic; font-size: 20px; color: #111; user-select: none;">IXBLT1</span>
+            <div class="captcha-refresh" onclick="generateNewLoginCaptcha()"
+              style="color: #e71a0f; font-size: 20px; cursor: pointer; user-select: none; font-weight: bold;">↻</div>
           </div>
+        </div>
+      </div>
+
+      <button class="btn-cgv-submit" onclick="submitCgvLogin(event)"
+        style="width: 100%; background: #e71a0f; color: white; border: none; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; border-radius: 4px; box-shadow: 0 4px 6px rgba(231,26,15,0.2); transition: all 0.2s;">
+        ĐĂNG NHẬP VÀO HỆ THỐNG
+      </button>
+
+      <div class="cgv-auth-footer" style="margin-top: 15px; text-align: center; font-size: 13px;">
+        <a href="#" onclick="openForgotModal(); closeAuthModal();" style="color: #0066cc; text-decoration: none;">Bạn muốn
+          tìm lại mật khẩu bảo mật?</a>
+      </div>
+    </div>
 
           <div class="cgv-auth-content auth-form-panel" id="form-register-panel">
             <div class="scrollable-register-form">
