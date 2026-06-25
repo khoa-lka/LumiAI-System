@@ -1346,10 +1346,10 @@ window.lasPromoList = [
 
 // Hàm tự động vẽ danh sách ưu đãi động ra ngoài trang chủ
 window.renderLasPromoGrid = function () {
-  const promoContainer = document.getElementById("cgv-event-grid");
-  if (!promoContainer) return;
+  // 🌟 FIX: Chỉ lấy duy nhất khung chứa của Tab Tin Tức, không lấy khung EVENT trang chủ nữa
+  const promoNewsContainer = document.getElementById("cgv-event-grid-news");
 
-  // 🚀 Cào dữ liệu động trực tiếp từ Database SQL Server qua Spring Boot
+  // Cào dữ liệu động trực tiếp từ Database SQL Server qua Spring Boot
   fetch("http://localhost:8080/api/promos")
     .then((res) => {
       if (!res.ok) throw new Error("Không thể kết nối API ưu đãi");
@@ -1361,23 +1361,25 @@ window.renderLasPromoGrid = function () {
       // Ghim mảng trả về vào window toàn cục để hàm click xem chi tiết tìm được id
       window.lasPromoList = promosList;
 
-      promoContainer.innerHTML = "";
+      // 🌟 FIX: Chỉ xóa rỗng khung bên tab Tin tức trước khi vẽ
+      if (promoNewsContainer) promoNewsContainer.innerHTML = "";
+
       window.lasPromoList.forEach((item) => {
-        // Chuẩn hóa đường link ảnh hoặc text fallback đề phòng DB bị null
         let validImg =
-          item.imageUrl ||
-          item.image_url ||
-          "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
+          item.imageUrl || item.image_url || item.image || item.img || "";
+        validImg = validImg.trim();
 
-        let imgHTML = validImg.startsWith("http")
-          ? `<div class="news-card-img-holder" style="background-image: url('${validImg}'); background-size: cover; height: 200px;"></div>`
-          : `<div class="news-card-img-holder" style="background: #a1dbf1; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0c6291; font-size: 14px; height: 200px;">${validImg}</div>`;
+        let dateString = `${item.startDate || item.start_date || "05/06/2026"} - ${item.endDate || item.end_date || "12/06/2026"}`;
 
-        // Tạo chuỗi hiển thị khoảng ngày áp dụng lấy từ trường dữ liệu DATE của SQL Server
-        let dateString = `${item.startDate || item.start_date} - ${item.endDate || item.end_date}`;
+        let imgHTML =
+          validImg.startsWith("http") ||
+          validImg.includes("/") ||
+          validImg.includes(".")
+            ? `<div class="news-card-img-holder" style="background-image: url('${validImg}'); background-size: cover; background-position: center; height: 200px; width: 100%; display: block;"></div>`
+            : `<div class="news-card-img-holder" style="background: #a1dbf1; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0c6291; font-size: 14px; height: 200px; width: 100%; text-align: center; padding: 0 10px; box-sizing: border-box;">${validImg || "LAS CINEMA"}</div>`;
 
-        promoContainer.innerHTML += `
-          <div class="news-promo-card" onclick="window.viewPromoDetailText('${item.id}')" style="cursor: pointer; background: #fff; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; transition: transform 0.2s;">
+        let cardHTML = `
+          <div class="news-promo-card" onclick="window.viewPromoDetailText('${item.id}')" style="cursor: pointer; background: #fff; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; transition: transform 0.2s; display: block; margin-bottom: 10px;">
               ${imgHTML}
               <div style="padding: 15px; text-align: left;">
                   <div class="news-card-date" style="color: #666; font-size: 12px; margin-bottom: 5px;">📅 ${dateString}</div>
@@ -1385,6 +1387,9 @@ window.renderLasPromoGrid = function () {
               </div>
           </div>
         `;
+
+        // 🌟 FIX: Chỉ đổ thẻ card vào khung Tab Tin tức, giữ nguyên vẹn mục EVENT thô ngoài trang chủ
+        if (promoNewsContainer) promoNewsContainer.innerHTML += cardHTML;
       });
     })
     .catch((err) =>
@@ -1563,6 +1568,81 @@ function saveUpdatedProfileInformationData() {
   });
   document.getElementById("btn-save-profile").style.display = "none";
   alert("Cập nhật thông tin tài khoản mới thành công!");
+}
+
+let currentForgotIdentifier = "";
+
+function openForgotModal() {
+  document.getElementById("forgot-modal").classList.add("open");
+  document.getElementById("forgot-step-1").style.display = "block";
+  document.getElementById("forgot-step-2").style.display = "none";
+  document.getElementById("forgot-identifier").value = "";
+  document.getElementById("forgot-otp-input").value = "";
+  document.getElementById("forgot-new-password").value = "";
+}
+
+function closeForgotModal() {
+  document.getElementById("forgot-modal").classList.remove("open");
+}
+
+// Gọi API gửi OTP
+function requestForgotOtp() {
+  const identifier = document.getElementById("forgot-identifier").value.trim();
+  if (!identifier) return alert("Vui lòng nhập Email hoặc Số điện thoại!");
+
+  fetch("http://localhost:8080/api/forgot-password/request", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ identifier: identifier }),
+  })
+    .then((res) =>
+      res.json().then((data) => ({ status: res.status, body: data })),
+    )
+    .then((res) => {
+      if (res.status === 200) {
+        alert(res.body.message + "\n(Hãy kiểm tra Console của Spring Boot)");
+        currentForgotIdentifier = identifier;
+        // Chuyển sang Bước 2
+        document.getElementById("forgot-step-1").style.display = "none";
+        document.getElementById("forgot-step-2").style.display = "block";
+      } else {
+        alert("Lỗi: " + res.body.message);
+      }
+    })
+    .catch((err) => alert("Lỗi kết nối Server!"));
+}
+
+// Gọi API Đổi mật khẩu
+function submitNewPassword() {
+  const otp = document.getElementById("forgot-otp-input").value.trim();
+  const newPassword = document.getElementById("forgot-new-password").value;
+
+  if (!otp || !newPassword)
+    return alert("Vui lòng điền đầy đủ OTP và Mật khẩu mới!");
+
+  fetch("http://localhost:8080/api/forgot-password/reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      identifier: currentForgotIdentifier,
+      otp: otp,
+      newPassword: newPassword,
+    }),
+  })
+    .then((res) =>
+      res.json().then((data) => ({ status: res.status, body: data })),
+    )
+    .then((res) => {
+      if (res.status === 200) {
+        alert(res.body.message);
+        closeForgotModal();
+        openAuthModal(); // Mở lại bảng đăng nhập cho khách login
+        toggleAuthTab("login");
+      } else {
+        alert("Lỗi: " + res.body.message);
+      }
+    })
+    .catch((err) => alert("Lỗi kết nối Server!"));
 }
 
 window.switchCgvTab = switchCgvTab;
