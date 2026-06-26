@@ -2086,7 +2086,7 @@ async function sendChatMessageToServer() {
     const GoogleGenAI = aiModule.GoogleGenAI;
 
     // Dán mã API Key cá nhân hợp lệ của em ở đây nha
-    const aiKey = "AQ.Ab8RN6LflARnL6zYhorOrfG4_AvipOnGPz6uhyWGnQSMzCAZdw";
+    const aiKey = "";
     const ai = new GoogleGenAI({ apiKey: aiKey });
 
     // 🌟 BƯỚC 3: CẢI TIẾN HỆ THỐNG LUẬT - Cho phép giao tiếp tự do nhưng thắt chặt khi hỏi lịch
