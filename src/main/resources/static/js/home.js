@@ -23,6 +23,58 @@ currentBannerIndex = 0;
 totalBanners = 0;
 temporaryRegisterEmail = "";
 
+// ==========================================================================
+// 🌟 THẦN CHÚ KHÔI PHỤC SESSION: Ép tài khoản luôn luôn đăng nhập khi Reload
+// ==========================================================================
+window.syncUserLoginSession = function () {
+  const cachedUser = localStorage.getItem("las_logged_in_user");
+  if (cachedUser) {
+    isUserLoggedInState = true;
+    const uData = JSON.parse(cachedUser);
+
+    // Khôi phục mảng hóa đơn lịch sử từ ổ cứng
+    const cachedInvoices = localStorage.getItem("las_user_invoices");
+    if (cachedInvoices) {
+      userPastInvoices = JSON.parse(cachedInvoices);
+    }
+
+    // Ép giao diện Thanh điều hướng đầu trang hiển thị đúng trạng thái Xin Chào
+    const authLinkBox = document.getElementById("top-bar-auth-link");
+    if (authLinkBox) {
+      authLinkBox.onclick = () => switchCgvTab("panel-profile");
+      authLinkBox.style.cursor = "pointer";
+      authLinkBox.innerHTML = `
+          <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
+          <span onclick="handleCgvLogout(event)" style="color: #0066cc; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+      `;
+    }
+    if (document.getElementById("top-bar-ticket-link")) {
+      document.getElementById("top-bar-ticket-link").innerHTML =
+        `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
+    }
+
+    // Điền dữ liệu vào Form thông tin cá nhân rạp phim
+    if (document.getElementById("profile-field-name"))
+      document.getElementById("profile-field-name").value = uData.fullName;
+    if (document.getElementById("profile-field-phone"))
+      document.getElementById("profile-field-phone").value =
+        uData.phoneNumber || "";
+    if (document.getElementById("profile-field-email"))
+      document.getElementById("profile-field-email").value = uData.email;
+    if (document.getElementById("profile-summary-avatar")) {
+      document.getElementById("profile-summary-avatar").innerText =
+        uData.fullName.split(" ").pop().substring(0, 2).toUpperCase();
+    }
+    if (document.getElementById("profile-welcome-name"))
+      document.getElementById("profile-welcome-name").innerText =
+        `Xin chào ${uData.fullName},`;
+    if (document.getElementById("profile-star-role")) {
+      document.getElementById("profile-star-role").innerText =
+        uData.roleId === 1 ? "MANAGER / ADMIN" : "MEMBER";
+    }
+  }
+};
+
 // 1. Hàm tải Banner từ Database Spring Boot
 function loadBannersFromDatabase() {
   fetch("http://localhost:8080/api/banners")
@@ -132,6 +184,7 @@ window.fetchSyncData = function () {
 };
 
 // Khởi chạy khi tải trang
+// Khởi chạy khi tải trang và phục hồi trạng thái từ LocalStorage tránh lỗi refresh mất biến
 window.addEventListener("DOMContentLoaded", () => {
   const daySelect = document.getElementById("reg-birth-day");
   const monthSelect = document.getElementById("reg-birth-month");
@@ -140,30 +193,57 @@ window.addEventListener("DOMContentLoaded", () => {
   renderFnbMenu();
 
   if (daySelect && monthSelect && yearSelect) {
-    for (let i = 1; i <= 31; i++) {
+    for (let i = 1; i <= 31; i++)
       daySelect.innerHTML += `<option value="${i}">${i}</option>`;
-    }
-    for (let i = 1; i <= 12; i++) {
+    for (let i = 1; i <= 12; i++)
       monthSelect.innerHTML += `<option value="${i}">Tháng ${i}</option>`;
-    }
-    for (let i = 2026; i >= 1950; i--) {
+    for (let i = 2026; i >= 1950; i--)
       yearSelect.innerHTML += `<option value="${i}">${i}</option>`;
-    }
   }
 
   loadBannersFromDatabase();
   startAutoBannerSlider();
 
-  // 🌟 BƯỚC THẦN THÁNH: Ép hiển thị Tab phim hoạt động ngay khi trang vừa nạp xong hình hài
-  if (typeof switchCgvTab === "function") {
+  if (typeof switchCgvTab === "function")
     switchCgvTab("panel-movies", "now_showing");
-  }
-
-  if (typeof window.renderLasPromoGrid === "function") {
-    window.renderLasPromoGrid();
-  }
-
   window.fetchSyncData();
+
+  // 🌟 KHÓA TRÌ HOÃN 150MS: Đợi các file JS khác nạp xong giao diện mặc định rồi mới khôi phục Đăng Nhập
+  setTimeout(() => {
+    window.syncUserLoginSession();
+
+    // ĐÓN KẾT QUẢ VNPAY-CALLBACK TRẢ VỀ ĐỂ ĐIỀU HƯỚNG BƯỚC 4
+    const urlParameters = new URLSearchParams(window.location.search);
+    const vnpayResponseCode = urlParameters.get("vnp_ResponseCode");
+
+    if (vnpayResponseCode !== null) {
+      if (vnpayResponseCode === "00") {
+        // Khôi phục mảng trạng thái ghế và suất chiếu rạp lên bộ nhớ RAM tạm thời
+        const cachedBooking = localStorage.getItem("las_current_booking_cache");
+        if (cachedBooking) {
+          const bData = JSON.parse(cachedBooking);
+          selectedSeats = bData.seats;
+          selectedShowtime = bData.showtime;
+          selectedDateStr = bData.date;
+        }
+
+        alert(
+          "🎉 Chúc mừng bạn đã thanh toán hóa đơn VNPAY thành công! Hệ thống đang tiến hành xuất vé điện tử...",
+        );
+        if (typeof window.executeFinalCheckout === "function") {
+          window.executeFinalCheckout(); // Gọi hàm in vé thần tốc
+        }
+      } else {
+        alert(
+          "❌ Giao dịch thanh toán qua cổng VNPAY đã bị hủy bỏ hoặc thất bại. Vui lòng kiểm tra lại vị trí ghế ngồi!",
+        );
+        if (typeof window.switchCgvTab === "function")
+          switchCgvTab("panel-booking");
+      }
+      // Dọn sạch thanh URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, 150);
 });
 
 function generateRandomCaptcha(length = 6) {
@@ -367,17 +447,6 @@ function applyVoucher() {
   calculateCgvCart();
 }
 
-function processToPaymentGateway() {
-  closeCheckoutReview();
-  const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
-  document.getElementById("qr-total-price").innerText =
-    finalTotal.toLocaleString("vi-VN") + " đ";
-  const qrData = `Thanh toan ve LAS - So tien: ${finalTotal} VND`;
-  document.getElementById("bank-qr-img").src =
-    `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
-  document.getElementById("payment-redirect-modal").classList.add("open");
-}
-
 function closePaymentModal() {
   document.getElementById("payment-redirect-modal").classList.remove("open");
 }
@@ -416,7 +485,6 @@ function executeFinalCheckout() {
           status: "Đã thanh toán (VNPAY)",
         };
         userPastInvoices.unshift(invoiceObj);
-
         alert("Giao dịch thành công! Vé đã được xuất.");
         resetHoldState();
         selectedSeats = [];
@@ -465,13 +533,19 @@ function renderTransactionHistory() {
 
   historyZone.innerHTML = "";
   userPastInvoices.forEach((inv) => {
+    // 🌟 FIX LỖI TÀNG HÌNH: Ép màu đỏ thương hiệu thật (#e71a0f) thay vì dùng biến hệ thống cũ var(--cgv-red)
+    // Đồng thời thêm bộ lọc cứu cánh (inv.movie || "Vé xem phim LAS Cinemas") đề phòng chuỗi dữ liệu trống
     historyZone.innerHTML += `
-          <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; background: white; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                  <h4 style="margin: 0 0 5px 0; color: var(--cgv-red);">${inv.movie}</h4>
-                  <p style="margin: 0; font-size: 13px; color: #555;">Mã ĐH: <b>${inv.id}</b> | Ngày: ${inv.date} | Trạng thái: <span style="color: green;">${inv.status}</span></p>
+          <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; background: white; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+              <div style="text-align: left;">
+                  <h4 style="margin: 0 0 6px 0; color: #e71a0f; font-size: 15px; font-weight: bold; text-transform: uppercase;">
+                      ${inv.movie ? inv.movie : "Vé xem phim LAS Cinemas"}
+                  </h4>
+                  <p style="margin: 0; font-size: 13px; color: #555;">
+                      Mã ĐH: <b>${inv.id}</b> | Ngày: ${inv.date} | Trạng thái: <span style="color: green; font-weight: bold;">${inv.status}</span>
+                  </p>
               </div>
-              <button onclick="viewHistoryDetail('${inv.id}')" style="background: var(--cgv-gold); border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px;">Xem Chi Tiết</button>
+              <button onclick="viewHistoryDetail('${inv.id}')" style="background: #ff9900; color: #fff; border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 12.5px;">Xem Chi Tiết</button>
           </div>
       `;
   });
@@ -524,6 +598,10 @@ function closeLogoutConfirmModal() {
 function confirmCgvLogoutAction() {
   isUserLoggedInState = false;
   closeLogoutConfirmModal();
+  // 🌟 DỌN SẠCH LOCALSTORAGE KHI THOÁT
+  localStorage.removeItem("las_logged_in_user");
+  localStorage.removeItem("las_user_invoices");
+  localStorage.removeItem("las_current_booking_cache");
   const authLinkBox = document.getElementById("top-bar-auth-link");
   authLinkBox.removeAttribute("style");
   authLinkBox.onclick = openAuthModal;
@@ -621,6 +699,12 @@ function submitCgvLogin() {
         }
 
         switchCgvTab("panel-profile");
+        // 🌟 GHIM LẠI LÊN Ổ CỨNG TRÌNH DUYỆT:
+        localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
+        localStorage.setItem(
+          "las_user_invoices",
+          JSON.stringify(userPastInvoices),
+        );
       }
     })
     .catch((err) => alert("🚨 Lỗi đăng nhập: " + err.message));
@@ -764,6 +848,10 @@ function switchCgvTab(panelId, filterType = "now_showing") {
   }
 
   if (panelId === "panel-booking") {
+    // 🌟 PHÒNG THỦ: Ép quy trình đặt vé luôn luôn hiển thị Bước 1 (Chọn ghế) khi truy cập tab Đặt Vé
+    if (typeof window.resetBookingWizard === "function") {
+      window.resetBookingWizard();
+    }
     if (parentBc) parentBc.innerText = "Đặt Vé Trực Tuyến";
     if (currentBc) currentBc.innerText = "Chọn Suất Chiếu & Ghế Ngồi";
     if (document.getElementById("payment-sticky-bar"))
@@ -1101,28 +1189,30 @@ window.goToBookingStep = function (step) {
 };
 
 window.handleMainAction = function () {
-  if (!isUserLoggedInState) {
-    alert(
-      "Vui lòng đăng nhập tài khoản thành viên hệ thống để tiến hành mua vé!",
-    );
-    openAuthModal();
-    return;
-  }
-
   if (window.currentBookingStep === 1) {
-    if (selectedSeats.length === 0)
-      return alert("Vui lòng chọn ít nhất một chiếc ghế rạp trống!");
-    if (!isHoldingState) {
-      isHoldingState = true;
-      const holdTimerEl = document.getElementById("hold-timer");
-      if (holdTimerEl) holdTimerEl.style.display = "flex";
-      window.startCountdown(Date.now() + 5 * 60 * 1000); // Khóa giữ ghế rạp 5 phút
+    if (selectedSeats.length === 0) {
+      alert("Vui lòng chọn ít nhất một ghế ngồi trước khi tiếp tục!");
+      return;
     }
+
+    // 🌟 ÉP BUỘC ĐĂNG NHẬP: Nếu chưa đăng nhập thì chặn đứng tiến trình và mở bảng Login lập tức
+    if (!isUserLoggedInState) {
+      alert(
+        "Vui lòng đăng nhập tài khoản thành viên LAS Cinemas trước khi tiến hành chọn bắp nước và đặt vé!",
+      );
+      if (typeof window.handleAuthModalAccess === "function") {
+        window.handleAuthModalAccess(); // Mở bảng đăng nhập/đăng ký
+      }
+      return;
+    }
+
     window.goToBookingStep(2);
   } else if (window.currentBookingStep === 2) {
     window.goToBookingStep(3);
   } else if (window.currentBookingStep === 3) {
-    window.processToPaymentGateway();
+    if (typeof window.processToPaymentGateway === "function") {
+      window.processToPaymentGateway();
+    }
   }
 };
 
@@ -1144,6 +1234,13 @@ window.onMovieOrTimeChange = function () {
 };
 
 window.quickBookMovie = function (movieTitle) {
+  // 🌟 FIX HOÀN TIỀN/BĂNG HÌNH: Giải phóng giỏ hàng cũ và ép giao diện đặt vé quay ngược về Bước 1 (Chọn ghế)
+  selectedSeats = [];
+  currentPriceTotal = 0;
+  appliedVoucherDiscount = 0;
+  window.calculateCgvCart();
+  window.goToBookingStep(1);
+
   window.switchCgvTab("panel-booking");
   const selectCombo = document.getElementById("cgv-combo-movie");
   if (selectCombo) {
@@ -1152,12 +1249,31 @@ window.quickBookMovie = function (movieTitle) {
   }
 };
 
+// ==========================================================================
+// 🌟 XỬ LÝ SỰ KIỆN TÍCH CHỌN PHƯƠNG THỨC THANH TOÁN ONLINE
+// ==========================================================================
 window.selectPaymentGatewayType = function (type, element) {
   window.selectedPaymentGateway = type;
-  document
-    .querySelectorAll(".payment-option-row")
-    .forEach((row) => row.classList.remove("active"));
-  element.classList.add("active");
+  console.log("💳 Người dùng chọn phương thức:", type);
+
+  const allRows = document.querySelectorAll(".payment-option-row");
+  allRows.forEach((row) => {
+    row.classList.remove("active");
+    const circle = row.querySelector(".option-check-circle");
+    if (circle) {
+      circle.style.borderColor = "#ccc";
+      circle.style.color = "transparent";
+    }
+  });
+
+  if (element) {
+    element.classList.add("active");
+    const circle = element.querySelector(".option-check-circle");
+    if (circle) {
+      circle.style.borderColor = "#e71a0f";
+      circle.style.color = "#e71a0f";
+    }
+  }
 };
 
 window.applyVoucher = function () {
@@ -1177,90 +1293,192 @@ window.applyVoucher = function () {
 };
 
 // --- 7. TÍCH HỢP CỔNG THANH TOÁN VIETQR VÀ XUẤT VÉ ĐIỆN TỬ ---
+// ==========================================================================
+// 🌟 HÀM RẼ NHÁNH THANH TOÁN TOÀN DIỆN (SỬA LỖI ĐÈ HÀM & HIỂN THỊ VNPAY)
+// ==========================================================================
 window.processToPaymentGateway = function () {
+  if (!window.selectedPaymentGateway) window.selectedPaymentGateway = "qr";
+
   const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
 
-  if (window.selectedPaymentGateway === "qr") {
-    const bankId = "ICB";
-    const accountNo = "101879388698";
-    const accountName = "NGUYEN BAO HOANG";
+  // 🚀 TRƯỜNG HỢP 1: THANH TOÁN QUA VNPAY (QR HOẶC ATM) -> CHUYỂN HƯỚNG TRÌNH DUYỆT
+  if (
+    window.selectedPaymentGateway === "vnpay_qr" ||
+    window.selectedPaymentGateway === "vnpay_atm"
+  ) {
+    let bankCodeParam = "ALL";
+    if (window.selectedPaymentGateway === "vnpay_qr") bankCodeParam = "VNPAYQR";
+    if (window.selectedPaymentGateway === "vnpay_atm") bankCodeParam = "VNBANK";
+
+    console.log(
+      "✈️ Gọi API Spring Boot sinh Link VNPAY Sandbox, số tiền:",
+      finalTotal,
+    );
+
+    fetch(
+      `http://localhost:8080/api/payment/create-vnpay-url?amount=${finalTotal}&bankCode=${bankCodeParam}`,
+    )
+      .then((res) => {
+        if (!res.ok)
+          throw new Error("Không thể kết nối cổng API tạo hóa đơn VNPAY!");
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.paymentUrl) {
+          alert(
+            "Hệ thống chuyển hướng an toàn sang cổng bảo mật VNPAY Sandbox...",
+          );
+          const bookingCache = {
+            movie: document.getElementById("cgv-combo-movie").value,
+            showtime: selectedShowtime,
+            seats: [...selectedSeats],
+            date: selectedDateStr,
+            fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
+            total: currentPriceTotal * (1 - appliedVoucherDiscount),
+          };
+          localStorage.setItem(
+            "las_current_booking_cache",
+            JSON.stringify(bookingCache),
+          );
+
+          window.location.href = data.paymentUrl; // 🚀 CHUYỂN HƯỚNG BÌNH THƯỜNG
+        }
+      })
+      .catch((err) => alert("Lỗi kết nối cổng VNPAY: " + err.message));
+
+    // 🚀 TRƯỜNG HỢP 2: THANH TOÁN CHUYỂN KHOẢN TIÊU CHUẨN (VIETQR) -> BUNG MODAL POPUP
+  } else if (window.selectedPaymentGateway === "qr") {
+    const modalTitle = document.querySelector("#payment-redirect-modal h2");
+    if (modalTitle) modalTitle.innerHTML = "Thanh Toán Chuyển Khoản VietQR";
+
+    const qrPriceText = document.getElementById("qr-total-price");
+    if (qrPriceText)
+      qrPriceText.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
+
+    const bankId = "NCB";
+    const accountNo = "9704198526191432198";
+    const accountName = "NGUYEN VAN A";
     const qrData = `LAS CINEMAS THANH TOAN VE`;
 
     const qrImg = document.getElementById("bank-qr-img");
     if (qrImg) {
       qrImg.src = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(qrData)}&accountName=${encodeURIComponent(accountName)}`;
     }
-
-    // Giả lập sau quét mã thành công, tự động xuất vé sau 3.5 giây
-    alert(
-      "Hệ thống đang kết nối cổng VietQR tự động rà soát giao dịch... Vui lòng đợi trong giây lát!",
-    );
-    setTimeout(() => {
-      window.executeFinalCheckout();
-    }, 3500);
-  } else {
-    alert(
-      `Đang kết nối an toàn đến ví điện tử ${window.selectedPaymentGateway.toUpperCase()}...`,
-    );
-    window.executeFinalCheckout();
+    document.getElementById("payment-redirect-modal").classList.add("open");
   }
 };
 
 window.executeFinalCheckout = function () {
-  const currentMovie = document.getElementById("cgv-combo-movie").value;
-  const currentEmail = document.getElementById("profile-field-email")
-    ? document.getElementById("profile-field-email").value
-    : "VienNguyen2026@gmail.com";
+  const cachedBooking = localStorage.getItem("las_current_booking_cache");
+  let currentMovie = document.getElementById("cgv-combo-movie").value;
+  let ticketSeats = [...selectedSeats];
+  let ticketShowtime = selectedShowtime;
+  let ticketDate = selectedDateStr;
+  let ticketFnb = fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i }));
+  let ticketTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
 
-  const lasTicketId = "LAS-" + Math.floor(100000 + Math.random() * 900000);
-  const invoiceObj = {
-    id: lasTicketId,
-    movie: currentMovie,
-    date: selectedDateStr,
-    time: selectedShowtime,
-    seats: [...selectedSeats],
-    fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
-    total: currentPriceTotal * (1 - appliedVoucherDiscount),
-    status: "Đã thanh toán trực tuyến",
-  };
-  userPastInvoices.unshift(invoiceObj);
-
-  let fnbTicketHtml = invoiceObj.fnb
-    .map((i) => `<li>${i.name} x${i.qty}</li>`)
-    .join("");
-  const beautifulTicketHTML = `
-      <div style="text-align: center; margin-bottom: 25px;">
-          <h2 style="color: #10B981; margin-bottom: 10px; font-size: 26px;">🎟️ ĐẶT VÉ ĐIỆN TỬ THÀNH CÔNG!</h2>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 2px solid #222; padding: 6px; background:#fff;">
-          <p style="color: #444; font-weight: bold; font-size: 13px; margin-top: 12px;">LAS Cinemas đã gửi một bản sao hóa đơn vé qua Email của bạn.</p>
-      </div>
-      <div style="background: #fdfcf7; padding: 25px; border: 2px dashed #cca23b; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto; box-sizing: border-box; color:#222;">
-          <p><strong>Mã tra cứu vé:</strong> <span style="color:#e71a0f; font-size: 20px; font-family: monospace; font-weight:bold;">${invoiceObj.id}</span></p>
-          <p><strong>Tên bộ phim:</strong> <b>${invoiceObj.movie}</b></p>
-          <p><strong>Suất chiếu rạp:</strong> Suất ${invoiceObj.time} | Ngày ${invoiceObj.date}</p>
-          <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ccc;">
-          <p><strong>🎟️ Vị trí ghế ngồi:</strong> <span style="color:#e71a0f; font-weight:bold;">${invoiceObj.seats.join(", ")}</span></p>
-          <p><strong>🍿 Dịch vụ kèm theo:</strong></p><ul>${fnbTicketHtml || "<li>Không có dịch vụ ăn kèm</li>"}</ul>
-          <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ccc;">
-          <p style="font-size: 18px; text-align: right; margin: 0;">Tổng tiền: <span style="color:#10B981; font-weight:bold;">${invoiceObj.total.toLocaleString("vi-VN")} đ</span></p>
-      </div>
-      <div style="margin-top: 35px; text-align: center;">
-          <button class="btn-cgv-submit" style="width: auto; padding: 12px 35px; background: #333; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="window.goHomeFromBc()">HOÀN TẤT & QUAY VỀ</button>
-      </div>
-  `;
-
-  const finalResultDiv = document.getElementById("final-ticket-result");
-  if (finalResultDiv) {
-    finalResultDiv.innerHTML = beautifulTicketHTML;
-    window.goToBookingStep(4);
+  if (cachedBooking) {
+    const bData = JSON.parse(cachedBooking);
+    currentMovie = bData.movie;
+    ticketSeats = bData.seats;
+    ticketShowtime = bData.showtime;
+    ticketDate = bData.date;
+    ticketFnb = bData.fnb;
+    ticketTotal = bData.total;
   }
 
-  window.resetHoldState();
-  selectedSeats = [];
-  fnbMenu.forEach((i) => (i.qty = 0));
-  window.renderFnbMenu();
-  window.calculateCgvCart();
-  window.renderCgvInterface();
+  // 🌟 TUYỆT CHIÊU BẢO VỆ: Lấy email trực tiếp từ ổ cứng lưu trữ chứ không lấy từ ô Input giao diện nữa
+  let currentEmail = "VienNguyen2026@gmail.com";
+  const cachedUser = localStorage.getItem("las_logged_in_user");
+  if (cachedUser) {
+    currentEmail = JSON.parse(cachedUser).email;
+  }
+
+  console.log(
+    "📥 Đang gửi lệnh lưu hóa đơn vé xuống Database SQL Server cho Email:",
+    currentEmail,
+  );
+
+  fetch("http://localhost:8080/api/seats/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      movie: currentMovie,
+      showtime: ticketShowtime,
+      seats: ticketSeats,
+      email: currentEmail,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      // Sinh mã hóa đơn hiển thị rạp phim ngẫu nhiên
+      const lasTicketId = "LAS-" + Math.floor(100000 + Math.random() * 900000);
+      const invoiceObj = {
+        id: lasTicketId,
+        movie: currentMovie,
+        date: ticketDate,
+        time: ticketShowtime,
+        seats: [...ticketSeats],
+        fnb: ticketFnb,
+        total: ticketTotal,
+        status: "Đã thanh toán (VNPAY)",
+      };
+
+      userPastInvoices.unshift(invoiceObj);
+      localStorage.setItem(
+        "las_user_invoices",
+        JSON.stringify(userPastInvoices),
+      );
+
+      let fnbTicketHtml = invoiceObj.fnb
+        .map((i) => `<li>${i.name} x${i.qty}</li>`)
+        .join("");
+
+      const beautifulTicketHTML = `
+        <div style="text-align: center; margin-bottom: 25px;">
+            <h2 style="color: #10B981; margin-bottom: 10px; font-size: 26px;">🎟️ ĐẶT VÉ ĐIỆN TỬ THÀNH CÔNG!</h2>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 2px solid #222; padding: 6px; background:#fff;">
+            <p style="color: #444; font-weight: bold; font-size: 13px; margin-top: 12px;">LAS Cinemas đã gửi một bản sao hóa đơn vé qua Email của bạn.</p>
+        </div>
+        <div style="background: #fdfcf7; padding: 25px; border: 2px dashed #cca23b; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto; box-sizing: border-box; color:#222;">
+            <p><strong>Mã tra cứu vé:</strong> <span style="color:#e71a0f; font-size: 20px; font-family: monospace; font-weight:bold;">${invoiceObj.id}</span></p>
+            <p><strong>Tên bộ phim:</strong> <b>${invoiceObj.movie}</b></p>
+            <p><strong>Suất chiếu rạp:</strong> Suất ${invoiceObj.time} | Ngày ${invoiceObj.date}</p>
+            <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ccc;">
+            <p><strong>🎟️ Vị trí ghế ngồi:</strong> <span style="color:#e71a0f; font-weight:bold;">${invoiceObj.seats.join(", ")}</span></p>
+            <p><strong>🍿 Dịch vụ kèm theo:</strong></p><ul>${fnbTicketHtml || "<li>Không có dịch vụ ăn kèm</li>"}</ul>
+            <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ccc;">
+            <p style="font-size: 18px; text-align: right; margin: 0;">Tổng tiền: <span style="color:#10B981; font-weight:bold;">${invoiceObj.total.toLocaleString("vi-VN")} đ</span></p>
+        </div>
+        <div style="margin-top: 35px; text-align: center;">
+            <button class="btn-cgv-submit" style="width: auto; padding: 12px 35px; background: #333; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="window.goHomeFromBc()">HOÀN TẤT & QUAY VỀ</button>
+        </div>
+      `;
+
+      const finalResultDiv = document.getElementById("final-ticket-result");
+      if (finalResultDiv) {
+        finalResultDiv.innerHTML = beautifulTicketHTML;
+      }
+
+      // 🚀 CHUYỂN TAB VÀ NHẢY BƯỚC 4 MƯỢT MÀ KHÔNG BỊ CHẶN LẠI NỮA
+      window.switchCgvTab("panel-booking");
+      window.goToBookingStep(4);
+
+      // Giải phóng giỏ hàng tạm sau khi đã xuất vé điện tử thành công
+      localStorage.removeItem("las_current_booking_cache");
+      selectedSeats = [];
+      fnbMenu.forEach((i) => (i.qty = 0));
+      window.renderFnbMenu();
+      window.calculateCgvCart();
+      window.renderCgvInterface();
+      window.renderTransactionHistory();
+    })
+    .catch((err) => {
+      console.error("🚨 Lỗi lưu Database hóa đơn:", err);
+      alert(
+        "Hệ thống đã nhận tiền thanh toán VNPAY, tuy nhiên Server CSDL SQL Server gặp lỗi rò rỉ đồng bộ. Vui lòng liên hệ Admin!",
+      );
+    });
 };
 
 window.cancelCurrentTransaction = function () {
@@ -1316,6 +1534,42 @@ window.resetHoldState = function () {
   }
   window.currentBookingStep = 1;
 };
+// ==========================================================================
+// 🌟 HÀM RESET TOÀN BỘ QUY TRÌNH ĐẶT VÉ VỀ TRẠNG THÁI BAN ĐẦU
+// ==========================================================================
+window.resetBookingWizard = function () {
+  console.log(
+    "🔄 Đang dọn dẹp trạng thái hóa đơn cũ để chuẩn bị mua vé mới...",
+  );
+
+  // 1. Reset các biến lưu trữ đặt vé toàn cục về trạng thái trống
+  selectedSeats = [];
+  currentPriceTotal = 0;
+  appliedVoucherDiscount = 0;
+  selectedShowtime = "";
+  fnbQty = 0;
+  window.selectedPaymentGateway = "qr"; // Trả về cổng VietQR mặc định ban đầu
+
+  // 2. Quét sạch class "active" để ép giao diện các bước đặt vé (Booking Steps) quay lại Bước 1
+  const allSteps = document.querySelectorAll(".booking-step");
+  allSteps.forEach((step, index) => {
+    if (index === 0) {
+      step.classList.add("active"); // Hiện lại phân vùng chọn ghế ngồi
+    } else {
+      step.classList.remove("active"); // Ẩn hoàn toàn các bước Combo, Thanh toán và Hóa Đơn Thành Công
+    }
+  });
+
+  // 3. Đưa biến kiểm soát bước hiện tại của rạp phim về lại Step 1
+  window.currentBookingStep = 1;
+
+  // 4. Xóa chữ trong ô nhập mã giảm giá Voucher
+  const voucherInput = document.getElementById("voucher-input");
+  if (voucherInput) voucherInput.value = "";
+
+  // 5. Tắt bộ đếm ngược khóa giữ ghế rạp 5 phút tránh bị thông báo hết giờ liên tục
+  window.resetHoldState();
+};
 
 // ==========================================================================
 // MẢNG DỮ LIỆU TIN TỨC & ƯU ĐÃI ĐỘNG (CÓ THỂ LẤY TỪ BACKEND HOẶC MOCK TẠM)
@@ -1351,10 +1605,8 @@ window.lasPromoList = [
 // Hàm tự động vẽ danh sách ưu đãi động ra ngoài trang chủ
 // Tìm hàm này và sửa lại 2 dòng đầu hàm như sau:
 window.renderLasPromoGrid = function () {
-  // 🌟 FIX: Chỉ lấy duy nhất khung chứa của Tab Tin Tức, không lấy khung EVENT trang chủ nữa
   const promoNewsContainer = document.getElementById("cgv-event-grid-news");
-
-  // Cào dữ liệu động trực tiếp từ Database SQL Server qua Spring Boot
+  // 🚀 Cào dữ liệu động trực tiếp từ Database SQL Server qua Spring Boot
   fetch("http://localhost:8080/api/promos")
     .then((res) => {
       if (!res.ok) throw new Error("Không thể kết nối API ưu đãi");
@@ -1362,28 +1614,26 @@ window.renderLasPromoGrid = function () {
     })
     .then((promosList) => {
       console.log("🎁 Đã nhận danh sách ưu đãi động từ Database:", promosList);
-
       window.lasPromoList = promosList;
-
-      // 🌟 FIX: Chỉ xóa rỗng khung bên tab Tin tức trước khi vẽ
+      // Xóa rỗng phân vùng chứa của Tab Tin tức trước khi vẽ động
       if (promoNewsContainer) promoNewsContainer.innerHTML = "";
-
       window.lasPromoList.forEach((item) => {
+        // Quét sạch các trường hợp đặt tên cột từ Spring Boot đẩy lên Frontend
         let validImg =
           item.imageUrl || item.image_url || item.image || item.img || "";
         validImg = validImg.trim();
-
+        // Định dạng chuỗi hiển thị khoảng thời gian diễn ra sự kiện
         let dateString = `${item.startDate || item.start_date || "05/06/2026"} - ${item.endDate || item.end_date || "12/06/2026"}`;
-
+        // 🚀 THẦN CHÚ BẮN THẺ <IMG> TRỰC TIẾP: Triệt tiêu hoàn toàn lỗi sập co rúm khung hình của thẻ div cũ
         let imgHTML =
           validImg.startsWith("http") ||
           validImg.includes("/") ||
           validImg.includes(".")
-            ? `<div class="news-card-img-holder" style="background-image: url('${validImg}'); background-size: cover; background-position: center; height: 200px; width: 100%; display: block;"></div>`
+            ? `<img src="${validImg}" class="news-card-img-holder" style="width: 100%; height: 200px; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png';">`
             : `<div class="news-card-img-holder" style="background: #a1dbf1; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0c6291; font-size: 14px; height: 200px; width: 100%; text-align: center; padding: 0 10px; box-sizing: border-box;">${validImg || "LAS CINEMA"}</div>`;
-
+        // Tạo cấu trúc thẻ card chuẩn chỉ ăn khớp layout hai phân vùng
         let cardHTML = `
-          <div class="news-promo-card" onclick="window.viewPromoDetailText('${item.id}')" style="cursor: pointer; background: #fff; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; transition: transform 0.2s; display: block; margin-bottom: 10px;">
+          <div class="news-promo-card" onclick="window.viewPromoDetailText('${item.id}')" style="cursor: pointer; background: #fff; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; transition: transform 0.2s; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
               ${imgHTML}
               <div style="padding: 15px; text-align: left;">
                   <div class="news-card-date" style="color: #666; font-size: 12px; margin-bottom: 5px;">📅 ${dateString}</div>
@@ -1392,7 +1642,6 @@ window.renderLasPromoGrid = function () {
           </div>
         `;
 
-        // 🌟 FIX: Chỉ đổ thẻ card vào khung Tab Tin tức, giữ nguyên vẹn mục EVENT thô ngoài trang chủ
         if (promoNewsContainer) promoNewsContainer.innerHTML += cardHTML;
       });
     })
@@ -1458,23 +1707,29 @@ window.viewPromoDetailText = function (promoId) {
       validImg.includes("/") ||
       validImg.includes(".")
     ) {
+      // 🚀 THẦN CHÚ ÉP STYLE: Giải phóng hoàn toàn chiều cao cố định, cố định độ rộng bài viết đứng
+      imgBoxEl.style.width = "340px"; // Độ rộng lý tưởng cho poster đứng trên giao diện máy tính
+      imgBoxEl.style.height = "auto"; // Cho phép chiều cao tự bung theo tỉ lệ 9:16 nguyên bản
+      imgBoxEl.style.flexShrink = "0"; // Không cho phép cột chữ bên phải ép bẹp ảnh
       imgBoxEl.style.background = "none";
       imgBoxEl.style.backgroundImage = "none";
+      imgBoxEl.style.overflow = "visible"; // Cho phép hiển thị tràn mà không bị cắt rìa
 
-      // Sử dụng chiều rộng 100% của khung trái (360px) và để height tự động tính toán theo tỉ lệ đứng
-      imgBoxEl.innerHTML = `<img src="${validImg}" style="width: 100%; height: auto; display: block; object-fit: cover;">`;
+      // Nạp thẻ img thật với chiều cao tự động tính toán theo ảnh gốc 1080x1920
+      imgBoxEl.innerHTML = `<img src="${validImg}" style="width: 100%; height: auto; display: block; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">`;
     } else {
+      // Hiển thị khung màu đại diện nếu dữ liệu dưới SQL Server chỉ là chuỗi ký tự text
       imgBoxEl.style.background = "#a1dbf1";
+      imgBoxEl.style.width = "340px";
+      imgBoxEl.style.height = "500px"; // Giả lập chiều cao đứng chuẩn poster
       imgBoxEl.style.display = "flex";
       imgBoxEl.style.alignItems = "center";
       imgBoxEl.style.justifyContent = "center";
       imgBoxEl.style.color = "#0c6291";
       imgBoxEl.style.fontWeight = "bold";
-      imgBoxEl.style.minHeight = "450px"; // Tạo chiều cao giả lập đứng nếu không có ảnh
       imgBoxEl.innerHTML = `<b>${validImg || "LAS CINEMA"}</b>`;
     }
   }
-
   // Kích hoạt điều hướng nhảy chuyển phân vùng hiển thị Tab Panel
   window.switchCgvTab("panel-news-detail");
 };
@@ -1483,6 +1738,76 @@ window.addEventListener("DOMContentLoaded", () => {
   window.renderLasPromoGrid();
 });
 
+// ==========================================================================
+// 🌟 HÀM RẼ NHÁNH THANH TOÁN TOÀN DIỆN (SỬA LỖI ĐÈ HÀM & HIỂN THỊ 0 Đ)
+// ==========================================================================
+// ==========================================================================
+// 🌟 HÀM RẼ NHÁNH THANH TOÁN (SỬA LỖI NGÂN HÀNG KHÔNG HỖ TRỢ TRÊN SANDBOX)
+// ==========================================================================
+window.processToPaymentGateway = function () {
+  if (!window.selectedPaymentGateway) window.selectedPaymentGateway = "qr";
+  const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
+
+  // 🚀 TRƯỜNG HỢP 1: THANH TOÁN QUA CỔNG VNPAY (QR HOẶC ATM)
+  if (
+    window.selectedPaymentGateway === "vnpay_qr" ||
+    window.selectedPaymentGateway === "vnpay_atm"
+  ) {
+    console.log(
+      "✈️ Gọi API Spring Boot sinh Link VNPAY tổng quan, số tiền:",
+      finalTotal,
+    );
+
+    // 🌟 THẦN CHÚ SỬA LỖI: Bỏ hoàn toàn tham số &bankCodeParam để VNPAY tự mở trang chọn lựa tổng quan
+    fetch(
+      `http://localhost:8080/api/payment/create-vnpay-url?amount=${finalTotal}`,
+    )
+      .then((res) => {
+        if (!res.ok)
+          throw new Error("Không thể kết nối cổng API tạo hóa đơn VNPAY!");
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.paymentUrl) {
+          alert(
+            "Hệ thống chuyển hướng an toàn sang cổng bảo mật VNPAY Sandbox...",
+          );
+          window.location.href = data.paymentUrl; // Điều hướng sang trang chọn của VNPAY thành công
+        } else {
+          alert("Lỗi dữ liệu hệ thống trả về từ VNPAY Gateway!");
+        }
+      })
+      .catch((err) => {
+        console.error("🚨 Lỗi tạo link VNPAY:", err);
+        alert(
+          "Không thể kết nối Server để kích hoạt cổng VNPAY: " + err.message,
+        );
+      });
+
+    // 🚀 TRƯỜNG HỢP 2: THANH TOÁN CHUYỂN KHOẢN TIÊU CHUẨN (VIETQR) -> GIỮ NGUYÊN
+  } else if (window.selectedPaymentGateway === "qr") {
+    const modalTitle = document.querySelector("#payment-redirect-modal h2");
+    if (modalTitle) {
+      modalTitle.innerHTML = "Thanh Toán Chuyển Khoản VietQR";
+    }
+
+    const qrPriceText = document.getElementById("qr-total-price");
+    if (qrPriceText) {
+      qrPriceText.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
+    }
+
+    const bankId = "ICB";
+    const accountNo = "101879388698";
+    const accountName = "NGUYEN BAO HOANG";
+    const qrData = `LAS CINEMAS THANH TOAN VE`;
+
+    const qrImg = document.getElementById("bank-qr-img");
+    if (qrImg) {
+      qrImg.src = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(qrData)}&accountName=${encodeURIComponent(accountName)}`;
+    }
+    document.getElementById("payment-redirect-modal").classList.add("open");
+  }
+};
 function generateCgvDateSlider() {
   const container = document.getElementById("cgv-dynamic-date-slider");
   if (!container) return;
@@ -1722,7 +2047,6 @@ window.confirmCgvLogoutAction = confirmCgvLogoutAction;
 window.openCheckoutReview = openCheckoutReview;
 window.closeCheckoutReview = closeCheckoutReview;
 window.applyVoucher = applyVoucher;
-window.processToPaymentGateway = processToPaymentGateway;
 window.closePaymentModal = closePaymentModal;
 window.executeFinalCheckout = executeFinalCheckout;
 window.cancelCurrentTransaction = cancelCurrentTransaction;
@@ -1737,3 +2061,271 @@ function goHomeFromBc() {
   switchCgvTab("panel-movies", "now_showing");
 }
 window.goHomeFromBc = goHomeFromBc;
+
+// 🤖 ĐOẠN CHÈN THÊM CHUẨN ĐÉT: Hàm xử lý ẩn/hiện cửa sổ Chatbot thông minh
+function toggleLasChatbox() {
+  const chatWindow = document.getElementById("las-chatbox-window");
+  if (chatWindow) {
+    if (
+      chatWindow.style.display === "none" ||
+      chatWindow.style.display === ""
+    ) {
+      chatWindow.style.display = "flex";
+    } else {
+      chatWindow.style.display = "none";
+    }
+  }
+}
+// Xuất hàm ra window toàn cục để thuộc tính onclick ngoài index.html gọi được
+window.toggleLasChatbox = toggleLasChatbox;
+
+// ==========================================================================
+// 🤖 TÍCH HỢP TÍNH NĂNG GỬI/NHẬN TIN NHẮN TƯƠNG TÁC CHO CHATBOX LAS CINEMAS
+// ==========================================================================
+async function fetchAllRealShowtimesContext(targetDateStr) {
+  if (!serverData || !serverData.movies || serverData.movies.length === 0) {
+    return "Hiện tại hệ thống rạp đang cập nhật danh mục phim từ server.";
+  }
+
+  let dateStr = targetDateStr;
+  let fullContext = `DỮ LIỆU LỊCH CHIẾU VÀ PHÒNG CHIẾU THỰC TẾ TRONG SQL SERVER NGÀY ${dateStr} (CHỈ DÙNG ĐỂ TƯ VẤN):\n`;
+
+  for (const movie of serverData.movies) {
+    const movieId = movie.movieId || movie.movie_id;
+    try {
+      // Gọi API chọc vào Spring Boot Controller của em
+      const response = await fetch(
+        `http://localhost:8080/api/showtimes/matrix?movieId=${movieId}&date=${dateStr}`,
+      );
+
+      // Nếu Backend Spring Boot phản hồi lỗi mạng (Mã 404, 500...)
+      if (!response.ok) {
+        fullContext += `- Phim: ${movie.title} | Phân hệ lịch chiếu của phim này đang gặp sự cố kết nối.\n`;
+        continue;
+      }
+
+      const resData = await response.json();
+      fullContext += `- Phim: ${movie.title} | Thể loại: ${movie.genre || "Hành động"} | Trạng thái: ${movie.status === "now_showing" ? "Đang chiếu" : "Sắp chiếu"}\n`;
+
+      if (resData.showtimes && resData.showtimes.length > 0) {
+        const timeStrings = resData.showtimes
+          .map((st) => {
+            let roomName =
+              st.roomId === 1
+                ? "Phòng 1 (IMAX)"
+                : st.roomId === 2
+                  ? "Phòng 2 (2D)"
+                  : "Phòng 3 (3D)";
+            return `${st.startTime} (${roomName})`;
+          })
+          .join(", ");
+        fullContext += `  ↳ Các suất chiếu thực tế ngày ${dateStr}: ${timeStrings}\n`;
+      } else {
+        fullContext += `  ↳ Lịch chiếu: Ngày ${dateStr} phim này rạp không có suất chiếu.\n`;
+      }
+    } catch (e) {
+      // ✅ BẢO VỆ CỐ LẬP: Nếu sập cổng localhost:8080, ghi nhận lỗi cục bộ chứ KHÔNG quăng lỗi ra ngoài làm sập Bot
+      console.error(
+        `🚨 Lỗi kết nối API gạch nối SQL Server của phim ID ${movieId}:`,
+        e,
+      );
+      fullContext += `- Phim: ${movie.title} | Không thể kết nối đến dữ liệu server lịch chiếu localhost:8080.\n`;
+    }
+  }
+  return fullContext;
+}
+
+async function sendChatMessageToServer() {
+  const inputField = document.getElementById("las-chat-user-input");
+  const msgZone = document.getElementById("las-chat-messages-zone");
+  if (!inputField || !msgZone) return;
+
+  const userText = inputField.value.trim();
+  if (!userText) return;
+
+  // 1. Hiển thị ngay lập tức tin nhắn của Khách hàng lên khung chat
+  msgZone.innerHTML += `
+    <div style="align-self: flex-end; background-color: #e71a0f; color: white; padding: 10px 14px; border-radius: 8px; max-width: 85%; font-size: 13.5px; line-height: 1.4; font-weight: bold; box-shadow: 0 2px 5px rgba(231,26,15,0.15); word-break: break-word;">
+      ${userText}
+    </div>
+  `;
+
+  // 🌟 BƯỚC 1: SÀNG LỌC Ý ĐỊNH - Kiểm tra xem khách có thực sự hỏi lịch chiếu/phim ảnh không
+  const isQueryingSchedule =
+    /lịch|lich|chiếu|chieu|suất|suat|phim|phong|ghế|ghe|ngày|ngay|hôm nay|hom nay|ngày mai|ngay mai/i.test(
+      userText.toLowerCase(),
+    );
+
+  let chatDateStr = "";
+  let dbContext =
+    "Khách hàng đang trò chuyện tự do, không yêu cầu tra cứu lịch chiếu phim.";
+  const todayObj = new Date();
+
+  // Chỉ phân tích ngày tháng chi tiết nếu khách hỏi về lịch chiếu rạp
+  if (isQueryingSchedule) {
+    chatDateStr = todayObj.toISOString().split("T")[0]; // Mặc định lấy ngày hôm nay
+    if (
+      userText.toLowerCase().includes("ngày mai") ||
+      userText.toLowerCase().includes("ngay mai")
+    ) {
+      const tomorrow = new Date(todayObj);
+      tomorrow.setDate(todayObj.getDate() + 1);
+      chatDateStr = tomorrow.toISOString().split("T")[0];
+    } else {
+      const dateMatch = userText.match(/ngày\s*(\d{1,2})/i);
+      if (dateMatch) {
+        const target = new Date(2026, 5, parseInt(dateMatch[1]));
+        chatDateStr = target.toISOString().split("T")[0];
+      }
+    }
+  }
+
+  // Xóa rỗng ô nhập liệu và cuộn khung chat xuống dưới
+  inputField.value = "";
+  msgZone.scrollTop = msgZone.scrollHeight;
+
+  // 2. Hiển thị bong bóng chờ trạng thái thông minh (Tránh tạo cảm giác khô cứng)
+  const loadingId = "typing-loading-" + Date.now();
+  const loadingText = isQueryingSchedule
+    ? `🤖 LAS Bot đang tra cứu dữ liệu lịch chiếu ngày ${chatDateStr}...`
+    : `🤖 LAS Bot đang suy nghĩ câu trả lời...`;
+
+  msgZone.innerHTML += `
+    <div id="${loadingId}" style="align-self: flex-start; background-color: #f4f2ec; color: #777; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-style: italic;">
+      ${loadingText}
+    </div>
+  `;
+  msgZone.scrollTop = msgZone.scrollHeight;
+
+  // 🌟 BƯỚC 2: CHỈ CÀO DATABASE KHI KHÁCH YÊU CẦU LỊCH CHIẾU
+  if (isQueryingSchedule) {
+    try {
+      dbContext = await fetchAllRealShowtimesContext(chatDateStr);
+    } catch (dbErr) {
+      console.error("🚨 Lỗi kết nối CSDL rạp phim:", dbErr);
+      dbContext =
+        "Hệ thống SQL Server lịch chiếu đang bảo trì, vui lòng thử lại sau.";
+    }
+  }
+
+  // 3. Kết nối cổng gọi AI Gemini xử lý hội thoại đa năng
+  try {
+    const aiModule = await import("https://esm.run/@google/genai");
+    const GoogleGenAI = aiModule.GoogleGenAI;
+
+    // Dán mã API Key cá nhân hợp lệ của em ở đây nha
+    const aiKey = "";
+    const ai = new GoogleGenAI({ apiKey: aiKey });
+
+    // 🌟 BƯỚC 3: CẢI TIẾN HỆ THỐNG LUẬT - Cho phép giao tiếp tự do nhưng thắt chặt khi hỏi lịch
+    const systemRule = `Bạn là trợ lý ảo hội thoại thông minh mã nguồn LumiAI System của cụm rạp phim LAS Cinemas.
+    Nhiệm vụ của bạn là tiếp đón khách hàng thành viên, chào hỏi lịch sự, trò chuyện tự do và tương tác một cách tự nhiên, hóm hỉnh, thân thiện nhất.
+    
+    Luật absolute số 1 (Tư vấn lịch phim): Nếu khách hàng hỏi về lịch chiếu, danh sách bộ phim, hoặc suất chiếu, bạn PHẢI dựa vào thông tin thật ở mục 'DỮ LIỆU ĐỘNG TỪ DATABASE SQL SERVER' dưới đây để trả lời. Tuyệt đối không tự bịa giờ chiếu ảo hoặc phòng chiếu không tồn tại. Nếu mục này báo không có suất chiếu, hãy thông báo tiếc nuối một cách lịch sự.
+    Luật absolute số 2 (Tương tác tự do): Nếu khách hàng chỉ chào hỏi xã giao, tâm sự hoặc hỏi thông tin rạp chung chung, hãy thoải mái trò chuyện như một người bạn thân thiết, không cần ép buộc đọc lịch chiếu.
+    Luật absolute số 3 (Điều hướng đặt vé): Khi thấy khách hàng có nhu cầu muốn book vé, mua vé, hoặc chọn suất của một bộ phim cụ thể, bạn PHẢI kẹp cú pháp điều hướng [BOOK: Tên Bộ Phim Chính Xác] vào cuối câu trả lời của mình.
+    
+    DỮ LIỆU ĐỘNG TỪ DATABASE SQL SERVER (Bối cảnh thực tế hệ thống):
+    Ngày khách hàng đang hướng tới: ${chatDateStr || "Trò chuyện tự do"}
+    Nội dung dữ liệu: \n${dbContext}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `Câu hỏi của khách hàng: ${userText}`,
+      config: { systemInstruction: systemRule },
+    });
+
+    // Xóa bỏ bong bóng chờ sau khi AI phản hồi thành công
+    const loadingEl = document.getElementById(loadingId);
+    if (loadingEl) loadingEl.remove();
+
+    let aiResponseText = response.text;
+
+    // Xử lý cú pháp tự động chuyển tab đặt vé nhanh khi khách muốn book phim [BOOK: ...]
+    if (aiResponseText.includes("[BOOK:")) {
+      const match = aiResponseText.match(/\[BOOK:\s*(.*?)\s*\]/);
+      if (match && match[1]) {
+        const targetMovieName = match[1].trim();
+        aiResponseText = aiResponseText.replace(/\[BOOK:.*?\]/g, "");
+
+        setTimeout(() => {
+          quickBookMovie(targetMovieName);
+          toggleLasChatbox();
+        }, 1200);
+      }
+    }
+
+    if (typeof formatGeminiResponseToHtml === "function") {
+      aiResponseText = formatGeminiResponseToHtml(aiResponseText);
+    }
+
+    // Hiển thị câu trả lời thông minh của Trợ lý ảo lên màn hình
+    msgZone.innerHTML += `
+      <div style="align-self: flex-start; background-color: #f4f2ec; color: #333; padding: 10px 14px; border-radius: 8px; max-width: 85%; font-size: 13.5px; line-height: 1.4; border-left: 3px solid #e71a0f; word-break: break-word;">
+        ${aiResponseText}
+      </div>
+    `;
+    msgZone.scrollTop = msgZone.scrollHeight;
+  } catch (err) {
+    console.error("🚨 Lỗi Google AI:", err);
+    const loadingEl = document.getElementById(loadingId);
+    if (loadingEl) loadingEl.remove();
+
+    // Vá chí mạng đề phòng hết quota lượt gọi API Key miễn phí
+    if (
+      err.message &&
+      (err.message.includes("429") ||
+        err.message.includes("RESOURCE_EXHAUSTED"))
+    ) {
+      msgZone.innerHTML += `
+            <div style="background: #fff3cd; padding: 10px; border-radius: 8px; border-left: 3px solid #ffc107; align-self: flex-start; max-width: 85%;">
+                <b>🤖 Bot:</b> Dạ hiện tại hệ thống AI đang quá tải, mình xem lịch chiếu trực tiếp ở dưới đây nhé:<br>
+                <i style="font-size: 12px;">${dbContext.replace(/\n/g, "<br>")}</i>
+            </div>`;
+    } else {
+      msgZone.innerHTML += `<div style="color:red; font-weight:bold; align-self: flex-start; padding: 5px 10px;">❌ Lỗi kết nối trợ lý: ${err.message}</div>`;
+    }
+    msgZone.scrollTop = msgZone.scrollHeight;
+  }
+}
+
+// Hàm bắt sự kiện khi người dùng gõ phím Enter trong ô nhập liệu
+function toggleLasChatbox() {
+  const chatWindow = document.getElementById("las-chatbox-window");
+  const bubble = document.getElementById("las-chatbot-bubble");
+  if (chatWindow.style.display === "none" || chatWindow.style.display === "") {
+    chatWindow.style.display = "flex";
+    bubble.style.transform = "scale(0.9)";
+    bubble.innerText = "✖";
+    const msgZone = document.getElementById("las-chat-messages-zone");
+    msgZone.scrollTop = msgZone.scrollHeight;
+  } else {
+    chatWindow.style.display = "none";
+    bubble.style.transform = "scale(1)";
+    bubble.innerText = "💬";
+  }
+}
+
+function checkChatSendMessageKey(event) {
+  if (event.key === "Enter") {
+    sendChatMessageToServer();
+  }
+}
+
+// Hàm bổ trợ: Dọn sạch định dạng văn bản Markdown từ Gemini sang HTML chuẩn
+function formatGeminiResponseToHtml(rawText) {
+  let formatted = rawText;
+  // 1. Chuyển đổi **chữ đậm** thành <b>chữ đậm</b>
+  formatted = formatted.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+  // 2. Chuyển đổi dấu gạch đầu dòng * thành chấm tròn danh sách
+  formatted = formatted.replace(/^[*\-]\s+(.*)$/gm, "• $1");
+  // 3. Chuyển đổi xuống dòng \n thành thẻ <br> để xuống dòng hiển thị mượt mà
+  formatted = formatted.replace(/\n/g, "<br>");
+  return formatted;
+}
+
+// 🌟 XUẤT HÀM LÊN WINDOW TOÀN CỤC ĐỂ FILE INDEX.HTML CÓ THỂ ĐỌC ĐƯỢC
+window.sendChatMessageToServer = sendChatMessageToServer;
+window.toggleLasChatbox = toggleLasChatbox;
+window.checkChatSendMessageKey = checkChatSendMessageKey;
+window.formatGeminiResponseToHtml = formatGeminiResponseToHtml;
