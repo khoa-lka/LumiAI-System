@@ -1018,48 +1018,41 @@
         </div>
 
         <div id="booking-step-3" class="booking-step">
-            <h3 style="border-bottom: 2px solid #222; padding-bottom: 10px; color: #e71a0f; margin-top: 0; font-size: 16px; font-weight: bold; text-transform: uppercase;">RÀ SOÁT HÓA ĐƠN CHI TIẾT</h3>
-            <div id="review-invoice-content" style="line-height: 1.7; font-size: 14px; margin-bottom: 20px; text-align: left; background: #fff; padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px;"></div>
-            
-            <div style="background: #f4f2ec; padding: 18px; margin-bottom: 25px; border: 1px dashed #bba; text-align: left; border-radius: 6px;">
-                <strong style="color: #333; font-size: 13.5px;">Mã Voucher ưu đãi (Nhập <span style="color:#e71a0f; font-weight:bold;">LAS20</span> để nhận giảm giá 20%):</strong>
-                <div style="display: flex; gap: 10px; margin-top: 8px;">
-                    <input type="text" id="voucher-input" class="cgv-input-text" style="flex:1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; font-size: 13px;" placeholder="Ví dụ: LAS20">
-                    <button onclick="applyVoucher()" class="btn-cgv-submit" style="width: auto; margin-top: 0; padding: 0 20px; font-weight: bold; background: #111; color:#fff; border:none; border-radius:4px; cursor:pointer;">ÁP DỤNG</button>
-                </div>
-            </div>
-
-            <div class="payment-selection-block" style="text-align: left;">
-                <div class="payment-selection-title" style="font-weight: bold; font-size: 14px; color: #111; margin-bottom: 12px; text-transform: uppercase;">Hình thức thanh toán cổng trực tuyến</div>
-                <div class="payment-selection-body" style="display: flex; flex-direction: column; gap: 10px;">
-                    
-                    <div class="payment-option-row active" onclick="selectPaymentGatewayType('qr', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; background: #fff; cursor: pointer; transition: all 0.2s;">
-                        <div class="option-check-circle" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e71a0f; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #e71a0f;">✓</div>
-                        <div class="method-badge-icon badge-mv" style="background: #1a73e8; color: white; padding: 4px 8px; font-weight: bold; font-size: 12px; border-radius: 4px; min-width: 32px; text-align: center;">QR</div>
-                        <div class="method-info-texts" style="flex: 1;">
-                            <div class="method-main-name" style="font-weight: bold; color: #333; font-size: 13.5px;">Chuyển khoản / Quét mã QR Quốc Gia</div>
-                            <div class="method-sub-desc" style="color: #666; font-size: 12px; margin-top: 2px;">Hệ thống tự động rà soát giao dịch và xuất vé trong vòng 30s</div>
-                        </div>
-                    </div>
-
-                    <div class="payment-option-row" onclick="selectPaymentGatewayType('applepay', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; background: #fff; cursor: pointer; transition: all 0.2s; opacity: 0.8;">
-                        <div class="option-check-circle" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 11px; color: transparent;">✓</div>
-                        <div class="method-badge-icon badge-apple" style="background: #000000; color: white; padding: 4px 8px; font-weight: bold; font-size: 12px; border-radius: 4px; min-width: 32px; text-align: center;">Pay</div>
-                        <div class="method-info-texts">
-                            <div class="method-main-name" style="font-weight: bold; color: #333; font-size: 13.5px;">Apple Pay</div>
-                        </div>
-                    </div>
-
-                    <div class="payment-option-row" onclick="selectPaymentGatewayType('momo', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; background: #fff; cursor: pointer; transition: all 0.2s; opacity: 0.8;">
-                        <div class="option-check-circle" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 11px; color: transparent;">✓</div>
-                        <div class="method-badge-icon badge-momo" style="background: #a50064; color: white; padding: 4px 8px; font-weight: bold; font-size: 11px; border-radius: 4px; min-width: 32px; text-align: center; text-transform: lowercase;">momo</div>
-                        <div class="method-info-texts">
-                            <div class="method-main-name" style="font-weight: bold; color: #333; font-size: 13.5px;">Ví Điện Tử MoMo</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <h3 style="border-bottom: 2px solid #222; padding-bottom: 10px; color: #e71a0f; margin-top: 0; font-size: 16px; font-weight: bold; text-transform: uppercase;">RÀ SOÁT HÓA ĐƠN CHI TIẾT</h3>
+    <div id="review-invoice-content" style="line-height: 1.7; font-size: 14px; margin-bottom: 20px; text-align: left; background: #fff; padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px;"></div>
+    
+    <div style="background: #f4f2ec; padding: 18px; margin-bottom: 25px; border: 1px dashed #bba; text-align: left; border-radius: 6px;">
+        <strong style="color: #333; font-size: 13.5px;">Mã Voucher ưu đãi (Nhập <span style="color:#e71a0f; font-weight:bold;">LAS20</span> để nhận giảm giá 20%):</strong>
+        <div style="display: flex; gap: 10px; margin-top: 8px;">
+            <input type="text" id="voucher-input" class="cgv-input-text" style="flex:1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; font-size: 13px;" placeholder="Ví dụ: LAS20">
+            <button onclick="applyVoucher()" class="btn-cgv-submit" style="width: auto; margin-top: 0; padding: 0 20px; font-weight: bold; background: #111; color:#fff; border:none; border-radius:4px; cursor:pointer;">ÁP DỤNG</button>
         </div>
+    </div>
+
+    <div class="payment-selection-block" style="text-align: left;">
+        <div class="payment-selection-title" style="font-weight: bold; font-size: 14px; color: #111; margin-bottom: 12px; text-transform: uppercase;">Hình thức thanh toán cổng trực tuyến</div> 
+        
+        <div class="payment-selection-body" style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="payment-option-row active" onclick="window.selectPaymentGatewayType('qr', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; background: #fff; cursor: pointer; transition: all 0.2s;">
+                <div class="option-check-circle" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e71a0f; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #e71a0f;">✓</div>
+                <div class="method-badge-icon badge-mv" style="background: #1a73e8; color: white; padding: 4px 8px; font-weight: bold; font-size: 12px; border-radius: 4px; min-width: 32px; text-align: center;">QR</div>
+                <div class="method-info-texts" style="flex: 1;">
+                    <div class="method-main-name" style="font-weight: bold; color: #333; font-size: 13.5px;">Chuyển khoản / Quét mã QR Quốc Gia VietQR</div>
+                </div>
+            </div>
+
+            <div class="payment-option-row" onclick="window.selectPaymentGatewayType('vnpay_qr', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; background: #fff; cursor: pointer; transition: all 0.2s;">
+                <div class="option-check-circle" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 11px; color: transparent;">✓</div>
+                <div class="method-badge-icon" style="background: #005baa; color: white; padding: 4px 8px; font-weight: bold; font-size: 12px; border-radius: 4px; min-width: 32px; text-align: center;">VN_QR</div>
+                <div class="method-info-texts" style="flex: 1;">
+                    <div class="method-main-name" style="font-weight: bold; color: #333; font-size: 13.5px;">Cổng Thanh Toán VNPAY-QR</div>
+                    <div style="color: #666; font-size: 12px; margin-top: 2px;">Sử dụng ứng dụng Mobile Banking quét mã QR nhanh chóng an toàn</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
 
         <div id="booking-step-4" class="booking-step">
             <div id="final-ticket-result"></div>
@@ -1754,18 +1747,25 @@
             <button class="cgv-tab-btn active" id="tab-login-btn" onclick="toggleAuthTab('login')">Đăng Nhập</button>
             <button class="cgv-tab-btn" id="tab-register-btn" onclick="toggleAuthTab('register')">Đăng Ký</button>
           </div>
-          
-    <div class="cgv-auth-content auth-form-panel active" id="form-login-panel">
-      <div class="cgv-form-group">
-        <label>Email hoặc số điện thoại</label>
-        <input type="text" id="auth-username" class="cgv-input-text" placeholder="Nhập Email hoặc Số điện thoại..."
-          autocomplete="off" />
-      </div>
 
-      <div class="cgv-form-group">
-        <label>Mật khẩu</label>
-        <input type="password" id="auth-password" class="cgv-input-text" placeholder="........." />
-      </div>
+          <div
+            class="cgv-auth-content auth-form-panel active"
+            id="form-login-panel"
+          >
+            <div class="cgv-form-group">
+    <label>Email hoặc số điện thoại</label>
+    <input type="text" id="auth-username" class="cgv-input-text" placeholder="Nhập Email hoặc Số điện thoại..." autocomplete="off" />
+</div>
+            <div class="cgv-form-group">
+              <label>Mật khẩu</label>
+              <input
+                type="password"
+                id="auth-password"
+                class="cgv-input-text"
+                placeholder="........."
+              />
+            </div>
+ 
 
       <div class="cgv-form-group" style="margin-bottom: 20px;">
         <label style="font-weight: bold; font-size: 13px; color: #333; display: block; margin-bottom: 5px;">Xác thực mã bảo
@@ -2085,9 +2085,7 @@
         >
           ✕
         </div>
-        <h2 style="color: #0066cc; margin-top: 0; margin-bottom: 5px">
-          Thanh Thanh VNPAY-QR
-        </h2>
+        <h2 style="color: #0066cc; margin-top: 0; margin-bottom: 5px">CỔNG THANH TOÁN TRỰC TUYẾN</h2>
         <p style="font-size: 13px; color: #555; margin-bottom: 15px">
           Quét mã QR bằng ứng dụng ngân hàng để thanh toán
         </p>
@@ -2164,7 +2162,7 @@
         ></div>
       </div>
     </div>
-    <div id="las-chatbot-bubble" onclick="toggleLasChatbox()" style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background-color: #e71a0f; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 15px rgba(231, 26, 15, 0.4); z-index: 3000; transition: transform 0.2s;">
+    <div id="las-chatbot-bubble" onclick="window.toggleLasChatbox()" style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background-color: #e71a0f; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 15px rgba(231, 26, 15, 0.4); z-index: 3000; transition: transform 0.2s;">
   💬
 </div>
 
@@ -2192,11 +2190,12 @@
   </div>
 </div>
 
+
 <script src="js/state.js"></script>
 
   <!-- 2. Nhúng file trang chủ ngay sau state.js để dùng chung 'serverData' không bị trùng lặp -->
   <!-- Thêm đuôi ?v=... để diệt tận gốc lỗi dính cache file cũ của Chrome/Edge -->
-  <script src="js/home.js?v=lasCinemas2026"></script>
+<script src="js/home.js?v=lasCinemas_v2"></script>
 
   <!-- 3. Các file giao diện và tính năng chạy sau cùng -->
   <script src="js/api.js"></script>   
