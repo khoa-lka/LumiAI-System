@@ -46,7 +46,7 @@ public class PaymentController {
         
         // Cấu hình lựa chọn phương thức chi tiết từ Frontend gửi lên nếu có
         if (bankCode != null && !bankCode.isEmpty() && !bankCode.equals("ALL")) {
-            vnp_Params.put("vnp_BankCode", bankCode); 
+            vnp_Params.put("vnp_BankCode", bankCode);
         }
         
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
@@ -68,12 +68,25 @@ public class PaymentController {
         StringBuilder hashData = new StringBuilder();
         StringBuilder query = new StringBuilder();
         Iterator<String> itr = fieldNames.iterator();
+        
+        // ==========================================================================
+        // 🌟 KHÔI PHỤC HÀM BĂM CHUỖI CHUẨN CHỈ 100% THEO CHUẨN MẪU GỐC VNPAY JAVA SDK
+        // ==========================================================================
         while (itr.hasNext()) {
             String fieldName = itr.next();
             String fieldValue = vnp_Params.get(fieldName);
             if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                hashData.append(fieldName).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-                query.append(URLEncoder.encode(fieldName, StandardCharsets.UTF_8.toString())).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString()));
+                
+                // 1. Build hash data: Sử dụng tên trường thô và mã hóa giá trị trường bằng US_ASCII
+                hashData.append(fieldName);
+                hashData.append('=');
+                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+                
+                // 2. Build query URL: Mã hóa cả tên trường và giá trị trường đồng bộ 100% với SDK mẫu
+                query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString()));
+                query.append('=');
+                query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+                
                 if (itr.hasNext()) {
                     query.append('&');
                     hashData.append('&');
@@ -86,7 +99,6 @@ public class PaymentController {
         queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
         
         String finalPaymentUrl = VnPayConfig.vnp_PayUrl + "?" + queryUrl;
-
         Map<String, String> result = new HashMap<>();
         result.put("paymentUrl", finalPaymentUrl);
         return ResponseEntity.ok(result);

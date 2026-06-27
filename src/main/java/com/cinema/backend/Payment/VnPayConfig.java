@@ -8,10 +8,13 @@ import javax.crypto.spec.SecretKeySpec;
 import jakarta.servlet.http.HttpServletRequest;
 
 public class VnPayConfig {
-    public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static String vnp_ReturnUrl = "http://localhost:8080/index.html"; // Đường link nhảy về Frontend sau khi thanh toán xong
-    public static String vnp_TmnCode = "9M988N81"; // 🌟 Lấy mã TMN Code hiển thị trên trang cấu hình Test Sandbox VNPAY của em
-    public static String vnp_SecretKey = "XYZ123456789HASHSECRETKEYVNPAY"; // 🌟 Điền chuỗi mật mã bảo mật bí mật Chuỗi Hash Sandbox
+   public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"; // 
+    public static String vnp_ReturnUrl = "http://localhost:8080/index.html"; // 🚨 ĐƯỜNG DẪN TRẢ VỀ FRONTEND CỦA EM
+    
+    // 🌟 ĐIỀN CHÍNH XÁC THÔNG SỐ TỪ FILE PAYMEN.TXT VÀO ĐÂY:
+    public static String vnp_TmnCode = "U3MRTS75"; // 
+    public static String vnp_SecretKey = "UIONA03F53B2YBLHUS8P4BIWJ7WHHYDX"; // 
+    
     public static String vnp_Version = "2.1.0";
     public static String vnp_Command = "pay";
 

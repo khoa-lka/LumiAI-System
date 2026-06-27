@@ -23,6 +23,58 @@ currentBannerIndex = 0;
 totalBanners = 0;
 temporaryRegisterEmail = "";
 
+// ==========================================================================
+// 🌟 THẦN CHÚ KHÔI PHỤC SESSION: Ép tài khoản luôn luôn đăng nhập khi Reload
+// ==========================================================================
+window.syncUserLoginSession = function () {
+  const cachedUser = localStorage.getItem("las_logged_in_user");
+  if (cachedUser) {
+    isUserLoggedInState = true;
+    const uData = JSON.parse(cachedUser);
+
+    // Khôi phục mảng hóa đơn lịch sử từ ổ cứng
+    const cachedInvoices = localStorage.getItem("las_user_invoices");
+    if (cachedInvoices) {
+      userPastInvoices = JSON.parse(cachedInvoices);
+    }
+
+    // Ép giao diện Thanh điều hướng đầu trang hiển thị đúng trạng thái Xin Chào
+    const authLinkBox = document.getElementById("top-bar-auth-link");
+    if (authLinkBox) {
+      authLinkBox.onclick = () => switchCgvTab("panel-profile");
+      authLinkBox.style.cursor = "pointer";
+      authLinkBox.innerHTML = `
+          <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
+          <span onclick="handleCgvLogout(event)" style="color: #0066cc; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+      `;
+    }
+    if (document.getElementById("top-bar-ticket-link")) {
+      document.getElementById("top-bar-ticket-link").innerHTML =
+        `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
+    }
+
+    // Điền dữ liệu vào Form thông tin cá nhân rạp phim
+    if (document.getElementById("profile-field-name"))
+      document.getElementById("profile-field-name").value = uData.fullName;
+    if (document.getElementById("profile-field-phone"))
+      document.getElementById("profile-field-phone").value =
+        uData.phoneNumber || "";
+    if (document.getElementById("profile-field-email"))
+      document.getElementById("profile-field-email").value = uData.email;
+    if (document.getElementById("profile-summary-avatar")) {
+      document.getElementById("profile-summary-avatar").innerText =
+        uData.fullName.split(" ").pop().substring(0, 2).toUpperCase();
+    }
+    if (document.getElementById("profile-welcome-name"))
+      document.getElementById("profile-welcome-name").innerText =
+        `Xin chào ${uData.fullName},`;
+    if (document.getElementById("profile-star-role")) {
+      document.getElementById("profile-star-role").innerText =
+        uData.roleId === 1 ? "MANAGER / ADMIN" : "MEMBER";
+    }
+  }
+};
+
 // 1. Hàm tải Banner từ Database Spring Boot
 function loadBannersFromDatabase() {
   fetch("http://localhost:8080/api/banners")
@@ -132,6 +184,7 @@ window.fetchSyncData = function () {
 };
 
 // Khởi chạy khi tải trang
+// Khởi chạy khi tải trang và phục hồi trạng thái từ LocalStorage tránh lỗi refresh mất biến
 window.addEventListener("DOMContentLoaded", () => {
   const daySelect = document.getElementById("reg-birth-day");
   const monthSelect = document.getElementById("reg-birth-month");
@@ -140,57 +193,57 @@ window.addEventListener("DOMContentLoaded", () => {
   renderFnbMenu();
 
   if (daySelect && monthSelect && yearSelect) {
-    for (let i = 1; i <= 31; i++) {
+    for (let i = 1; i <= 31; i++)
       daySelect.innerHTML += `<option value="${i}">${i}</option>`;
-    }
-    for (let i = 1; i <= 12; i++) {
+    for (let i = 1; i <= 12; i++)
       monthSelect.innerHTML += `<option value="${i}">Tháng ${i}</option>`;
-    }
-    for (let i = 2026; i >= 1950; i--) {
+    for (let i = 2026; i >= 1950; i--)
       yearSelect.innerHTML += `<option value="${i}">${i}</option>`;
-    }
   }
 
   loadBannersFromDatabase();
   startAutoBannerSlider();
 
-  // 🌟 BƯỚC THẦN THÁNH: Ép hiển thị Tab phim hoạt động ngay khi trang vừa nạp xong hình hài
-  if (typeof switchCgvTab === "function") {
+  if (typeof switchCgvTab === "function")
     switchCgvTab("panel-movies", "now_showing");
-  }
-
-  if (typeof window.renderLasPromoGrid === "function") {
-    window.renderLasPromoGrid();
-  }
-
   window.fetchSyncData();
-  // 🌟 ĐOẠN CHÈN THÊM ĐỂ XỬ LÝ KẾT QUẢ TRẢ VỀ TỪ CỔNG VNPAY ĐỂ TỰ ĐỘNG XUẤT VÉ
-  const urlParameters = new URLSearchParams(window.location.search);
-  const vnpayResponseCode = urlParameters.get("vnp_ResponseCode"); // Lấy mã trạng thái phản hồi
 
-  if (vnpayResponseCode !== null) {
-    if (vnpayResponseCode === "00") {
-      // 💯 Mã phản hồi "00" có nghĩa là khách hàng đã thanh toán thành công trọn vẹn hóa đơn!
-      alert(
-        "🎉 Chúc mừng bạn đã thanh toán hóa đơn VNPAY thành công! Hệ thống đang tiến hành xuất vé điện tử...",
-      );
+  // 🌟 KHÓA TRÌ HOÃN 150MS: Đợi các file JS khác nạp xong giao diện mặc định rồi mới khôi phục Đăng Nhập
+  setTimeout(() => {
+    window.syncUserLoginSession();
 
-      // Kích hoạt hàm xuất vé, ghim hóa đơn vào lịch sử giao dịch và chuyển sang giao diện hóa đơn thành công
-      if (typeof window.executeFinalCheckout === "function") {
-        window.executeFinalCheckout();
+    // ĐÓN KẾT QUẢ VNPAY-CALLBACK TRẢ VỀ ĐỂ ĐIỀU HƯỚNG BƯỚC 4
+    const urlParameters = new URLSearchParams(window.location.search);
+    const vnpayResponseCode = urlParameters.get("vnp_ResponseCode");
+
+    if (vnpayResponseCode !== null) {
+      if (vnpayResponseCode === "00") {
+        // Khôi phục mảng trạng thái ghế và suất chiếu rạp lên bộ nhớ RAM tạm thời
+        const cachedBooking = localStorage.getItem("las_current_booking_cache");
+        if (cachedBooking) {
+          const bData = JSON.parse(cachedBooking);
+          selectedSeats = bData.seats;
+          selectedShowtime = bData.showtime;
+          selectedDateStr = bData.date;
+        }
+
+        alert(
+          "🎉 Chúc mừng bạn đã thanh toán hóa đơn VNPAY thành công! Hệ thống đang tiến hành xuất vé điện tử...",
+        );
+        if (typeof window.executeFinalCheckout === "function") {
+          window.executeFinalCheckout(); // Gọi hàm in vé thần tốc
+        }
+      } else {
+        alert(
+          "❌ Giao dịch thanh toán qua cổng VNPAY đã bị hủy bỏ hoặc thất bại. Vui lòng kiểm tra lại vị trí ghế ngồi!",
+        );
+        if (typeof window.switchCgvTab === "function")
+          switchCgvTab("panel-booking");
       }
-    } else {
-      // Khách hàng bấm nút hủy hoặc thẻ ATM không đủ số dư (Mã khác "00")
-      alert(
-        "❌ Giao dịch thanh toán qua cổng VNPAY đã bị hủy bỏ hoặc thất bại. Vui lòng kiểm tra lại vị trí ghế ngồi!",
-      );
-      if (typeof window.switchCgvTab === "function") {
-        window.switchCgvTab("panel-booking"); // Đưa khách về lại trang chọn ghế để thực hiện lại
-      }
+      // Dọn sạch thanh URL
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
-    // Xóa sạch mớ tham số loằng ngoằng của VNPAY trên thanh URL trình duyệt cho đẹp mắt chuẩn UX
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
+  }, 150);
 });
 
 function generateRandomCaptcha(length = 6) {
@@ -480,13 +533,19 @@ function renderTransactionHistory() {
 
   historyZone.innerHTML = "";
   userPastInvoices.forEach((inv) => {
+    // 🌟 FIX LỖI TÀNG HÌNH: Ép màu đỏ thương hiệu thật (#e71a0f) thay vì dùng biến hệ thống cũ var(--cgv-red)
+    // Đồng thời thêm bộ lọc cứu cánh (inv.movie || "Vé xem phim LAS Cinemas") đề phòng chuỗi dữ liệu trống
     historyZone.innerHTML += `
-          <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; background: white; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                  <h4 style="margin: 0 0 5px 0; color: var(--cgv-red);">${inv.movie}</h4>
-                  <p style="margin: 0; font-size: 13px; color: #555;">Mã ĐH: <b>${inv.id}</b> | Ngày: ${inv.date} | Trạng thái: <span style="color: green;">${inv.status}</span></p>
+          <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; background: white; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+              <div style="text-align: left;">
+                  <h4 style="margin: 0 0 6px 0; color: #e71a0f; font-size: 15px; font-weight: bold; text-transform: uppercase;">
+                      ${inv.movie ? inv.movie : "Vé xem phim LAS Cinemas"}
+                  </h4>
+                  <p style="margin: 0; font-size: 13px; color: #555;">
+                      Mã ĐH: <b>${inv.id}</b> | Ngày: ${inv.date} | Trạng thái: <span style="color: green; font-weight: bold;">${inv.status}</span>
+                  </p>
               </div>
-              <button onclick="viewHistoryDetail('${inv.id}')" style="background: var(--cgv-gold); border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px;">Xem Chi Tiết</button>
+              <button onclick="viewHistoryDetail('${inv.id}')" style="background: #ff9900; color: #fff; border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 12.5px;">Xem Chi Tiết</button>
           </div>
       `;
   });
@@ -539,6 +598,10 @@ function closeLogoutConfirmModal() {
 function confirmCgvLogoutAction() {
   isUserLoggedInState = false;
   closeLogoutConfirmModal();
+  // 🌟 DỌN SẠCH LOCALSTORAGE KHI THOÁT
+  localStorage.removeItem("las_logged_in_user");
+  localStorage.removeItem("las_user_invoices");
+  localStorage.removeItem("las_current_booking_cache");
   const authLinkBox = document.getElementById("top-bar-auth-link");
   authLinkBox.removeAttribute("style");
   authLinkBox.onclick = openAuthModal;
@@ -636,6 +699,12 @@ function submitCgvLogin() {
         }
 
         switchCgvTab("panel-profile");
+        // 🌟 GHIM LẠI LÊN Ổ CỨNG TRÌNH DUYỆT:
+        localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
+        localStorage.setItem(
+          "las_user_invoices",
+          JSON.stringify(userPastInvoices),
+        );
       }
     })
     .catch((err) => alert("🚨 Lỗi đăng nhập: " + err.message));
@@ -1125,12 +1194,22 @@ window.handleMainAction = function () {
       alert("Vui lòng chọn ít nhất một ghế ngồi trước khi tiếp tục!");
       return;
     }
+
+    // 🌟 ÉP BUỘC ĐĂNG NHẬP: Nếu chưa đăng nhập thì chặn đứng tiến trình và mở bảng Login lập tức
+    if (!isUserLoggedInState) {
+      alert(
+        "Vui lòng đăng nhập tài khoản thành viên LAS Cinemas trước khi tiến hành chọn bắp nước và đặt vé!",
+      );
+      if (typeof window.handleAuthModalAccess === "function") {
+        window.handleAuthModalAccess(); // Mở bảng đăng nhập/đăng ký
+      }
+      return;
+    }
+
     window.goToBookingStep(2);
   } else if (window.currentBookingStep === 2) {
     window.goToBookingStep(3);
   } else if (window.currentBookingStep === 3) {
-    // 🌟 FIX "VƯỢT RÀO": Không cho gọi thẳng executeFinalCheckout nữa!
-    // Ép nút Tiếp tục phải gọi hàm kiểm tra cổng thanh toán để nhảy VNPAY hoặc bung mã QR VietQR
     if (typeof window.processToPaymentGateway === "function") {
       window.processToPaymentGateway();
     }
@@ -1222,7 +1301,7 @@ window.processToPaymentGateway = function () {
 
   const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
 
-  // 🚀 TRƯỜNG HỢP 1: THANH TOÁN QUA VNPAY (QR HOẶC ATM NỘI ĐỊA) -> REDIRECT SANG CỔNG VNPAY SANDBOX
+  // 🚀 TRƯỜNG HỢP 1: THANH TOÁN QUA VNPAY (QR HOẶC ATM) -> CHUYỂN HƯỚNG TRÌNH DUYỆT
   if (
     window.selectedPaymentGateway === "vnpay_qr" ||
     window.selectedPaymentGateway === "vnpay_atm"
@@ -1232,7 +1311,7 @@ window.processToPaymentGateway = function () {
     if (window.selectedPaymentGateway === "vnpay_atm") bankCodeParam = "VNBANK";
 
     console.log(
-      "✈️ Đang kết nối API Spring Boot tạo Link VNPAY số tiền:",
+      "✈️ Gọi API Spring Boot sinh Link VNPAY Sandbox, số tiền:",
       finalTotal,
     );
 
@@ -1247,105 +1326,159 @@ window.processToPaymentGateway = function () {
       .then((data) => {
         if (data && data.paymentUrl) {
           alert(
-            "Hệ thống chuyển hướng an toàn sang cổng bảo mật VNPAY để giao dịch...",
+            "Hệ thống chuyển hướng an toàn sang cổng bảo mật VNPAY Sandbox...",
           );
-          window.location.href = data.paymentUrl; // 🚀 BẮN TRÌNH DUYỆT SANG VNPAY SANDBOX THÀNH CÔNG!
-        } else {
-          alert("Lỗi dữ liệu hệ thống trả về từ VNPAY Gateway!");
+          const bookingCache = {
+            movie: document.getElementById("cgv-combo-movie").value,
+            showtime: selectedShowtime,
+            seats: [...selectedSeats],
+            date: selectedDateStr,
+            fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
+            total: currentPriceTotal * (1 - appliedVoucherDiscount),
+          };
+          localStorage.setItem(
+            "las_current_booking_cache",
+            JSON.stringify(bookingCache),
+          );
+
+          window.location.href = data.paymentUrl; // 🚀 CHUYỂN HƯỚNG BÌNH THƯỜNG
         }
       })
-      .catch((err) => {
-        console.error("🚨 Lỗi tạo link VNPAY:", err);
-        alert(
-          "Không thể kết nối Server để kích hoạt cổng thanh toán VNPAY: " +
-            err.message,
-        );
-      });
+      .catch((err) => alert("Lỗi kết nối cổng VNPAY: " + err.message));
 
-    // 🚀 TRƯỜNG HỢP 2: THANH TOÁN CHUYỂN KHOẢN (VIETQR) -> BUNG MODAL POPUP VÀ HIỂN THỊ SỐ TIỀN THẬT
+    // 🚀 TRƯỜNG HỢP 2: THANH TOÁN CHUYỂN KHOẢN TIÊU CHUẨN (VIETQR) -> BUNG MODAL POPUP
   } else if (window.selectedPaymentGateway === "qr") {
-    // 🌟 FIX TIÊU ĐỀ: Đổi từ .getInnerHTML lỗi thành .innerHTML chuẩn chỉ
     const modalTitle = document.querySelector("#payment-redirect-modal h2");
-    if (modalTitle) {
-      modalTitle.innerHTML = "Thanh Toán Chuyển Khoản VietQR";
-    }
+    if (modalTitle) modalTitle.innerHTML = "Thanh Toán Chuyển Khoản VietQR";
 
-    // 🌟 FIX LỖI 0 Đ: Ép nạp chuỗi số tiền thực tế của đơn hàng lên màn hình Modal QR mẫu
     const qrPriceText = document.getElementById("qr-total-price");
-    if (qrPriceText) {
+    if (qrPriceText)
       qrPriceText.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
-    }
 
-    const bankId = "ICB";
-    const accountNo = "101879388698";
-    const accountName = "NGUYEN BAO HOANG";
+    const bankId = "NCB";
+    const accountNo = "9704198526191432198";
+    const accountName = "NGUYEN VAN A";
     const qrData = `LAS CINEMAS THANH TOAN VE`;
 
     const qrImg = document.getElementById("bank-qr-img");
     if (qrImg) {
       qrImg.src = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(qrData)}&accountName=${encodeURIComponent(accountName)}`;
     }
-
-    // Mở modal hiển thị mã chuyển khoản VietQR
     document.getElementById("payment-redirect-modal").classList.add("open");
   }
 };
 
 window.executeFinalCheckout = function () {
-  const currentMovie = document.getElementById("cgv-combo-movie").value;
-  const currentEmail = document.getElementById("profile-field-email")
-    ? document.getElementById("profile-field-email").value
-    : "VienNguyen2026@gmail.com";
+  const cachedBooking = localStorage.getItem("las_current_booking_cache");
+  let currentMovie = document.getElementById("cgv-combo-movie").value;
+  let ticketSeats = [...selectedSeats];
+  let ticketShowtime = selectedShowtime;
+  let ticketDate = selectedDateStr;
+  let ticketFnb = fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i }));
+  let ticketTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
 
-  const lasTicketId = "LAS-" + Math.floor(100000 + Math.random() * 900000);
-  const invoiceObj = {
-    id: lasTicketId,
-    movie: currentMovie,
-    date: selectedDateStr,
-    time: selectedShowtime,
-    seats: [...selectedSeats],
-    fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
-    total: currentPriceTotal * (1 - appliedVoucherDiscount),
-    status: "Đã thanh toán trực tuyến",
-  };
-  userPastInvoices.unshift(invoiceObj);
-
-  let fnbTicketHtml = invoiceObj.fnb
-    .map((i) => `<li>${i.name} x${i.qty}</li>`)
-    .join("");
-  const beautifulTicketHTML = `
-      <div style="text-align: center; margin-bottom: 25px;">
-          <h2 style="color: #10B981; margin-bottom: 10px; font-size: 26px;">🎟️ ĐẶT VÉ ĐIỆN TỬ THÀNH CÔNG!</h2>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 2px solid #222; padding: 6px; background:#fff;">
-          <p style="color: #444; font-weight: bold; font-size: 13px; margin-top: 12px;">LAS Cinemas đã gửi một bản sao hóa đơn vé qua Email của bạn.</p>
-      </div>
-      <div style="background: #fdfcf7; padding: 25px; border: 2px dashed #cca23b; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto; box-sizing: border-box; color:#222;">
-          <p><strong>Mã tra cứu vé:</strong> <span style="color:#e71a0f; font-size: 20px; font-family: monospace; font-weight:bold;">${invoiceObj.id}</span></p>
-          <p><strong>Tên bộ phim:</strong> <b>${invoiceObj.movie}</b></p>
-          <p><strong>Suất chiếu rạp:</strong> Suất ${invoiceObj.time} | Ngày ${invoiceObj.date}</p>
-          <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ccc;">
-          <p><strong>🎟️ Vị trí ghế ngồi:</strong> <span style="color:#e71a0f; font-weight:bold;">${invoiceObj.seats.join(", ")}</span></p>
-          <p><strong>🍿 Dịch vụ kèm theo:</strong></p><ul>${fnbTicketHtml || "<li>Không có dịch vụ ăn kèm</li>"}</ul>
-          <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ccc;">
-          <p style="font-size: 18px; text-align: right; margin: 0;">Tổng tiền: <span style="color:#10B981; font-weight:bold;">${invoiceObj.total.toLocaleString("vi-VN")} đ</span></p>
-      </div>
-      <div style="margin-top: 35px; text-align: center;">
-          <button class="btn-cgv-submit" style="width: auto; padding: 12px 35px; background: #333; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="window.goHomeFromBc()">HOÀN TẤT & QUAY VỀ</button>
-      </div>
-  `;
-
-  const finalResultDiv = document.getElementById("final-ticket-result");
-  if (finalResultDiv) {
-    finalResultDiv.innerHTML = beautifulTicketHTML;
-    window.goToBookingStep(4);
+  if (cachedBooking) {
+    const bData = JSON.parse(cachedBooking);
+    currentMovie = bData.movie;
+    ticketSeats = bData.seats;
+    ticketShowtime = bData.showtime;
+    ticketDate = bData.date;
+    ticketFnb = bData.fnb;
+    ticketTotal = bData.total;
   }
 
-  window.resetHoldState();
-  selectedSeats = [];
-  fnbMenu.forEach((i) => (i.qty = 0));
-  window.renderFnbMenu();
-  window.calculateCgvCart();
-  window.renderCgvInterface();
+  // 🌟 TUYỆT CHIÊU BẢO VỆ: Lấy email trực tiếp từ ổ cứng lưu trữ chứ không lấy từ ô Input giao diện nữa
+  let currentEmail = "VienNguyen2026@gmail.com";
+  const cachedUser = localStorage.getItem("las_logged_in_user");
+  if (cachedUser) {
+    currentEmail = JSON.parse(cachedUser).email;
+  }
+
+  console.log(
+    "📥 Đang gửi lệnh lưu hóa đơn vé xuống Database SQL Server cho Email:",
+    currentEmail,
+  );
+
+  fetch("http://localhost:8080/api/seats/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      movie: currentMovie,
+      showtime: ticketShowtime,
+      seats: ticketSeats,
+      email: currentEmail,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      // Sinh mã hóa đơn hiển thị rạp phim ngẫu nhiên
+      const lasTicketId = "LAS-" + Math.floor(100000 + Math.random() * 900000);
+      const invoiceObj = {
+        id: lasTicketId,
+        movie: currentMovie,
+        date: ticketDate,
+        time: ticketShowtime,
+        seats: [...ticketSeats],
+        fnb: ticketFnb,
+        total: ticketTotal,
+        status: "Đã thanh toán (VNPAY)",
+      };
+
+      userPastInvoices.unshift(invoiceObj);
+      localStorage.setItem(
+        "las_user_invoices",
+        JSON.stringify(userPastInvoices),
+      );
+
+      let fnbTicketHtml = invoiceObj.fnb
+        .map((i) => `<li>${i.name} x${i.qty}</li>`)
+        .join("");
+
+      const beautifulTicketHTML = `
+        <div style="text-align: center; margin-bottom: 25px;">
+            <h2 style="color: #10B981; margin-bottom: 10px; font-size: 26px;">🎟️ ĐẶT VÉ ĐIỆN TỬ THÀNH CÔNG!</h2>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 2px solid #222; padding: 6px; background:#fff;">
+            <p style="color: #444; font-weight: bold; font-size: 13px; margin-top: 12px;">LAS Cinemas đã gửi một bản sao hóa đơn vé qua Email của bạn.</p>
+        </div>
+        <div style="background: #fdfcf7; padding: 25px; border: 2px dashed #cca23b; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto; box-sizing: border-box; color:#222;">
+            <p><strong>Mã tra cứu vé:</strong> <span style="color:#e71a0f; font-size: 20px; font-family: monospace; font-weight:bold;">${invoiceObj.id}</span></p>
+            <p><strong>Tên bộ phim:</strong> <b>${invoiceObj.movie}</b></p>
+            <p><strong>Suất chiếu rạp:</strong> Suất ${invoiceObj.time} | Ngày ${invoiceObj.date}</p>
+            <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ccc;">
+            <p><strong>🎟️ Vị trí ghế ngồi:</strong> <span style="color:#e71a0f; font-weight:bold;">${invoiceObj.seats.join(", ")}</span></p>
+            <p><strong>🍿 Dịch vụ kèm theo:</strong></p><ul>${fnbTicketHtml || "<li>Không có dịch vụ ăn kèm</li>"}</ul>
+            <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ccc;">
+            <p style="font-size: 18px; text-align: right; margin: 0;">Tổng tiền: <span style="color:#10B981; font-weight:bold;">${invoiceObj.total.toLocaleString("vi-VN")} đ</span></p>
+        </div>
+        <div style="margin-top: 35px; text-align: center;">
+            <button class="btn-cgv-submit" style="width: auto; padding: 12px 35px; background: #333; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="window.goHomeFromBc()">HOÀN TẤT & QUAY VỀ</button>
+        </div>
+      `;
+
+      const finalResultDiv = document.getElementById("final-ticket-result");
+      if (finalResultDiv) {
+        finalResultDiv.innerHTML = beautifulTicketHTML;
+      }
+
+      // 🚀 CHUYỂN TAB VÀ NHẢY BƯỚC 4 MƯỢT MÀ KHÔNG BỊ CHẶN LẠI NỮA
+      window.switchCgvTab("panel-booking");
+      window.goToBookingStep(4);
+
+      // Giải phóng giỏ hàng tạm sau khi đã xuất vé điện tử thành công
+      localStorage.removeItem("las_current_booking_cache");
+      selectedSeats = [];
+      fnbMenu.forEach((i) => (i.qty = 0));
+      window.renderFnbMenu();
+      window.calculateCgvCart();
+      window.renderCgvInterface();
+      window.renderTransactionHistory();
+    })
+    .catch((err) => {
+      console.error("🚨 Lỗi lưu Database hóa đơn:", err);
+      alert(
+        "Hệ thống đã nhận tiền thanh toán VNPAY, tuy nhiên Server CSDL SQL Server gặp lỗi rò rỉ đồng bộ. Vui lòng liên hệ Admin!",
+      );
+    });
 };
 
 window.cancelCurrentTransaction = function () {
@@ -1608,27 +1741,26 @@ window.addEventListener("DOMContentLoaded", () => {
 // ==========================================================================
 // 🌟 HÀM RẼ NHÁNH THANH TOÁN TOÀN DIỆN (SỬA LỖI ĐÈ HÀM & HIỂN THỊ 0 Đ)
 // ==========================================================================
+// ==========================================================================
+// 🌟 HÀM RẼ NHÁNH THANH TOÁN (SỬA LỖI NGÂN HÀNG KHÔNG HỖ TRỢ TRÊN SANDBOX)
+// ==========================================================================
 window.processToPaymentGateway = function () {
   if (!window.selectedPaymentGateway) window.selectedPaymentGateway = "qr";
-
   const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
 
-  // 🚀 TRƯỜNG HỢP 1: THANH TOÁN QUA VNPAY (QR HOẶC ATM NỘI ĐỊA) -> CHUYỂN HƯỚNG SANG VNPAY SANDBOX
+  // 🚀 TRƯỜNG HỢP 1: THANH TOÁN QUA CỔNG VNPAY (QR HOẶC ATM)
   if (
     window.selectedPaymentGateway === "vnpay_qr" ||
     window.selectedPaymentGateway === "vnpay_atm"
   ) {
-    let bankCodeParam = "ALL";
-    if (window.selectedPaymentGateway === "vnpay_qr") bankCodeParam = "VNPAYQR";
-    if (window.selectedPaymentGateway === "vnpay_atm") bankCodeParam = "VNBANK";
-
     console.log(
-      "✈️ Kết nối API Spring Boot tạo link VNPAY, tổng tiền:",
+      "✈️ Gọi API Spring Boot sinh Link VNPAY tổng quan, số tiền:",
       finalTotal,
     );
 
+    // 🌟 THẦN CHÚ SỬA LỖI: Bỏ hoàn toàn tham số &bankCodeParam để VNPAY tự mở trang chọn lựa tổng quan
     fetch(
-      `http://localhost:8080/api/payment/create-vnpay-url?amount=${finalTotal}&bankCode=${bankCodeParam}`,
+      `http://localhost:8080/api/payment/create-vnpay-url?amount=${finalTotal}`,
     )
       .then((res) => {
         if (!res.ok)
@@ -1638,9 +1770,9 @@ window.processToPaymentGateway = function () {
       .then((data) => {
         if (data && data.paymentUrl) {
           alert(
-            "Hệ thống chuyển hướng an toàn sang cổng bảo mật VNPAY để giao dịch...",
+            "Hệ thống chuyển hướng an toàn sang cổng bảo mật VNPAY Sandbox...",
           );
-          window.location.href = data.paymentUrl; // Chuyển hướng sang sandbox
+          window.location.href = data.paymentUrl; // Điều hướng sang trang chọn của VNPAY thành công
         } else {
           alert("Lỗi dữ liệu hệ thống trả về từ VNPAY Gateway!");
         }
@@ -1652,15 +1784,13 @@ window.processToPaymentGateway = function () {
         );
       });
 
-    // 🚀 TRƯỜNG HỢP 2: THANH TOÁN CHUYỂN KHOẢN (VIETQR) -> BUNG MODAL POPUP VÀ HIỂN THỊ SỐ TIỀN THẬT
+    // 🚀 TRƯỜNG HỢP 2: THANH TOÁN CHUYỂN KHOẢN TIÊU CHUẨN (VIETQR) -> GIỮ NGUYÊN
   } else if (window.selectedPaymentGateway === "qr") {
-    // 🌟 FIX LỖI TIÊU ĐỀ: Sửa từ .getInnerHTML lỗi thành .innerHTML chuẩn chỉ
     const modalTitle = document.querySelector("#payment-redirect-modal h2");
     if (modalTitle) {
       modalTitle.innerHTML = "Thanh Toán Chuyển Khoản VietQR";
     }
 
-    // 🌟 FIX LỖI 0 Đ: Ép nạp chuỗi số tiền thực tế của đơn hàng đặt vé lên màn hình Modal
     const qrPriceText = document.getElementById("qr-total-price");
     if (qrPriceText) {
       qrPriceText.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
@@ -1675,8 +1805,6 @@ window.processToPaymentGateway = function () {
     if (qrImg) {
       qrImg.src = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(qrData)}&accountName=${encodeURIComponent(accountName)}`;
     }
-
-    // Mở modal hiển thị mã chuyển khoản VietQR tĩnh
     document.getElementById("payment-redirect-modal").classList.add("open");
   }
 };
