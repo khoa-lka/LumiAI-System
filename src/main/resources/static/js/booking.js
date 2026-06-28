@@ -11,10 +11,79 @@ function handleBookNowClick() {
       if ([...selectCombo.options].some((o) => o.value === currentMovieTitle)) {
         selectCombo.value = currentMovieTitle;
       }
+      // 🚀 BỔ SUNG TẠI ĐÂY: Xóa sạch các ghế đang chọn dở trước đó khi chuyển sang phim mới này
+      selectedSeats = []; 
+      if (typeof selectedShowtime !== "undefined") selectedShowtime = "";
+      if (typeof window.currentSelectedShowtimeId !== "undefined") window.currentSelectedShowtimeId = null;
+      
       onMovieOrTimeChange();
     }
     if (typeof goToBookingStep === "function") goToBookingStep(1);
   }
+}
+
+// 🚀 THÊM MỚI: Hàm chịu trách nhiệm gọi API lấy lịch chiếu động từ Database
+// ====== TÌM VÀ SỬA LẠI HOÀN CHỈNH HÀM loadShowtimesFromServer() TRONG booking.js ======
+function loadShowtimesFromServer() {
+  const selectCombo = document.getElementById("cgv-combo-movie");
+  if (!selectCombo) return;
+
+  // 1. Giữ nguyên logic bọc lót dropdown cực tốt của em
+  let currentComboValue = selectCombo.value;
+  
+  const detailTitleEl = document.getElementById("detail-movie-title");
+  if ((!currentComboValue || currentComboValue === "-") && detailTitleEl && detailTitleEl.innerText !== "-") {
+    currentComboValue = detailTitleEl.innerText;
+    selectCombo.value = currentComboValue; 
+  }
+
+  if ((!currentComboValue || currentComboValue === "-") && selectCombo.options.length > 0) {
+    currentComboValue = selectCombo.options[0].value;
+    selectCombo.value = currentComboValue;
+  }
+  
+  if (!currentComboValue || currentComboValue === "-") {
+    console.warn("⚠️ Không thể tải suất chiếu vì chưa có bộ phim nào được chọn!");
+    return;
+  }
+
+  // ==========================================================================
+  // 🚀 ĐOẠN ĐÃ TỐI ƯU: Loại bỏ khối API.getShowtimes() dư thừa ở đây.
+  // Chỉ kích hoạt duy nhất hàm vẽ giao diện tổng để nhường quyền Fetch 
+  // dữ liệu cho hàm renderCgvInterface() bên ui.js xử lý tập trung.
+  // ==========================================================================
+  if (typeof renderCgvInterface === "function") {
+    renderCgvInterface();
+  }
+}
+
+// 🚀 THÊM MỚI: Hàm vẽ danh sách các nút bấm suất chiếu động
+function renderDynamicShowtimeGrid() {
+  const timeGrid = document.getElementById("cgv-showtime-grid");
+  if (!timeGrid) return;
+
+  timeGrid.innerHTML = "";
+  
+  if (serverData.showtimes.length === 0) {
+    timeGrid.innerHTML = "<p style='color:#666; font-size:13px;'>Hôm nay phim chưa có lịch chiếu. Vui lòng chọn ngày khác!</p>";
+    return;
+  }
+
+  serverData.showtimes.forEach((t) => {
+    // t lúc này là Object từ Backend trả về, ví dụ: { showtimeId: 1, startTime: "19:00", roomId: 2 }
+    const isActive = t.showtimeId === selectedShowtime ? "active" : "";
+    
+    // Khi click chọn suất chiếu, ta truyền t.showtimeId (hoặc t.startTime tùy thuộc luồng ghế của bạn)
+    timeGrid.innerHTML += `
+      <div class="showtime-btn ${isActive}" onclick="selectTime('${t.showtimeId}', '${t.startTime}')">
+        ${t.startTime} <span style="font-size:9px; display:block; opacity:0.6;">Phòng ${t.roomId}</span>
+      </div>
+    `;
+  });
+  
+  // Cập nhật text hiển thị tổng quan hóa đơn ở cột phải
+  const currentShowtimeObj = serverData.showtimes.find(t => t.showtimeId === selectedShowtime);
+  document.getElementById("sum-showtime").innerText = currentShowtimeObj ? currentShowtimeObj.startTime : "-";
 }
 
 function quickBookMovie(movieTitle) {
@@ -26,13 +95,17 @@ function quickBookMovie(movieTitle) {
   }
 }
 
-function selectTime(t) {
+function selectTime(showtimeId, startTime) {
   if (isHoldingState) return alert("Hóa đơn đã khóa thanh toán!");
-  selectedShowtime = t;
+  
+  selectedShowtime = showtimeId; // Lưu ID suất chiếu để phục vụ đặt vé/lấy ghế xuống DB
   selectedSeats = [];
   
-  // Gọi hàm loadSeatMap động để đồng bộ dữ liệu ghế đã bán từ Server
-  loadSeatMap(t);
+  // Hiển thị giờ chiếu lên hóa đơn bên phải
+  document.getElementById("sum-showtime").innerText = startTime || "-";
+  
+  // Gọi hàm load sơ đồ ghế của suất chiếu này từ Server về
+  loadSeatMap(showtimeId);
 }
 
 function loadSeatMap(showtimeId) {
@@ -84,15 +157,25 @@ function loadSeatMap(showtimeId) {
 
 function onMovieOrTimeChange() {
   resetHoldState();
+  selectedShowtime = ""; // Xóa suất chiếu cũ đang chọn
   selectedSeats = [];
   
-  if (selectedShowtime) {
-    loadSeatMap(selectedShowtime);
-  } else {
-    calculateCgvCart();
-    renderCgvInterface();
-  }
+  // Gọi hàm kéo lịch chiếu mới nhất từ Database về
+  loadShowtimesFromServer();
 }
+
+function selectCgvBookingDate(dateStr) {
+  if (isHoldingState) return alert("Hóa đơn đã khóa thanh toán!");
+  selectedDateStr = dateStr; // Gán ngày được chọn (YYYY-MM-DD)
+  
+  // Vẽ lại thanh slider ngày để hiển thị trạng thái active màu đen
+  if (typeof generateCgvDateSlider === "function") generateCgvDateSlider();
+  
+  // Kích hoạt nạp lại lịch chiếu của ngày mới này
+  onMovieOrTimeChange();
+}
+// Đưa hàm selectCgvBookingDate ra phạm vi toàn cục window để nút bấm ở ui.js click được
+window.selectCgvBookingDate = selectCgvBookingDate;
 
 function calculateCgvCart() {
   document.getElementById("sum-seats").innerText =
