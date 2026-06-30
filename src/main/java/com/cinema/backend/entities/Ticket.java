@@ -2,7 +2,7 @@ package com.cinema.backend.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
-
+import lombok.Data;
 @Entity
 @Table(name = "ticket")
 @Data

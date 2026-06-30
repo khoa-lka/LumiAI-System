@@ -2141,28 +2141,20 @@
 
 
     <div class="cgv-modal-overlay" id="history-detail-modal">
-      <div
-        class="cgv-auth-split-box"
-        style="
-          width: 450px;
-          flex-direction: column;
-          padding: 25px;
-          background: #fdfcf7;
-        "
-      >
-        <div class="cgv-modal-close" onclick="closeHistoryDetailModal()">✕</div>
-        <h3 style="color: #222; text-align: center">CHI TIẾT HÓA ĐƠN CŨ</h3>
-        <div
-          id="history-detail-content"
-          style="
-            background: white;
-            padding: 15px;
-            border: 1px solid #ddd;
-            margin-top: 15px;
-          "
-        ></div>
-      </div>
+  <div class="cgv-auth-split-box" style="position: relative; width: 450px; flex-direction: column; padding: 25px; background: #fdfcf7;">
+    
+    <div class="cgv-modal-close" 
+         onclick="closeHistoryDetailModal()" 
+         style="position: absolute; top: 10px; right: 15px; cursor: pointer; font-size: 24px; font-weight: bold; color: #000; z-index: 100;">
+         ✕
     </div>
+
+    <h3 style="color: #222; text-align: center; margin-top: 0;">CHI TIẾT HÓA ĐƠN CŨ</h3>
+    
+    <div id="history-detail-content" style="background: white; padding: 15px; border: 1px solid #ddd; margin-top: 15px;">
+        </div>
+  </div>
+</div>
     <div id="las-chatbot-bubble" onclick="window.toggleLasChatbox()" style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background-color: #e71a0f; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 15px rgba(231, 26, 15, 0.4); z-index: 3000; transition: transform 0.2s;">
   💬
 </div>
