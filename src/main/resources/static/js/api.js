@@ -61,8 +61,9 @@ const API = {
 
   // 🚀 ĐÃ SỬA: Khớp chuẩn xác Path Variable dạng /delete/{id} với MovieController.java của bạn
   deleteMovie: (movieId) =>
-    fetch(`${BASE_URL}/movies/delete/${movieId}`, { method: "DELETE" })
-      .then(handleResponse),
+    fetch(`${BASE_URL}/movies/delete/${movieId}`, { method: "DELETE" }).then(
+      handleResponse,
+    ),
 
   // 3. EVENTS & BANNERS
   getEvents: () => fetch(`${BASE_URL}/events`).then(handleResponse),
@@ -75,8 +76,10 @@ const API = {
     ),
 
   // 🚀 ĐÃ THÊM: Gọi API lấy trạng thái danh sách ghế thực tế của suất chiếu
-  getSeatsByShowtime: (showtimeId) => 
-    fetch(`${BASE_URL}/seats/matrix?showtimeId=${showtimeId}`).then(handleResponse),
+  getSeatsByShowtime: (showtimeId) =>
+    fetch(`${BASE_URL}/seats/matrix?showtimeId=${showtimeId}`).then(
+      handleResponse,
+    ),
 
   checkoutTickets: (checkoutData) =>
     fetch(`${BASE_URL}/seats/checkout`, {

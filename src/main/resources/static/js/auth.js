@@ -4,10 +4,11 @@
 // Tìm hàm openAuthModal() ở đầu file auth.js và sửa thành:
 function openAuthModal() {
   document.getElementById("auth-modal").classList.add("open");
-  
+
   // 🚀 ĐÃ SỬA: Chủ động gọi trực tiếp hàm sinh mã ngay khi mở Modal
   if (typeof generateNewLoginCaptcha === "function") generateNewLoginCaptcha();
-  if (typeof generateNewRegisterCaptcha === "function") generateNewRegisterCaptcha();
+  if (typeof generateNewRegisterCaptcha === "function")
+    generateNewRegisterCaptcha();
 }
 function closeAuthModal() {
   document.getElementById("auth-modal").classList.remove("open");
@@ -49,6 +50,13 @@ function submitCgvLogin(event) {
       if (resData.status === "success") {
         isUserLoggedInState = true;
         let uData = resData.data;
+        localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
+        localStorage.setItem(
+          "las_user_invoices",
+          JSON.stringify(userPastInvoices || []),
+        );
+
+        console.log("Saved:", localStorage.getItem("las_logged_in_user"));
 
         // 1. Lưu thông tin đăng nhập vào bộ nhớ trình duyệt
         sessionStorage.setItem("isLoggedIn", "true");
@@ -89,14 +97,18 @@ function submitCgvLogin(event) {
               uData.fullName.split(" ").pop().substring(0, 2).toUpperCase();
           }
 
-          const welcomeNameBox = document.getElementById("profile-welcome-name");
-          if (welcomeNameBox) welcomeNameBox.innerText = `Xin chào ${uData.fullName},`;
+          const welcomeNameBox = document.getElementById(
+            "profile-welcome-name",
+          );
+          if (welcomeNameBox)
+            welcomeNameBox.innerText = `Xin chào ${uData.fullName},`;
 
           const starRoleBox = document.getElementById("profile-star-role");
           if (starRoleBox) starRoleBox.innerText = "MEMBER";
 
           document.getElementById("profile-field-name").value = uData.fullName;
-          document.getElementById("profile-field-phone").value = uData.phoneNumber;
+          document.getElementById("profile-field-phone").value =
+            uData.phoneNumber;
           document.getElementById("profile-field-email").value = uData.email;
 
           if (document.getElementById("profile-field-role")) {
@@ -109,13 +121,20 @@ function submitCgvLogin(event) {
           // ==========================================================================
           if (uData.dateOfBirth) {
             const [year, month, day] = uData.dateOfBirth.split("-");
-            if (document.getElementById("profile-birth-day")) document.getElementById("profile-birth-day").value = parseInt(day);
-            if (document.getElementById("profile-birth-month")) document.getElementById("profile-birth-month").value = parseInt(month);
-            if (document.getElementById("profile-birth-year")) document.getElementById("profile-birth-year").value = parseInt(year);
-            
+            if (document.getElementById("profile-birth-day"))
+              document.getElementById("profile-birth-day").value =
+                parseInt(day);
+            if (document.getElementById("profile-birth-month"))
+              document.getElementById("profile-birth-month").value =
+                parseInt(month);
+            if (document.getElementById("profile-birth-year"))
+              document.getElementById("profile-birth-year").value =
+                parseInt(year);
+
             // Đồng bộ luôn ô input text bọc lót nếu giao diện của team có dùng
             if (document.getElementById("profile-field-birth")) {
-              document.getElementById("profile-field-birth").value = `${day}/${month}/${year}`;
+              document.getElementById("profile-field-birth").value =
+                `${day}/${month}/${year}`;
             }
           }
 
@@ -254,9 +273,10 @@ function saveUpdatedProfileInformationData() {
               parseInt(month);
             document.getElementById("profile-birth-year").value =
               parseInt(year);
-              
+
             if (document.getElementById("profile-field-birth")) {
-              document.getElementById("profile-field-birth").value = `${day}/${month}/${year}`;
+              document.getElementById("profile-field-birth").value =
+                `${day}/${month}/${year}`;
             }
           }
         });

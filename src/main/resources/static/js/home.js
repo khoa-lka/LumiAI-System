@@ -32,13 +32,7 @@ window.syncUserLoginSession = function () {
     isUserLoggedInState = true;
     const uData = JSON.parse(cachedUser);
 
-    // Khôi phục mảng hóa đơn lịch sử từ ổ cứng
-    const cachedInvoices = localStorage.getItem("las_user_invoices");
-    if (cachedInvoices) {
-      userPastInvoices = JSON.parse(cachedInvoices);
-    }
-
-    // Ép giao diện Thanh điều hướng đầu trang hiển thị đúng trạng thái Xin Chào
+    // Điền thông tin giao diện thanh điều hướng (Giữ nguyên logic UI)
     const authLinkBox = document.getElementById("top-bar-auth-link");
     if (authLinkBox) {
       authLinkBox.onclick = () => switchCgvTab("panel-profile");
@@ -53,24 +47,41 @@ window.syncUserLoginSession = function () {
         `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
     }
 
-    // Điền dữ liệu vào Form thông tin cá nhân rạp phim
-    if (document.getElementById("profile-field-name"))
-      document.getElementById("profile-field-name").value = uData.fullName;
-    if (document.getElementById("profile-field-phone"))
-      document.getElementById("profile-field-phone").value =
-        uData.phoneNumber || "";
-    if (document.getElementById("profile-field-email"))
-      document.getElementById("profile-field-email").value = uData.email;
-    if (document.getElementById("profile-summary-avatar")) {
-      document.getElementById("profile-summary-avatar").innerText =
-        uData.fullName.split(" ").pop().substring(0, 2).toUpperCase();
-    }
-    if (document.getElementById("profile-welcome-name"))
-      document.getElementById("profile-welcome-name").innerText =
-        `Xin chào ${uData.fullName},`;
-    if (document.getElementById("profile-star-role")) {
-      document.getElementById("profile-star-role").innerText =
-        uData.roleId === 1 ? "MANAGER / ADMIN" : "MEMBER";
+    // 🚀 ĐỒNG BỘ DỮ LIỆU ĐÃ ĐƯỢC CHUẨN HÓA TỪ DATABASE
+    const accountId = uData.account_id || uData.accountId;
+    if (accountId) {
+      fetch(`http://localhost:8080/api/bookings/user/${accountId}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Thất bại khi lấy dữ liệu từ DB");
+          return res.json();
+        })
+        .then((dbBookings) => {
+          // Map chính xác các thuộc tính sạch từ backend trả về
+          window.userPastInvoices = dbBookings.map((b) => ({
+            id: "BK-" + b.bookingId,
+            movie: b.movieTitle, // Lấy từ kết quả JOIN movie
+            date: new Date(b.bookingDate).toLocaleDateString("vi-VN"), // Ngày đặt thực tế trong DB
+            time: b.showStartTime, // Giờ chiếu thực tế lấy từ bảng showtime chứ không lấy biến tạm b.js
+            seats: b.reservedSeats ? b.reservedSeats.split(", ") : [], // Mảng ghế thật trích từ ticket + seat
+            fnb: [], // Có thể bổ sung orderdetail food sau nếu cần
+            total: b.totalMoney,
+            status:
+              b.paymentStatus === "SUCCESS" || b.paymentStatus === "COMPLETELY"
+                ? "Đã thanh toán"
+                : "Chờ xử lý",
+          }));
+
+          // Gọi hàm render hiển thị giao diện lịch sử trong Profile
+          if (typeof renderTransactionHistory === "function") {
+            renderTransactionHistory();
+          }
+        })
+        .catch((err) =>
+          console.error(
+            "🚨 Lỗi nghiêm trọng khi đồng bộ phiên làm việc từ DB:",
+            err,
+          ),
+        );
     }
   }
 };
@@ -213,36 +224,6 @@ window.addEventListener("DOMContentLoaded", () => {
     window.syncUserLoginSession();
 
     // ĐÓN KẾT QUẢ VNPAY-CALLBACK TRẢ VỀ ĐỂ ĐIỀU HƯỚNG BƯỚC 4
-    const urlParameters = new URLSearchParams(window.location.search);
-    const vnpayResponseCode = urlParameters.get("vnp_ResponseCode");
-
-    if (vnpayResponseCode !== null) {
-      if (vnpayResponseCode === "00") {
-        // Khôi phục mảng trạng thái ghế và suất chiếu rạp lên bộ nhớ RAM tạm thời
-        const cachedBooking = localStorage.getItem("las_current_booking_cache");
-        if (cachedBooking) {
-          const bData = JSON.parse(cachedBooking);
-          selectedSeats = bData.seats;
-          selectedShowtime = bData.showtime;
-          selectedDateStr = bData.date;
-        }
-
-        alert(
-          "🎉 Chúc mừng bạn đã thanh toán hóa đơn VNPAY thành công! Hệ thống đang tiến hành xuất vé điện tử...",
-        );
-        if (typeof window.executeFinalCheckout === "function") {
-          window.executeFinalCheckout(); // Gọi hàm in vé thần tốc
-        }
-      } else {
-        alert(
-          "❌ Giao dịch thanh toán qua cổng VNPAY đã bị hủy bỏ hoặc thất bại. Vui lòng kiểm tra lại vị trí ghế ngồi!",
-        );
-        if (typeof window.switchCgvTab === "function")
-          switchCgvTab("panel-booking");
-      }
-      // Dọn sạch thanh URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
   }, 150);
 });
 
@@ -449,53 +430,6 @@ function applyVoucher() {
 
 function closePaymentModal() {
   document.getElementById("payment-redirect-modal").classList.remove("open");
-}
-
-function executeFinalCheckout() {
-  const currentMovie = document.getElementById("cgv-combo-movie").value;
-  const currentEmail = document.getElementById("profile-field-email")
-    ? document.getElementById("profile-field-email").value
-    : "Hoang2026@gmail.com";
-
-  fetch("http://localhost:8080/api/seats/checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      movie: currentMovie,
-      showtime: selectedShowtime,
-      seats: selectedSeats,
-      email: currentEmail,
-    }),
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      document
-        .getElementById("payment-redirect-modal")
-        .classList.remove("open");
-      if (data.success) {
-        const lasTicketId = data.ticketId.replace("CGV-", "LAS-");
-        const invoiceObj = {
-          id: lasTicketId,
-          movie: currentMovie,
-          date: selectedDateStr,
-          time: selectedShowtime,
-          seats: [...selectedSeats],
-          fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
-          total: currentPriceTotal * (1 - appliedVoucherDiscount),
-          status: "Đã thanh toán (VNPAY)",
-        };
-        userPastInvoices.unshift(invoiceObj);
-        alert("Giao dịch thành công! Vé đã được xuất.");
-        resetHoldState();
-        selectedSeats = [];
-        fnbMenu.forEach((i) => (i.qty = 0));
-        renderFnbMenu();
-        calculateCgvCart();
-        renderTransactionHistory();
-        switchCgvTab("panel-profile");
-        switchProfileSubTab("lichsu");
-      }
-    });
 }
 
 function cancelCurrentTransaction() {
@@ -813,7 +747,9 @@ function onMovieOrTimeChange() {
   resetHoldState();
   selectedSeats = [];
   calculateCgvCart();
-  window.renderCgvInterface();
+
+  // ❌ KHÔNG render lại toàn bộ UI nữa
+  // window.renderCgvInterface();
 }
 
 function switchCgvTab(panelId, filterType = "now_showing") {
@@ -915,20 +851,25 @@ window.renderCgvInterface = function () {
     ];
   }
 
-  if (!selectedShowtime && serverData.showtimes.length > 0) {
+  if (
+    !selectedShowtime &&
+    serverData.showtimes.length > 0 &&
+    !window.currentSelectedShowtimeId
+  ) {
     selectedShowtime = serverData.showtimes[0];
   }
 
   // 2. Tự động kích hoạt ma trận 40 ghế rạp trống (A1 -> D10) nếu dữ liệu ghế rạp đang trống rỗng
   if (!serverData.masterSeatStore) serverData.masterSeatStore = {};
-  if (activeMovieTitle && selectedShowtime) {
+  const seatKey = window.currentSelectedShowtimeId || selectedShowtime;
+
+  if (activeMovieTitle && seatKey) {
     if (!serverData.masterSeatStore[activeMovieTitle])
       serverData.masterSeatStore[activeMovieTitle] = {};
     if (
-      !serverData.masterSeatStore[activeMovieTitle][selectedShowtime] ||
-      Object.keys(
-        serverData.masterSeatStore[activeMovieTitle][selectedShowtime],
-      ).length === 0
+      !serverData.masterSeatStore[activeMovieTitle][seatKey] ||
+      Object.keys(serverData.masterSeatStore[activeMovieTitle][seatKey])
+        .length === 0
     ) {
       let activeSeatMap = {};
       ["A", "B", "C", "D"].forEach((row) => {
@@ -936,8 +877,7 @@ window.renderCgvInterface = function () {
           activeSeatMap[`${row}${i}`] = { status: "available" };
         }
       });
-      serverData.masterSeatStore[activeMovieTitle][selectedShowtime] =
-        activeSeatMap;
+      serverData.masterSeatStore[activeMovieTitle][seatKey] = activeSeatMap;
     }
   }
   // ========================================================================
@@ -1048,11 +988,10 @@ window.renderCgvInterface = function () {
     const currentMovie =
       selectCombo.value ||
       (selectCombo.options[0] ? selectCombo.options[0].value : "");
+    const seatKey = window.currentSelectedShowtimeId || selectedShowtime;
+
     const activeSeatMap =
-      (serverData &&
-        serverData.masterSeatStore &&
-        serverData.masterSeatStore[currentMovie]?.[selectedShowtime]) ||
-      {};
+      serverData.masterSeatStore[currentMovie]?.[seatKey] || {};
 
     Object.keys(activeSeatMap).forEach((id) => {
       const s = activeSeatMap[id];
@@ -1296,7 +1235,8 @@ window.applyVoucher = function () {
 // ==========================================================================
 // 🌟 HÀM RẼ NHÁNH THANH TOÁN TOÀN DIỆN (SỬA LỖI ĐÈ HÀM & HIỂN THỊ VNPAY)
 // ==========================================================================
-window.processToPaymentGateway = function () {
+
+/*window.processToPaymentGateway = function () {
   if (!window.selectedPaymentGateway) window.selectedPaymentGateway = "qr";
 
   const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
@@ -1366,7 +1306,7 @@ window.processToPaymentGateway = function () {
     }
     document.getElementById("payment-redirect-modal").classList.add("open");
   }
-};
+};*/
 
 window.executeFinalCheckout = function () {
   const cachedBooking = localStorage.getItem("las_current_booking_cache");
@@ -1772,6 +1712,14 @@ window.processToPaymentGateway = function () {
           alert(
             "Hệ thống chuyển hướng an toàn sang cổng bảo mật VNPAY Sandbox...",
           );
+          const bookingCache = {
+            movie: document.getElementById("cgv-combo-movie").value,
+            showtime: selectedShowtime,
+            seats: [...selectedSeats],
+            date: selectedDateStr,
+            fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
+            total: currentPriceTotal * (1 - appliedVoucherDiscount),
+          };
           window.location.href = data.paymentUrl; // Điều hướng sang trang chọn của VNPAY thành công
         } else {
           alert("Lỗi dữ liệu hệ thống trả về từ VNPAY Gateway!");
@@ -2057,8 +2005,27 @@ window.moveBannerLeft = moveBannerLeft;
 window.moveBannerRight = moveBannerRight;
 
 function goHomeFromBc() {
-  cgvNavigationHistory = ["panel-movies"];
-  switchCgvTab("panel-movies", "now_showing");
+  switchCgvTab("panel-movies");
+
+  selectedSeats = [];
+  selectedShowtime = "";
+  window.currentSelectedShowtimeId = null;
+
+  currentPriceTotal = 0;
+  appliedVoucherDiscount = 0;
+
+  fnbMenu.forEach((i) => (i.qty = 0));
+
+  const ticket = document.getElementById("final-ticket-result");
+  if (ticket) {
+    ticket.innerHTML = "";
+  }
+
+  goToBookingStep(1);
+
+  renderFnbMenu();
+  calculateCgvCart();
+  renderCgvInterface();
 }
 window.goHomeFromBc = goHomeFromBc;
 
