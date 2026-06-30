@@ -1034,7 +1034,7 @@
         <div class="payment-selection-title" style="font-weight: bold; font-size: 14px; color: #111; margin-bottom: 12px; text-transform: uppercase;">Hình thức thanh toán cổng trực tuyến</div> 
         
         <div class="payment-selection-body" style="display: flex; flex-direction: column; gap: 10px;">
-            <div class="payment-option-row active" onclick="window.selectPaymentGatewayType('qr', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; background: #fff; cursor: pointer; transition: all 0.2s;">
+            <div class="payment-option-row" onclick="window.selectPaymentGatewayType('qr', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; background: #fff; cursor: pointer; transition: all 0.2s;">
                 <div class="option-check-circle" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e71a0f; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #e71a0f;">✓</div>
                 <div class="method-badge-icon badge-mv" style="background: #1a73e8; color: white; padding: 4px 8px; font-weight: bold; font-size: 12px; border-radius: 4px; min-width: 32px; text-align: center;">QR</div>
                 <div class="method-info-texts" style="flex: 1;">
@@ -1042,7 +1042,7 @@
                 </div>
             </div>
 
-            <div class="payment-option-row" onclick="window.selectPaymentGatewayType('vnpay_qr', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; background: #fff; cursor: pointer; transition: all 0.2s;">
+            <div class="payment-option-row" onclick="window.selectPaymentGatewayType('vnpay', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; background: #fff; cursor: pointer; transition: all 0.2s;">
                 <div class="option-check-circle" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 11px; color: transparent;">✓</div>
                 <div class="method-badge-icon" style="background: #005baa; color: white; padding: 4px 8px; font-weight: bold; font-size: 12px; border-radius: 4px; min-width: 32px; text-align: center;">VN_QR</div>
                 <div class="method-info-texts" style="flex: 1;">
@@ -2132,7 +2132,7 @@
         <button
           class="btn-cgv-submit"
           style="margin-top: 15px; background: #10b981"
-          onclick="executeFinalCheckout()"
+          onclick="document.getElementById('payment-redirect-modal').classList.remove('open'); executeFinalCheckout();"
         >
           ĐÃ CHUYỂN KHOẢN THÀNH CÔNG
         </button>
@@ -2190,7 +2190,7 @@
   <!-- Thêm đuôi ?v=... để diệt tận gốc lỗi dính cache file cũ của Chrome/Edge -->
 <script src="js/home.js?v=lasCinemas_v2"></script>
 
-  <!-- 3. Các file giao diện và tính năng chạy sau cùng -->
+  <!-- 3. Các file giao diện và tính năng chạy sau cùng omg omg omg omg  -->
   <script src="js/api.js"></script>   
   <script src="js/ui.js"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
   <script src="js/auth.js"></script>
