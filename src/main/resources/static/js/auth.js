@@ -51,6 +51,7 @@ function submitCgvLogin(event) {
         isUserLoggedInState = true;
         let uData = resData.data;
         localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
+        sessionStorage.removeItem("pendingBooking");
         localStorage.setItem(
           "las_user_invoices",
           JSON.stringify(userPastInvoices || []),

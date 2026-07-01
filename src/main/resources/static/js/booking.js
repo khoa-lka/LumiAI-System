@@ -484,6 +484,18 @@ function checkVnpayReturn() {
   console.log("SEARCH =", window.location.search);
   const params = new URLSearchParams(window.location.search);
   const responseCode = params.get("vnp_ResponseCode");
+  if (!responseCode) {
+    return;
+  }
+  if (responseCode !== "00") {
+    alert("Thanh toán đã bị hủy hoặc thất bại.");
+
+    sessionStorage.removeItem("checkoutPayload");
+
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    return;
+  }
 
   if (!responseCode) return;
 
@@ -492,30 +504,56 @@ function checkVnpayReturn() {
   if (!payload) return;
 
   const data = JSON.parse(payload);
+  currentPriceTotal = data.total || 0;
+  appliedVoucherDiscount = data.discount || 0;
+  if (data.fnb) {
+    fnbMenu.forEach((item) => {
+      const old = data.fnb.find((x) => x.name === item.name);
+      item.qty = old ? old.qty : 0;
+    });
+  }
+
   console.log("===== VNPAY RETURN =====");
   console.log(data);
 
   window.history.replaceState({}, document.title, window.location.pathname);
+  window.isVnpayReturn = true;
 
-  if (responseCode === "00") {
-    console.log("✅ Thanh toán thành công");
+  window.currentSelectedShowtimeId = data.showtime;
+  selectedSeats = data.seats;
+  selectedShowtime = "";
+  renderFnbMenu();
+  calculateCgvCart();
+  // Đợi dropdown phim load xong mới gán
+  const restoreMovie = () => {
+    const combo = document.getElementById("cgv-combo-movie");
 
-    window.currentSelectedShowtimeId = data.showtime;
-    selectedSeats = data.seats;
-    selectedShowtime = "";
-    document.getElementById("cgv-combo-movie").value = data.movie;
-    loadSeatMap(data.showtime);
-    renderCgvInterface();
-    console.log("showtime =", window.currentSelectedShowtimeId);
-    console.log("movie =", document.getElementById("cgv-combo-movie").value);
-    console.log("seats =", selectedSeats);
+    if (
+      combo &&
+      combo.options.length > 0 &&
+      [...combo.options].some((o) => o.value === data.movie)
+    ) {
+      combo.value = data.movie;
 
-    executeFinalCheckout();
-  } else {
-    alert("Thanh toán thất bại hoặc đã hủy.");
-  }
+      console.log("✔ Restore movie:", combo.value);
+      switchCgvTab("panel-booking");
+      loadSeatMap(data.showtime);
+      renderCgvInterface();
 
-  sessionStorage.removeItem("checkoutPayload");
+      console.log("showtime =", window.currentSelectedShowtimeId);
+      console.log("movie =", combo.value);
+      console.log("seats =", selectedSeats);
+      console.log(serverData.movies);
+      console.log(serverData.showtimes);
+      console.log(document.getElementById("cgv-combo-movie").value);
+      console.log(window.currentSelectedShowtimeId);
+      executeFinalCheckout();
+    } else {
+      setTimeout(restoreMovie, 100);
+    }
+  };
+
+  restoreMovie();
 }
 
 function backToPaymentSelection() {
@@ -593,6 +631,9 @@ function executeFinalCheckout() {
     showtime: showtimeId,
     seats: selectedSeats,
     email: currentEmail,
+    total: currentPriceTotal,
+    discount: appliedVoucherDiscount,
+    fnb: fnbMenu.map((item) => ({ ...item })),
   };
   console.log("Checkout payload:", checkoutPayload);
   console.log("Showtime:", window.currentSelectedShowtimeId);
@@ -601,6 +642,8 @@ function executeFinalCheckout() {
   // 2. Gọi API chuẩn qua api.js
   API.checkoutTickets(checkoutPayload)
     .then((data) => {
+      console.log("BACKEND RESPONSE:", data);
+
       // Đóng modal thanh toán đang xoay xoay
       document
         .getElementById("payment-redirect-modal")
@@ -629,6 +672,8 @@ function executeFinalCheckout() {
           : "LAS-" + Math.floor(Math.random() * 1000000);
 
         // Lưu lịch sử hóa đơn
+        console.log("currentPriceTotal =", currentPriceTotal);
+        console.log("appliedVoucherDiscount =", appliedVoucherDiscount);
         const invoiceObj = {
           id: lasTicketId,
           movie: currentMovie,
@@ -677,7 +722,10 @@ function executeFinalCheckout() {
         if (finalResultDiv) {
           finalResultDiv.innerHTML = beautifulTicketHTML;
           // Chuyển sang Bước 4 (Xem vé)
+          console.log("Đang chuyển sang bước 4...");
           goToBookingStep(4);
+          window.isVnpayReturn = false;
+          console.log("Đã gọi goToBookingStep(4)");
         }
 
         // Nếu đang đăng nhập thì load lại lịch sử giao dịch trong Profile
