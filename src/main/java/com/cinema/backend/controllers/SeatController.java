@@ -1,5 +1,6 @@
 package com.cinema.backend.controllers;
-
+import com.cinema.backend.repositories.ShowtimeRepository; // Thêm dòng này
+import com.cinema.backend.repositories.TicketRepository;
 import com.cinema.backend.entities.Seat;
 import com.cinema.backend.entities.Showtime;
 import com.cinema.backend.entities.Ticket;
@@ -18,8 +19,7 @@ public class SeatController {
      @Autowired
     private SeatRepository seatRepository;
 
-    @Autowired
-    private TicketRepository ticketRepository;
+ 
 
     @Autowired
     private ShowtimeRepository showtimeRepository;
@@ -27,11 +27,9 @@ public class SeatController {
     @Autowired
     private TicketRepository ticketRepository;
 
-    @Autowired
-    private ShowtimeRepository showtimeRepository;
+  
 
-    @Autowired
-    private TicketRepository ticketRepository;
+    
 
     // 🚀 API: Lấy ma trận ghế
     @GetMapping("/matrix")

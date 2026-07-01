@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Management Portal</title>
+    <style>
+        /* CSS Cơ bản cho layout */
+        body { display: flex; font-family: sans-serif; margin: 0; }
+        .admin-sidebar { width: 250px; background: #333; color: white; height: 100vh; padding: 20px; }
+        .admin-nav-item { cursor: pointer; padding: 10px; border-bottom: 1px solid #444; }
+        .admin-nav-item.active { background: #e71a0f; }
+        .admin-main-content { flex: 1; padding: 20px; background: #f4f4f4; }
+        .admin-tab-section { background: white; padding: 20px; border-radius: 5px; }
+        .mp-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .mp-table th, .mp-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; color: white; background: #26a69a; }
+        .btn-admin-action { cursor: pointer; padding: 5px 10px; border: none; border-radius: 3px; margin: 0 2px; }
+        .delete { background: #e71a0f; color: white; }
+        .edit { background: #1976d2; color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-sidebar">
+        <h3>ADMIN DASHBOARD</h3>
+        
+        <div class="admin-nav-item" id="nav-admin-ban" onclick="switchAdminTab('ban')">Khóa tài khoản</div>
+        <div class="admin-nav-item" id="nav-admin-syslog" onclick="switchAdminTab('syslog')">Logs hệ thống</div>
+        <div class="admin-nav-item" id="nav-admin-faq" onclick="switchAdminTab('faq')">Quản trị FAQ</div>
+        <div class="admin-nav-item" id="nav-admin-webhook" onclick="switchAdminTab('webhook')">Webhook Logs</div>
+        <div class="admin-nav-item" id="nav-admin-db" onclick="switchAdminTab('db')">Backup Database</div>
+    </div>
+
+    <div class="admin-main-content">
+
+        <div id="admin-tab-ban" class="admin-tab-section" style="display:none;">
+            <h2>Quản lý người dùng</h2>
+            <table class="mp-table">
+                <thead><tr><th>ID</th><th>Email</th><th>Role</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
+                <tbody id="admin-ban-tbody"></tbody>
+            </table>
+        </div>
+
+        <div id="admin-tab-syslog" class="admin-tab-section" style="display:none;">
+            <h2>Hệ thống Logs</h2>
+            <table class="mp-table">
+                <thead><tr><th>Thời gian</th><th>Hành động</th><th>User</th><th>Status</th></tr></thead>
+                <tbody id="admin-syslog-tbody"></tbody>
+            </table>
+        </div>
+
+        <div id="admin-tab-faq" class="admin-tab-section" style="display:none;">
+            <h2>Câu hỏi thường gặp</h2>
+            <table class="mp-table">
+                <thead><tr><th>Câu hỏi</th><th>Trả lời</th><th>Thao tác</th></tr></thead>
+                <tbody id="admin-faq-tbody"></tbody>
+            </table>
+        </div>
+
+        <div id="admin-tab-webhook" class="admin-tab-section" style="display:none;">
+            <h2>Webhook Monitoring</h2>
+            <table class="mp-table">
+                <thead><tr><th>Thời gian</th><th>Source</th><th>Payload</th><th>HTTP Code</th></tr></thead>
+                <tbody id="admin-webhook-tbody"></tbody>
+            </table>
+        </div>
+
+        <div id="admin-tab-db" class="admin-tab-section" style="display:none;">
+            <h2>Database Backups</h2>
+            <table class="mp-table">
+                <thead><tr><th>Phiên bản</th><th>Ngày tạo</th><th>Dung lượng</th><th>Loại</th><th>Action</th></tr></thead>
+                <tbody id="admin-db-tbody"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+<script src="js/state.js"></script>
+
+<script src="js/api.js"></script>
+
+<script src="js/auth.js"></script>
+
+
+<script src="js/admin.js"></script>
+<script src="js/home.js"></script>
+    
+  
+
+  
+</body>
+</html>

@@ -72,7 +72,16 @@ function submitCgvLogin(event) {
             `Xin chào Quản lý: ${uData.fullName}. Đang chuyển hướng đến Portal...`,
           );
           window.location.href = "manager.html";
-        } else {
+          return;
+        }
+        else if (uData.roleId === 2) {
+          alert(
+            `Xin chào Admin: ${uData.fullName}. Đang chuyển hướng đến Portal...`,
+          );
+          window.location.href = "admin.html";
+          return;
+        }
+         else if (  uData.roleId === 3) {
           // Nếu là Khách hàng (Member) -> Ở lại trang chủ và cập nhật giao diện
           alert(
             `Chào mừng thành viên: ${uData.fullName} đăng nhập thành công!`,
@@ -90,7 +99,8 @@ function submitCgvLogin(event) {
             `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
 
           let roleString = "Khách hàng thành viên";
-          if (uData.roleId === 2) roleString = "Nhân viên cụm rạp (STAFF)";
+          if (uData.roleId === 2) roleString = "Admin";
+          if (uData.roleId === 4) roleString = "Nhân viên cụm rạp (STAFF)";
 
           if (document.getElementById("profile-summary-avatar")) {
             document.getElementById("profile-summary-avatar").innerText =

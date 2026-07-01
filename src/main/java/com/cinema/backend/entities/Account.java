@@ -39,4 +39,6 @@ public class Account {
 
     @Column(name = "role_id")
     private Integer roleId;
+    @Column(name = "status")
+private String status; // Giá trị: "Active", "Banned"
 }

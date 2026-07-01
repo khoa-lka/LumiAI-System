@@ -105,4 +105,13 @@ const API = {
     fetch(`${BASE_URL}/admin/users/ban/${userId}`, { method: "PUT" }).then(
       handleResponse,
     ),
+    updateUserRole: (userId, roleId) => 
+    fetch(`${BASE_URL}/admin/users/update-role/${userId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(roleId)
+    }).then(handleResponse),
+
+  banUser: (userId) => 
+    fetch(`${BASE_URL}/admin/users/ban/${userId}`, { method: "PUT" }).then(handleResponse),
 };
