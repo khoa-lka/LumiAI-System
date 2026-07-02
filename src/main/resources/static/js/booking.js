@@ -1,4 +1,8 @@
+console.log("BOOKING JS LOADED");
+let selectedPaymentGateway = "qr";
 function handleBookNowClick() {
+  const ticket = document.getElementById("final-ticket-result");
+  if (ticket) ticket.innerHTML = "";
   if (!isUserLoggedInState) {
     alert("Vui lòng đăng nhập hệ thống để tiếp tục đặt vé!");
     openAuthModal();
@@ -12,10 +16,11 @@ function handleBookNowClick() {
         selectCombo.value = currentMovieTitle;
       }
       // 🚀 BỔ SUNG TẠI ĐÂY: Xóa sạch các ghế đang chọn dở trước đó khi chuyển sang phim mới này
-      selectedSeats = []; 
+      selectedSeats = [];
       if (typeof selectedShowtime !== "undefined") selectedShowtime = "";
-      if (typeof window.currentSelectedShowtimeId !== "undefined") window.currentSelectedShowtimeId = null;
-      
+      if (typeof window.currentSelectedShowtimeId !== "undefined")
+        window.currentSelectedShowtimeId = null;
+
       onMovieOrTimeChange();
     }
     if (typeof goToBookingStep === "function") goToBookingStep(1);
@@ -30,26 +35,36 @@ function loadShowtimesFromServer() {
 
   // 1. Giữ nguyên logic bọc lót dropdown cực tốt của em
   let currentComboValue = selectCombo.value;
-  
+  console.log("🔥 SHOWTIME RAW:", serverData.showtimes);
+
   const detailTitleEl = document.getElementById("detail-movie-title");
-  if ((!currentComboValue || currentComboValue === "-") && detailTitleEl && detailTitleEl.innerText !== "-") {
+  if (
+    (!currentComboValue || currentComboValue === "-") &&
+    detailTitleEl &&
+    detailTitleEl.innerText !== "-"
+  ) {
     currentComboValue = detailTitleEl.innerText;
-    selectCombo.value = currentComboValue; 
+    selectCombo.value = currentComboValue;
   }
 
-  if ((!currentComboValue || currentComboValue === "-") && selectCombo.options.length > 0) {
+  if (
+    (!currentComboValue || currentComboValue === "-") &&
+    selectCombo.options.length > 0
+  ) {
     currentComboValue = selectCombo.options[0].value;
     selectCombo.value = currentComboValue;
   }
-  
+
   if (!currentComboValue || currentComboValue === "-") {
-    console.warn("⚠️ Không thể tải suất chiếu vì chưa có bộ phim nào được chọn!");
+    console.warn(
+      "⚠️ Không thể tải suất chiếu vì chưa có bộ phim nào được chọn!",
+    );
     return;
   }
 
   // ==========================================================================
   // 🚀 ĐOẠN ĐÃ TỐI ƯU: Loại bỏ khối API.getShowtimes() dư thừa ở đây.
-  // Chỉ kích hoạt duy nhất hàm vẽ giao diện tổng để nhường quyền Fetch 
+  // Chỉ kích hoạt duy nhất hàm vẽ giao diện tổng để nhường quyền Fetch
   // dữ liệu cho hàm renderCgvInterface() bên ui.js xử lý tập trung.
   // ==========================================================================
   if (typeof renderCgvInterface === "function") {
@@ -63,27 +78,37 @@ function renderDynamicShowtimeGrid() {
   if (!timeGrid) return;
 
   timeGrid.innerHTML = "";
-  
+
   if (serverData.showtimes.length === 0) {
-    timeGrid.innerHTML = "<p style='color:#666; font-size:13px;'>Hôm nay phim chưa có lịch chiếu. Vui lòng chọn ngày khác!</p>";
+    timeGrid.innerHTML = "<p style='color:#666'>Không có suất chiếu.</p>";
     return;
   }
 
   serverData.showtimes.forEach((t) => {
-    // t lúc này là Object từ Backend trả về, ví dụ: { showtimeId: 1, startTime: "19:00", roomId: 2 }
-    const isActive = t.showtimeId === selectedShowtime ? "active" : "";
-    
-    // Khi click chọn suất chiếu, ta truyền t.showtimeId (hoặc t.startTime tùy thuộc luồng ghế của bạn)
+    const active =
+      t.showtimeId === window.currentSelectedShowtimeId ? "active" : "";
+
     timeGrid.innerHTML += `
-      <div class="showtime-btn ${isActive}" onclick="selectTime('${t.showtimeId}', '${t.startTime}')">
-        ${t.startTime} <span style="font-size:9px; display:block; opacity:0.6;">Phòng ${t.roomId}</span>
-      </div>
-    `;
+            <div class="showtime-btn ${active}"
+                 onclick="selectTime(${t.showtimeId}, '${t.startTime}')">
+
+                ${t.startTime}
+
+                <span style="font-size:10px;display:block">
+                    Phòng ${t.roomId}
+                </span>
+
+            </div>
+        `;
   });
-  
-  // Cập nhật text hiển thị tổng quan hóa đơn ở cột phải
-  const currentShowtimeObj = serverData.showtimes.find(t => t.showtimeId === selectedShowtime);
-  document.getElementById("sum-showtime").innerText = currentShowtimeObj ? currentShowtimeObj.startTime : "-";
+
+  const currentShowtimeObj = serverData.showtimes.find(
+    (t) => t.showtimeId === window.currentSelectedShowtimeId,
+  );
+
+  document.getElementById("sum-showtime").innerText = currentShowtimeObj
+    ? currentShowtimeObj.startTime
+    : "-";
 }
 
 function quickBookMovie(movieTitle) {
@@ -95,85 +120,80 @@ function quickBookMovie(movieTitle) {
   }
 }
 
-function selectTime(showtimeId, startTime) {
-  if (isHoldingState) return alert("Hóa đơn đã khóa thanh toán!");
-  
-  selectedShowtime = showtimeId; // Lưu ID suất chiếu để phục vụ đặt vé/lấy ghế xuống DB
-  selectedSeats = [];
-  
-  // Hiển thị giờ chiếu lên hóa đơn bên phải
-  document.getElementById("sum-showtime").innerText = startTime || "-";
-  
-  // Gọi hàm load sơ đồ ghế của suất chiếu này từ Server về
-  loadSeatMap(showtimeId);
-}
-
 function loadSeatMap(showtimeId) {
-  // Biến hiển thị trạng thái chờ cho người dùng (nếu cần)
   const seatGrid = document.getElementById("cgv-seat-grid");
-  if (seatGrid) seatGrid.innerHTML = "<p style='color:#fff; padding:20px;'>Đang tải sơ đồ ghế thực tế...</p>";
 
-  // Gọi sang hàm API.getSeatsByShowtime đã thêm trong api.js
+  if (seatGrid) {
+    seatGrid.innerHTML =
+      "<p style='color:#fff; padding:20px;'>Đang tải sơ đồ ghế thực tế...</p>";
+  }
+
   API.getSeatsByShowtime(showtimeId)
-    .then((bookedSeatsList) => {
-      // bookedSeatsList nhận về từ Spring Boot sẽ là mảng các ghế đã bán, ví dụ: ["A1", "C3", "C4"]
-      
-      // Lấy tên bộ phim hiện tại đang chọn trong dropdown combo
+    .then((bookedSeatsList = []) => {
       const currentMovie = document.getElementById("cgv-combo-movie").value;
-      
-      // Kiểm tra nếu bộ nhớ tạm serverData chưa khởi tạo cấu trúc, ta tự tạo cho đỡ lỗi
+
+      // đảm bảo structure tồn tại
       if (!serverData.masterSeatStore[currentMovie]) {
         serverData.masterSeatStore[currentMovie] = {};
       }
-      
-      // Lấy sơ đồ ghế cố định sẵn có trong local state ra
-      const activeSeatMap = serverData.masterSeatStore[currentMovie][showtimeId] || {};
-      
-      // Duyệt qua toàn bộ các ghế cố định trên màn hình để đồng bộ trạng thái
+
+      // init template nếu chưa có
+      if (!serverData.masterSeatStore[currentMovie][showtimeId]) {
+        serverData.masterSeatStore[currentMovie][showtimeId] =
+          initSeatTemplate();
+      }
+
+      // clone để tránh mutate trực tiếp object gốc
+      const baseMap = serverData.masterSeatStore[currentMovie][showtimeId];
+
+      const activeSeatMap = JSON.parse(JSON.stringify(baseMap));
+
+      // normalize bookedSeatsList
+      const bookedSet = new Set(bookedSeatsList || []);
+
       Object.keys(activeSeatMap).forEach((id) => {
-        // Nếu mã ghế (id) nằm trong danh sách ghế đã bán từ DB gửi lên -> Đổi status thành "sold"
-        if (bookedSeatsList.includes(id)) {
-          activeSeatMap[id].status = "sold";
-        } else {
-          // Ngược lại, nếu không có ai mua thì trả lại trạng thái trống "available"
-          activeSeatMap[id].status = "available";
-        }
+        activeSeatMap[id].status = bookedSet.has(id) ? "sold" : "available";
       });
-      
-      // Lưu lại sơ đồ đã đồng bộ vào state tổng
+
       serverData.masterSeatStore[currentMovie][showtimeId] = activeSeatMap;
 
-      // Chạy tính toán lại giỏ hàng và render giao diện chuẩn lên màn hình
       calculateCgvCart();
       renderCgvInterface();
     })
     .catch((err) => {
       console.error("🚨 Lỗi đồng bộ dữ liệu ghế từ Server:", err);
-      // Nếu lỗi mạng hoặc server chưa viết API, vẫn cho render giao diện mặc định để không chết App
+
       calculateCgvCart();
       renderCgvInterface();
     });
 }
 
+function initSeatTemplate() {
+  const seats = {};
+
+  const rows = ["A", "B", "C", "D"];
+  const count = 10;
+
+  rows.forEach((r) => {
+    for (let i = 1; i <= count; i++) {
+      seats[r + i] = { status: "available" };
+    }
+  });
+
+  return seats;
+}
+
 function onMovieOrTimeChange() {
   resetHoldState();
-  selectedShowtime = ""; // Xóa suất chiếu cũ đang chọn
+
   selectedSeats = [];
-  
-  // Gọi hàm kéo lịch chiếu mới nhất từ Database về
+
+  // ❌ KHÔNG reset showtime ở đây nếu chưa chọn phim mới hoàn toàn
+  selectedShowtime = "";
+
   loadShowtimesFromServer();
 }
 
-function selectCgvBookingDate(dateStr) {
-  if (isHoldingState) return alert("Hóa đơn đã khóa thanh toán!");
-  selectedDateStr = dateStr; // Gán ngày được chọn (YYYY-MM-DD)
-  
-  // Vẽ lại thanh slider ngày để hiển thị trạng thái active màu đen
-  if (typeof generateCgvDateSlider === "function") generateCgvDateSlider();
-  
-  // Kích hoạt nạp lại lịch chiếu của ngày mới này
-  onMovieOrTimeChange();
-}
 // Đưa hàm selectCgvBookingDate ra phạm vi toàn cục window để nút bấm ở ui.js click được
 window.selectCgvBookingDate = selectCgvBookingDate;
 
@@ -300,16 +320,28 @@ function handleMainAction() {
     return;
   }
 
+  if (!window.currentSelectedShowtimeId) {
+    alert("Vui lòng chọn suất chiếu!");
+    return;
+  }
+
   if (currentBookingStep === 1) {
-    if (selectedSeats.length === 0) {
-      alert("Vui lòng chọn ghế trước!");
+    if (!window.currentSelectedShowtimeId) {
+      alert("Vui lòng chọn suất chiếu!");
       return;
     }
+
+    if (selectedSeats.length === 0) {
+      alert("Vui lòng chọn ghế!");
+      return;
+    }
+
     if (!isHoldingState) {
       isHoldingState = true;
       document.getElementById("hold-timer").style.display = "flex";
       startCountdown(Date.now() + 5 * 60 * 1000);
     }
+
     goToBookingStep(2);
   } else if (currentBookingStep === 2) {
     goToBookingStep(3);
@@ -320,10 +352,24 @@ function handleMainAction() {
 
 function selectPaymentGatewayType(type, element) {
   selectedPaymentGateway = type;
-  document
-    .querySelectorAll(".payment-option-row")
-    .forEach((row) => row.classList.remove("active"));
+
+  document.querySelectorAll(".payment-option-row").forEach((row) => {
+    row.classList.remove("active");
+
+    const circle = row.querySelector(".option-check-circle");
+    if (circle) {
+      circle.style.borderColor = "#ccc";
+      circle.style.color = "transparent";
+    }
+  });
+
   element.classList.add("active");
+
+  const circle = element.querySelector(".option-check-circle");
+  if (circle) {
+    circle.style.borderColor = "#e71a0f";
+    circle.style.color = "#e71a0f";
+  }
 }
 
 function applyVoucher() {
@@ -379,24 +425,148 @@ function closeCheckoutReview() {
 
 function processToPaymentGateway() {
   closeCheckoutReview();
-  const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
 
-  if (selectedPaymentGateway === "qr") {
-    document.getElementById("qr-total-price").innerText =
-      finalTotal.toLocaleString("vi-VN") + " đ";
-    const bankId = "ICB";
-    const accountNo = "101879388698";
-    const accountName = "NGUYEN BAO HOANG";
-    const qrData = `LAS CINEMAS THANH TOAN`;
-    document.getElementById("bank-qr-img").src =
-      `https://img.vietqr.io/image/${bankId}-${accountNo}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(qrData)}&accountName=${encodeURIComponent(accountName)}`;
-    document.getElementById("payment-redirect-modal").classList.add("open");
-  } else {
-    alert(
-      `Đang kết nối đến cổng giao dịch an toàn của ${selectedPaymentGateway.toUpperCase()}... Vui lòng không đóng trình duyệt.`,
-    );
-    executeFinalCheckout();
+  const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
+  if (!selectedPaymentGateway) {
+    alert("Vui lòng chọn phương thức thanh toán!");
+    return;
   }
+  if (selectedPaymentGateway === "qr") {
+    openQrPayment(finalTotal);
+  } else if (selectedPaymentGateway === "vnpay") {
+    openVnpayPayment(finalTotal);
+  }
+}
+
+function openQrPayment(finalTotal) {
+  document.getElementById("qr-total-price").innerText =
+    finalTotal.toLocaleString("vi-VN") + " đ";
+
+  const bankId = "ICB";
+  const accountNo = "101879388698";
+  const accountName = "NGUYEN BAO HOANG";
+
+  const qrData = "LAS CINEMAS THANH TOAN";
+
+  document.getElementById("bank-qr-img").src =
+    `https://img.vietqr.io/image/${bankId}-${accountNo}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(qrData)}&accountName=${encodeURIComponent(accountName)}`;
+
+  document.getElementById("payment-redirect-modal").classList.add("open");
+}
+
+function openVnpayPayment(finalTotal) {
+  const safeAmount = Math.round(finalTotal);
+
+  fetch(
+    `http://localhost:8080/api/payment/create-vnpay-url?amount=${safeAmount}`,
+  )
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.paymentUrl) {
+        // Lưu thông tin checkout trước khi sang VNPAY
+        console.log("===== SAVE BEFORE VNPAY =====");
+        console.log({
+          movie: document.getElementById("cgv-combo-movie").value,
+          showtime: window.currentSelectedShowtimeId,
+          seats: [...selectedSeats],
+        });
+        sessionStorage.setItem(
+          "checkoutPayload",
+          JSON.stringify({
+            movie: document.getElementById("cgv-combo-movie").value,
+            showtime: window.currentSelectedShowtimeId,
+            seats: [...selectedSeats],
+            email: document.getElementById("profile-field-email").value,
+          }),
+        );
+
+        window.location.href = data.paymentUrl;
+      } else {
+        alert("Không tạo được link VNPAY");
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      alert("Không kết nối được VNPAY");
+    });
+}
+
+function checkVnpayReturn() {
+  console.log("===== CHECK VNPAY =====");
+  console.log("URL =", window.location.href);
+  console.log("SEARCH =", window.location.search);
+  const params = new URLSearchParams(window.location.search);
+  const responseCode = params.get("vnp_ResponseCode");
+  if (!responseCode) {
+    return;
+  }
+  if (responseCode !== "00") {
+    alert("Thanh toán đã bị hủy hoặc thất bại.");
+
+    sessionStorage.removeItem("checkoutPayload");
+
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    return;
+  }
+
+  if (!responseCode) return;
+
+  const payload = sessionStorage.getItem("checkoutPayload");
+
+  if (!payload) return;
+
+  const data = JSON.parse(payload);
+  currentPriceTotal = data.total || 0;
+  appliedVoucherDiscount = data.discount || 0;
+  if (data.fnb) {
+    fnbMenu.forEach((item) => {
+      const old = data.fnb.find((x) => x.name === item.name);
+      item.qty = old ? old.qty : 0;
+    });
+  }
+
+  console.log("===== VNPAY RETURN =====");
+  console.log(data);
+
+  window.history.replaceState({}, document.title, window.location.pathname);
+  window.isVnpayReturn = true;
+
+  window.currentSelectedShowtimeId = data.showtime;
+  selectedSeats = data.seats;
+  selectedShowtime = "";
+  renderFnbMenu();
+  calculateCgvCart();
+  // Đợi dropdown phim load xong mới gán
+  const restoreMovie = () => {
+    const combo = document.getElementById("cgv-combo-movie");
+
+    if (
+      combo &&
+      combo.options.length > 0 &&
+      [...combo.options].some((o) => o.value === data.movie)
+    ) {
+      combo.value = data.movie;
+
+      console.log("✔ Restore movie:", combo.value);
+      switchCgvTab("panel-booking");
+      loadSeatMap(data.showtime);
+      renderCgvInterface();
+
+      console.log("showtime =", window.currentSelectedShowtimeId);
+      console.log("movie =", combo.value);
+      console.log("seats =", selectedSeats);
+      console.log(serverData.movies);
+      console.log(serverData.showtimes);
+      console.log(document.getElementById("cgv-combo-movie").value);
+      console.log(window.currentSelectedShowtimeId);
+      executeFinalCheckout();
+    } else {
+      setTimeout(restoreMovie, 100);
+    }
+  };
+
+  restoreMovie();
 }
 
 function backToPaymentSelection() {
@@ -409,33 +579,84 @@ function closePaymentModal() {
 }
 
 function executeFinalCheckout() {
-  const currentMovie = document.getElementById("cgv-combo-movie").value;
+  console.log("currentSelectedShowtimeId =", window.currentSelectedShowtimeId);
+  console.log("selectedShowtime =", selectedShowtime);
+  console.log("selectedSeats =", selectedSeats);
+  let currentMovie =
+    document.getElementById("cgv-combo-movie")?.value?.trim() ||
+    document.getElementById("detail-movie-title")?.innerText?.trim();
+
+  if (!currentMovie || currentMovie === "-" || currentMovie === "—") {
+    alert("Không xác định được phim!");
+    return;
+  }
+
+  if (!currentMovie || currentMovie.trim() === "") {
+    alert("Không xác định được phim!");
+    return;
+  }
+
+  if (!window.currentSelectedShowtimeId) {
+    alert("Không có suất chiếu!");
+    return;
+  }
+
+  if (!selectedSeats.length) {
+    alert("Chưa chọn ghế!");
+    return;
+  }
+
   let currentEmail = "";
 
-  if (isUserLoggedInState) {
-    currentEmail = document.getElementById("profile-field-email").value;
-  } else {
-    currentEmail = prompt(
-      "Vui lòng nhập địa chỉ Email để nhận mã vé điện tử:",
-      "",
-    );
+  const isLoggedIn =
+    isUserLoggedInState ||
+    !!document.getElementById("profile-field-email")?.value;
+
+  if (isLoggedIn) {
+    currentEmail = document.getElementById("profile-field-email")?.value;
+
     if (!currentEmail) {
-      alert("Bạn cần nhập Email để hoàn tất giao dịch!");
+      alert("Không lấy được email người dùng!");
+      return;
+    }
+  } else {
+    currentEmail = prompt("Vui lòng nhập email:", "");
+
+    if (!currentEmail) {
+      alert("Bạn cần nhập Email!");
       return;
     }
   }
+  console.log("EMAIL DEBUG:", {
+    isLoggedIn,
+    isUserLoggedInState,
+    email: currentEmail,
+  });
+  const showtimeId = window.currentSelectedShowtimeId;
 
+  if (!showtimeId) {
+    alert("Bạn chưa chọn suất chiếu!");
+    return;
+  }
   // 1. Tạo gói dữ liệu chuẩn bị gửi
   const checkoutPayload = {
     movie: currentMovie,
-    showtime: selectedShowtime,
+    showtime: showtimeId,
     seats: selectedSeats,
     email: currentEmail,
+    total: currentPriceTotal,
+    discount: appliedVoucherDiscount,
+    fnb: fnbMenu.map((item) => ({ ...item })),
   };
-
+  console.log("Checkout payload:", checkoutPayload);
+  console.log("Showtime:", window.currentSelectedShowtimeId);
+  console.log("Selected:", selectedShowtime);
+  console.log("Seats:", selectedSeats);
   // 2. Gọi API chuẩn qua api.js
   API.checkoutTickets(checkoutPayload)
     .then((data) => {
+      console.log("BACKEND RESPONSE:", data);
+
       // Đóng modal thanh toán đang xoay xoay
       document
         .getElementById("payment-redirect-modal")
@@ -445,16 +666,18 @@ function executeFinalCheckout() {
         // --- LOGIC XỬ LÝ KHI THÀNH CÔNG ---
 
         // Bôi đỏ ghế đã bán trong bộ nhớ tạm
-        selectedSeats.forEach((seatId) => {
-          if (
-            serverData.masterSeatStore[currentMovie] &&
-            serverData.masterSeatStore[currentMovie][selectedShowtime]
-          ) {
-            serverData.masterSeatStore[currentMovie][selectedShowtime][
-              seatId
-            ].status = "sold";
-          }
-        });
+        const store =
+          serverData.masterSeatStore?.[currentMovie]?.[
+            window.currentSelectedShowtimeId
+          ];
+
+        if (store) {
+          selectedSeats.forEach((seatId) => {
+            if (store[seatId]) {
+              store[seatId].status = "sold";
+            }
+          });
+        }
 
         // Tạo mã ID vé (Nếu Java không trả về thì tự gen ngẫu nhiên)
         const lasTicketId = data.ticketId
@@ -462,6 +685,8 @@ function executeFinalCheckout() {
           : "LAS-" + Math.floor(Math.random() * 1000000);
 
         // Lưu lịch sử hóa đơn
+        console.log("currentPriceTotal =", currentPriceTotal);
+        console.log("appliedVoucherDiscount =", appliedVoucherDiscount);
         const invoiceObj = {
           id: lasTicketId,
           movie: currentMovie,
@@ -480,7 +705,7 @@ function executeFinalCheckout() {
         fnbMenu.forEach((i) => (i.qty = 0));
         renderFnbMenu();
         calculateCgvCart();
-        renderCgvInterface();
+        //renderCgvInterface();
 
         // Chuẩn bị in vé xịn xò ra màn hình
         let fnbHtml = invoiceObj.fnb
@@ -510,7 +735,10 @@ function executeFinalCheckout() {
         if (finalResultDiv) {
           finalResultDiv.innerHTML = beautifulTicketHTML;
           // Chuyển sang Bước 4 (Xem vé)
+          console.log("Đang chuyển sang bước 4...");
           goToBookingStep(4);
+          window.isVnpayReturn = false;
+          console.log("Đã gọi goToBookingStep(4)");
         }
 
         // Nếu đang đăng nhập thì load lại lịch sử giao dịch trong Profile
@@ -525,6 +753,31 @@ function executeFinalCheckout() {
       console.error("Lỗi đặt vé:", error);
       alert("Đã xảy ra lỗi kết nối với máy chủ!");
     });
+
+  console.log({
+    movie: currentMovie,
+    showtime: window.currentSelectedShowtimeId,
+    seats: selectedSeats,
+  });
+}
+
+function selectTime(showtimeId, startTime) {
+  console.log("CLICK SHOWTIME:", showtimeId, startTime);
+
+  if (!showtimeId && showtimeId !== 0) {
+    alert("showtimeId bị undefined");
+    return;
+  }
+
+  window.currentSelectedShowtimeId = Number(showtimeId);
+  selectedShowtime = startTime;
+
+  selectedSeats = [];
+
+  console.log("SET SHOWTIME OK:", window.currentSelectedShowtimeId); // 👈 thêm log này
+
+  loadSeatMap(showtimeId);
+  renderCgvInterface();
 }
 
 function cancelCurrentTransaction() {
@@ -535,12 +788,14 @@ function cancelCurrentTransaction() {
 
     API.cancelBooking({
       movie: currentMovie,
-      showtime: selectedShowtime,
+      showtime: window.currentSelectedShowtimeId,
       seats: selectedSeats,
     })
       .then(() => {
         resetHoldState();
         selectedSeats = [];
+        selectedShowtime = "";
+        window.currentSelectedShowtimeId = null;
         fnbMenu.forEach((i) => (i.qty = 0));
         renderFnbMenu();
         calculateCgvCart();
@@ -573,8 +828,13 @@ function startCountdown(expiresAt) {
 function resetHoldState() {
   clearInterval(timerInterval);
   isHoldingState = false;
+
   document.getElementById("hold-timer").style.display = "none";
+
   document.getElementById("btn-main-action").innerText = "Tiếp tục";
   document.getElementById("btn-main-action").style.background = "#e71a0f";
+
   currentBookingStep = 1;
 }
+
+window.addEventListener("load", checkVnpayReturn);

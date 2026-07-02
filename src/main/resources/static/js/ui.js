@@ -23,7 +23,7 @@ window.addEventListener("DOMContentLoaded", () => {
   loadBannersFromDatabase();
   setInterval(moveBannerRight, 3000);
   loadEventsFromDatabase();
-  
+
   // 🚀 ĐÃ SỬA: Thay thế fetchSyncData bằng hàm đồng bộ danh sách phim thật từ DB lên màn hình và dropdown đặt vé
   initDatabaseMovies();
 });
@@ -34,17 +34,15 @@ function initDatabaseMovies() {
 
   API.getMovies()
     .then((resData) => {
-      // 🚀 SỬA CHUẨN: Bóc tách chính xác thuộc tính từ Object của MovieController nhả về
+      console.log("API.getMovies =", resData);
+
       if (resData && resData.data && resData.data.movies) {
         serverData.movies = resData.data.movies;
-        
-        // Tiện tay đồng bộ luôn dữ liệu showtimes mồi nếu có để các hàm khác không bị lỗi
-        if (resData.data.showtimes) serverData.showtimes = resData.data.showtimes;
-        if (resData.data.masterSeatStore) serverData.masterSeatStore = resData.data.masterSeatStore;
       } else {
-        // Phương án bọc lót dự phòng nếu team đổi sang trả về mảng phẳng
         serverData.movies = resData || [];
       }
+
+      console.log("movies sau khi gán =", serverData.movies);
 
       // 1. Đổ dữ liệu phim động vào ô Dropdown chọn phim khi đặt vé
       const selectCombo = document.getElementById("cgv-combo-movie");
@@ -60,7 +58,9 @@ function initDatabaseMovies() {
         renderCgvInterface();
       }
     })
-    .catch((err) => console.error("🚨 Lỗi khởi tạo danh sách phim từ DB:", err));
+    .catch((err) =>
+      console.error("🚨 Lỗi khởi tạo danh sách phim từ DB:", err),
+    );
 }
 
 // --- CÁC HÀM UI ---
@@ -85,30 +85,54 @@ async function switchCgvTab(panelId, filterType = "now_showing") {
     }
   } else if (panelId === "panel-profile") {
     switchProfileSubTab("chung");
-    
-    const loggedInId = sessionStorage.getItem("accountId") || window.currentLoggedInId;
-    
-    if (loggedInId && typeof API !== "undefined" && typeof API.getProfile === "function") {
+
+    const loggedInId =
+      sessionStorage.getItem("accountId") || window.currentLoggedInId;
+
+    if (
+      loggedInId &&
+      typeof API !== "undefined" &&
+      typeof API.getProfile === "function"
+    ) {
       API.getProfile(loggedInId)
         .then((profileRes) => {
           if (profileRes.status === "success") {
             const updatedData = profileRes.data;
-            
-            if (document.getElementById("profile-field-name")) document.getElementById("profile-field-name").value = updatedData.fullName;
-            if (document.getElementById("profile-field-email")) document.getElementById("profile-field-email").value = updatedData.email;
+
+            if (document.getElementById("profile-field-name"))
+              document.getElementById("profile-field-name").value =
+                updatedData.fullName;
+            if (document.getElementById("profile-field-email"))
+              document.getElementById("profile-field-email").value =
+                updatedData.email;
             if (document.getElementById("profile-field-phone")) {
-              document.getElementById("profile-field-phone").value = updatedData.phone || "";
+              document.getElementById("profile-field-phone").value =
+                updatedData.phone || "";
             }
-            
+
             if (updatedData.dateOfBirth) {
               const [year, month, day] = updatedData.dateOfBirth.split("-");
-              if (document.getElementById("profile-birth-day")) document.getElementById("profile-birth-day").value = parseInt(day, 10);
-              if (document.getElementById("profile-birth-month")) document.getElementById("profile-birth-month").value = parseInt(month, 10);
-              if (document.getElementById("profile-birth-year")) document.getElementById("profile-birth-year").value = parseInt(year, 10);
+              if (document.getElementById("profile-birth-day"))
+                document.getElementById("profile-birth-day").value = parseInt(
+                  day,
+                  10,
+                );
+              if (document.getElementById("profile-birth-month"))
+                document.getElementById("profile-birth-month").value = parseInt(
+                  month,
+                  10,
+                );
+              if (document.getElementById("profile-birth-year"))
+                document.getElementById("profile-birth-year").value = parseInt(
+                  year,
+                  10,
+                );
             }
           }
         })
-        .catch((err) => console.error("🚨 Lỗi tự động đồng bộ dữ liệu hồ sơ cá nhân:", err));
+        .catch((err) =>
+          console.error("🚨 Lỗi tự động đồng bộ dữ liệu hồ sơ cá nhân:", err),
+        );
     }
   }
 }
@@ -126,7 +150,7 @@ function switchMovieFilterTab(filterType) {
     if (subTitle) subTitle.className = "tab-title-main";
     document.getElementById("bc-current-text").innerText = "Phim Sắp Chiếu";
   }
-  
+
   // 🚀 ĐÃ SỬA CHẮC CHẮN: Kiểm tra sự tồn tại của hàm an toàn trước khi chạy
   if (typeof renderCgvInterface === "function") {
     renderCgvInterface();
@@ -153,7 +177,9 @@ function loadEventsFromDatabase() {
       container.innerHTML = "";
 
       events.forEach((ev) => {
-        const img = ev.imageUrl || "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
+        const img =
+          ev.imageUrl ||
+          "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
         container.innerHTML += `
             <div style="border: 1px solid #ddd; background: #fff; padding: 5px;">
                 <img src="${img}" style="width: 100%; display: block;" alt="${ev.title}">
@@ -216,22 +242,22 @@ function renderFnbMenu() {
 // ==========================================================================
 function selectCgvBookingDate(fullDateId) {
   // 1. Găm chặt ngày mới chọn vào biến toàn cục quản lý
-  selectedDateStr = fullDateId; 
+  selectedDateStr = fullDateId;
   // 🚀 RESET GHẾ: Xóa sạch danh sách ghế cũ đang chọn khi đổi ngày
   selectedSeats = [];
   // 2. Reset suất chiếu đang chọn về rỗng để ép khách hàng chọn giờ chiếu mới của ngày mới
   selectedShowtime = "";
   window.currentSelectedShowtimeId = null;
-  
+
   // 3. Đồng bộ nhãn hiển thị ngày ở cột Summary bên phải giao diện đặt vé (Bảo trì nhãn UI)
   const sumDateEl = document.getElementById("sum-date");
   if (sumDateEl) {
     sumDateEl.innerText = fullDateId;
   }
-  
+
   // 4. Vẽ lại thanh cuộn Slider ngày để cập nhật màu nền khối active đen/trắng
-  generateCgvDateSlider(); 
-  
+  generateCgvDateSlider();
+
   // 5. Kích hoạt cào API lấy suất chiếu động của đúng ngày mới này lên màn hình
   if (typeof renderCgvInterface === "function") {
     renderCgvInterface();
@@ -290,7 +316,6 @@ function generateCgvDateSlider() {
 // 🚀 BỔ SUNG: HÀM VẼ GIAO DIỆN TỔNG HỢP VÀ TỰ ĐỘNG TẢI SUẤT CHIẾU ĐỘNG TỪ DB
 // ==========================================================================
 
-
 // 🚀 THÊM MỚI: Hàm xử lý click chọn suất chiếu độc lập để triệt tiêu lỗi đệ quy vô hạn
 function selectCgvShowtimeSlot(startTime, showtimeId) {
   selectedShowtime = startTime;
@@ -336,7 +361,7 @@ function renderCgvInterface() {
           m.mainposterurl ||
           m.img ||
           "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
-          
+
         let displayAge =
           m.age_rating === 0 || m.ageRating === 0
             ? "P"
@@ -362,6 +387,8 @@ function renderCgvInterface() {
     }
   });
 
+  console.log("Dropdown value =", selectCombo.value);
+  console.log("Movies =", serverData.movies);
   const currentMovie =
     selectCombo.value ||
     (selectCombo.options[0] ? selectCombo.options[0].value : "");
@@ -370,14 +397,19 @@ function renderCgvInterface() {
   // 2. Tải tự động danh sách lịch chiếu động từ Database theo bộ phim đang chọn trên màn hình đặt vé
   const timeGrid = document.getElementById("cgv-showtime-grid");
   if (timeGrid && serverData.movies && serverData.movies.length > 0) {
-    const selectedMovieObj = serverData.movies.find((m) => 
-      String(m.title).trim().toLowerCase() === String(currentMovie).trim().toLowerCase()
+    const selectedMovieObj = serverData.movies.find(
+      (m) =>
+        String(m.title).trim().toLowerCase() ===
+        String(currentMovie).trim().toLowerCase(),
     );
 
     if (selectedMovieObj) {
-      const movieId = selectedMovieObj.movieId || selectedMovieObj.movie_id || selectedMovieObj.id;
-      
-      let dateStr = selectedDateStr; 
+      const movieId =
+        selectedMovieObj.movieId ||
+        selectedMovieObj.movie_id ||
+        selectedMovieObj.id;
+
+      let dateStr = selectedDateStr;
       if (!dateStr || dateStr === "") {
         const today = new Date();
         const y = today.getFullYear();
@@ -386,17 +418,21 @@ function renderCgvInterface() {
         dateStr = `${y}-${m}-${d}`;
       }
 
-      console.log(`🎬 Gửi request lấy suất chiếu phim ID: ${movieId} cho ngày: ${dateStr}`);
+      console.log(
+        `🎬 Gửi request lấy suất chiếu phim ID: ${movieId} cho ngày: ${dateStr}`,
+      );
 
       API.getShowtimes(movieId, dateStr)
         .then((resData) => {
-          timeGrid.innerHTML = ""; 
+          timeGrid.innerHTML = "";
           const actualShowtimes = resData.showtimes || [];
+          serverData.showtimes = actualShowtimes;
 
           if (actualShowtimes.length === 0) {
             timeGrid.innerHTML = `<p style="color:#777; font-size:13px; grid-column: span 4; text-align:center; padding: 10px 0;">Hôm nay rạp chưa xếp lịch chiếu phim này!</p>`;
             if (document.getElementById("cgv-seat-grid")) {
-              document.getElementById("cgv-seat-grid").innerHTML = `<p style="color:#777; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
+              document.getElementById("cgv-seat-grid").innerHTML =
+                `<p style="color:#777; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
             }
             return;
           }
@@ -437,7 +473,9 @@ function renderCgvInterface() {
 
     let currentRoomId = 1; 
     if (serverData.showtimes && serverData.showtimes.length > 0) {
-      const currentStObj = serverData.showtimes.find(st => st.showtimeId == window.currentSelectedShowtimeId);
+      const currentStObj = serverData.showtimes.find(
+        (st) => st.showtimeId == window.currentSelectedShowtimeId,
+      );
       if (currentStObj) {
         currentRoomId = currentStObj.roomId || currentStObj.room_id || 1;
       }
@@ -460,12 +498,17 @@ function renderCgvInterface() {
         // 1. Đồng bộ hóa gộp mã ghế đã bán từ DB
         const soldSeatsFromDb = Array.isArray(backendSeats) 
           ? backendSeats
-              .filter(s => s.status === "sold" || s.status === "BOOKED" || s.status === "SLOT_LOCKED")
-              .map(s => {
+              .filter(
+                (s) =>
+                  s.status === "sold" ||
+                  s.status === "BOOKED" ||
+                  s.status === "SLOT_LOCKED",
+              )
+              .map((s) => {
                 const row = s.seatRow || s.seat_row || "";
                 const num = s.seatNumber || s.seat_number || "";
                 return `${row}${num}`.trim().toUpperCase();
-              }) 
+              })
           : [];
 
         // 2. Định nghĩa lại hàm tính tiền ngay tại đây để bốc trọn dữ liệu backendSeats chuẩn vừa tải về
@@ -528,7 +571,7 @@ function renderCgvInterface() {
 
             let status = "available";
             if (soldSeatsFromDb.includes(id)) {
-              status = "sold"; 
+              status = "sold";
             }
 
             const div = document.createElement("div");
