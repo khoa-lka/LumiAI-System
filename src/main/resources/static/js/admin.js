@@ -90,14 +90,26 @@ function renderAdminSysLog() {
   const tbody = document.getElementById("admin-syslog-tbody");
   if (!tbody || typeof API === "undefined") return;
 
-  API.getSysLogs()
+  API.getSysLogs() // Đảm bảo API này trả về mảng object từ DB của bạn
     .then((logs) => {
-      // logs là mảng dữ liệu lấy từ Database
       tbody.innerHTML = logs
-        .map(
-          (l) =>
-            `<tr><td>${l.time}</td><td>${l.action}</td><td>${l.user}</td><td>${l.status}</td></tr>`,
-        )
+        .map((l) => {
+          // Xử lý màu sắc cho status
+          const statusClass = l.status === 'SUCCESS' ? 'text-success' : 'text-danger';
+          const statusLabel = l.status === 'SUCCESS' ? 'Thành công' : 'Thất bại';
+
+          // Format lại ngày tháng nếu cần (giả sử l.timeCreated là chuỗi ngày)
+        const dateObj = new Date(l.time);
+    const dateStr = dateObj.toLocaleString('vi-VN');
+          return `<tr>
+             <td>${dateStr}</td>
+              <td>${l.action}</td>
+              <td><b>${l.user}</b></td>
+              <td>
+                <span class="status-badge ${statusClass}">${statusLabel}</span>
+              </td>
+            </tr>`;
+        })
         .join("");
     })
     .catch((err) => console.error("🚨 Lỗi tải SysLog:", err));

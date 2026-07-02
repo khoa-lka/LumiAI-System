@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import java.time.LocalDateTime;
 import com.cinema.backend.entities.Account;
 import com.cinema.backend.entities.SysLogDTO;
 import com.cinema.backend.repositories.AccountRepository;
@@ -39,6 +39,12 @@ public ResponseEntity<?> updateRole(@PathVariable Integer userId, @RequestBody I
             .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
     account.setRoleId(newRoleId);
     accountRepository.save(account);
+    SysLogDTO log = new SysLogDTO();
+    log.setTime(LocalDateTime.now());
+    log.setAction("CẬP NHẬT_QUYỀN_ID_" + userId);
+    log.setUser("admin"); // Hoặc lấy từ Session của bạn
+    log.setStatus("SUCCESS");
+    sysLogRepository.save(log);
     return ResponseEntity.ok("Cập nhật quyền thành công!");
 }
 
@@ -51,7 +57,13 @@ public ResponseEntity<?> banUser(@PathVariable Integer userId) {
     String newStatus = "Active".equals(account.getStatus()) ? "Banned" : "Active";
     account.setStatus(newStatus);
     accountRepository.save(account);
-    
+    //ghi logs
+    SysLogDTO log = new SysLogDTO();
+    log.setTime(LocalDateTime.now());
+    log.setAction("KHÓA_TÀI_KHOẢN_ID_" + userId);
+    log.setUser("admin"); // Hoặc lấy từ Session của bạn
+    log.setStatus("SUCCESS");
+    sysLogRepository.save(log);
     return ResponseEntity.ok("Trạng thái tài khoản đã được cập nhật thành: " + newStatus);
 }
     @GetMapping("/syslogs")

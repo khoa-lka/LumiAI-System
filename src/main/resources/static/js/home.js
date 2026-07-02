@@ -592,7 +592,17 @@ function submitCgvLogin() {
       if (resData.status === "success") {
         isUserLoggedInState = true;
         let uData = resData.data;
+localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
+        sessionStorage.setItem("roleId", uData.roleId);
 
+        // 🌟 ĐIỀU HƯỚNG DỰA TRÊN ROLE
+        if (uData.roleId === 2) {
+          window.location.href = "admin.html";
+          return; // Dừng hàm ngay lập tức
+        } else if (uData.roleId === 1) {
+          window.location.href = "manager.html";
+          return; // Dừng hàm ngay lập tức
+        }
         alert(`Chào mừng thành viên: ${uData.fullName} đăng nhập thành công!`);
         closeAuthModal();
 
