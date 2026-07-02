@@ -741,8 +741,6 @@ function selectTime(t) {
   window.renderCgvInterface();
 }
 
-function calculateCgvCart() {}
-
 function onMovieOrTimeChange() {
   resetHoldState();
   selectedSeats = [];

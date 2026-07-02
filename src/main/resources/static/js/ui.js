@@ -430,7 +430,6 @@ function renderCgvInterface() {
 
           if (actualShowtimes.length === 0) {
             timeGrid.innerHTML = `<p style="color:#777; font-size:13px; grid-column: span 4; text-align:center; padding: 10px 0;">Hôm nay rạp chưa xếp lịch chiếu phim này!</p>`;
-            // 🚀 BỔ SUNG: Xóa trắng sơ đồ ghế cũ nếu ngày này không có suất chiếu nào
             if (document.getElementById("cgv-seat-grid")) {
               document.getElementById("cgv-seat-grid").innerHTML =
                 `<p style="color:#777; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
@@ -441,12 +440,14 @@ function renderCgvInterface() {
           actualShowtimes.forEach((st) => {
             const isSelected = st.startTime === selectedShowtime;
             const activeClass = isSelected ? "active" : "";
+            
+            const roomDisplayName = st.roomId === 2 || st.room_id === 2 ? "Phòng 2 (IMAX Siêu Đại)" : "Phòng 1 (3D Standard)";
 
             timeGrid.innerHTML += `
               <div class="showtime-btn ${activeClass}" onclick="selectCgvShowtimeSlot('${st.startTime}', ${st.showtimeId})">
                   ${st.startTime}
                   <span style="display:block; font-size:9px; opacity:0.6; margin-top:2px;">
-                      ${st.roomId === 1 ? "Phòng 1 (IMAX)" : st.roomId === 2 ? "Phòng 2 (2D)" : "Phòng 3 (3D)"}
+                      ${roomDisplayName}
                   </span>
               </div>`;
           });
@@ -461,7 +462,7 @@ function renderCgvInterface() {
   document.getElementById("sum-showtime").innerText = selectedShowtime || "-";
 
   // ==========================================================================
-  // 3. 🚀 ĐOẠN ĐÃ ĐỒNG BỘ CAO CẤP: Vẽ sơ đồ ghế động khớp 100% [room_layout] từ DB
+  // 3. 🚀 ĐOẠN ĐÃ ĐỒNG BỘ MỚI: Tự động co giãn Grid linh hoạt theo dữ liệu phòng từ SQL
   // ==========================================================================
   const seatGrid = document.getElementById("cgv-seat-grid");
   if (seatGrid) {
@@ -470,8 +471,7 @@ function renderCgvInterface() {
       return;
     }
 
-    // 🚀 BƯỚC 1: Tìm xem suất chiếu đang chọn thuộc Phòng mấy (roomId) để lấy layout
-    let currentRoomId = 1; // Mặc định phòng 1
+    let currentRoomId = 1; 
     if (serverData.showtimes && serverData.showtimes.length > 0) {
       const currentStObj = serverData.showtimes.find(
         (st) => st.showtimeId == window.currentSelectedShowtimeId,
@@ -481,56 +481,22 @@ function renderCgvInterface() {
       }
     }
 
-    // 🚀 BƯỚC 2: Định nghĩa ma trận chuỗi Layout khớp 100% với bảng [room_layout] của SQL Server
-    const roomLayouts = {
-      1: [
-        "SSSSSSSSSS",
-        "SSSSSSSSSS",
-        "SSSSSSSSSS",
-        "SSSSSSSSSS",
-        "VVVVVVVVVV",
-        "VVVVVVVVVV",
-        "VVVVVVVVVV",
-        "VVVVVVVVVV",
-        "WWWW_WWWW",
-        "WWWW_WWWW",
-      ],
-      2: [
-        "SSSSSSSSSS",
-        "SSSSSSSSSS",
-        "SSSSSSSSSS",
-        "SSSSSSSSSS",
-        "SSSSSSSSSS",
-        "SSSSSSSSSS",
-        "VVVVVVVVVV",
-        "VVVVVVVVVV",
-        "VVVVVVVVVV",
-        "WWWW_WWWW",
-      ],
-      3: [
-        "SSSSSSSSSS",
-        "SSSSSSSSSS",
-        "VVVVVVVVVV",
-        "VVVVVVVVVV",
-        "VVVVVVVVVV",
-        "VVVVVVVVVV",
-        "VVVVVVVVVV",
-        "VVVVVVVVVV",
-        "WWWW_WWWW",
-        "WWWW_WWWW",
-      ],
-    };
+    seatGrid.style.display = "grid";
+    if (currentRoomId == 2) {
+      seatGrid.style.gridTemplateColumns = "repeat(21, 1fr)";
+      seatGrid.style.gap = "4px"; 
+    } else {
+      seatGrid.style.gridTemplateColumns = "repeat(10, 1fr)";
+      seatGrid.style.gap = "6px";
+    }
 
-    // Lấy ra sơ đồ mảng 10 hàng của phòng hiện tại
-    const currentLayout = roomLayouts[currentRoomId] || roomLayouts[1];
-
-    // 🚀 BƯỚC 3: Gọi API lấy ghế đã bán thực tế từ Spring Boot
+    // Gọi API bốc toàn bộ danh sách ghế thực tế của phòng chiếu này lên vẽ
     API.getSeatsByShowtime(window.currentSelectedShowtimeId)
       .then((backendSeats) => {
         seatGrid.innerHTML = "";
-
-        // Đồng bộ hóa gộp mã ghế đã bán từ DB
-        const soldSeatsFromDb = Array.isArray(backendSeats)
+        
+        // 1. Đồng bộ hóa gộp mã ghế đã bán từ DB
+        const soldSeatsFromDb = Array.isArray(backendSeats) 
           ? backendSeats
               .filter(
                 (s) =>
@@ -545,41 +511,75 @@ function renderCgvInterface() {
               })
           : [];
 
-        const rows = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+        // 2. Định nghĩa lại hàm tính tiền ngay tại đây để bốc trọn dữ liệu backendSeats chuẩn vừa tải về
+        window.calculateCgvCart = function() {
+          document.getElementById("sum-seats").innerText = selectedSeats.join(", ") || "Chưa chọn";
+          let total = 0;
+          let totalFnbItems = 0;
 
-        // Duyệt qua 10 hàng (tương ứng row_index từ 1 đến 10)
-        for (let r = 0; r < rows.length; r++) {
-          const layoutString = currentLayout[r]; // Ví dụ: "WWWW_WWWW"
+          selectedSeats.forEach((seatId) => {
+            // Tìm trực tiếp chiếc ghế trong mảng dữ liệu thật vừa lấy từ DB lên
+            const seatData = backendSeats.find(s => {
+              const row = s.seatRow || s.seat_row || "";
+              const num = s.seatNumber || s.seat_number || "";
+              return `${row}${num}`.trim().toUpperCase() === seatId.toUpperCase();
+            });
 
-          // Duyệt qua 10 cột ghế
-          for (let c = 1; c <= 10; c++) {
-            const charType = layoutString[c - 1]; // Lấy ký tự tại vị trí cột (S, V, W, _)
-
-            // 🚀 XỬ LÝ LỐI ĐI (_): Nếu dính ký tự gạch dưới, tạo một ô trống không có ghế để làm hành lang
-            if (charType === "_") {
-              const spacer = document.createElement("div");
-              spacer.className = "cgv-seat-spacer"; // Thêm style width tương đương ghế, background trong suốt trong file CSS của em
-              spacer.style.width = "100%";
-              seatGrid.appendChild(spacer);
-              continue; // Nhảy sang cột tiếp theo
+            if (seatData) {
+              const type = (seatData.seatType || seatData.seat_type || "STANDARD").toUpperCase();
+              if (type === "VIP") {
+                total += 110000;
+              } else if (type === "SWEETBOX") {
+                total += 250000;
+              } else {
+                total += 90000;
+              }
+            } else {
+              total += 90000;
             }
+          });
 
-            const id = `${rows[r]}${c}`; // Định danh mã ghế Front-End: "I1", "J4"...
+          if (typeof fnbMenu !== "undefined") {
+            fnbMenu.forEach((item) => {
+              total += item.qty * item.price;
+              totalFnbItems += item.qty;
+            });
+          }
+          
+          const sumFnb = document.getElementById("sum-fnb");
+          if (sumFnb) sumFnb.innerText = totalFnbItems + " Combo";
+          
+          currentPriceTotal = total;
+          let finalTotal = currentPriceTotal * (1 - (typeof appliedVoucherDiscount !== "undefined" ? appliedVoucherDiscount : 0));
+          
+          const sumTotal = document.getElementById("sum-total");
+          if (sumTotal) sumTotal.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
+        };
 
-            // Phân loại ghế dựa động hoàn toàn vào ký tự của bảng [room_layout]
-            let seatType = "Standard";
-            if (charType === "V") seatType = "VIP";
-            if (charType === "W") seatType = "Sweetbox";
+        // 3. Tiến hành vẽ ma trận ghế lên màn hình
+        if (Array.isArray(backendSeats) && backendSeats.length > 0) {
+          backendSeats.forEach((seat) => {
+            const rowLetter = seat.seatRow || seat.seat_row || "";
+            const seatNum = seat.seatNumber || seat.seat_number || "";
+            const id = `${rowLetter}${seatNum}`.trim().toUpperCase();
 
-            // Kiểm tra trạng thái đã bán từ dữ liệu SQL thực
+            // Sửa lỗi hiển thị: Ép chữ hoa chuẩn để so khớp CSS của nhóm (.Standard, .VIP, .Sweetbox)
+            const rawType = (seat.seatType || seat.seat_type || "STANDARD").toUpperCase();
+            let cssType = "Standard";
+            if (rawType === "VIP") cssType = "VIP";
+            if (rawType === "SWEETBOX") cssType = "Sweetbox";
+
             let status = "available";
             if (soldSeatsFromDb.includes(id)) {
               status = "sold";
             }
 
             const div = document.createElement("div");
-            div.className = `cgv-seat ${seatType} ${status}`;
+            div.className = `cgv-seat ${cssType} ${status}`;
             div.innerText = id;
+
+            div.style.gridColumn = seat.colIndex || seat.col_index;
+            div.style.gridRow = seat.rowIndex || seat.row_index;
 
             if (selectedSeats.includes(id)) div.classList.add("selected");
 
@@ -588,16 +588,21 @@ function renderCgvInterface() {
                 if (selectedSeats.includes(id))
                   selectedSeats = selectedSeats.filter((x) => x !== id);
                 else selectedSeats.push(id);
-                calculateCgvCart();
+                
+                // Gọi hàm tính tiền cục bộ siêu tốc rồi vẽ lại giao diện
+                window.calculateCgvCart();
                 renderCgvInterface();
               };
             }
             seatGrid.appendChild(div);
-          }
+          });
         }
+        
+        // Cập nhật lại tiền giỏ hàng hiển thị ban đầu khi nạp phòng
+        window.calculateCgvCart();
       })
       .catch((err) => {
-        console.error("🚨 Lỗi nạp sơ đồ ghế ma trận động:", err);
+        console.error("🚨 Lỗi nạp sơ đồ ghế ma trận động từ DB:", err);
         seatGrid.innerHTML = `<p style="color:red; font-size:13px; text-align:center; grid-column:1/-1;">Lỗi tải sơ đồ ghế phòng chiếu!</p>`;
       });
   }

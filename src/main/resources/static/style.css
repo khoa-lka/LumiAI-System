@@ -554,6 +554,9 @@ header {
   box-sizing: border-box;
   overflow-x: auto;
 }
+/* ==========================================
+   🎬 KHUNG GIAO DIỆN MÀN HÌNH RẠP CHIẾU
+   ========================================== */
 .screen-curve {
   width: 70%;
   height: 20px;
@@ -561,6 +564,7 @@ header {
   border-radius: 50% / 10px 10px 0 0;
   margin: 0 auto 40px auto;
 }
+
 .screen-text {
   color: #e5a93b;
   font-size: 12px;
@@ -569,18 +573,29 @@ header {
   margin-top: -30px;
   margin-bottom: 40px;
 }
-.seat-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
+
+/* ==========================================
+   🚀 ĐÃ SỬA: KHUNG LƯỚI MA TRẬN GHẾ ĐỘNG (CGV-SEAT-GRID)
+   ========================================== */
+#cgv-seat-grid {
+  display: grid;
   margin: 0 auto 25px auto;
-  max-width: 450px;
+  /* Bỏ max-width cũ để phòng IMAX rộng 21 cột tự do bung ra không bị bó hẹp */
+  max-width: 95%; 
+  background: #18181c;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
 }
+
+/* ==========================================
+   🎨 ĐÃ SỬA: ĐỊNH DẠNG TỪNG Ô GHẾ CO GIÃN ĐỘNG
+   ========================================== */
 .cgv-seat {
-  width: 35px;
-  height: 35px;
-  font-size: 11px;
+  /* Thay width/height cố định bằng tỷ lệ 1:1 (aspect-ratio) để tự co giãn khi rạp có nhiều cột */
+  width: 100%;
+  aspect-ratio: 1 / 1; 
+  font-size: 10px; /* Hạ nhẹ font size xuống để vừa khít phòng IMAX */
   font-weight: bold;
   display: flex;
   align-items: center;
@@ -588,49 +603,79 @@ header {
   border-radius: 4px;
   cursor: pointer;
   user-select: none;
+  transition: all 0.2s ease;
 }
+
+/* 🟢 Ghế Thường (Standard) */
 .cgv-seat.Standard {
-  background-color: #666;
+  background-color: #555559;
   color: white;
 }
+
+/* 🔴 Ghế VIP (Đồng bộ cả Vip và VIP chống cháy lỗi ghi hoa) */
+.cgv-seat.Vip,
 .cgv-seat.VIP {
   background-color: #b31010;
   color: white;
 }
+
+/* 💗 Ghế Đôi (Sweetbox) */
 .cgv-seat.Sweetbox {
   background-color: #e25b8b;
   color: white;
 }
+
+/* ⚠️ Trạng thái giữ ghế tạm thời */
 .cgv-seat.holding {
   background-color: #e5a93b !important;
   color: black !important;
 }
+
+/* 🔒 Ghế đã bán cứng (sold) */
 .cgv-seat.sold {
-  background-color: #333 !important;
-  color: #555 !important;
+  background-color: #222225 !important;
+  color: #444448 !important;
   cursor: not-allowed;
+  transform: scale(0.95);
+  box-shadow: none !important;
 }
+
+/* 🌟 Ghế đang được click chọn (selected) */
 .cgv-seat.selected {
   background-color: #e71a0f !important;
   color: white !important;
-  box-shadow: 0 0 8px #e71a0f;
+  box-shadow: 0 0 10px #e71a0f;
+  transform: scale(1.05);
 }
+
+/* 🚀 LỐI ĐI DỌC TRONG RẠP: Giữ ô trống không màu */
+.cgv-seat-spacer {
+  background: transparent;
+  pointer-events: none;
+}
+
+/* ==========================================
+   📌 CHÚ THÍCH LOẠI GHẾ (LEGEND)
+   ========================================== */
 .seat-legend {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 20px;
   font-size: 12px;
   color: #aaa;
   margin-top: 15px;
 }
+
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
 }
+
 .legend-box {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   border-radius: 3px;
 }
 
