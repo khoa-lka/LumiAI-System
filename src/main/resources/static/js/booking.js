@@ -1,3 +1,33 @@
+// 🚀 THÊM MỚI: Khai báo mảng fnbMenu toàn cục ban đầu trống
+window.fnbMenu = [];
+
+// Hàm tự động gọi lên Spring Boot lấy toàn bộ bắp nước thật bốc từ Database
+function initFnbMenuFromServer() {
+  if (typeof API !== "undefined" && typeof API.getFnbItems === "function") {
+    API.getFnbItems()
+      .then((dbItems) => {
+        // Map chuyển đổi cấu trúc DB sang cấu trúc mảng cũ của em để không lỗi logic tính tiền
+        window.fnbMenu = dbItems.map(item => ({
+          id: item.foodItemId,
+          name: item.itemName,      // Đổi itemName sang name để khớp code cũ
+          price: item.price,
+          qty: 0                    // Khởi tạo số lượng đặt mua ban đầu bằng 0
+        }));
+        
+        // Sau khi nạp xong data thật, gọi hàm vẽ giao diện F&B ở màn hình đặt vé của em
+        if (typeof renderFnbMenu === "function") {
+          renderFnbMenu();
+        }
+      })
+      .catch((err) => {
+        console.error("🚨 Lỗi nạp dữ liệu F&B động cho trang đặt vé:", err);
+      });
+  }
+}
+
+// Tự động kích hoạt nạp F&B ngay khi Front-end khởi động
+document.addEventListener("DOMContentLoaded", initFnbMenuFromServer);
+
 function handleBookNowClick() {
   if (!isUserLoggedInState) {
     alert("Vui lòng đăng nhập hệ thống để tiếp tục đặt vé!");
@@ -178,15 +208,16 @@ function selectCgvBookingDate(dateStr) {
 window.selectCgvBookingDate = selectCgvBookingDate;
 
 function calculateCgvCart() {
+  // 🚀 ĐÓNG ĐINH TOÀN CỤC: Ép trình duyệt luôn luôn găm hàm này vào window ngay khi kích hoạt
+  window.calculateCgvCart = calculateCgvCart;
+
   document.getElementById("sum-seats").innerText =
     selectedSeats.join(", ") || "Chưa chọn";
   let total = 0;
   let totalFnbItems = 0;
 
-  // 🚀 ĐÃ SỬA: Tính tiền động theo đúng Loại Ghế bốc từ Database lên
+  // 1. Tính tiền ghế dựa theo các class trên giao diện DOM của em
   selectedSeats.forEach((seatId) => {
-    // Tìm thông tin chi tiết của chiếc ghế này trong danh sách ghế Back-end trả về
-    // Giao diện vẽ dựa trên backendSeats nên ta tìm trong bộ nhớ hoặc query qua DOM element
     const seatEl = Array.from(document.querySelectorAll('.cgv-seat')).find(el => el.innerText.trim() === seatId);
     
     if (seatEl) {
@@ -198,21 +229,58 @@ function calculateCgvCart() {
         total += 90000;  // 🟢 Giá ghế Standard thường
       }
     } else {
-      total += 90000; // Bọc lót giá mặc định nếu không tìm thấy ô DOM
+      // 🚀 ĐÃ SỬA TẠI ĐÂY: Bảo toàn giá ghế khi sang Bước 3 bằng mảng dữ liệu gốc từ database của ui.js
+      let seatPriceFound = 90000;
+      
+      if (window.currentBackendSeats && Array.isArray(window.currentBackendSeats)) {
+        const seatData = window.currentBackendSeats.find(s => {
+          const row = s.seatRow || s.seat_row || "";
+          const num = s.seatNumber || s.seat_number || "";
+          return `${row}${num}`.trim().toUpperCase() === seatId.toUpperCase();
+        });
+        
+        if (seatData) {
+          const type = (seatData.seatType || seatData.seat_type || "STANDARD").toUpperCase();
+          if (type === "VIP") {
+            seatPriceFound = 110000;
+          } else if (type === "SWEETBOX") {
+            seatPriceFound = 250000;
+          }
+        }
+      }
+      
+      total += seatPriceFound;
     }
   });
 
-  fnbMenu.forEach((item) => {
-    total += item.qty * item.price;
-    totalFnbItems += item.qty;
+  // 2. Tính tiền F&B động từ database mẫu
+  const activeFnbMenu = window.fnbMenu || fnbMenu || [];
+  activeFnbMenu.forEach((item) => {
+    // Ép kiểu Number để chặn đứng lỗi cộng chuỗi text (ví dụ: "65000" + "38000") từ CSDL
+    const itemQty = Number(item.qty) || 0;
+    const itemPrice = Number(item.price) || 0;
+    
+    total += itemQty * itemPrice;
+    totalFnbItems += itemQty;
   });
 
-  document.getElementById("sum-fnb").innerText = totalFnbItems + " Combo";
+  // 3. Đổ dữ liệu thành tiền ra giao diện hóa đơn bên phải
+  const sumFnbEl = document.getElementById("sum-fnb");
+  if (sumFnbEl) sumFnbEl.innerText = totalFnbItems + " Combo";
+
   currentPriceTotal = total;
-  let finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
-  document.getElementById("sum-total").innerText =
-    finalTotal.toLocaleString("vi-VN") + " đ";
+  console.log("calculateCgvCart total =", total);
+  console.log("currentPriceTotal =", currentPriceTotal);
+  let finalTotal = currentPriceTotal * (1 - (typeof appliedVoucherDiscount !== "undefined" ? appliedVoucherDiscount : 0));
+  
+  const sumTotalEl = document.getElementById("sum-total");
+  if (sumTotalEl) {
+    sumTotalEl.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
+  }
 }
+
+// Chạy mồi một lần ngay lập tức để window nhận diện hàm này toàn cục
+window.calculateCgvCart = calculateCgvCart;
 
 function goToBookingStep(step) {
   document
@@ -245,6 +313,38 @@ function goToBookingStep(step) {
       backBtn.setAttribute("onclick", "goHomeFromBc()");
     }
   } else if (step === 2) {
+    // 🚀 NÂNG CẤP BẤT TỬ: Đồng bộ dữ liệu từ DB nhưng bảo toàn số lượng qty cực kỳ nghiêm ngặt
+    if (typeof API !== "undefined" && typeof API.getFnbItems === "function") {
+      API.getFnbItems()
+        .then((dbItems) => {
+          const oldMenu = window.fnbMenu || [];
+          
+          window.fnbMenu = dbItems.map(item => {
+            // So khớp chuẩn xác theo foodItemId
+            const matchedOldItem = oldMenu.find(o => String(o.id) === String(item.foodItemId));
+            return {
+              id: item.foodItemId,
+              name: item.itemName,
+              // Khóa ép kiểu số đề phòng Database trả về chuỗi text gây lỗi NaN khi tính tiền
+              price: Number(item.price) || 0,
+              qty: matchedOldItem ? matchedOldItem.qty : 0 
+            };
+          });
+          
+          // Phơi hàm tính tiền ra toàn cục ngay lập tức đề phòng file khác không gọi được
+          window.calculateCgvCart = calculateCgvCart;
+          
+          // Cào xong data thì vẽ ra giao diện và tính tiền luôn
+          if (typeof renderFnbMenu === "function") renderFnbMenu();
+          if (typeof calculateCgvCart === "function") calculateCgvCart();
+        })
+        .catch((err) => {
+          console.error("🚨 Lỗi nạp F&B cập nhật từ Server:", err);
+        });
+    } else {
+      if (typeof renderFnbMenu === "function") renderFnbMenu();
+    }
+
     if (mainBtn) {
       mainBtn.innerText = "Đến Thanh Toán";
       mainBtn.style.background = "#e71a0f";
@@ -263,24 +363,68 @@ function goToBookingStep(step) {
       backBtn.setAttribute("onclick", "goToBookingStep(2)");
     }
 
+    // 🚀 Ép hàm tính toán lại giỏ hàng chạy trước để đảm bảo tính đúng
+    if (typeof calculateCgvCart === "function") {
+      calculateCgvCart();
+    }
+
     const currentMovie = document.getElementById("cgv-combo-movie").value;
-    let fnbHtml = fnbMenu
+    
+    // 🚀 TÍNH LẠI GIÁ GHẾ CHUẨN XỊN: Không phụ thuộc vào biến currentPriceTotal bị lỗi ẩn DOM
+    let verifiedSeatsTotal = 0;
+    selectedSeats.forEach((seatId) => {
+      let price = 90000;
+      if (window.currentBackendSeats && Array.isArray(window.currentBackendSeats)) {
+        const seatData = window.currentBackendSeats.find(s => {
+          const row = s.seatRow || s.seat_row || "";
+          const num = s.seatNumber || s.seat_number || "";
+          return `${row}${num}`.trim().toUpperCase() === seatId.toUpperCase();
+        });
+        if (seatData) {
+          const type = (seatData.seatType || seatData.seat_type || "STANDARD").toUpperCase();
+          if (type === "VIP") price = 110000;
+          else if (type === "SWEETBOX") price = 250000;
+        }
+      }
+      verifiedSeatsTotal += price;
+    });
+
+    // Tính tiền F&B hiện tại
+    let verifiedFnbTotal = 0;
+    const activeFnbReview = window.fnbMenu || fnbMenu || [];
+    activeFnbReview.forEach(i => {
+      verifiedFnbTotal += (Number(i.qty) || 0) * (Number(i.price) || 0);
+    });
+
+    // Tổng số tiền thực tế không lo bị nhảy bậy
+    let verifiedInvoiceTotal = verifiedSeatsTotal + verifiedFnbTotal;
+    currentPriceTotal = verifiedInvoiceTotal; // Cập nhật lại biến toàn cục chuẩn
+
+    let fnbHtml = activeFnbReview
       .filter((i) => i.qty > 0)
       .map(
         (i) =>
           `<p>+ ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString("vi-VN")} đ</p>`,
       )
       .join("");
+      
     document.getElementById("review-invoice-content").innerHTML = `
             <p><strong>Phim:</strong> ${currentMovie}</p>
             <p><strong>Suất chiếu:</strong> ${selectedDateStr} | ${selectedShowtime}</p>
             <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
             <p><strong>Bắp nước:</strong></p>${fnbHtml || "<p>Không có</p>"}
             <hr style="margin: 10px 0;">
-            <p style="font-size: 16px;"><strong>Tổng cộng (Chưa giảm): <span style="color:#e71a0f;">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></strong></p>
+            <p style="font-size: 16px;"><strong>Tổng cộng (Chưa giảm): <span style="color:#e71a0f;">${verifiedInvoiceTotal.toLocaleString("vi-VN")} đ</span></strong></p>
         `;
-    document.getElementById("review-final-total").innerText =
-      currentPriceTotal.toLocaleString("vi-VN") + " đ";
+        
+    let finalTotal = verifiedInvoiceTotal * (1 - (typeof appliedVoucherDiscount !== "undefined" ? appliedVoucherDiscount : 0));
+    console.log("Step3 currentPriceTotal =", currentPriceTotal);
+    document.getElementById("review-final-total").innerText = finalTotal.toLocaleString("vi-VN") + " đ";
+    
+    // Cập nhật luôn thanh sidebar bên phải cho đồng bộ
+    const sumTotalEl = document.getElementById("sum-total");
+    if (sumTotalEl) sumTotalEl.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
+
   } else if (step === 4) {
     if (rightColumn) rightColumn.style.display = "none";
     if (layoutGrid) layoutGrid.style.gridTemplateColumns = "1fr";
@@ -461,14 +605,15 @@ function executeFinalCheckout() {
           ? data.ticketId.replace("CGV-", "LAS-")
           : "LAS-" + Math.floor(Math.random() * 1000000);
 
-        // Lưu lịch sử hóa đơn
+        // 🚀 ĐÃ SỬA CHỖ 1: Lấy đúng data bắp nước từ database để lưu lịch sử hóa đơn
+        const activeFnb = window.fnbMenu || fnbMenu || [];
         const invoiceObj = {
           id: lasTicketId,
           movie: currentMovie,
           date: selectedDateStr,
           time: selectedShowtime,
           seats: [...selectedSeats],
-          fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
+          fnb: activeFnb.filter((i) => i.qty > 0).map((i) => ({ ...i })),
           total: currentPriceTotal * (1 - appliedVoucherDiscount),
           status: "Đã thanh toán",
         };
@@ -477,7 +622,10 @@ function executeFinalCheckout() {
         // Reset trạng thái chọn ghế & giỏ hàng
         resetHoldState();
         selectedSeats = [];
-        fnbMenu.forEach((i) => (i.qty = 0));
+        
+        // 🚀 ĐÃ SỬA CHỖ 2: Đưa số lượng combo động về lại 0 sau khi thanh toán xong
+        activeFnb.forEach((i) => (i.qty = 0));
+        
         renderFnbMenu();
         calculateCgvCart();
         renderCgvInterface();

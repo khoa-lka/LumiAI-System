@@ -102,4 +102,18 @@ const API = {
     fetch(`${BASE_URL}/admin/users/ban/${userId}`, { method: "PUT" }).then(
       handleResponse,
     ),
+
+  // 🍿 Kho F&B
+  getFnbItems: () => fetch(`${BASE_URL}/fnb`).then(handleResponse),
+  addFnbItem: (data) => fetch(`${BASE_URL}/fnb`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  updateFnbItem: (id, data) => fetch(`${BASE_URL}/fnb/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  deleteFnbItem: (id) => fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then(res => res.ok ? true : Promise.reject(res))
 };

@@ -482,7 +482,7 @@
                 F&B Services & Inventory Control
               </h3>
               <div class="mp-fnb-actions">
-                <button class="mp-btn-add">Thêm sản phẩm mới</button>
+                <button class="mp-btn-add" onclick="openAddFnbModal()">Thêm sản phẩm mới</button>
                 <button class="mp-btn-add" style="background: #d32f2f">
                   Nhập hàng
                 </button>
@@ -493,8 +493,8 @@
             </div>
             <div class="mp-fnb-bottom-row">
               <div class="mp-search-box">
-                <span class="mp-search-icon">🔍</span
-                ><input type="text" placeholder="Search" />
+                <span class="mp-search-icon">🔍</span>
+                <input type="text" placeholder="Search" />
               </div>
               <div class="mp-filters">
                 <select class="mp-filter-select" style="width: 120px">
@@ -521,57 +521,20 @@
                   <th style="text-align: center">
                     Tồn kho<br /><span
                       style="font-size: 10px; font-weight: normal"
-                      >(Hiện tại/Tối)</span
+                      >(Hiện tại)</span
                     >
                   </th>
-                  <th style="text-align: center">Trạng thái</th>
+                  <th style="text-align: center">Hành động</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="mp-fnb-tbody">
                 <tr>
-                  <td style="text-align: center"><input type="checkbox" /></td>
-                  <td style="text-align: center">
-                    <div style="font-size: 24px">🍿</div>
-                  </td>
-                  <td><strong>Bắp ngọt L</strong></td>
-                  <td>Bắp rang</td>
-                  <td style="text-align: right; font-weight: bold">
-                    65,000 VND
-                  </td>
-                  <td style="text-align: center">120kg / 30kg</td>
-                  <td style="text-align: center">
-                    <span class="mp-status active">ACTIVE</span>
-                  </td>
-                </tr>
-                <tr class="mp-fnb-low-stock-row">
-                  <td style="text-align: center"><input type="checkbox" /></td>
-                  <td style="text-align: center">
-                    <div style="font-size: 24px">🥤</div>
-                  </td>
-                  <td><strong>Coca-Cola M</strong></td>
-                  <td>Nước ngọt</td>
-                  <td style="text-align: right; font-weight: bold">
-                    38,000 VND
-                  </td>
-                  <td style="text-align: center">
-                    <strong>25/40</strong>
-                    <span class="mp-badge-lowstock">Low Stock</span>
-                  </td>
-                  <td style="text-align: center">
-                    <span class="mp-status active">ACTIVE</span>
+                  <td colspan="7" style="text-align:center; padding:15px; color:#666;">
+                    Đang quét dữ liệu kho hàng...
                   </td>
                 </tr>
               </tbody>
             </table>
-            <div class="mp-fnb-tooltip">
-              <div style="color: #f57c00; font-size: 16px">⚠️</div>
-              <div>
-                <strong>Coca-Cola M:</strong> Tồn kho thấp<br /><span
-                  style="color: #666"
-                  >&lt; mức tối thiểu (còn 25 đơn vị)</span
-                >
-              </div>
-            </div>
           </div>
         </div>
 
@@ -1396,5 +1359,29 @@
         document.getElementById("mp-user-dropdown").classList.toggle("open");
       }
     </script>
+
+    <div class="mp-modal-overlay" id="mp-fnb-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+      <div class="mp-modal-box" style="background: white; width: 450px; padding: 25px; border-radius: 8px;">
+        <div class="mp-modal-close" onclick="closeFnbModal()" style="cursor: pointer; float: right; font-weight: bold;">✕</div>
+        <div class="mp-modal-header" id="fnb-modal-title" style="font-weight: bold; font-size: 18px; margin-bottom: 20px;">Thêm Sản Phẩm F&B Mới</div>
+        <input type="hidden" id="fnb-item-id" />
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px;">Tên bắp nước / combo</label>
+          <input type="text" id="fnb-name" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px;">Giá bán (VND)</label>
+          <input type="number" id="fnb-price" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+        <div class="mp-form-group" style="margin-bottom: 20px;">
+          <label style="display:block; margin-bottom:5px;">Số lượng tồn kho</label>
+          <input type="number" id="fnb-stock" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-cgv-cancel" onclick="closeFnbModal()" style="flex: 1; cursor: pointer; padding:10px; border-radius:4px; border:1px solid #ccc;">Hủy</button>
+          <button class="btn-cgv-submit" onclick="submitFnbForm()" style="flex: 1; cursor: pointer; background:#e71a0f; color:white; border:none; padding:10px; border-radius:4px;">LƯU LẠI</button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
