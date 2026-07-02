@@ -183,10 +183,23 @@ function calculateCgvCart() {
   let total = 0;
   let totalFnbItems = 0;
 
-  selectedSeats.forEach((id) => {
-    if (id.startsWith("C")) total += 110000;
-    else if (id.startsWith("D")) total += 250000;
-    else total += 90000;
+  // 🚀 ĐÃ SỬA: Tính tiền động theo đúng Loại Ghế bốc từ Database lên
+  selectedSeats.forEach((seatId) => {
+    // Tìm thông tin chi tiết của chiếc ghế này trong danh sách ghế Back-end trả về
+    // Giao diện vẽ dựa trên backendSeats nên ta tìm trong bộ nhớ hoặc query qua DOM element
+    const seatEl = Array.from(document.querySelectorAll('.cgv-seat')).find(el => el.innerText.trim() === seatId);
+    
+    if (seatEl) {
+      if (seatEl.classList.contains('vip')) {
+        total += 110000; // 🔴 Giá ghế VIP của nhóm em
+      } else if (seatEl.classList.contains('sweetbox')) {
+        total += 250000; // 💗 Giá ghế đôi Sweetbox của nhóm em
+      } else {
+        total += 90000;  // 🟢 Giá ghế Standard thường
+      }
+    } else {
+      total += 90000; // Bọc lót giá mặc định nếu không tìm thấy ô DOM
+    }
   });
 
   fnbMenu.forEach((item) => {
