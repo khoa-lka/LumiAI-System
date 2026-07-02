@@ -751,8 +751,6 @@ function selectTime(t) {
   window.renderCgvInterface();
 }
 
-function calculateCgvCart() {}
-
 function onMovieOrTimeChange() {
   resetHoldState();
   selectedSeats = [];
@@ -795,13 +793,18 @@ function switchCgvTab(panelId, filterType = "now_showing") {
 
   if (panelId === "panel-booking") {
     // 🌟 PHÒNG THỦ: Ép quy trình đặt vé luôn luôn hiển thị Bước 1 (Chọn ghế) khi truy cập tab Đặt Vé
-    if (typeof window.resetBookingWizard === "function") {
+    if (
+      !window.isVnpayReturn &&
+      typeof window.resetBookingWizard === "function"
+    ) {
       window.resetBookingWizard();
     }
+
     if (parentBc) parentBc.innerText = "Đặt Vé Trực Tuyến";
     if (currentBc) currentBc.innerText = "Chọn Suất Chiếu & Ghế Ngồi";
     if (document.getElementById("payment-sticky-bar"))
       document.getElementById("payment-sticky-bar").style.display = "block";
+
     generateCgvDateSlider();
   } else if (panelId !== "panel-booking") {
     if (document.getElementById("payment-sticky-bar"))
@@ -1320,9 +1323,14 @@ window.applyVoucher = function () {
 
 window.executeFinalCheckout = function () {
   const cachedBooking = localStorage.getItem("las_current_booking_cache");
-  let currentMovie = document.getElementById("cgv-combo-movie").value;
-  let ticketSeats = [...selectedSeats];
-  let ticketShowtime = selectedShowtime;
+  const pending = JSON.parse(localStorage.getItem("pending_booking"));
+
+  let currentMovie = pending
+    ? pending.movie
+    : document.getElementById("cgv-combo-movie").value;
+  let ticketSeats = pending ? [...pending.seats] : [...selectedSeats];
+
+  let ticketShowtime = pending ? pending.showtime : selectedShowtime;
   let ticketDate = selectedDateStr;
   let ticketFnb = fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i }));
   let ticketTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
@@ -1363,6 +1371,8 @@ window.executeFinalCheckout = function () {
     .then((data) => {
       // Sinh mã hóa đơn hiển thị rạp phim ngẫu nhiên
       const lasTicketId = "LAS-" + Math.floor(100000 + Math.random() * 900000);
+      console.log("currentPriceTotal =", currentPriceTotal);
+      console.log("appliedVoucherDiscount =", appliedVoucherDiscount);
       const invoiceObj = {
         id: lasTicketId,
         movie: currentMovie,
@@ -1416,6 +1426,7 @@ window.executeFinalCheckout = function () {
 
       // Giải phóng giỏ hàng tạm sau khi đã xuất vé điện tử thành công
       localStorage.removeItem("las_current_booking_cache");
+      localStorage.removeItem("pending_booking");
       selectedSeats = [];
       fnbMenu.forEach((i) => (i.qty = 0));
       window.renderFnbMenu();
@@ -1706,6 +1717,17 @@ window.processToPaymentGateway = function () {
             fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
             total: currentPriceTotal * (1 - appliedVoucherDiscount),
           };
+          localStorage.setItem(
+            "pending_booking",
+            JSON.stringify({
+              movie: document.getElementById("cgv-combo-movie").value,
+              showtime: selectedShowtime,
+              seats: [...selectedSeats],
+              date: selectedDateStr,
+              fnb: fnbMenu.filter((i) => i.qty > 0),
+              total: currentPriceTotal * (1 - appliedVoucherDiscount),
+            }),
+          );
           window.location.href = data.paymentUrl; // Điều hướng sang trang chọn của VNPAY thành công
         } else {
           alert("Lỗi dữ liệu hệ thống trả về từ VNPAY Gateway!");
@@ -1742,6 +1764,7 @@ window.processToPaymentGateway = function () {
     document.getElementById("payment-redirect-modal").classList.add("open");
   }
 };
+
 function generateCgvDateSlider() {
   const container = document.getElementById("cgv-dynamic-date-slider");
   if (!container) return;
