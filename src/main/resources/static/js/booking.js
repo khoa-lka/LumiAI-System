@@ -157,42 +157,45 @@ function loadSeatMap(showtimeId) {
   }
 
   API.getSeatsByShowtime(showtimeId)
-    .then((bookedSeatsList = []) => {
+    .then((backendSeats = []) => {
+      // 🚀 KHÓA CHẶT TẠI ĐÂY: Đồng bộ găm biến toàn cục cho cả booking.js bốc dùng ở Bước 3
+      window.currentBackendSeats = backendSeats;
+
       const currentMovie = document.getElementById("cgv-combo-movie").value;
 
-      // đảm bảo structure tồn tại
+      // Đảm bảo structure tồn tại
       if (!serverData.masterSeatStore[currentMovie]) {
         serverData.masterSeatStore[currentMovie] = {};
       }
 
-      // init template nếu chưa có
-      if (!serverData.masterSeatStore[currentMovie][showtimeId]) {
-        serverData.masterSeatStore[currentMovie][showtimeId] =
-          initSeatTemplate();
+      // Khởi tạo trạng thái dựa trên danh sách ghế thật từ server nhả về
+      const activeSeatMap = {};
+      if (Array.isArray(backendSeats)) {
+        backendSeats.forEach(s => {
+          const row = s.seatRow || s.seat_row || "";
+          const num = s.seatNumber || s.seat_number || "";
+          const id = `${row}${num}`.trim().toUpperCase();
+          
+          activeSeatMap[id] = {
+            status: (s.status === "sold" || s.status === "BOOKED" || s.status === "SLOT_LOCKED") ? "sold" : "available",
+            seatType: s.seatType || s.seat_type || "STANDARD"
+          };
+        });
       }
-
-      // clone để tránh mutate trực tiếp object gốc
-      const baseMap = serverData.masterSeatStore[currentMovie][showtimeId];
-
-      const activeSeatMap = JSON.parse(JSON.stringify(baseMap));
-
-      // normalize bookedSeatsList
-      const bookedSet = new Set(bookedSeatsList || []);
-
-      Object.keys(activeSeatMap).forEach((id) => {
-        activeSeatMap[id].status = bookedSet.has(id) ? "sold" : "available";
-      });
 
       serverData.masterSeatStore[currentMovie][showtimeId] = activeSeatMap;
 
+      // Tính toán giỏ hàng dựa trên logic backend mới của Khoa
       calculateCgvCart();
-      renderCgvInterface();
+      
+      // Nếu có ui.js thì vẽ giao diện, không thì bọc lót an toàn
+      if (typeof renderCgvInterface === "function") {
+        renderCgvInterface();
+      }
     })
     .catch((err) => {
       console.error("🚨 Lỗi đồng bộ dữ liệu ghế từ Server:", err);
-
       calculateCgvCart();
-      renderCgvInterface();
     });
 }
 
@@ -226,7 +229,6 @@ function onMovieOrTimeChange() {
 window.selectCgvBookingDate = selectCgvBookingDate;
 
 function calculateCgvCart() {
-  // 🚀 ĐÓNG ĐINH TOÀN CỤC: Ép trình duyệt luôn luôn găm hàm này vào window ngay khi kích hoạt
   window.calculateCgvCart = calculateCgvCart;
 
   document.getElementById("sum-seats").innerText =
@@ -234,61 +236,45 @@ function calculateCgvCart() {
   let total = 0;
   let totalFnbItems = 0;
 
-  // 1. Tính tiền ghế dựa theo các class trên giao diện DOM của em
+  // 🚀 LOGIC ĐỘC LẬP HOÀN TOÀN TỪ BACKEND CỦA KHOA: Cấm quét DOM
   selectedSeats.forEach((seatId) => {
-    const seatEl = Array.from(document.querySelectorAll('.cgv-seat')).find(el => el.innerText.trim() === seatId);
-    
-    if (seatEl) {
-      if (seatEl.classList.contains('vip')) {
-        total += 110000; // 🔴 Giá ghế VIP của nhóm em
-      } else if (seatEl.classList.contains('sweetbox')) {
-        total += 250000; // 💗 Giá ghế đôi Sweetbox của nhóm em
-      } else {
-        total += 90000;  // 🟢 Giá ghế Standard thường
-      }
-    } else {
-      // 🚀 ĐÃ SỬA TẠI ĐÂY: Bảo toàn giá ghế khi sang Bước 3 bằng mảng dữ liệu gốc từ database của ui.js
-      let seatPriceFound = 90000;
-      
-      if (window.currentBackendSeats && Array.isArray(window.currentBackendSeats)) {
-        const seatData = window.currentBackendSeats.find(s => {
-          const row = s.seatRow || s.seat_row || "";
-          const num = s.seatNumber || s.seat_number || "";
-          return `${row}${num}`.trim().toUpperCase() === seatId.toUpperCase();
-        });
-        
-        if (seatData) {
-          const type = (seatData.seatType || seatData.seat_type || "STANDARD").toUpperCase();
-          if (type === "VIP") {
-            seatPriceFound = 110000;
-          } else if (type === "SWEETBOX") {
-            seatPriceFound = 250000;
-          }
+    let price = 90000;
+
+    if (window.currentBackendSeats && Array.isArray(window.currentBackendSeats)) {
+      const seatData = window.currentBackendSeats.find(s => {
+        const row = (s.seatRow || s.seat_row || "").toString().trim().toUpperCase();
+        const num = (s.seatNumber || s.seat_number || "").toString().trim();
+        return `${row}${num}` === seatId.toUpperCase();
+      });
+
+      if (seatData) {
+        const type = (seatData.seatType || seatData.seat_type || "STANDARD").toUpperCase();
+        switch (type) {
+          case "VIP":
+            price = 110000;
+            break;
+          case "SWEETBOX":
+            price = 250000;
+            break;
+          default:
+            price = 90000;
         }
       }
-      
-      total += seatPriceFound;
     }
+    total += price;
   });
 
   // 2. Tính tiền F&B động từ database mẫu
   const activeFnbMenu = window.fnbMenu || fnbMenu || [];
   activeFnbMenu.forEach((item) => {
-    // Ép kiểu Number để chặn đứng lỗi cộng chuỗi text (ví dụ: "65000" + "38000") từ CSDL
-    const itemQty = Number(item.qty) || 0;
-    const itemPrice = Number(item.price) || 0;
-    
-    total += itemQty * itemPrice;
-    totalFnbItems += itemQty;
+    total += (Number(item.qty) || 0) * (Number(item.price) || 0);
+    totalFnbItems += (Number(item.qty) || 0);
   });
 
-  // 3. Đổ dữ liệu thành tiền ra giao diện hóa đơn bên phải
   const sumFnbEl = document.getElementById("sum-fnb");
   if (sumFnbEl) sumFnbEl.innerText = totalFnbItems + " Combo";
 
   currentPriceTotal = total;
-  console.log("calculateCgvCart total =", total);
-  console.log("currentPriceTotal =", currentPriceTotal);
   let finalTotal = currentPriceTotal * (1 - (typeof appliedVoucherDiscount !== "undefined" ? appliedVoucherDiscount : 0));
   
   const sumTotalEl = document.getElementById("sum-total");
@@ -388,35 +374,8 @@ function goToBookingStep(step) {
 
     const currentMovie = document.getElementById("cgv-combo-movie").value;
     
-    // 🚀 TÍNH LẠI GIÁ GHẾ CHUẨN XỊN: Không phụ thuộc vào biến currentPriceTotal bị lỗi ẩn DOM
-    let verifiedSeatsTotal = 0;
-    selectedSeats.forEach((seatId) => {
-      let price = 90000;
-      if (window.currentBackendSeats && Array.isArray(window.currentBackendSeats)) {
-        const seatData = window.currentBackendSeats.find(s => {
-          const row = s.seatRow || s.seat_row || "";
-          const num = s.seatNumber || s.seat_number || "";
-          return `${row}${num}`.trim().toUpperCase() === seatId.toUpperCase();
-        });
-        if (seatData) {
-          const type = (seatData.seatType || seatData.seat_type || "STANDARD").toUpperCase();
-          if (type === "VIP") price = 110000;
-          else if (type === "SWEETBOX") price = 250000;
-        }
-      }
-      verifiedSeatsTotal += price;
-    });
-
-    // Tính tiền F&B hiện tại
-    let verifiedFnbTotal = 0;
+    const verifiedInvoiceTotal = currentPriceTotal;
     const activeFnbReview = window.fnbMenu || fnbMenu || [];
-    activeFnbReview.forEach(i => {
-      verifiedFnbTotal += (Number(i.qty) || 0) * (Number(i.price) || 0);
-    });
-
-    // Tổng số tiền thực tế không lo bị nhảy bậy
-    let verifiedInvoiceTotal = verifiedSeatsTotal + verifiedFnbTotal;
-    currentPriceTotal = verifiedInvoiceTotal; // Cập nhật lại biến toàn cục chuẩn
 
     let fnbHtml = activeFnbReview
       .filter((i) => i.qty > 0)
