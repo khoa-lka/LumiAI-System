@@ -1,5 +1,10 @@
 package com.cinema.backend.entities;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -27,4 +32,11 @@ public class Ticket {
 
     @Column(name = "seat_id")
     private Integer seatId;
+
+    @Column(name = "booking_id")
+    private Integer bookingId;
+
+    static {
+    System.out.println("===== USING NEW TICKET ENTITY =====");
+}
 }
