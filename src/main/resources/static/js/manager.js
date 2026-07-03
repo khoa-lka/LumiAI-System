@@ -61,6 +61,10 @@ function switchMpTab(tabId) {
   if (tabId === "movies") {
     loadManagerMovies();
   }
+  // Bổ sung vào cuối hàm switchMpTab của em:
+  if (tabId === "fnb") {
+    loadManagerFnb();
+  }
 }
 
 // --- 2. QUẢN LÝ MODAL & POPUP (CÁC MODAL KHÁC) ---
@@ -475,3 +479,138 @@ function displayCurrentDate() {
 }
 
 document.addEventListener("DOMContentLoaded", displayCurrentDate);
+
+// ==========================================================================
+// --- 7. BỘ CHỨC NĂNG QUẢN LÝ KHO F&B CHUYÊN NGHIỆP ---
+// ==========================================================================
+
+// Hàm tải danh sách F&B thực tế từ database lên giao diện
+window.loadManagerFnb = function() {
+  const tbody = document.getElementById("mp-fnb-tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Đang quét dữ liệu kho hàng...</td></tr>';
+
+  API.getFnbItems()
+    .then((items) => {
+      tbody.innerHTML = "";
+      window.fnbItemsList = items; // Lưu cache danh sách toàn cục để sửa
+
+      if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Kho trống! Chưa có sản phẩm bắp nước nào.</td></tr>';
+        return;
+      }
+
+      items.forEach((item) => {
+        // Tự động phân loại dựa theo từ khóa trong tên để hiển thị lên UI khớp thiết kế của em
+        const nameLower = item.itemName.toLowerCase();
+        let typeText = "Bắp rang";
+        let icon = "🍿";
+        if (nameLower.includes("combo")) { typeText = "Combo"; icon = "🎁"; }
+        else if (nameLower.includes("nuoc") || nameLower.includes("coca")) { typeText = "Nước ngọt"; icon = "🥤"; }
+        else if (nameLower.includes("khoai") || nameLower.includes("chien")) { typeText = "Đồ ăn vặt"; icon = "🍟"; }
+
+        // Logic kiểm tra cảnh báo tồn kho thấp (Low Stock < 30 đơn vị)
+        let stockHTML = `${item.stockQuantity} ly`;
+        let rowStyle = "";
+        if (item.stockQuantity <= 30) {
+          rowStyle = 'style="background-color: #fff8f8;"';
+          stockHTML = `<strong>${item.stockQuantity}</strong> <span class="mp-badge-lowstock" style="background:#fff3e0; color:#e65100; font-size:10px; padding:2px 4px; border-radius:3px; margin-left:5px;">Tồn thấp</span>`;
+        }
+
+        tbody.innerHTML += `
+          <tr ${rowStyle}>
+              <td style="text-align: center;"><input type="checkbox" value="${item.foodItemId}" /></td>
+              <td style="text-align: center;"><div style="font-size: 22px">${icon}</div></td>
+              <td><strong>${item.itemName}</strong></td>
+              <td>${typeText}</td>
+              <td style="text-align: right; font-weight: bold; color:#b71c1c;">${item.price.toLocaleString("vi-VN")} đ</td>
+              <td style="text-align: center;">${stockHTML}</td>
+              <td style="text-align: center;">
+                  <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
+                      <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" style="cursor:pointer;" title="Sửa thông tin">✏️ Sửa</button>
+                      <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;" title="Xóa">🗑️ Xóa</button>
+                  </div>
+              </td>
+          </tr>
+        `;
+      });
+    })
+    .catch((err) => {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Lỗi kết nối API kho F&B: ${err.message}</td></tr>`;
+    });
+};
+
+// Điều khiển mở đóng Modal Form điền dữ liệu
+window.openAddFnbModal = function() {
+  document.getElementById("fnb-item-id").value = "";
+  document.getElementById("fnb-name").value = "";
+  document.getElementById("fnb-price").value = "";
+  document.getElementById("fnb-stock").value = "";
+  document.getElementById("fnb-modal-title").innerText = "Thêm Sản Phẩm F&B Mới";
+  document.getElementById("mp-fnb-modal").style.display = "flex";
+};
+
+window.openEditFnbModal = function(id) {
+  const item = window.fnbItemsList.find(x => x.foodItemId === id);
+  if (!item) return;
+
+  document.getElementById("fnb-item-id").value = item.foodItemId;
+  document.getElementById("fnb-name").value = item.itemName;
+  document.getElementById("fnb-price").value = item.price;
+  document.getElementById("fnb-stock").value = item.stockQuantity;
+  document.getElementById("fnb-modal-title").innerText = "Cập Nhật Thông Tin Sản Phẩm";
+  document.getElementById("mp-fnb-modal").style.display = "flex";
+};
+
+window.closeFnbModal = function() {
+  document.getElementById("mp-fnb-modal").style.display = "none";
+};
+
+// Hàm xử lý chung gửi request Thêm hoặc Sửa lên Spring Boot
+window.submitFnbForm = function() {
+  const id = document.getElementById("fnb-item-id").value;
+  const name = document.getElementById("fnb-name").value.trim();
+  const price = parseFloat(document.getElementById("fnb-price").value) || 0;
+  const stock = parseInt(document.getElementById("fnb-stock").value) || 0;
+
+  if (!name) {
+    alert("Vui lòng điền tên sản phẩm bắp nước!");
+    return;
+  }
+
+  const fnbData = { itemName: name, price: price, stockQuantity: stock };
+
+  if (id) {
+    // Nếu có ID -> Gọi API cập nhật thông tin sản phẩm
+    API.updateFnbItem(id, fnbData)
+      .then(() => {
+        alert("✅ Đã cập nhật sản phẩm F&B thành công!");
+        closeFnbModal();
+        loadManagerFnb();
+      })
+      .catch(err => alert("Lỗi khi sửa bắp nước: " + err.message));
+  } else {
+    // Nếu ID trống -> Gọi API thêm sản phẩm mới vào DB
+    API.addFnbItem(fnbData)
+      .then(() => {
+        alert("✅ Đã thêm sản phẩm mới vào kho thành công!");
+        closeFnbModal();
+        loadManagerFnb();
+      })
+      .catch(err => alert("Lỗi khi thêm bắp nước: " + err.message));
+  }
+};
+
+// Hàm xử lý kích hoạt xóa sản phẩm
+window.submitDeleteFnb = function(id) {
+  if (confirm("⚠️ Bạn có chắc chắn muốn gỡ sản phẩm bắp nước này ra khỏi kho hệ thống không?")) {
+    API.deleteFnbItem(id)
+      .then(() => {
+        alert("✅ Đã xóa sản phẩm khỏi kho thành công!");
+        loadManagerFnb();
+      })
+      .catch(err => alert("Thất bại! Sản phẩm này đang dính vào lịch sử hóa đơn đặt vé cũ nên không thể xóa vật lý."));
+  }
+};
