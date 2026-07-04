@@ -483,25 +483,27 @@
               </h3>
               <div class="mp-fnb-actions">
                 <button class="mp-btn-add" onclick="openAddFnbModal()">Thêm sản phẩm mới</button>
-                <button class="mp-btn-add" style="background: #d32f2f">
-                  Nhập hàng
-                </button>
-                <button class="mp-btn-add" style="background: #c62828">
-                  Tái cung ứng
-                </button>
+                <button class="mp-btn-add" style="background: #d32f2f" onclick="openQuickRestockModal()">Nhập hàng</button>
+                <button class="mp-btn-add" style="background: #c62828" onclick="handleAutoReplenish()">Tái cung ứng</button>
               </div>
             </div>
             <div class="mp-fnb-bottom-row">
               <div class="mp-search-box">
                 <span class="mp-search-icon">🔍</span>
-                <input type="text" placeholder="Search" />
+                <input type="text" id="mp-fnb-search-input" placeholder="Tìm tên bắp nước, combo..." oninput="filterManagerFnb()" />
               </div>
               <div class="mp-filters">
-                <select class="mp-filter-select" style="width: 120px">
-                  <option>Type</option>
+                <select class="mp-filter-select" id="mp-fnb-filter-type" style="width: 120px" onchange="filterManagerFnb()">
+                  <option value="all">Loại (Tất cả)</option>
+                  <option value="combo">Combo</option>
+                  <option value="bap">Bắp rang</option>
+                  <option value="nuoc">Nước ngọt</option>
+                  <option value="anvat">Đồ ăn vặt</option>
                 </select>
-                <select class="mp-filter-select" style="width: 120px">
-                  <option>Status</option>
+                <select class="mp-filter-select" id="mp-fnb-filter-stock" style="width: 120px" onchange="filterManagerFnb()">
+                  <option value="all">Tồn kho (Tất cả)</option>
+                  <option value="available">Còn hàng (>30)</option>
+                  <option value="low">Tồn kho thấp (≤30)</option>
                 </select>
               </div>
             </div>
@@ -1341,12 +1343,20 @@
         const titleEl = document.getElementById("mp-dynamic-title");
         if (titleEl) titleEl.innerText = titles[tabId] || "Manager Portal";
 
-        // Gọi API nạp dữ liệu phim khi qua Tab Movies
+        // 1. Gọi API nạp dữ liệu phim khi qua Tab Movies
         if (tabId === "movies" && typeof loadManagerMovies === "function") {
           try {
             loadManagerMovies();
           } catch (err) {
             console.error("Lỗi khi load danh sách phim:", err);
+          }
+        }
+        // 2. Tự động kích hoạt gọi API nạp bắp nước từ DB khi chuyển sang Tab F&B
+        if (tabId === "fnb" && typeof loadManagerFnb === "function") {
+          try {
+            loadManagerFnb();
+          } catch (err) {
+            console.error("Lỗi khi load danh sách F&B từ database:", err);
           }
         }
       };

@@ -614,3 +614,180 @@ window.submitDeleteFnb = function(id) {
       .catch(err => alert("Thất bại! Sản phẩm này đang dính vào lịch sử hóa đơn đặt vé cũ nên không thể xóa vật lý."));
   }
 };
+
+// ==========================================================================
+// 🚀 BỘ CHỨC NĂNG TÌM KIẾM & LỌC F&B ĐỘNG CHO MANAGER
+// ==========================================================================
+function filterManagerFnb() {
+  const searchInput = document.getElementById("mp-fnb-search-input");
+  const typeSelect = document.getElementById("mp-fnb-filter-type");
+  const stockSelect = document.getElementById("mp-fnb-filter-stock");
+
+  const keyword = searchInput ? searchInput.value.toLowerCase().trim() : "";
+  const typeFilter = typeSelect ? typeSelect.value : "all";
+  const stockFilter = stockSelect ? stockSelect.value : "all";
+
+  // Bảo vệ hệ thống: Nếu mảng cache tổng từ database chưa kịp nạp thì dừng lại
+  if (!window.fnbItemsList) return;
+
+  const filteredResult = window.fnbItemsList.filter((item) => {
+    // 1. Tìm kiếm theo tên sản phẩm thật bốc từ Database (itemName)
+    const matchesKeyword = item.itemName ? item.itemName.toLowerCase().includes(keyword) : false;
+    
+    // 2. Tự động nhận diện Phân loại dựa theo từ khóa chuỗi tên tương tự hàm load gốc
+    const nameLower = (item.itemName || "").toLowerCase();
+    let currentType = "bap";
+    if (nameLower.includes("combo")) currentType = "combo";
+    else if (nameLower.includes("nuoc") || nameLower.includes("coca")) currentType = "nuoc";
+    else if (nameLower.includes("khoai") || nameLower.includes("chien")) currentType = "anvat";
+
+    const matchesType = typeFilter === "all" || currentType === typeFilter;
+
+    // 3. Lọc theo trạng thái số lượng tồn kho (stockQuantity)
+    let matchesStock = true;
+    if (stockFilter === "low") {
+      matchesStock = item.stockQuantity <= 30;
+    } else if (stockFilter === "available") {
+      matchesStock = item.stockQuantity > 30;
+    }
+
+    return matchesKeyword && matchesType && matchesStock;
+  });
+
+  // Vẽ lại bảng F&B dựa trên danh sách đã được lọc sạch
+  renderFilteredFnbTable(filteredResult);
+}
+// Phơi hàm ra phạm vi toàn cục window để các thẻ select/input HTML kích hoạt được
+window.filterManagerFnb = filterManagerFnb;
+
+// Hàm tái render bảng dữ liệu sau khi lọc (Đảm bảo giữ nguyên cấu trúc icon, tồn kho thấp của em)
+function renderFilteredFnbTable(items) {
+  const tbody = document.getElementById("mp-fnb-tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  if (!items || items.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Không tìm thấy sản phẩm bắp nước nào khớp với bộ lọc!</td></tr>';
+    return;
+  }
+
+  items.forEach((item) => {
+    const nameLower = item.itemName.toLowerCase();
+    let typeText = "Bắp rang";
+    let icon = "🍿";
+    if (nameLower.includes("combo")) { typeText = "Combo"; icon = "🎁"; }
+    else if (nameLower.includes("nuoc") || nameLower.includes("coca")) { typeText = "Nước ngọt"; icon = "🥤"; }
+    else if (nameLower.includes("khoai") || nameLower.includes("chien")) { typeText = "Đồ ăn vặt"; icon = "🍟"; }
+
+    let stockHTML = `${item.stockQuantity} ly`;
+    let rowStyle = "";
+    if (item.stockQuantity <= 30) {
+      rowStyle = 'style="background-color: #fff8f8;"';
+      stockHTML = `<strong>${item.stockQuantity}</strong> <span class="mp-badge-lowstock" style="background:#fff3e0; color:#e65100; font-size:10px; padding:2px 4px; border-radius:3px; margin-left:5px;">Tồn thấp</span>`;
+    }
+
+    tbody.innerHTML += `
+      <tr ${rowStyle}>
+          <td style="text-align: center;"><input type="checkbox" value="${item.foodItemId}" /></td>
+          <td style="text-align: center;"><div style="font-size: 22px">${icon}</div></td>
+          <td><strong>${item.itemName}</strong></td>
+          <td>${typeText}</td>
+          <td style="text-align: right; font-weight: bold; color:#b71c1c;">${item.price.toLocaleString("vi-VN")} đ</td>
+          <td style="text-align: center;">${stockHTML}</td>
+          <td style="text-align: center;">
+              <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
+                  <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" style="cursor:pointer;" title="Sửa thông tin">✏️ Sửa</button>
+                  <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;" title="Xóa">🗑️ Xóa</button>
+              </div>
+          </td>
+      </tr>
+    `;
+  });
+}
+
+// ==========================================================================
+// 🚀 LOGIC XỬ LÝ NHẬP HÀNG & TÁI CUNG ỨNG CHO KHO F&B
+// ==========================================================================
+
+// --- CHỨC NĂNG 1: TÁI CUNG ỨNG TỰ ĐỘNG (AUTO-REPLENISH) ---
+window.handleAutoReplenish = function() {
+  if (!window.fnbItemsList || window.fnbItemsList.length === 0) {
+    alert("Không có dữ liệu sản phẩm để tái cung ứng!");
+    return;
+  }
+
+  // Lọc ra các sản phẩm có tồn kho thấp (<= 30)
+  const lowStockItems = window.fnbItemsList.filter(item => item.stockQuantity <= 30);
+
+  if (lowStockItems.length === 0) {
+    alert("✨ Tất cả sản phẩm trong kho đều đang ở mức an toàn (>30 ly). Không cần tái cung ứng!");
+    return;
+  }
+
+  if (confirm(`Hệ thống tìm thấy ${lowStockItems.length} sản phẩm đang sắp hết hàng (tồn thấp).\nBạn có muốn tự động bù hàng lên mức an toàn (100 ly) không?`)) {
+    
+    // Tạo danh sách các Promise để cập nhật đồng thời lên Server Spring Boot
+    const updatePromises = lowStockItems.map(item => {
+      const updatedData = {
+        itemName: item.itemName,
+        price: item.price,
+        stockQuantity: 100 // Tự động đưa lên mức an toàn 100 đơn vị
+      };
+      return API.updateFnbItem(item.foodItemId, updatedData);
+    });
+
+    // Chờ tất cả API cập nhật xong xuôi
+    Promise.all(updatePromises)
+      .then(() => {
+        alert("✅ Chiến dịch tái cung ứng hoàn tất! Toàn bộ sản phẩm tồn thấp đã được đưa về mức an toàn.");
+        loadManagerFnb(); // Tải lại bảng để cập nhật số lượng mới
+      })
+      .catch(err => {
+        console.error("Lỗi tái cung ứng:", err);
+        alert("🚨 Có lỗi xảy ra trong quá trình cập nhật kho hàng: " + err.message);
+      });
+  }
+};
+
+// --- CHỨC NĂNG 2: NHẬP HÀNG NHANH (QUICK RESTOCK) ---
+window.openQuickRestockModal = function() {
+  if (!window.fnbItemsList || window.fnbItemsList.length === 0) {
+    alert("Kho hàng trống, vui lòng thêm sản phẩm mới trước!");
+    return;
+  }
+
+  // Tận dụng Modal Form điền dữ liệu có sẵn của Khoa để làm form nhập nhanh
+  // Tìm một sản phẩm bất kỳ hoặc mở modal chỉnh số lượng tồn kho
+  const itemId = prompt("Nhập mã ID sản phẩm F&B bạn muốn nhập thêm hàng vào kho:", "");
+  if (!itemId) return;
+
+  const item = window.fnbItemsList.find(x => String(x.foodItemId) === String(itemId).trim());
+  if (!item) {
+    alert("❌ Không tìm thấy sản phẩm nào mang ID #" + itemId);
+    return;
+  }
+
+  const addQtyStr = prompt(`Sản phẩm: ${item.itemName}\nTồn kho hiện tại: ${item.stockQuantity} ly\n\nNhập số lượng bạn muốn CỘNG THÊM vào kho:`, "50");
+  if (!addQtyStr) return;
+
+  const addQty = parseInt(addQtyStr) || 0;
+  if (addQty <= 0) {
+    alert("Số lượng nhập kho phải lớn hơn 0!");
+    return;
+  }
+
+  const fnbData = {
+    itemName: item.itemName,
+    price: item.price,
+    stockQuantity: item.stockQuantity + addQty // Cộng dồn số lượng mới vào số lượng cũ
+  };
+
+  // Gửi request cập nhật lên Spring Boot
+  API.updateFnbItem(item.foodItemId, fnbData)
+    .then(() => {
+      alert(`✅ Nhập hàng thành công! Đã cộng thêm ${addQty} đơn vị vào sản phẩm ${item.itemName}.`);
+      loadManagerFnb();
+    })
+    .catch(err => alert("Lỗi khi nhập hàng: " + err.message));
+};
