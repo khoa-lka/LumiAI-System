@@ -105,4 +105,11 @@ const API = {
     fetch(`${BASE_URL}/admin/users/ban/${userId}`, { method: "PUT" }).then(
       handleResponse,
     ),
+
+  checkVoucher(code) {
+    return fetch(API_BASE + "/voucher/" + code).then((res) => {
+      if (!res.ok) throw new Error("Voucher không hợp lệ");
+      return res.json();
+    });
+  },
 };

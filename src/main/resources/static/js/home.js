@@ -410,24 +410,6 @@ function closeCheckoutReview() {
   calculateCgvCart();
 }
 
-function applyVoucher() {
-  const code = document
-    .getElementById("voucher-input")
-    .value.trim()
-    .toUpperCase();
-  if (code === "LAS20") {
-    appliedVoucherDiscount = 0.2;
-    alert("Áp dụng thành công Voucher giảm 20%!");
-  } else {
-    appliedVoucherDiscount = 0;
-    alert("Mã Voucher không hợp lệ hoặc đã hết hạn!");
-  }
-  const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
-  document.getElementById("review-final-total").innerText =
-    finalTotal.toLocaleString("vi-VN") + " đ";
-  calculateCgvCart();
-}
-
 function closePaymentModal() {
   document.getElementById("payment-redirect-modal").classList.remove("open");
 }
@@ -740,8 +722,6 @@ function selectTime(t) {
   calculateCgvCart();
   window.renderCgvInterface();
 }
-
-function calculateCgvCart() {}
 
 function onMovieOrTimeChange() {
   resetHoldState();

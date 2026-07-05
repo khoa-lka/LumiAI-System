@@ -36,6 +36,9 @@ public class BookingService {
     @Autowired
     ShowtimeRepository showtimeRepository;
 
+    @Autowired
+    VoucherService voucherService;
+
 @Transactional
 public Booking checkout(CheckoutRequest request) {
 
@@ -84,6 +87,19 @@ public Booking checkout(CheckoutRequest request) {
 
         ticketRepository.save(ticket);
     }
+
+    if(request.getVoucherCode()!=null &&
+   !request.getVoucherCode().isBlank()){
+
+    System.out.println("Voucher nhận được = " + request.getVoucherCode());
+
+if(request.getVoucherCode()!=null &&
+   !request.getVoucherCode().isBlank()){
+
+    voucherService.useVoucher(request.getVoucherCode());
+}
+    voucherService.useVoucher(request.getVoucherCode());
+}
 
     return booking;
 }

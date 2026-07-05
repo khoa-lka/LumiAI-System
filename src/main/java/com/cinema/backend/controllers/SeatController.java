@@ -6,9 +6,12 @@ import com.cinema.backend.entities.Ticket;
 import com.cinema.backend.repositories.SeatRepository;
 import com.cinema.backend.repositories.ShowtimeRepository;
 import com.cinema.backend.repositories.TicketRepository;
+import com.cinema.backend.service.VoucherService;
+
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.*;
 
@@ -25,6 +28,9 @@ public class SeatController {
 
     @Autowired
     private ShowtimeRepository showtimeRepository;
+
+    @Autowired
+    private VoucherService voucherService;
 
     // 🚀 ĐÓN ĐÚNG API: /api/seats/matrix?showtimeId=...
     @GetMapping("/matrix")
@@ -73,6 +79,7 @@ System.out.println("SOLD SEATS = " + soldSeats);
 public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
 
     Map<String, Object> response = new HashMap<>();
+    System.out.println("===== NEW CHECKOUT =====");
 
     try {
         System.out.println("CHECKOUT PAYLOAD = " + payload);
@@ -121,6 +128,14 @@ public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
             ticket.setQrCode(ticketCode);
 
             savedTickets.add(ticketRepository.save(ticket));
+        }
+
+        String voucherCode = (String) payload.get("voucherCode");
+        System.out.println("VoucherCode = " + voucherCode);
+
+        if (voucherCode != null && !voucherCode.isBlank()) {
+           boolean ok = voucherService.useVoucher(voucherCode);
+            System.out.println("Use voucher = " + ok);
         }
 
         response.put("success", true);

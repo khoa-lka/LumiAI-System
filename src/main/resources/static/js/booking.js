@@ -216,7 +216,23 @@ function calculateCgvCart() {
 
   document.getElementById("sum-fnb").innerText = totalFnbItems + " Combo";
   currentPriceTotal = total;
-  let finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
+
+  let discount = 0;
+
+  if (window.currentVoucher) {
+    if (currentVoucher.discountType === "PERCENT") {
+      discount = (currentPriceTotal * currentVoucher.discountValue) / 100;
+
+      if (currentVoucher.maxDiscount != null) {
+        discount = Math.min(discount, Number(currentVoucher.maxDiscount));
+      }
+    } else {
+      discount = Number(currentVoucher.discountValue);
+    }
+  }
+  appliedVoucherDiscount = discount;
+  const finalTotal = Math.max(currentPriceTotal - discount, 0);
+  window.finalPriceTotal = finalTotal;
   document.getElementById("sum-total").innerText =
     finalTotal.toLocaleString("vi-VN") + " đ";
 }
@@ -287,7 +303,7 @@ function goToBookingStep(step) {
             <p style="font-size: 16px;"><strong>Tổng cộng (Chưa giảm): <span style="color:#e71a0f;">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></strong></p>
         `;
     document.getElementById("review-final-total").innerText =
-      currentPriceTotal.toLocaleString("vi-VN") + " đ";
+      window.finalPriceTotal.toLocaleString("vi-VN") + " đ";
   } else if (step === 4) {
     if (rightColumn) rightColumn.style.display = "none";
     if (layoutGrid) layoutGrid.style.gridTemplateColumns = "1fr";
@@ -359,24 +375,6 @@ function selectPaymentGatewayType(type, element) {
   }
 }
 
-function applyVoucher() {
-  const code = document
-    .getElementById("voucher-input")
-    .value.trim()
-    .toUpperCase();
-  if (code === "LAS20") {
-    appliedVoucherDiscount = 0.2;
-    alert("Áp dụng thành công Voucher giảm 20%!");
-  } else {
-    appliedVoucherDiscount = 0;
-    alert("Mã Voucher không hợp lệ hoặc đã hết hạn!");
-  }
-  const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
-  document.getElementById("review-final-total").innerText =
-    finalTotal.toLocaleString("vi-VN") + " đ";
-  calculateCgvCart();
-}
-
 function openCheckoutReview() {
   const currentMovie = document.getElementById("cgv-combo-movie").value;
   let fnbHtml = fnbMenu
@@ -397,23 +395,20 @@ function openCheckoutReview() {
         <p><strong>Tổng cộng (Chưa giảm):</strong> ${currentPriceTotal.toLocaleString("vi-VN")} đ</p>
     `;
 
-  appliedVoucherDiscount = 0;
-  document.getElementById("voucher-input").value = "";
   document.getElementById("review-final-total").innerText =
-    currentPriceTotal.toLocaleString("vi-VN") + " đ";
+    window.finalPriceTotal.toLocaleString("vi-VN") + " đ";
   document.getElementById("checkout-review-modal").classList.add("open");
 }
 
 function closeCheckoutReview() {
   document.getElementById("checkout-review-modal").classList.remove("open");
-  appliedVoucherDiscount = 0;
   calculateCgvCart();
 }
 
 function processToPaymentGateway() {
   closeCheckoutReview();
 
-  const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
+  const finalTotal = window.finalPriceTotal;
   if (!selectedPaymentGateway) {
     alert("Vui lòng chọn phương thức thanh toán!");
     return;
@@ -631,8 +626,8 @@ function executeFinalCheckout() {
     showtime: showtimeId,
     seats: selectedSeats,
     email: currentEmail,
-    total: currentPriceTotal,
-    discount: appliedVoucherDiscount,
+    voucherCode: document.getElementById("voucher-input")?.value.trim() || "",
+    total: window.finalPriceTotal,
     fnb: fnbMenu.map((item) => ({ ...item })),
   };
   console.log("Checkout payload:", checkoutPayload);
@@ -681,7 +676,7 @@ function executeFinalCheckout() {
           time: selectedShowtime,
           seats: [...selectedSeats],
           fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
-          total: currentPriceTotal * (1 - appliedVoucherDiscount),
+          total: window.finalPriceTotal,
           status: "Đã thanh toán",
         };
         userPastInvoices.unshift(invoiceObj);
@@ -822,6 +817,41 @@ function resetHoldState() {
   document.getElementById("btn-main-action").style.background = "#e71a0f";
 
   currentBookingStep = 1;
+}
+
+function applyVoucher() {
+  const code = document.getElementById("voucher-input").value.trim();
+
+  if (code === "") {
+    alert("Vui lòng nhập mã voucher!");
+    return;
+  }
+
+  fetch("http://localhost:8080/api/vouchers/" + code)
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error("Voucher không hợp lệ!");
+      }
+      return res.json();
+    })
+    .then((voucher) => {
+      console.log("Voucher =", voucher);
+      console.log("discountValue =", voucher.discountValue);
+      console.log("discountType =", voucher.discountType);
+      console.log("maxDiscount =", voucher.maxDiscount);
+      window.currentVoucher = voucher;
+
+      calculateCgvCart();
+
+      alert("Áp dụng voucher thành công!");
+    })
+    .catch((err) => {
+      appliedVoucherDiscount = 0;
+
+      calculateCgvCart();
+
+      alert(err.message);
+    });
 }
 
 window.addEventListener("load", checkVnpayReturn);
