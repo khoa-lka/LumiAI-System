@@ -80,7 +80,7 @@ function renderDynamicShowtimeGrid() {
   timeGrid.innerHTML = "";
 
   if (serverData.showtimes.length === 0) {
-    timeGrid.innerHTML = "<p style='color:#666'>Không có suất chiếu.</p>";
+    timeGrid.innerHTML = "<p style='color:#a8a8b3'>Không có suất chiếu.</p>";
     return;
   }
 
@@ -714,10 +714,10 @@ function executeFinalCheckout() {
         const beautifulTicketHTML = `
             <div style="text-align: center; margin-bottom: 25px;">
                 <h2 style="color: #10B981; margin-bottom: 10px; font-size: 28px;">ĐẶT VÉ THÀNH CÔNG!</h2>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 1px solid #ccc; padding: 5px;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 1px solid rgba(255,255,255,0.15); padding: 5px;">
                 <p style="color: #222; font-weight: bold; font-size: 13px; margin-top: 10px;">Hệ thống cũng đã gửi 1 bản sao vào Email của bạn.</p>
             </div>
-            <div style="background: #fdfcf7; padding: 25px 40px; border: 2px dashed #ccc; border-radius: 8px; text-align: left; display: inline-block; min-width: 90%; margin: 0 auto; box-sizing: border-box;">
+            <div style="background: #0b0b0e; padding: 25px 40px; border: 2px dashed rgba(255,255,255,0.15); border-radius: 8px; text-align: left; display: inline-block; min-width: 90%; margin: 0 auto; box-sizing: border-box;">
                 <p><strong>Mã vé:</strong> <span style="color:red; font-size: 22px;">${invoiceObj.id}</span></p>
                 <p><strong>Phim:</strong> ${invoiceObj.movie}</p>
                 <p><strong>Suất chiếu:</strong> ${invoiceObj.time} ngày ${invoiceObj.date}</p>

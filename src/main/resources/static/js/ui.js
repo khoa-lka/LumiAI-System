@@ -181,7 +181,7 @@ function loadEventsFromDatabase() {
           ev.imageUrl ||
           "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
         container.innerHTML += `
-            <div style="border: 1px solid #ddd; background: #fff; padding: 5px;">
+            <div style="border: 1px solid rgba(255,255,255,0.12); background: #17171b; padding: 5px;">
                 <img src="${img}" style="width: 100%; display: block;" alt="${ev.title}">
             </div>
         `;
@@ -217,18 +217,18 @@ function renderFnbMenu() {
   container.innerHTML = "";
   fnbMenu.forEach((item, index) => {
     container.innerHTML += `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid #ddd; padding:15px; border-radius:8px; margin-bottom:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#17171b; border:1px solid rgba(255,255,255,0.12); padding:15px; border-radius:8px; margin-bottom:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
                     <div style="display:flex; align-items:center; gap:15px;">
-                        <div style="font-size:30px; background:#f4f2ec; width:60px; height:60px; display:flex; justify-content:center; align-items:center; border-radius:8px;">${item.icon}</div>
+                        <div style="font-size:30px; background:#0b0b0e; width:60px; height:60px; display:flex; justify-content:center; align-items:center; border-radius:8px;">${item.icon}</div>
                         <div style="text-align:left;">
-                            <div style="font-weight:bold; font-size:14px; color:#333;">${item.name}</div>
+                            <div style="font-weight:bold; font-size:14px; color:#e4e4e7;">${item.name}</div>
                             <div style="color:#e71a0f; font-weight:bold; font-size:14px; margin-top:5px;">${item.price.toLocaleString("vi-VN")} đ</div>
                         </div>
                     </div>
                     <div style="display:flex; align-items:center; gap:12px;">
-                        <button style="width:30px; height:30px; border:1px solid #ccc; background:#fff; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, -1)">-</button>
+                        <button style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, -1)">-</button>
                         <span style="font-weight:bold; width:20px; text-align:center; font-size: 16px;">${item.qty}</span>
-                        <button style="width:30px; height:30px; border:1px solid #ccc; background:#fff; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, 1)">+</button>
+                        <button style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, 1)">+</button>
                     </div>
                 </div>`;
   });
@@ -429,10 +429,10 @@ function renderCgvInterface() {
           serverData.showtimes = actualShowtimes;
 
           if (actualShowtimes.length === 0) {
-            timeGrid.innerHTML = `<p style="color:#777; font-size:13px; grid-column: span 4; text-align:center; padding: 10px 0;">Hôm nay rạp chưa xếp lịch chiếu phim này!</p>`;
+            timeGrid.innerHTML = `<p style="color:#9a9aa3; font-size:13px; grid-column: span 4; text-align:center; padding: 10px 0;">Hôm nay rạp chưa xếp lịch chiếu phim này!</p>`;
             if (document.getElementById("cgv-seat-grid")) {
               document.getElementById("cgv-seat-grid").innerHTML =
-                `<p style="color:#777; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
+                `<p style="color:#9a9aa3; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
             }
             return;
           }
@@ -467,7 +467,7 @@ function renderCgvInterface() {
   const seatGrid = document.getElementById("cgv-seat-grid");
   if (seatGrid) {
     if (!selectedShowtime || !window.currentSelectedShowtimeId) {
-      seatGrid.innerHTML = `<p style="color:#777; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
+      seatGrid.innerHTML = `<p style="color:#9a9aa3; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
       return;
     }
 

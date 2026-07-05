@@ -85,7 +85,7 @@ function submitCgvLogin(event) {
           authLinkBox.style.cursor = "pointer";
           authLinkBox.innerHTML = `
               <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}! 
-              <span onclick="confirmLogoutAction(event)" style="color: #0066cc; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+              <span onclick="confirmLogoutAction(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
           `;
           document.getElementById("top-bar-ticket-link").innerHTML =
             `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;

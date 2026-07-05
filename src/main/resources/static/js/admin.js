@@ -117,7 +117,7 @@ function renderAdminWebhook() {
       tbody.innerHTML = hooks
         .map(
           (h) =>
-            `<tr><td>${h.time}</td><td><b>${h.source}</b></td><td style="font-family:monospace; color:#555;">${h.payload}</td><td>${h.http}</td></tr>`,
+            `<tr><td>${h.time}</td><td><b>${h.source}</b></td><td style="font-family:monospace; color:#c4c4cc;">${h.payload}</td><td>${h.http}</td></tr>`,
         )
         .join("");
     })
