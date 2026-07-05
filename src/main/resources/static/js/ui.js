@@ -226,9 +226,9 @@ function renderFnbMenu() {
                         </div>
                     </div>
                     <div style="display:flex; align-items:center; gap:12px;">
-                        <button style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, -1)">-</button>
+                        <button class="fnb-qty-btn" style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, -1)">-</button>
                         <span style="font-weight:bold; width:20px; text-align:center; font-size: 16px;">${item.qty}</span>
-                        <button style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, 1)">+</button>
+                        <button class="fnb-qty-btn" style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, 1)">+</button>
                     </div>
                 </div>`;
   });

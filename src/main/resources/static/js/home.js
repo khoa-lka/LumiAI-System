@@ -104,27 +104,8 @@ function loadBannersFromDatabase() {
       });
 
       carousel.innerHTML = htmlContent;
-      renderHeroDots();
     })
     .catch((err) => console.error("🚨 Lỗi khi tải banner từ DB: ", err));
-}
-
-function renderHeroDots() {
-  const dotsBox = document.getElementById("las-hero-dots");
-  if (!dotsBox || totalBanners <= 1) {
-    if (dotsBox) dotsBox.innerHTML = "";
-    return;
-  }
-  let html = "";
-  for (let i = 0; i < totalBanners; i++) {
-    html += `<span class="hero-dot ${i === currentBannerIndex ? "active" : ""}" onclick="jumpToBanner(${i})"></span>`;
-  }
-  dotsBox.innerHTML = html;
-}
-
-function jumpToBanner(i) {
-  currentBannerIndex = i;
-  updateBannerMovement();
 }
 
 function updateBannerMovement() {
@@ -133,7 +114,6 @@ function updateBannerMovement() {
     let percentage = -(currentBannerIndex * (100 / totalBanners));
     carousel.style.transform = `translateX(${percentage}%)`;
   }
-  renderHeroDots();
 }
 
 function moveBannerRight() {
@@ -295,13 +275,13 @@ function renderFnbMenu() {
                   <div style="font-size:30px; background:#0b0b0e; width:60px; height:60px; display:flex; justify-content:center; align-items:center; border-radius:8px;">${item.icon}</div>
                   <div style="text-align:left;">
                       <div style="font-weight:bold; font-size:14px; color:#e4e4e7;">${item.name}</div>
-                      <div style="color:#f2540c; font-weight:bold; font-size:14px; margin-top:5px;">${item.price.toLocaleString("vi-VN")} đ</div>
+                      <div style="color:#e71a0f; font-weight:bold; font-size:14px; margin-top:5px;">${item.price.toLocaleString("vi-VN")} đ</div>
                   </div>
               </div>
               <div style="display:flex; align-items:center; gap:12px;">
-                  <button style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, -1)">-</button>
+                  <button class="fnb-qty-btn" style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, -1)">-</button>
                   <span style="font-weight:bold; width:20px; text-align:center; font-size: 16px;">${item.qty}</span>
-                  <button style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, 1)">+</button>
+                  <button class="fnb-qty-btn" style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, 1)">+</button>
               </div>
           </div>`;
   });
@@ -487,12 +467,12 @@ function renderTransactionHistory() {
 
   historyZone.innerHTML = "";
   userPastInvoices.forEach((inv) => {
-    // 🌟 FIX LỖI TÀNG HÌNH: Ép màu đỏ thương hiệu thật (#f2540c) thay vì dùng biến hệ thống cũ var(--cgv-red)
+    // 🌟 FIX LỖI TÀNG HÌNH: Ép màu đỏ thương hiệu thật (#e71a0f) thay vì dùng biến hệ thống cũ var(--cgv-red)
     // Đồng thời thêm bộ lọc cứu cánh (inv.movie || "Vé xem phim LAS Cinemas") đề phòng chuỗi dữ liệu trống
     historyZone.innerHTML += `
           <div style="border: 1px solid rgba(255,255,255,0.15); padding: 15px; margin-bottom: 10px; background: white; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
               <div style="text-align: left;">
-                  <h4 style="margin: 0 0 6px 0; color: #f2540c; font-size: 15px; font-weight: bold; text-transform: uppercase;">
+                  <h4 style="margin: 0 0 6px 0; color: #e71a0f; font-size: 15px; font-weight: bold; text-transform: uppercase;">
                       ${inv.movie ? inv.movie : "Vé xem phim LAS Cinemas"}
                   </h4>
                   <p style="margin: 0; font-size: 13px; color: #c4c4cc;">
@@ -533,17 +513,6 @@ function executeMovieRealTimeSearch() {
     activeSearchKeyword = inputField.value.trim().toLowerCase();
     window.renderCgvInterface();
   }
-}
-
-// Ô tìm kiếm nhanh trên header: đồng bộ giá trị và chuyển sang tab Phim
-function syncHeaderSearchToMovieList(value) {
-  const mainInput = document.getElementById("movie-search-input");
-  if (mainInput) mainInput.value = value;
-  if (typeof switchCgvTab === "function" && value.trim() !== "") {
-    switchCgvTab("panel-movies", "now_showing");
-  }
-  activeSearchKeyword = value.trim().toLowerCase();
-  window.renderCgvInterface();
 }
 
 function selectCgvBookingDate(dateStr) {
@@ -967,24 +936,19 @@ window.renderCgvInterface = function () {
               ? "P"
               : `T${m.age_rating || m.ageRating || "16"}`;
 
-          const durationStr = m.duration ? `${m.duration}` : "";
-          const durationHTML = durationStr
-            ? `<p class="movie-duration-row">⏱ ${durationStr}</p>`
-            : "";
-
           movieZone.innerHTML += `
                     <div class="movie-spec-card">
                         <div class="poster-wrapper-box">
                             <span class="age-label-badge">${displayAge}</span>
-                            <div class="status-badge-pill ${isNowShowing ? "badge-showing" : "badge-soon"}">${isNowShowing ? "Đang chiếu" : "Sắp chiếu"}</div>
+                            <div class="rank-ribbon ${ribbonColor}">${rankCounter}</div>
                             <div class="poster-main-body-img" onclick="viewMovieDetailText('${titleStr}', '${genreStr}')" style="background: #111; width: 100%; height: 100%;">
                                 <img src="${cleanImgUrl}" alt="${titleStr}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
                             </div>
                         </div>
                         <div class="movie-spec-info-text">
                             <h3 class="movie-spec-title" onclick="viewMovieDetailText('${titleStr}', '${genreStr}')">${titleStr}</h3>
-                            <div class="movie-genre-pill-row"><span class="genre-pill">${genreStr}</span></div>
-                            ${durationHTML}
+                            <p>Thể loại: <b>${genreStr}</b></p>
+                            ${m.duration ? `<p class="movie-spec-duration">⏱ ${m.duration} phút</p>` : ""}
                         </div>
                         <div class="movie-spec-action-zone">${actionBtnHTML}</div>
                     </div>
@@ -1109,7 +1073,7 @@ window.goToBookingStep = function (step) {
     if (rightColumn) rightColumn.style.display = "block";
     if (mainBtn) {
       mainBtn.innerText = "Tiếp Tục";
-      mainBtn.style.background = "#f2540c";
+      mainBtn.style.background = "#e71a0f";
     }
     if (backBtn) {
       backBtn.innerText = "←";
@@ -1118,7 +1082,7 @@ window.goToBookingStep = function (step) {
   } else if (step === 2) {
     if (mainBtn) {
       mainBtn.innerText = "Đến Thanh Toán";
-      mainBtn.style.background = "#f2540c";
+      mainBtn.style.background = "#e71a0f";
     }
     if (backBtn) {
       backBtn.innerText = "← Quay Lại";
@@ -1155,7 +1119,7 @@ window.goToBookingStep = function (step) {
             <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
             <p><strong>Bắp nước:</strong></p>${fnbHtml || "<p>Không có</p>"}
             <hr style="margin: 10px 0;">
-            <p style="font-size: 16px;"><strong>Tổng cộng (Chưa giảm): <span style="color:#f2540c;">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></strong></p>
+            <p style="font-size: 16px;"><strong>Tổng cộng (Chưa giảm): <span style="color:#e71a0f;">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></strong></p>
         `;
     }
   } else if (step === 4) {
@@ -1249,8 +1213,8 @@ window.selectPaymentGatewayType = function (type, element) {
     element.classList.add("active");
     const circle = element.querySelector(".option-check-circle");
     if (circle) {
-      circle.style.borderColor = "#f2540c";
-      circle.style.color = "#f2540c";
+      circle.style.borderColor = "#e71a0f";
+      circle.style.color = "#e71a0f";
     }
   }
 };
@@ -1428,11 +1392,11 @@ window.executeFinalCheckout = function () {
             <p style="color: #d4d4d8; font-weight: bold; font-size: 13px; margin-top: 12px;">LAS Cinemas đã gửi một bản sao hóa đơn vé qua Email của bạn.</p>
         </div>
         <div style="background: #0b0b0e; padding: 25px; border: 2px dashed #cca23b; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto; box-sizing: border-box; color:#222;">
-            <p><strong>Mã tra cứu vé:</strong> <span style="color:#f2540c; font-size: 20px; font-family: monospace; font-weight:bold;">${invoiceObj.id}</span></p>
+            <p><strong>Mã tra cứu vé:</strong> <span style="color:#e71a0f; font-size: 20px; font-family: monospace; font-weight:bold;">${invoiceObj.id}</span></p>
             <p><strong>Tên bộ phim:</strong> <b>${invoiceObj.movie}</b></p>
             <p><strong>Suất chiếu rạp:</strong> Suất ${invoiceObj.time} | Ngày ${invoiceObj.date}</p>
             <hr style="margin: 15px 0; border: none; border-top: 1px dashed rgba(255,255,255,0.15);">
-            <p><strong>🎟️ Vị trí ghế ngồi:</strong> <span style="color:#f2540c; font-weight:bold;">${invoiceObj.seats.join(", ")}</span></p>
+            <p><strong>🎟️ Vị trí ghế ngồi:</strong> <span style="color:#e71a0f; font-weight:bold;">${invoiceObj.seats.join(", ")}</span></p>
             <p><strong>🍿 Dịch vụ kèm theo:</strong></p><ul>${fnbTicketHtml || "<li>Không có dịch vụ ăn kèm</li>"}</ul>
             <hr style="margin: 15px 0; border: none; border-top: 1px dashed rgba(255,255,255,0.15);">
             <p style="font-size: 18px; text-align: right; margin: 0;">Tổng tiền: <span style="color:#10B981; font-weight:bold;">${invoiceObj.total.toLocaleString("vi-VN")} đ</span></p>
@@ -1518,7 +1482,7 @@ window.resetHoldState = function () {
   const mainBtn = document.getElementById("btn-main-action");
   if (mainBtn) {
     mainBtn.innerText = "Tiếp tục";
-    mainBtn.style.background = "#f2540c";
+    mainBtn.style.background = "#e71a0f";
   }
   window.currentBookingStep = 1;
 };
@@ -1843,7 +1807,7 @@ function generateCgvDateSlider() {
     const color = selectedDateStr === fullDateId ? "#fff" : "#555";
     const border = selectedDateStr === fullDateId ? "#111" : "#ccc";
     container.innerHTML += `
-          <div style="flex: 0 0 auto; min-width: 60px; background:${bg}; color:${color}; border:2px solid ${border}; border-radius:6px; cursor:pointer; text-align:center; padding: 10px 5px; box-sizing: border-box; transition: all 0.2s;"
+          <div class="date-slider-item" style="flex: 0 0 auto; min-width: 60px; background:${bg}; color:${color}; border:2px solid ${border}; border-radius:6px; cursor:pointer; text-align:center; padding: 10px 5px; box-sizing: border-box; transition: all 0.2s;"
           onclick="selectCgvBookingDate('${fullDateId}')">
               <div style="font-size:11px; margin-bottom: 2px;">${dayName}</div>
               <div style="font-size:22px; font-weight:bold; line-height: 1;">${dateNum}</div>
@@ -1878,7 +1842,7 @@ function resetHoldState() {
   document.getElementById("hold-timer").style.display = "none";
   document.getElementById("btn-main-action").innerText =
     "Giữ Ghế Tạm Temporarily";
-  document.getElementById("btn-main-action").style.background = "#f2540c";
+  document.getElementById("btn-main-action").style.background = "#e71a0f";
 }
 
 function switchProfileSubTab(sub) {
@@ -2172,7 +2136,7 @@ async function sendChatMessageToServer() {
 
   // 1. Hiển thị ngay lập tức tin nhắn của Khách hàng lên khung chat
   msgZone.innerHTML += `
-    <div style="align-self: flex-end; background-color: #f2540c; color: white; padding: 10px 14px; border-radius: 8px; max-width: 85%; font-size: 13.5px; line-height: 1.4; font-weight: bold; box-shadow: 0 2px 5px rgba(242, 84, 12,0.15); word-break: break-word;">
+    <div style="align-self: flex-end; background-color: #e71a0f; color: white; padding: 10px 14px; border-radius: 8px; max-width: 85%; font-size: 13.5px; line-height: 1.4; font-weight: bold; box-shadow: 0 2px 5px rgba(231,26,15,0.15); word-break: break-word;">
       ${userText}
     </div>
   `;
@@ -2288,7 +2252,7 @@ async function sendChatMessageToServer() {
 
     // Hiển thị câu trả lời thông minh của Trợ lý ảo lên màn hình
     msgZone.innerHTML += `
-      <div style="align-self: flex-start; background-color: #0b0b0e; color: #e4e4e7; padding: 10px 14px; border-radius: 8px; max-width: 85%; font-size: 13.5px; line-height: 1.4; border-left: 3px solid #f2540c; word-break: break-word;">
+      <div style="align-self: flex-start; background-color: #0b0b0e; color: #e4e4e7; padding: 10px 14px; border-radius: 8px; max-width: 85%; font-size: 13.5px; line-height: 1.4; border-left: 3px solid #e71a0f; word-break: break-word;">
         ${aiResponseText}
       </div>
     `;
