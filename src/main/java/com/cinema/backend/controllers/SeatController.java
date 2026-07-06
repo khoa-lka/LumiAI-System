@@ -1,4 +1,5 @@
 package com.cinema.backend.controllers;
+
 import com.cinema.backend.repositories.ShowtimeRepository; // Thêm dòng này
 import com.cinema.backend.repositories.TicketRepository;
 import com.cinema.backend.entities.Seat;
@@ -12,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-
 import java.util.*;
 
 @RestController
@@ -21,10 +21,8 @@ import java.util.*;
 
 public class SeatController {
 
-     @Autowired
+    @Autowired
     private SeatRepository seatRepository;
-
-
 
     @Autowired
     private ShowtimeRepository showtimeRepository;
@@ -32,20 +30,14 @@ public class SeatController {
     @Autowired
     private VoucherService voucherService;
 
-
-
     @Autowired
     private TicketRepository ticketRepository;
-
-  
-
-    
 
     // 🚀 API: Lấy ma trận ghế
     @GetMapping("/matrix")
     public List<Map<String, Object>> getSeatsMatrix(@RequestParam("showtimeId") Integer showtimeId) {
         List<Map<String, Object>> result = new ArrayList<>();
-        
+
         try {
             Showtime showtime = showtimeRepository.findById(showtimeId)
                     .orElseThrow(() -> new RuntimeException("Showtime không tồn tại"));
@@ -61,7 +53,8 @@ public class SeatController {
                 System.out.println("⚠️ Chưa có vé được bán cho suất chiếu này, chạy danh sách trống!");
             }
 
-            // 2. Map dữ liệu trả về cho Front-End (Đảm bảo có đầy đủ seatId và camelCase chuẩn)
+            // 2. Map dữ liệu trả về cho Front-End (Đảm bảo có đầy đủ seatId và camelCase
+            // chuẩn)
             for (Seat seat : seats) {
                 String seatCode = (seat.getSeatRow() + seat.getSeatNumber()).trim().toUpperCase();
                 Map<String, Object> item = new HashMap<>();
@@ -91,11 +84,11 @@ public class SeatController {
 
     // 🚀 LUỒNG CHECKOUT: Đặt vé và lưu thông tin Ticket vào database mẫu của nhóm
     @PostMapping("/checkout")
-@Transactional
-public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
+    @Transactional
+    public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
 
-    Map<String, Object> response = new HashMap<>();
-    System.out.println("===== NEW CHECKOUT =====");
+        Map<String, Object> response = new HashMap<>();
+        System.out.println("===== NEW CHECKOUT =====");
 
         try {
             System.out.println("===== NEW CHECKOUT =====");
@@ -119,8 +112,7 @@ public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
                 Integer number = Integer.parseInt(seatCode.substring(1));
 
                 Optional<Seat> seatOpt = seatRepository.findByRoomIdAndSeatRowAndSeatNumber(
-                        showtime.getRoomId(), row, number
-                );
+                        showtime.getRoomId(), row, number);
 
                 Seat seat = seatOpt.orElseThrow(() -> new RuntimeException("Seat not found: " + seatCode));
 
@@ -137,58 +129,27 @@ public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
                 ticket.setTicketCode(ticketCode);
                 ticket.setQrCode(ticketCode);
 
-<<<<<<< HEAD
-            savedTickets.add(ticketRepository.save(ticket));
-        }
-
-
-        String voucherCode = (String) payload.get("voucherCode");
-        System.out.println("VoucherCode = " + voucherCode);
-
-        if (voucherCode != null && !voucherCode.isBlank()) {
-           boolean ok = voucherService.useVoucher(voucherCode);
-            System.out.println("Use voucher = " + ok);
-        }
-
-        response.put("success", true);
-        response.put("ticketId", savedTickets.get(0).getTicketCode());
-        response.put("totalTickets", savedTickets.size());
-
-        return response;
-
-    } catch (Exception e) {
-        response.put("success", false);
-        response.put("message", e.getMessage());
-        return response;
-    }
-}
-}
-
-=======
                 savedTickets.add(ticketRepository.save(ticket));
             }
 
-            // Trả về response thành công khớp với đoạn đuôi file của em
-            // dùng voucher
-    String voucherCode = (String) payload.get("voucherCode");
+            String voucherCode = (String) payload.get("voucherCode");
+            System.out.println("VoucherCode = " + voucherCode);
 
-    if (voucherCode != null && !voucherCode.isBlank()) {
-        boolean ok = voucherService.useVoucher(voucherCode);
-        System.out.println("Use voucher = " + ok);
+            if (voucherCode != null && !voucherCode.isBlank()) {
+                boolean ok = voucherService.useVoucher(voucherCode);
+                System.out.println("Use voucher = " + ok);
+            }
+
+            response.put("success", true);
+            response.put("ticketId", savedTickets.get(0).getTicketCode());
+            response.put("totalTickets", savedTickets.size());
+
+            return response;
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return response;
+        }
     }
-
-    response.put("success", true);
-    response.put("ticketId", savedTickets.get(0).getTicketCode());
-    response.put("totalTickets", savedTickets.size());
-
-    return response;
-
 }
-catch(Exception e){
-
-    response.put("success", false);
-    response.put("message", e.getMessage());
-
-    return response;
-}}}
->>>>>>> c56321bf71d226c6d012477e4d5386ac1efc1107
