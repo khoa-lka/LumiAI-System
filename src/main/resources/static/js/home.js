@@ -581,7 +581,17 @@ function submitCgvLogin() {
       if (resData.status === "success") {
         isUserLoggedInState = true;
         let uData = resData.data;
+localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
+        sessionStorage.setItem("roleId", uData.roleId);
 
+        // 🌟 ĐIỀU HƯỚNG DỰA TRÊN ROLE
+        if (uData.roleId === 2) {
+          window.location.href = "admin.html";
+          return; // Dừng hàm ngay lập tức
+        } else if (uData.roleId === 1) {
+          window.location.href = "manager.html";
+          return; // Dừng hàm ngay lập tức
+        }
         alert(`Chào mừng thành viên: ${uData.fullName} đăng nhập thành công!`);
         closeAuthModal();
 
@@ -1554,7 +1564,6 @@ window.lasPromoList = [
 ];
 
 // Hàm tự động vẽ danh sách ưu đãi động ra ngoài trang chủ
-// Tìm hàm này và sửa lại 2 dòng đầu hàm như sau:
 window.renderLasPromoGrid = function () {
   const promoNewsContainer = document.getElementById("cgv-event-grid-news");
   // 🚀 Cào dữ liệu động trực tiếp từ Database SQL Server qua Spring Boot
@@ -1601,48 +1610,23 @@ window.renderLasPromoGrid = function () {
     );
 };
 
-// ==========================================================================
-// 🌟 THAY THẾ HOÀN TOÀN HÀM VIEWPROMODETAILTEXT CŨ THÀNH BẢN PRO NÀY:
-// ==========================================================================
+// Hàm kích hoạt nhảy sang tab chi tiết ưu đãi và đổ dữ liệu
 window.viewPromoDetailText = function (promoId) {
-  if (!window.lasPromoList) return;
-
-  // Tìm kiếm đối tượng bài viết ưu đãi khớp với ID click chuột
+  // Đồng bộ ép kiểu dữ liệu về chuỗi hoặc số để so sánh khớp với ID dưới DB gửi lên
   const targetPromo = window.lasPromoList.find(
     (p) => String(p.id) === String(promoId),
   );
   if (!targetPromo) return;
 
-  // 1. Đồng bộ Tiêu đề bài viết khuyên mãi
-  const titleEl = document.getElementById("detail-promo-title");
-  if (titleEl) {
-    titleEl.innerText = targetPromo.title || "Chương trình ưu đãi đặc biệt";
-  }
+  document.getElementById("detail-promo-title").innerText = targetPromo.title;
+  document.getElementById("detail-promo-date").innerText =
+    "Thời gian áp dụng: " +
+    (targetPromo.startDate || targetPromo.start_date) +
+    " đến " +
+    (targetPromo.endDate || targetPromo.end_date);
+  document.getElementById("detail-promo-content").innerHTML =
+    targetPromo.content;
 
-  // 2. Bọc giáp lỗi hiển thị ngày tháng (Quét sạch mọi kiểu đặt tên của Java & SQL)
-  const dateEl = document.getElementById("detail-promo-date");
-  if (dateEl) {
-    let start = targetPromo.startDate || targetPromo.start_date || "";
-    let end = targetPromo.endDate || targetPromo.end_date || "";
-    if (start && end) {
-      dateEl.innerText = "Thời gian áp dụng: " + start + " đến " + end;
-    } else if (targetPromo.date) {
-      dateEl.innerText = "Thời gian áp dụng: " + targetPromo.date;
-    } else {
-      dateEl.innerText = "Thời gian áp dụng: Đang diễn ra trong tháng";
-    }
-  }
-
-  // 3. Đổ nội dung mô tả chi tiết chương trình ưu đãi rạp phim
-  const contentEl = document.getElementById("detail-promo-content");
-  if (contentEl) {
-    contentEl.innerHTML =
-      targetPromo.content || "Chưa có nội dung mô tả chi tiết chương trình.";
-  }
-
-  // 4. FIX TRIỆT ĐỂ LỖI POSTER: Vẽ ảnh full kích thước, xóa sạch chữ "IMAGE" thô
-  // Tìm khối số 4 xử lý ảnh trong hàm window.viewPromoDetailText và sửa lại như sau:
-  // 4. FIX TRIỆT ĐỂ LỖI POSTER: Sử dụng thẻ img trực tiếp để lấy trọn vẹn 100% hình ảnh không bị cắt tỉa
   const imgBoxEl = document.getElementById("detail-promo-img-box");
   if (imgBoxEl) {
     let validImg =
@@ -1685,8 +1669,10 @@ window.viewPromoDetailText = function (promoId) {
   window.switchCgvTab("panel-news-detail");
 };
 
+// Tìm đến sự kiện tải trang sẵn có (DOMContentLoaded) ở cuối file home.js của em, thêm dòng này vào:
 window.addEventListener("DOMContentLoaded", () => {
-  window.renderLasPromoGrid();
+  // ... các hàm có sẵn của em (generateCgvDateSlider, fetchSyncData...)
+  window.renderLasPromoGrid(); // 🌟 Gọi hàm vẽ tin tức ưu đãi lên trang chủ
 });
 
 // ==========================================================================

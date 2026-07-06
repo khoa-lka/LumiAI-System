@@ -40,7 +40,12 @@ public class AccountController {
         }
 
         Account account = accountOpt.get();
-
+if ("Banned".equalsIgnoreCase(account.getStatus())) {
+    return ResponseEntity.status(403).body(Map.of(
+        "status", "fail",
+        "message", "Tài khoản của bạn đã bị khóa bởi Quản trị viên!"
+    ));
+}
         // So sánh mật khẩu thô trực tiếp
         if (!account.getPasswordHash().equals(password)) {
             return ResponseEntity.status(401).body(Map.of(

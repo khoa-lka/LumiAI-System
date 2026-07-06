@@ -1,11 +1,11 @@
 package com.cinema.backend.controllers;
-
+import com.cinema.backend.repositories.ShowtimeRepository; // Thêm dòng này
+import com.cinema.backend.repositories.TicketRepository;
 import com.cinema.backend.entities.Seat;
 import com.cinema.backend.entities.Showtime;
 import com.cinema.backend.entities.Ticket;
 import com.cinema.backend.repositories.SeatRepository;
-import com.cinema.backend.repositories.ShowtimeRepository;
-import com.cinema.backend.repositories.TicketRepository;
+
 import com.cinema.backend.service.VoucherService;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -18,12 +18,13 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/seats")
 @CrossOrigin(origins = "*")
+
 public class SeatController {
 
      @Autowired
     private SeatRepository seatRepository;
-@Autowired
-    private TicketRepository ticketRepository;
+
+
 
     @Autowired
     private ShowtimeRepository showtimeRepository;
@@ -31,7 +32,16 @@ public class SeatController {
     @Autowired
     private VoucherService voucherService;
 
-    // 🚀 ĐÓN ĐÚNG API: /api/seats/matrix?showtimeId=...
+
+
+    @Autowired
+    private TicketRepository ticketRepository;
+
+  
+
+    
+
+    // 🚀 API: Lấy ma trận ghế
     @GetMapping("/matrix")
     public List<Map<String, Object>> getSeatsMatrix(@RequestParam("showtimeId") Integer showtimeId) {
         List<Map<String, Object>> result = new ArrayList<>();
@@ -81,9 +91,11 @@ public class SeatController {
 
     // 🚀 LUỒNG CHECKOUT: Đặt vé và lưu thông tin Ticket vào database mẫu của nhóm
     @PostMapping("/checkout")
-    @Transactional
-    public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
-        Map<String, Object> response = new HashMap<>();
+@Transactional
+public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
+
+    Map<String, Object> response = new HashMap<>();
+    System.out.println("===== NEW CHECKOUT =====");
 
         try {
             System.out.println("===== NEW CHECKOUT =====");
