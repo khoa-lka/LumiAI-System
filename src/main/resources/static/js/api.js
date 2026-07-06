@@ -94,6 +94,13 @@ const API = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(cancelData),
     }).then(handleResponse),
+    // 🚀 THÊM MỚI: Gọi API gửi yêu cầu tạo suất chiếu xuống Spring Boot
+  addShowtime: (showtimeData) =>
+    fetch(`${BASE_URL}/showtimes/add`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(showtimeData),
+    }).then(handleResponse),
 
   // 5. ADMIN/MANAGER
   getAdminUsers: () => fetch(`${BASE_URL}/admin/users`).then(handleResponse),

@@ -791,3 +791,296 @@ window.openQuickRestockModal = function() {
     })
     .catch(err => alert("Lỗi khi nhập hàng: " + err.message));
 };
+
+// ==========================================================================
+// 🚀 ENGINE XỬ LÝ MA TRẬN LỊCH CHIẾU ĐỘNG & CHECK CONFLICT TỰ ĐỘNG
+// ==========================================================================
+
+window.loadManagerMatrix = function() {
+  const dateInput = document.getElementById("mp-matrix-date-input");
+  const trackRoom1 = document.getElementById("matrix-track-room-1");
+  const trackRoom2 = document.getElementById("matrix-track-room-2");
+
+  if (!trackRoom1 || !trackRoom2) return;
+
+  // 1. Tự động mồi ngày hôm nay nếu Manager chưa chọn ngày cụ thể
+  if (dateInput && !dateInput.value) {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, "0");
+    const d = String(today.getDate()).padStart(2, "0");
+    dateInput.value = `${y}-${m}-${d}`;
+  }
+
+  const selectedDate = dateInput.value;
+  trackRoom1.innerHTML = '<p style="color:#777;font-size:12px;padding:15px;">Đang quét phòng 1...</p>';
+  trackRoom2.innerHTML = '<p style="color:#777;font-size:12px;padding:15px;">Đang quét phòng 2...</p>';
+
+  // 2. Chặn lỗi: Nếu danh sách phim trống, gọi nạp phim trước rồi chạy lại
+  if (!window.moviesList || window.moviesList.length === 0) {
+    API.getMovies()
+      .then((movies) => {
+        window.moviesList = movies;
+        window.loadManagerMatrix();
+      })
+      .catch((err) => {
+        trackRoom1.innerHTML = trackRoom2.innerHTML = `<span style="color:red;">Lỗi tải phim: ${err.message}</span>`;
+      });
+    return;
+  }
+
+  // 3. THUẬT TOÁN QUÉT ĐA LUỒNG PROMISE: Gom suất chiếu của TẤT CẢ các phim trong ngày
+  const fetchPromises = window.moviesList.map((movie) => {
+    return API.getShowtimes(movie.movieId, selectedDate)
+      .then((resData) => {
+        const rawShowtimes = resData.showtimes || [];
+        // Đính kèm tên phim vào từng suất chiếu để UI hiển thị được tiêu đề
+        return rawShowtimes.map(st => ({
+          ...st,
+          movieTitle: movie.title
+        }));
+      })
+      .catch(() => []); // Bọc lỗi phòng trường hợp có phim chưa được xếp lịch
+  });
+
+  Promise.all(fetchPromises)
+    .then((allResults) => {
+      // Gộp tất cả các mảng suất chiếu riêng lẻ thành 1 mảng tổng duy nhất
+      let globalShowtimes = allResults.flat();
+
+      // 4. THUẬT TOÁN TỰ ĐỘNG KIỂM TRA XUNG ĐỘT (CONFLICT DETECTOR)
+      // Hàm chuyển đổi chuỗi "HH:mm" ra số phút tuyệt đối trong ngày để so sánh toán học
+      const timeToMinutes = (timeStr) => {
+        const [h, m] = timeStr.split(":").map(Number);
+        return h * 60 + m;
+      };
+
+      globalShowtimes.forEach((currentSt) => {
+        currentSt.isConflict = false; // Mặc định ban đầu là không trùng
+        
+        const currentStart = timeToMinutes(currentSt.startTime);
+        const currentEnd = timeToMinutes(currentSt.endTime);
+
+        globalShowtimes.forEach((otherSt) => {
+          // Chỉ check nếu trùng phòng chiếu công vật lý và không phải là chính nó
+          if (currentSt.showtimeId !== otherSt.showtimeId && currentSt.roomId === otherSt.roomId) {
+            const otherStart = timeToMinutes(otherSt.startTime);
+            const otherEnd = timeToMinutes(otherSt.endTime);
+
+            // Công thức kiểm tra khoảng thời gian giao nhau đè lên nhau
+            if (currentStart < otherEnd && currentEnd > otherStart) {
+              currentSt.isConflict = true;
+            }
+          }
+        });
+      });
+
+      // 5. TIẾN HÀNH VẼ GIAO DIỆN (RENDER TRACK BLOCKS)
+      trackRoom1.innerHTML = "";
+      trackRoom2.innerHTML = "";
+
+      if (globalShowtimes.length === 0) {
+        trackRoom1.innerHTML = trackRoom2.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#999;font-size:12px;text-align:center;">Trống lịch. Chưa xếp suất chiếu nào trong ngày này!</div>';
+        return;
+      }
+
+      // Tổng số phút từ 08:00 đến 23:00 là 15 tiếng = 900 phút (Mốc 100% chiều rộng)
+      const TIMELINE_START_MINUTES = 8 * 60; // 480 phút
+      const TIMELINE_TOTAL_MINUTES = 15 * 60; // 900 phút
+
+      globalShowtimes.forEach((st) => {
+        const startMin = timeToMinutes(st.startTime);
+        const endMin = timeToMinutes(st.endTime);
+        const durationMin = endMin - startMin;
+
+        // Tính tọa độ vị trí bắt đầu (Left) và độ dài khối phim (Width) theo tỉ lệ %
+        let leftPercent = ((startMin - TIMELINE_START_MINUTES) / TIMELINE_TOTAL_MINUTES) * 100;
+        let widthPercent = (durationMin / TIMELINE_TOTAL_MINUTES) * 100;
+
+        // Bọc lót an toàn nếu suất chiếu nằm ngoài khung 08:00 - 23:00
+        if (leftPercent < 0) leftPercent = 0;
+        if (leftPercent + widthPercent > 100) widthPercent = 100 - leftPercent;
+
+        // Xác định màu sắc: Nếu conflict -> đỏ lòm, phòng 2 IMAX -> vàng, phòng 1 Standard -> xanh dương
+        let blockClass = st.roomId === 2 ? "mp-bg-yellow" : "mp-bg-blue";
+        let conflictHTML = "";
+
+        if (st.isConflict) {
+          blockClass = "mp-bg-red mp-conflict-box";
+          conflictHTML = `
+            <div class="mp-conflict-tooltip">
+                <div class="mp-icon-error">!</div>
+                <div>
+                  <strong>Xung đột lịch chiếu!</strong><br />
+                  <span style="font-weight: normal; color: #ffcdd2">Trùng giờ với suất khác trong phòng!</span>
+                </div>
+            </div>
+          `;
+        }
+
+        const blockHTML = `
+          <div class="mp-track-block ${blockClass}" style="left: ${leftPercent}%; width: ${widthPercent}%; min-width: 50px;" title="${st.movieTitle} (${st.startTime} - ${st.endTime})">
+              ${conflictHTML}
+              <strong>${st.movieTitle}</strong><br />
+              <span style="font-size:10px;">${st.startTime} - ${st.endTime}</span>
+          </div>
+        `;
+
+        // Phân phối khối HTML về đúng hàng phòng chiếu
+        if (st.roomId === 2) {
+          trackRoom2.innerHTML += blockHTML;
+        } else {
+          trackRoom1.innerHTML += blockHTML;
+        }
+      });
+
+      // Nếu có hàng nào trống sau khi phân phối thì ghi chữ trống lịch cho đẹp
+      if (trackRoom1.innerHTML === "") trackRoom1.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#bbb;">Trống lịch phòng 1</div>';
+      if (trackRoom2.innerHTML === "") trackRoom2.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#bbb;">Trống lịch phòng 2</div>';
+    })
+    .catch((err) => {
+      console.error("🚨 Lỗi vẽ ma trận lịch chiếu:", err);
+      trackRoom1.innerHTML = trackRoom2.innerHTML = `<span style="color:red;padding:10px;display:block;">Lỗi đồng bộ lịch chiếu: ${err.message}</span>`;
+    });
+};
+
+// ==========================================================================
+// 🚀 LOGIC ĐIỀU KHIỂN FORM TẠO MỚI SUẤT CHIẾU ĐỘNG
+// ==========================================================================
+
+// Hàm mở Modal và tự động cào danh sách phim thật từ DB đổ vào ô Dropdown chọn phim
+window.openAddShowtimeModal = function() {
+  const movieSelect = document.getElementById("st-movie-select");
+  if (!movieSelect) return;
+
+  movieSelect.innerHTML = "";
+  
+  // Kiểm tra mảng phim toàn cục đã lưu từ database
+  if (!window.moviesList || window.moviesList.length === 0) {
+    alert("Không tìm thấy danh sách phim trong bộ nhớ! Đang tải lại...");
+    return;
+  }
+
+  // Duyệt qua danh sách phim động để nạp vào Form
+  window.moviesList.forEach(m => {
+    movieSelect.innerHTML += `<option value="${m.movieId}">${m.title} (${m.duration || m.durationMinutes || 0} phút)</option>`;
+  });
+
+  // Reset các ô nhập liệu về trạng thái trống sạch sẽ
+  document.getElementById("st-start-time").value = "";
+  document.getElementById("st-ticket-price").value = "90000";
+
+  document.getElementById("mp-add-showtime-modal").style.display = "flex";
+};
+
+window.closeAddShowtimeModal = function() {
+  document.getElementById("mp-add-showtime-modal").style.display = "none";
+};
+
+// Hàm đóng gói dữ liệu và đẩy xuống SQL Server thông qua Spring Boot
+window.submitAddShowtimeForm = function() {
+  const movieId = document.getElementById("st-movie-select").value;
+  const roomId = parseInt(document.getElementById("st-room-select").value) || 1;
+  const startTimeRaw = document.getElementById("st-start-time").value; // Định dạng "HH:mm"
+  const ticketPrice = parseFloat(document.getElementById("st-ticket-price").value) || 0;
+  
+  // Bốc lấy ngày mà Manager đang xem ở ô input date ngoài ma trận lịch chiếu
+  const selectedDate = document.getElementById("mp-matrix-date-input").value;
+
+  if (!startTimeRaw) {
+    alert("Vui lòng chọn Giờ bắt đầu chiếu phim!");
+    return;
+  }
+  if (ticketPrice <= 0) {
+    alert("Giá vé cơ bản phải lớn hơn 0 đ!");
+    return;
+  }
+
+  // Định dạng lại mốc thời gian ISO chuẩn LocalDateTime gửi cho Java nhận diện: "YYYY-MM-DDTHH:mm:00"
+  const formattedStartTime = `${selectedDate}T${startTimeRaw}:00`;
+
+  // Tìm phim tương ứng để lấy thời lượng tự động tính toán giờ kết thúc (endTime) cho Java
+  const targetMovie = window.moviesList.find(m => String(m.movieId) === String(movieId));
+  const duration = targetMovie ? (targetMovie.duration || targetMovie.durationMinutes || 120) : 120;
+  
+  // Tính toán thời điểm kết thúc dựa trên giờ bắt đầu và thời lượng phim bằng Javascript
+  const startDateTime = new Date(`${selectedDate} ${startTimeRaw}`);
+  const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+  
+  const endH = String(endDateTime.getHours()).padStart(2, "0");
+  const endM = String(endDateTime.getMinutes()).padStart(2, "0");
+  const formattedEndTime = `${selectedDate}T${endH}:${endM}:00`;
+
+  // Đóng gói Dữ liệu JSON khớp chuẩn 100% với Entity Showtime.java của nhóm em
+  const payload = {
+    movie: { movieId: parseInt(movieId) }, // Khớp cấu trúc @ManyToOne Private Movie movie
+    roomId: roomId,
+    startTime: formattedStartTime, // "2026-06-20T19:00:00"
+    endTime: formattedEndTime,     // "2026-06-20T21:00:00"
+    ticketPrice: ticketPrice,
+    createdBy: 1
+  };
+
+  console.log("🚀 Payload gửi lên Spring Boot tạo suất chiếu:", payload);
+
+  // ==========================================================================
+  // 🚨 POPUP CHẶN TRÙNG LỊCH (BẰNG DATA ĐỘNG - KHÔNG XÀI DOM - GIỮ NGUYÊN CẤU TRÚC CỦA KHOA)
+  // ==========================================================================
+  const timeToMinutes = (timeStr) => {
+    const [h, m] = timeStr.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  const newStartMin = timeToMinutes(startTimeRaw);
+  const newEndMin = newStartMin + duration;
+
+  // Gọi nhanh API gom lại danh sách để so sánh chéo, đảm bảo không lệch một phút nào với DB
+  const checkPromises = window.moviesList.map((movie) => {
+    return API.getShowtimes(movie.movieId, selectedDate)
+      .then((resData) => (resData.showtimes || []).map(st => ({ ...st, movieTitle: movie.title })))
+      .catch(() => []);
+  });
+
+  Promise.all(checkPromises)
+    .then((allResults) => {
+      const currentShowtimesInDay = allResults.flat();
+      let isTimeConflict = false;
+      let conflictMovieTitle = "";
+
+      for (let st of currentShowtimesInDay) {
+        // Chỉ check nếu trùng phòng chiếu
+        if (st.roomId === roomId) {
+          const existStart = timeToMinutes(st.startTime);
+          const existEnd = timeToMinutes(st.endTime);
+
+          // Công thức giao thoa: Start1 < End2 AND End1 > Start2
+          if (newStartMin < existEnd && newEndMin > existStart) {
+            isTimeConflict = true;
+            conflictMovieTitle = st.movieTitle;
+            break;
+          }
+        }
+      }
+
+      if (isTimeConflict) {
+        alert(`❌ KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`);
+        return; // Chặn đứng tại đây, không cho gọi API add
+      }
+
+      // Nếu an toàn, thực hiện gọi API lưu xuống database y như cũ của em
+      API.addShowtime(payload)
+        .then(() => {
+          alert("✅ Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.");
+          closeAddShowtimeModal();
+          loadManagerMatrix();
+        })
+        .catch((err) => {
+          console.error(err);
+          alert("🚨 Thêm suất chiếu thất bại: " + err.message);
+        });
+    })
+    .catch((err) => {
+      console.error("Lỗi khi kiểm tra trùng lịch:", err);
+      alert("🚨 Không thể xác thực trùng lịch do lỗi kết nối!");
+    });
+};
