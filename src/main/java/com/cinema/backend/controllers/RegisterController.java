@@ -2,12 +2,11 @@ package com.cinema.backend.controllers;
 
 import com.cinema.backend.entities.Account;
 import com.cinema.backend.repositories.AccountRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,62 +16,95 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequestMapping("/api/register")
 public class RegisterController {
 
-    @Autowired
-    private AccountRepository accountRepository;
-
-    // Kho lưu trữ tạm thời mã OTP của từng Email dưới dạng bộ nhớ đệm (Cache tạm)
+    private final AccountRepository accountRepository;
     private static final Map<String, String> otpStorage = new ConcurrentHashMap<>();
+
+    public RegisterController(AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
+    }
 
     @PostMapping("/submit")
     public ResponseEntity<?> handleRegister(@RequestBody Map<String, Object> regRequest) {
         try {
-            String name = (String) regRequest.get("name");
-            String phone = (String) regRequest.get("phone");
-            String email = (String) regRequest.get("email");
-            String password = (String) regRequest.get("password");
-            
-            if (regRequest.get("birthDay") == null || regRequest.get("birthMonth") == null || regRequest.get("birthYear") == null) {
-                return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Vui lòng chọn đầy đủ ngày, tháng, năm sinh!"));
-            }
+            // 1. Trích xuất dữ liệu an toàn tuyệt đối (Không lo NullPointerException)
+            String name = regRequest.containsKey("name") && regRequest.get("name") != null 
+                          ? String.valueOf(regRequest.get("name")).trim() : "";
+            String phone = regRequest.containsKey("phone") && regRequest.get("phone") != null 
+                           ? String.valueOf(regRequest.get("phone")).trim() : "";
+            String email = regRequest.containsKey("email") && regRequest.get("email") != null 
+                           ? String.valueOf(regRequest.get("email")).trim() : "";
+            String password = regRequest.containsKey("password") && regRequest.get("password") != null 
+                              ? String.valueOf(regRequest.get("password")).trim() : "";
 
-            Integer birthDay = Integer.parseInt(regRequest.get("birthDay").toString());
-            Integer birthMonth = Integer.parseInt(regRequest.get("birthMonth").toString());
-            Integer birthYear = Integer.parseInt(regRequest.get("birthYear").toString());
-
-            if (name == null || name.isBlank() || phone == null || phone.isBlank() ||
-                email == null || email.isBlank() || password == null || password.isBlank()) {
+            // 2. Kiểm tra rỗng toàn bộ các trường bắt buộc
+            if (name.isEmpty() || phone.isEmpty() || email.isEmpty() || password.isEmpty() ||
+                !regRequest.containsKey("birthDay") || !regRequest.containsKey("birthMonth") || !regRequest.containsKey("birthYear")) {
                 return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Vui lòng điền đầy đủ các thông tin bắt buộc!"));
             }
 
+            // 3. Ràng buộc Tên (Chỉ chữ cái và khoảng trắng)
+            if (!name.matches("^[\\p{L}\\s]+$")) {
+                return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Tên không hợp lệ. Chỉ được phép nhập chữ cái và khoảng trắng!"));
+            }
+
+            // 4. Ràng buộc Số điện thoại (Bắt đầu bằng số 0, dài 10-11 số)
+            if (!phone.matches("^0\\d{9,10}$")) {
+                return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Số điện thoại không đúng định dạng (Phải từ 10-11 chữ số và bắt đầu bằng số 0)!"));
+            }
+
+            // 5. Ràng buộc Email chuẩn
+            if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Địa chỉ Email không đúng định dạng!"));
+            }
+
+            // 6. Ràng buộc độ dài Mật khẩu
+            if (password.length() < 6 || password.length() > 25) {
+                return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Mật khẩu bảo mật phải từ 6 đến 25 ký tự!"));
+            }
+
+            // 7. Ràng buộc tính hợp lệ của Ngày tháng năm sinh
+            LocalDate dateOfBirth;
+            try {
+                int birthDay = Integer.parseInt(regRequest.get("birthDay").toString());
+                int birthMonth = Integer.parseInt(regRequest.get("birthMonth").toString());
+                int birthYear = Integer.parseInt(regRequest.get("birthYear").toString());
+                
+                dateOfBirth = LocalDate.of(birthYear, birthMonth, birthDay);
+                
+                if (dateOfBirth.isAfter(LocalDate.now())) {
+                    return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Ngày sinh không thể nằm ở thời gian tương lai!"));
+                }
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Ngày tháng năm sinh chọn lựa không hợp lệ trên lịch!"));
+            }
+
+            // 8. Kiểm tra trùng lặp Database
             if (accountRepository.existsByEmail(email)) {
-                return ResponseEntity.badRequest().body(Map.of("status", "fail", "message", "Địa chỉ Email này đã có người sử dụng!"));
+                return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Địa chỉ Email này đã có người sử dụng!"));
             }
-
             if (accountRepository.existsByPhone(phone)) {
-                return ResponseEntity.badRequest().body(Map.of("status", "fail", "message", "Số điện thoại này đã được đăng ký!"));
+                return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Số điện thoại này đã được đăng ký!"));
             }
 
-            // --- LUỒNG SINH MÃ OTP GIẢ LẬP ---
+            // --- LUỒNG SINH MÃ OTP ---
             String otpCode = String.format("%06d", new Random().nextInt(999999));
-            otpStorage.put(email, otpCode); // Lưu tạm mã OTP gắn liền với email này
-            
-            // In ra màn hình Console của VS Code để Huy nhìn thấy và lấy mã nhập test
+            otpStorage.put(email, otpCode);
             System.out.println("========= MÃ OTP KÍCH HOẠT ĐĂNG KÝ CỦA [" + email + "] LÀ: " + otpCode + " =========");
 
-            // Lưu thông tin tài khoản xuống DB trước
+            // Lưu tài khoản hợp lệ xuống Database
             Account newAccount = new Account();
             newAccount.setFullname(name);
             newAccount.setPhone(phone);
             newAccount.setEmail(email);
-            newAccount.setPasswordHash(password);
-            newAccount.setDateOfBirth(LocalDate.of(birthYear, birthMonth, birthDay));
-            newAccount.setCreatedDate(LocalDateTime.now());
-            newAccount.setUpdatedDate(LocalDateTime.now());
+            // Lưu ý thực tế: Bạn nên Hash mật khẩu (ví dụ dùng BCrypt) ở bước này trước khi lưu
+            newAccount.setPasswordHash(password); 
             newAccount.setRoleId(3); 
-
+            newAccount.setDateOfBirth(dateOfBirth); 
+            newAccount.setCreatedDate(LocalDateTime.now()); 
+            newAccount.setUpdatedDate(LocalDateTime.now());
+            
             accountRepository.save(newAccount);
 
-            // Trả về email để lát nữa FE giữ lại email này gửi kèm mã xác thực OTP
             return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "message", "Thông tin đăng ký hợp lệ! Hệ thống đã gửi mã OTP kích hoạt.",
@@ -80,11 +112,11 @@ public class RegisterController {
             ));
 
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("status", "error", "message", "Lỗi xử lý hệ thống: " + e.getMessage()));
+            e.printStackTrace(); // In ra log console để dễ debug nếu có lỗi ngầm
+            return ResponseEntity.internalServerError().body(Map.of("status", "error", "message", "Lỗi xử lý hệ thống vui lòng thử lại sau!"));
         }
     }
 
-    // 🚀 API MỚI: Xử lý kiểm tra mã OTP từ giao diện gửi lên
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> verifyRequest) {
         String email = verifyRequest.get("email");
@@ -94,21 +126,20 @@ public class RegisterController {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Dữ liệu xác thực không hợp lệ!"));
         }
 
-        // Lấy mã OTP gốc trong bộ nhớ ra so sánh
         String savedOtp = otpStorage.get(email);
 
         if (savedOtp == null) {
-            return ResponseEntity.status(400).body(Map.of("status", "fail", "message", "Mã kích hoạt đã hết hạn hoặc không tồn tại!"));
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Mã kích hoạt đã hết hạn hoặc không tồn tại!"));
         }
 
         if (savedOtp.equals(otpInput)) {
-            otpStorage.remove(email); // Xác thực đúng thì xóa OTP tạm thời đi
+            otpStorage.remove(email); 
             return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "message", "Kích hoạt tài khoản hội viên LAS thành công! Vui lòng tiến hành đăng nhập."
             ));
         } else {
-            return ResponseEntity.status(401).body(Map.of("status", "fail", "message", "Mã OTP nhập vào không chính xác!"));
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Mã OTP nhập vào không chính xác!"));
         }
     }
 }

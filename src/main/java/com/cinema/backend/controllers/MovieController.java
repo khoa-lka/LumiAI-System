@@ -3,44 +3,104 @@ package com.cinema.backend.controllers;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.cinema.backend.repositories.MovieRepository;
-
 import com.cinema.backend.entities.Movie;
 
-
-
-
-
-@RestController // Dán nhãn biến Class này thành trạm phát API xuất dữ liệu JSON
-@RequestMapping("/api") // Cấu hình tiền tố đường dẫn gốc cho toàn bộ API
-@CrossOrigin(origins = "*") // Mở cổng bảo mật CORS để Front-End của Vy gọi vào thoải mái không bị chặn
+@RestController 
+@RequestMapping("/api/movies") 
+@CrossOrigin(origins = "*") 
 public class MovieController {
-    @Autowired // Nhãn ra lệnh cho Spring tự động móc dây nối bộ máy Repository vào đây
+
+    @Autowired 
     private MovieRepository movieRepository;
 
-    @GetMapping("/sync-data") // Khi gõ http://localhost:8080/api/sync-data thì hàm này sẽ chạy
-    public Map<String, Object> getSyncData() {
+    // 🚀 ĐÃ SỬA: Xóa "/sync-data" để khớp chuẩn xác với fetch("http://localhost:8080/api/movies")
+    @GetMapping 
+public List<Movie> getAllMovies() {
+    // Trả về thẳng một mảng JSON dạng [ {id:1, title:...}, {id:2, ...} ]
+    return movieRepository.findAll(); 
+}
+
+// 2. THÊM PHIM MỚI (INSERT INTO SQL)
+    @PostMapping("/add")
+    public Movie addMovie(@RequestBody Movie newMovie) {
+        // Hàm .save() của JPA sẽ tự động dịch ra lệnh: 
+        // INSERT INTO movie (title, genre, duration_minutes...) VALUES (...)
+        return movieRepository.save(newMovie); 
+    }
+
+    // 3. CẬP NHẬT PHIM HIỆN TẠI (UPDATE SQL)
+    @PutMapping("/update")
+    public Movie updateMovie(@RequestBody Movie updatedMovie) {
+        // 1. Tìm xem phim đó có trong SQL chưa dựa vào movie_id
+        Movie existingMovie = movieRepository.findById(updatedMovie.getMovieId())
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy phim có ID: " + updatedMovie.getMovieId()));
+
+        // 2. Lấy dữ liệu mới đè lên dữ liệu cũ (Dựa theo chuẩn file cinema_db1.sql của em)
+        existingMovie.setTitle(updatedMovie.getTitle());
+        existingMovie.setGenre(updatedMovie.getGenre());
+        existingMovie.setDuration(updatedMovie.getDuration());
+        existingMovie.setSynopsis(updatedMovie.getSynopsis());
         
-        // 1. Lấy toàn bộ danh sách phim từ SQL Server thông qua hàm có sẵn của JPA
-        List<Movie> moviesList = movieRepository.findAll();
-
-        // 2. Tạo cấu trúc Map bọc dữ liệu để ép Spring dịch sang đúng phom JSON mẫu Front-End đang dùng
-        Map<String, Object> response = new HashMap<>();
-        Map<String, Object> innerData = new HashMap<>();
+        // Link hình ảnh (Poster)
+        existingMovie.setMainposterUrl(updatedMovie.getMainposterUrl());
+        existingMovie.setSubposterUrl(updatedMovie.getSubposterUrl());
         
-        innerData.put("movies", moviesList);
-        // Tạm mồi dữ liệu showtimes và ghế trống giống hệt kịch bản cũ để Front-End không lỗi
-        innerData.put("showtimes", List.of("19:00", "20:30", "22:00")); 
-        innerData.put("masterSeatStore", new HashMap<>());
+        // Thông tin công chiếu & phân loại
+        existingMovie.setReleaseDate(updatedMovie.getReleaseDate());
+        existingMovie.setAgeRating(updatedMovie.getAgeRating());
+        existingMovie.setRating(updatedMovie.getRating());
+        existingMovie.setStatus(updatedMovie.getStatus());
+        
+        // Ekip làm phim
+        existingMovie.setPerformer(updatedMovie.getPerformer());
+        existingMovie.setDirector(updatedMovie.getDirector());
+        existingMovie.setCountry(updatedMovie.getCountry());
 
-        response.put("type", "SYNC_DATA");
-        response.put("data", innerData);
+        // Cập nhật ID của người vừa chỉnh sửa (updated_by) nếu có gửi từ Frontend lên
+        if (updatedMovie.getUpdatedBy() != null) {
+            existingMovie.setUpdatedBy(updatedMovie.getUpdatedBy());
+        }
 
-        return response; // Trả thẳng đối tượng Map về, Spring Boot tự động hóa hóa nó thành chuỗi JSON thô
+        // 3. Hàm .save() lúc này vì đối tượng existingMovie đã có ID nên nó sẽ tự dịch ra lệnh:
+        // UPDATE movie SET title = ?, genre = ?, ... WHERE movie_id = ?
+        return movieRepository.save(existingMovie);
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<?> deleteMovie(@PathVariable Long id) {
+        Map<String, String> response = new HashMap<>();
+        try {
+            // 1. Kiểm tra bộ phim có tồn tại trong Database không
+            if (!movieRepository.existsById(id)) {
+                response.put("message", "Không tìm thấy phim mang ID: " + id);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+            
+            // 2. Tiến hành xóa phim bằng Spring Data JPA
+            movieRepository.deleteById(id);
+            
+            // 3. Trả về Object JSON {"message": "..."} cho Frontend parse dữ liệu mượt mà
+            response.put("message", "Xóa phim thành công!");
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            // Trường hợp lỗi hoặc dính khóa ngoại (Foreign Key) do phim đã được xếp lịch chiếu
+            response.put("message", "Không thể xóa phim này do lỗi hệ thống hoặc phim đang có lịch chiếu tồn tại!");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
     }
 }
