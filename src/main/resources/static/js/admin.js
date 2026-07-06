@@ -39,7 +39,7 @@ function renderAdminBanList() {
             const badge =
               u.status === "Active"
                 ? '<span class="status-badge status-now">Hoạt động</span>'
-                : '<span class="status-badge" style="background:#e71a0f;">Bị khóa</span>';
+                : '<span class="status-badge" style="background:#ff6b35;">Bị khóa</span>';
 
             const action =
               u.status === "Active"
@@ -117,7 +117,7 @@ function renderAdminWebhook() {
       tbody.innerHTML = hooks
         .map(
           (h) =>
-            `<tr><td>${h.time}</td><td><b>${h.source}</b></td><td style="font-family:monospace; color:#555;">${h.payload}</td><td>${h.http}</td></tr>`,
+            `<tr><td>${h.time}</td><td><b>${h.source}</b></td><td style="font-family:monospace; color:#c4c4cc;">${h.payload}</td><td>${h.http}</td></tr>`,
         )
         .join("");
     })

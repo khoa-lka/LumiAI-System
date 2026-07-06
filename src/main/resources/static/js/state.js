@@ -7,6 +7,9 @@ let fnbMenu = [
     price: 85000,
     icon: "🍿",
     qty: 0,
+    desc: "1 Bắp lớn + 2 Nước ngọt vừa",
+    items: ["Bắp rang bơ (cỡ lớn)", "2x Nước ngọt vừa"],
+    popular: true,
   },
   {
     id: "fnb2",
@@ -14,6 +17,9 @@ let fnbMenu = [
     price: 65000,
     icon: "🥤",
     qty: 0,
+    desc: "1 Bắp vừa + 1 Nước ngọt vừa",
+    items: ["Bắp rang muối (cỡ vừa)", "1x Nước ngọt vừa"],
+    popular: false,
   },
   {
     id: "fnb3",
@@ -21,6 +27,9 @@ let fnbMenu = [
     price: 35000,
     icon: "🍟",
     qty: 0,
+    desc: "Khoai tây chiên phủ sốt phô mai",
+    items: ["Khoai tây chiên giòn", "Sốt phô mai đặc biệt"],
+    popular: false,
   },
 ];
 let appliedVoucherDiscount = 0;

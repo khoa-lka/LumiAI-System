@@ -108,7 +108,7 @@ function renderDynamicShowtimeGrid() {
   timeGrid.innerHTML = "";
 
   if (serverData.showtimes.length === 0) {
-    timeGrid.innerHTML = "<p style='color:#666'>Không có suất chiếu.</p>";
+    timeGrid.innerHTML = "<p style='color:#a8a8b3'>Không có suất chiếu.</p>";
     return;
   }
 
@@ -330,7 +330,7 @@ function goToBookingStep(step) {
     if (rightColumn) rightColumn.style.display = "flex";
     if (mainBtn) {
       mainBtn.innerText = "Tiếp Tục";
-      mainBtn.style.background = "#e71a0f";
+      mainBtn.style.background = "#ff6b35";
     }
     if (backBtn) {
       backBtn.innerText = "←";
@@ -371,10 +371,10 @@ function goToBookingStep(step) {
 
     if (mainBtn) {
       mainBtn.innerText = "Đến Thanh Toán";
-      mainBtn.style.background = "#e71a0f";
+      mainBtn.style.background = "#ff6b35";
     }
     if (backBtn) {
-      backBtn.innerText = "← Quay Lại";
+      backBtn.innerText = "←";
       backBtn.setAttribute("onclick", "goToBookingStep(1)");
     }
   } else if (step === 3) {
@@ -383,7 +383,7 @@ function goToBookingStep(step) {
       mainBtn.style.background = "#10B981";
     }
     if (backBtn) {
-      backBtn.innerText = "← Chọn F&B";
+      backBtn.innerText = "←";
       backBtn.setAttribute("onclick", "goToBookingStep(2)");
     }
 
@@ -401,17 +401,19 @@ function goToBookingStep(step) {
       .filter((i) => i.qty > 0)
       .map(
         (i) =>
-          `<p>+ ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString("vi-VN")} đ</p>`,
+          `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
       )
       .join("");
       
     document.getElementById("review-invoice-content").innerHTML = `
-            <p><strong>Phim:</strong> ${currentMovie}</p>
-            <p><strong>Suất chiếu:</strong> ${selectedDateStr} | ${selectedShowtime}</p>
-            <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
-            <p><strong>Bắp nước:</strong></p>${fnbHtml || "<p>Không có</p>"}
-            <hr style="margin: 10px 0;">
-            <p style="font-size: 16px;"><strong>Tổng cộng (Chưa giảm): <span style="color:#e71a0f;">${verifiedInvoiceTotal.toLocaleString("vi-VN")} đ</span></strong></p>
+            <div class="inv-review">
+              <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
+              <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
+              <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
+              <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
+              ${fnbHtml}
+              <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
+            </div>
         `;
     const finalPrice = window.finalPriceTotal || 0;
     
@@ -492,29 +494,30 @@ function selectPaymentGatewayType(type, element) {
 
   const circle = element.querySelector(".option-check-circle");
   if (circle) {
-    circle.style.borderColor = "#e71a0f";
-    circle.style.color = "#e71a0f";
+    circle.style.borderColor = "#ff6b35";
+    circle.style.color = "#ff6b35";
   }
 }
 
 function openCheckoutReview() {
   const currentMovie = document.getElementById("cgv-combo-movie").value;
-  let fnbHtml = fnbMenu
-    .filter((i) => i.qty > 0)
+  const fnbItems = fnbMenu.filter((i) => i.qty > 0);
+  let fnbHtml = fnbItems
     .map(
       (i) =>
-        `<p>+ ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString("vi-VN")} đ</p>`,
+        `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
     )
     .join("");
 
   document.getElementById("review-invoice-content").innerHTML = `
-        <p><strong>Phim:</strong> ${currentMovie}</p>
-        <p><strong>Suất chiếu:</strong> ${selectedDateStr} | ${selectedShowtime}</p>
-        <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
-        <p><strong>Bắp nước:</strong></p>
-        ${fnbHtml || "<p>Không có</p>"}
-        <hr style="margin: 10px 0;">
-        <p><strong>Tổng cộng (Chưa giảm):</strong> ${currentPriceTotal.toLocaleString("vi-VN")} đ</p>
+        <div class="inv-review">
+          <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
+          <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
+          <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
+          <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
+          ${fnbHtml}
+          <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
+        </div>
     `;
 
   document.getElementById("review-final-total").innerText =
@@ -838,10 +841,10 @@ function executeFinalCheckout() {
         const beautifulTicketHTML = `
             <div style="text-align: center; margin-bottom: 25px;">
                 <h2 style="color: #10B981; margin-bottom: 10px; font-size: 28px;">ĐẶT VÉ THÀNH CÔNG!</h2>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 1px solid #ccc; padding: 5px;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 1px solid rgba(255,255,255,0.15); padding: 5px;">
                 <p style="color: #222; font-weight: bold; font-size: 13px; margin-top: 10px;">Hệ thống cũng đã gửi 1 bản sao vào Email của bạn.</p>
             </div>
-            <div style="background: #fdfcf7; padding: 25px 40px; border: 2px dashed #ccc; border-radius: 8px; text-align: left; display: inline-block; min-width: 90%; margin: 0 auto; box-sizing: border-box;">
+            <div style="background: #0b0b0e; padding: 25px 40px; border: 2px dashed rgba(255,255,255,0.15); border-radius: 8px; text-align: left; display: inline-block; min-width: 90%; margin: 0 auto; box-sizing: border-box;">
                 <p><strong>Mã vé:</strong> <span style="color:red; font-size: 22px;">${invoiceObj.id}</span></p>
                 <p><strong>Phim:</strong> ${invoiceObj.movie}</p>
                 <p><strong>Suất chiếu:</strong> ${invoiceObj.time} ngày ${invoiceObj.date}</p>
@@ -956,7 +959,7 @@ function resetHoldState() {
   document.getElementById("hold-timer").style.display = "none";
 
   document.getElementById("btn-main-action").innerText = "Tiếp tục";
-  document.getElementById("btn-main-action").style.background = "#e71a0f";
+  document.getElementById("btn-main-action").style.background = "#ff6b35";
 
   currentBookingStep = 1;
 }

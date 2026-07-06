@@ -163,7 +163,7 @@ function updateTopBarMenu(fullName, roleName) {
     authLinkBox.removeAttribute("onclick");
     authLinkBox.innerHTML = `
       <span class="sub-nav-icon">👤</span> [${roleName}] ${fullName.toUpperCase()}! 
-      <span onclick="confirmLogoutAction(event)" style="color: #e71a0f; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">[THOÁT]</span>
+      <span onclick="confirmLogoutAction(event)" style="color: #ff6b35; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">[THOÁT]</span>
     `;
   }
 }
@@ -181,7 +181,7 @@ function loadEventsFromDatabase() {
           ev.imageUrl ||
           "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
         container.innerHTML += `
-            <div style="border: 1px solid #ddd; background: #fff; padding: 5px;">
+            <div style="border: 1px solid rgba(255,255,255,0.12); background: #17171b; padding: 5px;">
                 <img src="${img}" style="width: 100%; display: block;" alt="${ev.title}">
             </div>
         `;
@@ -218,34 +218,55 @@ function renderFnbMenu() {
   const container = document.getElementById("cgv-fnb-menu");
   if (!container) return;
   container.innerHTML = "";
+if (!window.fnbMenu || window.fnbMenu.length === 0) {
+  container.innerHTML = "<p style='text-align:center; color:#666; padding:15px; font-size:13px;'>Đang nạp menu bắp nước từ hệ thống...</p>";
+  return;
+}
 
-  if (!window.fnbMenu || window.fnbMenu.length === 0) {
-    container.innerHTML = "<p style='text-align:center; color:#666; padding:15px; font-size:13px;'>Đang nạp menu bắp nước từ hệ thống...</p>";
-    return;
-  }
+// Clear container trước khi render (nếu cần) để tránh cộng dồn lặp dữ liệu
+container.innerHTML = ""; 
 
-  window.fnbMenu.forEach((item, index) => {
+// 2. Duyệt qua window.fnbMenu của main
+window.fnbMenu.forEach((item, index) => {
+  const inCart = item.qty > 0;
+  
+  // 3. Giữ logic tự động nhận diện icon phòng khi item.icon bị rỗng từ main
+  let icon = item.icon;
+  if (!icon) {
     const nameLower = (item.name || "").toLowerCase();
-    let icon = "🍿"; 
+    icon = "🍿"; 
     if (nameLower.includes("combo") || nameLower.includes("bap rang lon")) icon = "🎁";
     if (nameLower.includes("nuoc") || nameLower.includes("coca") || nameLower.includes("ly")) icon = "🥤";
     if (nameLower.includes("khoai") || nameLower.includes("chien")) icon = "🍟";
+  }
 
-    container.innerHTML += `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid #ddd; padding:15px; border-radius:8px; margin-bottom:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
-                    <div style="display:flex; align-items:center; gap:15px;">
-                        <div style="font-size:30px; background:#f4f2ec; width:60px; height:60px; display:flex; justify-content:center; align-items:center; border-radius:8px;">${icon}</div>
-                        <div style="text-align:left;">
-                            <div style="font-weight:bold; font-size:14px; color:#333;">${item.name}</div>
-                            <div style="color:#e71a0f; font-weight:bold; font-size:14px; margin-top:5px;">${item.price.toLocaleString("vi-VN")} đ</div>
-                        </div>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <button style="width:30px; height:30px; border:1px solid #ccc; background:#fff; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, -1)">-</button>
-                        <span style="font-weight:bold; width:20px; text-align:center; font-size: 16px;">${item.qty}</span>
-                        <button style="width:30px; height:30px; border:1px solid #ccc; background:#fff; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, 1)">+</button>
-                    </div>
-                </div>`;
+  // 4. Giữ cấu trúc render danh sách bullets từ fe-xin-xo
+  const bullets = (item.items || [])
+    .map((t) => `<li>${t}</li>`)
+    .join("");
+
+  // 5. Giữ bộ điều khiển nút bấm thông minh từ fe-xin-xo
+  const control = inCart
+    ? `<div class="fnb-stepper">
+          <button class="fnb-step-btn" onclick="updateComboQty(${index}, -1)">−</button>
+          <span class="fnb-step-qty">×${item.qty}</span>
+          <button class="fnb-step-btn fnb-step-plus" onclick="updateComboQty(${index}, 1)">+</button>
+       </div>`
+    : `<button class="fnb-add-btn" onclick="updateComboQty(${index}, 1)">＋ Thêm vào đơn</button>`;
+
+  // 6. Output chuẩn theo giao diện sạch sẽ, dùng class CSS của fe-xin-xo
+  container.innerHTML += `
+    <div class="fnb-card ${inCart ? "fnb-card-active" : ""}">
+      <div class="fnb-card-head">
+        <div class="fnb-card-icon">${icon}</div>
+        ${item.popular ? `<span class="fnb-tag-popular">Phổ biến</span>` : ""}
+        <span class="fnb-card-price">${item.price.toLocaleString("vi-VN")}đ</span>
+      </div>
+      <h4 class="fnb-card-title">${item.name}</h4>
+      ${item.desc ? `<p class="fnb-card-desc">${item.desc}</p>` : ""}
+      ${bullets ? `<ul class="fnb-card-list">${bullets}</ul>` : ""}
+      <div class="fnb-card-action">${control}</div>
+    </div>`;s
   });
 }
 
@@ -430,10 +451,10 @@ function renderCgvInterface() {
           serverData.showtimes = actualShowtimes;
 
           if (actualShowtimes.length === 0) {
-            timeGrid.innerHTML = `<p style="color:#777; font-size:13px; grid-column: span 4; text-align:center; padding: 10px 0;">Hôm nay rạp chưa xếp lịch chiếu phim này!</p>`;
+            timeGrid.innerHTML = `<p style="color:#9a9aa3; font-size:13px; grid-column: span 4; text-align:center; padding: 10px 0;">Hôm nay rạp chưa xếp lịch chiếu phim này!</p>`;
             if (document.getElementById("cgv-seat-grid")) {
               document.getElementById("cgv-seat-grid").innerHTML =
-                `<p style="color:#777; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
+                `<p style="color:#9a9aa3; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
             }
             return;
           }
@@ -454,7 +475,7 @@ function renderCgvInterface() {
         })
         .catch((err) => {
           console.error("🚨 Lỗi nạp ma trận lịch chiếu từ Database:", err);
-          timeGrid.innerHTML = `<p style="color:#e71a0f; font-size:13px; grid-column: span 4; text-align:center;">Lỗi kết nối lịch chiếu rạp!</p>`;
+          timeGrid.innerHTML = `<p style="color:#ff6b35; font-size:13px; grid-column: span 4; text-align:center;">Lỗi kết nối lịch chiếu rạp!</p>`;
         });
     }
   }
@@ -464,7 +485,7 @@ function renderCgvInterface() {
   const seatGrid = document.getElementById("cgv-seat-grid");
   if (seatGrid) {
     if (!selectedShowtime || !window.currentSelectedShowtimeId) {
-      seatGrid.innerHTML = `<p style="color:#777; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
+      seatGrid.innerHTML = `<p style="color:#9a9aa3; font-size:13px; text-align:center; grid-column:1/-1;">Vui lòng chọn một suất chiếu cụ thể để hiển thị sơ đồ ghế!</p>`;
       return;
     }
 
