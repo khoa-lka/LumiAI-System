@@ -5,8 +5,7 @@ import com.cinema.backend.entities.Seat;
 import com.cinema.backend.entities.Showtime;
 import com.cinema.backend.entities.Ticket;
 import com.cinema.backend.repositories.SeatRepository;
-import com.cinema.backend.repositories.ShowtimeRepository;
-import com.cinema.backend.repositories.TicketRepository;
+
 import com.cinema.backend.service.VoucherService;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -132,17 +131,6 @@ public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
             savedTickets.add(ticketRepository.save(ticket));
         }
 
-            // Trả về response thành công khớp với đoạn đuôi file của em
-            response.put("success", true);
-            response.put("ticketId", savedTickets.get(0).getTicketCode());
-            response.put("totalTickets", savedTickets.size());
-            return response;
-
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return response;
-        }
 
         String voucherCode = (String) payload.get("voucherCode");
         System.out.println("VoucherCode = " + voucherCode);
@@ -163,4 +151,5 @@ public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
         response.put("message", e.getMessage());
         return response;
     }
+}
 }
