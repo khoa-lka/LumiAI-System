@@ -7,9 +7,12 @@ import com.cinema.backend.entities.Ticket;
 import com.cinema.backend.repositories.SeatRepository;
 import com.cinema.backend.repositories.ShowtimeRepository;
 import com.cinema.backend.repositories.TicketRepository;
+import com.cinema.backend.service.VoucherService;
+
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.*;
 
@@ -26,6 +29,9 @@ public class SeatController {
 
     @Autowired
     private ShowtimeRepository showtimeRepository;
+
+    @Autowired
+    private VoucherService voucherService;
 
     // 🚀 ĐỒNG BỘ HOÀN HẢO: Chỉ bốc đúng danh sách ghế của phòng chiếu thuộc suất chiếu đó
     @GetMapping("/matrix")
@@ -77,9 +83,11 @@ public class SeatController {
 
     // 🚀 LUỒNG CHECKOUT: Đặt vé và lưu thông tin Ticket vào database mẫu của nhóm
     @PostMapping("/checkout")
-    @Transactional
-    public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
-        Map<String, Object> response = new HashMap<>();
+@Transactional
+public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
+
+    Map<String, Object> response = new HashMap<>();
+    System.out.println("===== NEW CHECKOUT =====");
 
         try {
             System.out.println("CHECKOUT PAYLOAD = " + payload);
@@ -120,8 +128,8 @@ public class SeatController {
                 ticket.setTicketCode(ticketCode);
                 ticket.setQrCode(ticketCode);
 
-                savedTickets.add(ticketRepository.save(ticket));
-            }
+            savedTickets.add(ticketRepository.save(ticket));
+        }
 
             // Trả về response thành công khớp với đoạn đuôi file của em
             response.put("success", true);

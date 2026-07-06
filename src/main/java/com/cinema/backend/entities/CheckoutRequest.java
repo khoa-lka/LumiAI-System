@@ -18,6 +18,16 @@ public class CheckoutRequest {
 
     private String movieName;
 
+    private String voucherCode;
+
+    public String getVoucherCode() {
+    return voucherCode;
+}
+
+public void setVoucherCode(String voucherCode) {
+    this.voucherCode = voucherCode;
+}
+
     public Integer getAccountId() {
         return accountId;
     }
