@@ -15,16 +15,16 @@ function closeAuthModal() {
 }
 
 function toggleAuthTab(type) {
-  document.getElementById("tab-login-btn").classList.remove("active");
-  document.getElementById("tab-register-btn").classList.remove("active");
+  document.getElementById("tab-login-btn")?.classList.remove("active");
+  document.getElementById("tab-register-btn")?.classList.remove("active");
   document.getElementById("form-login-panel").classList.remove("active");
   document.getElementById("form-register-panel").classList.remove("active");
 
   if (type === "login") {
-    document.getElementById("tab-login-btn").classList.add("active");
+    document.getElementById("tab-login-btn")?.classList.add("active");
     document.getElementById("form-login-panel").classList.add("active");
   } else if (type === "register") {
-    document.getElementById("tab-register-btn").classList.add("active");
+    document.getElementById("tab-register-btn")?.classList.add("active");
     document.getElementById("form-register-panel").classList.add("active");
   }
 }
@@ -51,6 +51,7 @@ function submitCgvLogin(event) {
         isUserLoggedInState = true;
         let uData = resData.data;
         localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
+        sessionStorage.removeItem("pendingBooking");
         localStorage.setItem(
           "las_user_invoices",
           JSON.stringify(userPastInvoices || []),
@@ -93,7 +94,7 @@ function submitCgvLogin(event) {
           authLinkBox.style.cursor = "pointer";
           authLinkBox.innerHTML = `
               <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}! 
-              <span onclick="confirmLogoutAction(event)" style="color: #0066cc; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+              <span onclick="confirmLogoutAction(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
           `;
           document.getElementById("top-bar-ticket-link").innerHTML =
             `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;

@@ -33,30 +33,10 @@ public class Ticket {
     @Column(name = "seat_id")
     private Integer seatId;
 
-    @Column(name = "account_id")
-private Integer accountId;
+    @Column(name = "booking_id")
+    private Integer bookingId;
 
-@Column(name = "movie_title")
-private String movieTitle;
-
-@Column(name = "show_date")
-private LocalDate showDate;
-
-@Column(name = "show_time")
-private LocalTime showTime;
-
-@Column(name = "customer_email")
-private String customerEmail;
-
-@Column(name = "total_price")
-private BigDecimal totalPrice;
-
-@Column(name = "payment_method")
-private String paymentMethod;
-
-@Column(name = "payment_status")
-private String paymentStatus;
-
-@Column(name = "created_at")
-private LocalDateTime createdAt;
+    static {
+    System.out.println("===== USING NEW TICKET ENTITY =====");
+}
 }

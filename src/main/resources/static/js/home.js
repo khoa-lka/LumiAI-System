@@ -39,7 +39,7 @@ window.syncUserLoginSession = function () {
       authLinkBox.style.cursor = "pointer";
       authLinkBox.innerHTML = `
           <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
-          <span onclick="handleCgvLogout(event)" style="color: #0066cc; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+          <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
       `;
     }
     if (document.getElementById("top-bar-ticket-link")) {
@@ -269,21 +269,29 @@ function renderFnbMenu() {
   if (!container) return;
   container.innerHTML = "";
   fnbMenu.forEach((item, index) => {
+    const inCart = item.qty > 0;
+    const bullets = (item.items || [])
+      .map((t) => `<li>${t}</li>`)
+      .join("");
+    const control = inCart
+      ? `<div class="fnb-stepper">
+            <button class="fnb-step-btn" onclick="updateComboQty(${index}, -1)">−</button>
+            <span class="fnb-step-qty">×${item.qty}</span>
+            <button class="fnb-step-btn fnb-step-plus" onclick="updateComboQty(${index}, 1)">+</button>
+         </div>`
+      : `<button class="fnb-add-btn" onclick="updateComboQty(${index}, 1)">＋ Thêm vào đơn</button>`;
     container.innerHTML += `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid #ddd; padding:15px; border-radius:8px; margin-bottom:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
-              <div style="display:flex; align-items:center; gap:15px;">
-                  <div style="font-size:30px; background:#f4f2ec; width:60px; height:60px; display:flex; justify-content:center; align-items:center; border-radius:8px;">${item.icon}</div>
-                  <div style="text-align:left;">
-                      <div style="font-weight:bold; font-size:14px; color:#333;">${item.name}</div>
-                      <div style="color:#e71a0f; font-weight:bold; font-size:14px; margin-top:5px;">${item.price.toLocaleString("vi-VN")} đ</div>
-                  </div>
-              </div>
-              <div style="display:flex; align-items:center; gap:12px;">
-                  <button style="width:30px; height:30px; border:1px solid #ccc; background:#fff; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, -1)">-</button>
-                  <span style="font-weight:bold; width:20px; text-align:center; font-size: 16px;">${item.qty}</span>
-                  <button style="width:30px; height:30px; border:1px solid #ccc; background:#fff; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, 1)">+</button>
-              </div>
-          </div>`;
+      <div class="fnb-card ${inCart ? "fnb-card-active" : ""}">
+        <div class="fnb-card-head">
+          <div class="fnb-card-icon">${item.icon}</div>
+          ${item.popular ? `<span class="fnb-tag-popular">Phổ biến</span>` : ""}
+          <span class="fnb-card-price">${item.price.toLocaleString("vi-VN")}đ</span>
+        </div>
+        <h4 class="fnb-card-title">${item.name}</h4>
+        ${item.desc ? `<p class="fnb-card-desc">${item.desc}</p>` : ""}
+        ${bullets ? `<ul class="fnb-card-list">${bullets}</ul>` : ""}
+        <div class="fnb-card-action">${control}</div>
+      </div>`;
   });
 }
 
@@ -299,16 +307,16 @@ function updateComboQty(index, change) {
 }
 
 function toggleAuthTab(type) {
-  document.getElementById("tab-login-btn").classList.remove("active");
-  document.getElementById("tab-register-btn").classList.remove("active");
+  document.getElementById("tab-login-btn")?.classList.remove("active");
+  document.getElementById("tab-register-btn")?.classList.remove("active");
   document.getElementById("form-login-panel").classList.remove("active");
   document.getElementById("form-register-panel").classList.remove("active");
 
   if (type === "login") {
-    document.getElementById("tab-login-btn").classList.add("active");
+    document.getElementById("tab-login-btn")?.classList.add("active");
     document.getElementById("form-login-panel").classList.add("active");
   } else if (type === "register") {
-    document.getElementById("tab-register-btn").classList.add("active");
+    document.getElementById("tab-register-btn")?.classList.add("active");
     document.getElementById("form-register-panel").classList.add("active");
   }
 }
@@ -381,21 +389,22 @@ function viewMovieDetailText(title, genre) {
 
 function openCheckoutReview() {
   const currentMovie = document.getElementById("cgv-combo-movie").value;
-  let fnbHtml = fnbMenu
-    .filter((i) => i.qty > 0)
+  const fnbItems = fnbMenu.filter((i) => i.qty > 0);
+  let fnbHtml = fnbItems
     .map(
       (i) =>
-        `<p>+ ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString("vi-VN")} đ</p>`,
+        `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
     )
     .join("");
   document.getElementById("review-invoice-content").innerHTML = `
-      <p><strong>Phim:</strong> ${currentMovie}</p>
-      <p><strong>Suất chiếu:</strong> ${selectedDateStr} | ${selectedShowtime}</p>
-      <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
-      <p><strong>Bắp nước:</strong></p>
-      ${fnbHtml || "<p>Không có</p>"}
-      <hr style="margin: 10px 0;">
-      <p><strong>Tổng cộng (Chưa giảm):</strong> ${currentPriceTotal.toLocaleString("vi-VN")} đ</p>
+      <div class="inv-review">
+        <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
+        <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
+        <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
+        <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
+        ${fnbHtml}
+        <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
+      </div>
   `;
   appliedVoucherDiscount = 0;
   document.getElementById("voucher-input").value = "";
@@ -407,24 +416,6 @@ function openCheckoutReview() {
 function closeCheckoutReview() {
   document.getElementById("checkout-review-modal").classList.remove("open");
   appliedVoucherDiscount = 0;
-  calculateCgvCart();
-}
-
-function applyVoucher() {
-  const code = document
-    .getElementById("voucher-input")
-    .value.trim()
-    .toUpperCase();
-  if (code === "LAS20") {
-    appliedVoucherDiscount = 0.2;
-    alert("Áp dụng thành công Voucher giảm 20%!");
-  } else {
-    appliedVoucherDiscount = 0;
-    alert("Mã Voucher không hợp lệ hoặc đã hết hạn!");
-  }
-  const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
-  document.getElementById("review-final-total").innerText =
-    finalTotal.toLocaleString("vi-VN") + " đ";
   calculateCgvCart();
 }
 
@@ -461,21 +452,21 @@ function renderTransactionHistory() {
   const historyZone = document.getElementById("cgv-invoice-zone");
   if (userPastInvoices.length === 0) {
     historyZone.innerHTML =
-      '<p style="color:#777; font-size: 13px;">Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.</p>';
+      '<p style="color:#9a9aa3; font-size: 13px;">Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.</p>';
     return;
   }
 
   historyZone.innerHTML = "";
   userPastInvoices.forEach((inv) => {
-    // 🌟 FIX LỖI TÀNG HÌNH: Ép màu đỏ thương hiệu thật (#e71a0f) thay vì dùng biến hệ thống cũ var(--cgv-red)
+    // 🌟 FIX LỖI TÀNG HÌNH: Ép màu đỏ thương hiệu thật (#ff6b35) thay vì dùng biến hệ thống cũ var(--cgv-red)
     // Đồng thời thêm bộ lọc cứu cánh (inv.movie || "Vé xem phim LAS Cinemas") đề phòng chuỗi dữ liệu trống
     historyZone.innerHTML += `
-          <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; background: white; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+          <div style="border: 1px solid rgba(255,255,255,0.15); padding: 15px; margin-bottom: 10px; background: #17171b; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
               <div style="text-align: left;">
-                  <h4 style="margin: 0 0 6px 0; color: #e71a0f; font-size: 15px; font-weight: bold; text-transform: uppercase;">
+                  <h4 style="margin: 0 0 6px 0; color: #ff6b35; font-size: 15px; font-weight: bold; text-transform: uppercase;">
                       ${inv.movie ? inv.movie : "Vé xem phim LAS Cinemas"}
                   </h4>
-                  <p style="margin: 0; font-size: 13px; color: #555;">
+                  <p style="margin: 0; font-size: 13px; color: #c4c4cc;">
                       Mã ĐH: <b>${inv.id}</b> | Ngày: ${inv.date} | Trạng thái: <span style="color: green; font-weight: bold;">${inv.status}</span>
                   </p>
               </div>
@@ -611,7 +602,7 @@ localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
         authLinkBox.style.cursor = "pointer";
         authLinkBox.innerHTML = `
             <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
-              <span onclick="handleCgvLogout(event)" style="color: #0066cc; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+              <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
           `;
         document.getElementById("top-bar-ticket-link").innerHTML =
           `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
@@ -751,8 +742,6 @@ function selectTime(t) {
   window.renderCgvInterface();
 }
 
-function calculateCgvCart() {}
-
 function onMovieOrTimeChange() {
   resetHoldState();
   selectedSeats = [];
@@ -795,13 +784,18 @@ function switchCgvTab(panelId, filterType = "now_showing") {
 
   if (panelId === "panel-booking") {
     // 🌟 PHÒNG THỦ: Ép quy trình đặt vé luôn luôn hiển thị Bước 1 (Chọn ghế) khi truy cập tab Đặt Vé
-    if (typeof window.resetBookingWizard === "function") {
+    if (
+      !window.isVnpayReturn &&
+      typeof window.resetBookingWizard === "function"
+    ) {
       window.resetBookingWizard();
     }
+
     if (parentBc) parentBc.innerText = "Đặt Vé Trực Tuyến";
     if (currentBc) currentBc.innerText = "Chọn Suất Chiếu & Ghế Ngồi";
     if (document.getElementById("payment-sticky-bar"))
       document.getElementById("payment-sticky-bar").style.display = "block";
+
     generateCgvDateSlider();
   } else if (panelId !== "panel-booking") {
     if (document.getElementById("payment-sticky-bar"))
@@ -947,6 +941,7 @@ window.renderCgvInterface = function () {
                     <div class="movie-spec-card">
                         <div class="poster-wrapper-box">
                             <span class="age-label-badge">${displayAge}</span>
+                            <span class="status-pill-badge ${isNowShowing ? "status-pill-showing" : "status-pill-soon"}">${isNowShowing ? "Đang chiếu" : "Sắp chiếu"}</span>
                             <div class="rank-ribbon ${ribbonColor}">${rankCounter}</div>
                             <div class="poster-main-body-img" onclick="viewMovieDetailText('${titleStr}', '${genreStr}')" style="background: #111; width: 100%; height: 100%;">
                                 <img src="${cleanImgUrl}" alt="${titleStr}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
@@ -955,6 +950,7 @@ window.renderCgvInterface = function () {
                         <div class="movie-spec-info-text">
                             <h3 class="movie-spec-title" onclick="viewMovieDetailText('${titleStr}', '${genreStr}')">${titleStr}</h3>
                             <p>Thể loại: <b>${genreStr}</b></p>
+                            ${m.duration ? `<p class="movie-spec-duration">⏱ ${m.duration} phút</p>` : ""}
                         </div>
                         <div class="movie-spec-action-zone">${actionBtnHTML}</div>
                     </div>
@@ -1079,7 +1075,7 @@ window.goToBookingStep = function (step) {
     if (rightColumn) rightColumn.style.display = "block";
     if (mainBtn) {
       mainBtn.innerText = "Tiếp Tục";
-      mainBtn.style.background = "#e71a0f";
+      mainBtn.style.background = "#ff6b35";
     }
     if (backBtn) {
       backBtn.innerText = "←";
@@ -1088,10 +1084,10 @@ window.goToBookingStep = function (step) {
   } else if (step === 2) {
     if (mainBtn) {
       mainBtn.innerText = "Đến Thanh Toán";
-      mainBtn.style.background = "#e71a0f";
+      mainBtn.style.background = "#ff6b35";
     }
     if (backBtn) {
-      backBtn.innerText = "← Quay Lại";
+      backBtn.innerText = "←";
       backBtn.setAttribute("onclick", "window.goToBookingStep(1)");
     }
   } else if (step === 3) {
@@ -1100,7 +1096,7 @@ window.goToBookingStep = function (step) {
       mainBtn.style.background = "#10B981";
     }
     if (backBtn) {
-      backBtn.innerText = "← Chọn F&B";
+      backBtn.innerText = "←";
       backBtn.setAttribute("onclick", "window.goToBookingStep(2)");
     }
 
@@ -1119,13 +1115,22 @@ window.goToBookingStep = function (step) {
       "review-invoice-content",
     );
     if (reviewInvoiceContentEl) {
+      const _fnbItems = fnbMenu.filter((i) => i.qty > 0);
+      const _fnbRows = _fnbItems
+        .map(
+          (i) =>
+            `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
+        )
+        .join("");
       reviewInvoiceContentEl.innerHTML = `
-            <p><strong>Phim:</strong> ${currentMovie}</p>
-            <p><strong>Suất chiếu:</strong> ${selectedDateStr} | ${selectedShowtime}</p>
-            <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
-            <p><strong>Bắp nước:</strong></p>${fnbHtml || "<p>Không có</p>"}
-            <hr style="margin: 10px 0;">
-            <p style="font-size: 16px;"><strong>Tổng cộng (Chưa giảm): <span style="color:#e71a0f;">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></strong></p>
+            <div class="inv-review">
+              <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
+              <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
+              <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
+              <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${_fnbItems.length ? "" : "Không có"}</span></div>
+              ${_fnbRows}
+              <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
+            </div>
         `;
     }
   } else if (step === 4) {
@@ -1219,8 +1224,8 @@ window.selectPaymentGatewayType = function (type, element) {
     element.classList.add("active");
     const circle = element.querySelector(".option-check-circle");
     if (circle) {
-      circle.style.borderColor = "#e71a0f";
-      circle.style.color = "#e71a0f";
+      circle.style.borderColor = "#ff6b35";
+      circle.style.color = "#ff6b35";
     }
   }
 };
@@ -1320,9 +1325,14 @@ window.applyVoucher = function () {
 
 window.executeFinalCheckout = function () {
   const cachedBooking = localStorage.getItem("las_current_booking_cache");
-  let currentMovie = document.getElementById("cgv-combo-movie").value;
-  let ticketSeats = [...selectedSeats];
-  let ticketShowtime = selectedShowtime;
+  const pending = JSON.parse(localStorage.getItem("pending_booking"));
+
+  let currentMovie = pending
+    ? pending.movie
+    : document.getElementById("cgv-combo-movie").value;
+  let ticketSeats = pending ? [...pending.seats] : [...selectedSeats];
+
+  let ticketShowtime = pending ? pending.showtime : selectedShowtime;
   let ticketDate = selectedDateStr;
   let ticketFnb = fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i }));
   let ticketTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
@@ -1363,6 +1373,8 @@ window.executeFinalCheckout = function () {
     .then((data) => {
       // Sinh mã hóa đơn hiển thị rạp phim ngẫu nhiên
       const lasTicketId = "LAS-" + Math.floor(100000 + Math.random() * 900000);
+      console.log("currentPriceTotal =", currentPriceTotal);
+      console.log("appliedVoucherDiscount =", appliedVoucherDiscount);
       const invoiceObj = {
         id: lasTicketId,
         movie: currentMovie,
@@ -1387,17 +1399,17 @@ window.executeFinalCheckout = function () {
       const beautifulTicketHTML = `
         <div style="text-align: center; margin-bottom: 25px;">
             <h2 style="color: #10B981; margin-bottom: 10px; font-size: 26px;">🎟️ ĐẶT VÉ ĐIỆN TỬ THÀNH CÔNG!</h2>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 2px solid #222; padding: 6px; background:#fff;">
-            <p style="color: #444; font-weight: bold; font-size: 13px; margin-top: 12px;">LAS Cinemas đã gửi một bản sao hóa đơn vé qua Email của bạn.</p>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 2px solid #222; padding: 6px; background:#17171b;">
+            <p style="color: #d4d4d8; font-weight: bold; font-size: 13px; margin-top: 12px;">LAS Cinemas đã gửi một bản sao hóa đơn vé qua Email của bạn.</p>
         </div>
-        <div style="background: #fdfcf7; padding: 25px; border: 2px dashed #cca23b; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto; box-sizing: border-box; color:#222;">
-            <p><strong>Mã tra cứu vé:</strong> <span style="color:#e71a0f; font-size: 20px; font-family: monospace; font-weight:bold;">${invoiceObj.id}</span></p>
+        <div style="background: #0b0b0e; padding: 25px; border: 2px dashed #cca23b; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto; box-sizing: border-box; color:#222;">
+            <p><strong>Mã tra cứu vé:</strong> <span style="color:#ff6b35; font-size: 20px; font-family: monospace; font-weight:bold;">${invoiceObj.id}</span></p>
             <p><strong>Tên bộ phim:</strong> <b>${invoiceObj.movie}</b></p>
             <p><strong>Suất chiếu rạp:</strong> Suất ${invoiceObj.time} | Ngày ${invoiceObj.date}</p>
-            <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ccc;">
-            <p><strong>🎟️ Vị trí ghế ngồi:</strong> <span style="color:#e71a0f; font-weight:bold;">${invoiceObj.seats.join(", ")}</span></p>
+            <hr style="margin: 15px 0; border: none; border-top: 1px dashed rgba(255,255,255,0.15);">
+            <p><strong>🎟️ Vị trí ghế ngồi:</strong> <span style="color:#ff6b35; font-weight:bold;">${invoiceObj.seats.join(", ")}</span></p>
             <p><strong>🍿 Dịch vụ kèm theo:</strong></p><ul>${fnbTicketHtml || "<li>Không có dịch vụ ăn kèm</li>"}</ul>
-            <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ccc;">
+            <hr style="margin: 15px 0; border: none; border-top: 1px dashed rgba(255,255,255,0.15);">
             <p style="font-size: 18px; text-align: right; margin: 0;">Tổng tiền: <span style="color:#10B981; font-weight:bold;">${invoiceObj.total.toLocaleString("vi-VN")} đ</span></p>
         </div>
         <div style="margin-top: 35px; text-align: center;">
@@ -1416,6 +1428,7 @@ window.executeFinalCheckout = function () {
 
       // Giải phóng giỏ hàng tạm sau khi đã xuất vé điện tử thành công
       localStorage.removeItem("las_current_booking_cache");
+      localStorage.removeItem("pending_booking");
       selectedSeats = [];
       fnbMenu.forEach((i) => (i.qty = 0));
       window.renderFnbMenu();
@@ -1480,7 +1493,7 @@ window.resetHoldState = function () {
   const mainBtn = document.getElementById("btn-main-action");
   if (mainBtn) {
     mainBtn.innerText = "Tiếp tục";
-    mainBtn.style.background = "#e71a0f";
+    mainBtn.style.background = "#ff6b35";
   }
   window.currentBookingStep = 1;
 };
@@ -1582,11 +1595,11 @@ window.renderLasPromoGrid = function () {
             : `<div class="news-card-img-holder" style="background: #a1dbf1; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0c6291; font-size: 14px; height: 200px; width: 100%; text-align: center; padding: 0 10px; box-sizing: border-box;">${validImg || "LAS CINEMA"}</div>`;
         // Tạo cấu trúc thẻ card chuẩn chỉ ăn khớp layout hai phân vùng
         let cardHTML = `
-          <div class="news-promo-card" onclick="window.viewPromoDetailText('${item.id}')" style="cursor: pointer; background: #fff; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; transition: transform 0.2s; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+          <div class="news-promo-card" onclick="window.viewPromoDetailText('${item.id}')" style="cursor: pointer; background: #17171b; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; overflow: hidden; transition: transform 0.2s; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
               ${imgHTML}
               <div style="padding: 15px; text-align: left;">
-                  <div class="news-card-date" style="color: #666; font-size: 12px; margin-bottom: 5px;">📅 ${dateString}</div>
-                  <div class="news-card-title-text" style="font-weight: bold; font-size: 14px; color: #111; line-height: 1.4;">${item.title}</div>
+                  <div class="news-card-date" style="color: #a8a8b3; font-size: 12px; margin-bottom: 5px;">📅 ${dateString}</div>
+                  <div class="news-card-title-text" style="font-weight: bold; font-size: 14px; color: #f4f4f5; line-height: 1.4;">${item.title || "Chương trình ưu đãi"}</div>
               </div>
           </div>
         `;
@@ -1706,6 +1719,17 @@ window.processToPaymentGateway = function () {
             fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
             total: currentPriceTotal * (1 - appliedVoucherDiscount),
           };
+          localStorage.setItem(
+            "pending_booking",
+            JSON.stringify({
+              movie: document.getElementById("cgv-combo-movie").value,
+              showtime: selectedShowtime,
+              seats: [...selectedSeats],
+              date: selectedDateStr,
+              fnb: fnbMenu.filter((i) => i.qty > 0),
+              total: currentPriceTotal * (1 - appliedVoucherDiscount),
+            }),
+          );
           window.location.href = data.paymentUrl; // Điều hướng sang trang chọn của VNPAY thành công
         } else {
           alert("Lỗi dữ liệu hệ thống trả về từ VNPAY Gateway!");
@@ -1742,6 +1766,7 @@ window.processToPaymentGateway = function () {
     document.getElementById("payment-redirect-modal").classList.add("open");
   }
 };
+
 function generateCgvDateSlider() {
   const container = document.getElementById("cgv-dynamic-date-slider");
   if (!container) return;
@@ -1769,7 +1794,7 @@ function generateCgvDateSlider() {
     const color = selectedDateStr === fullDateId ? "#fff" : "#555";
     const border = selectedDateStr === fullDateId ? "#111" : "#ccc";
     container.innerHTML += `
-          <div style="flex: 0 0 auto; min-width: 60px; background:${bg}; color:${color}; border:2px solid ${border}; border-radius:6px; cursor:pointer; text-align:center; padding: 10px 5px; box-sizing: border-box; transition: all 0.2s;"
+          <div class="date-slider-item" style="flex: 0 0 auto; min-width: 60px; background:${bg}; color:${color}; border:2px solid ${border}; border-radius:6px; cursor:pointer; text-align:center; padding: 10px 5px; box-sizing: border-box; transition: all 0.2s;"
           onclick="selectCgvBookingDate('${fullDateId}')">
               <div style="font-size:11px; margin-bottom: 2px;">${dayName}</div>
               <div style="font-size:22px; font-weight:bold; line-height: 1;">${dateNum}</div>
@@ -1804,7 +1829,7 @@ function resetHoldState() {
   document.getElementById("hold-timer").style.display = "none";
   document.getElementById("btn-main-action").innerText =
     "Giữ Ghế Tạm Temporarily";
-  document.getElementById("btn-main-action").style.background = "#e71a0f";
+  document.getElementById("btn-main-action").style.background = "#ff6b35";
 }
 
 function switchProfileSubTab(sub) {
@@ -2098,7 +2123,7 @@ async function sendChatMessageToServer() {
 
   // 1. Hiển thị ngay lập tức tin nhắn của Khách hàng lên khung chat
   msgZone.innerHTML += `
-    <div style="align-self: flex-end; background-color: #e71a0f; color: white; padding: 10px 14px; border-radius: 8px; max-width: 85%; font-size: 13.5px; line-height: 1.4; font-weight: bold; box-shadow: 0 2px 5px rgba(231,26,15,0.15); word-break: break-word;">
+    <div style="align-self: flex-end; background-color: #ff6b35; color: white; padding: 10px 14px; border-radius: 8px; max-width: 85%; font-size: 13.5px; line-height: 1.4; font-weight: bold; box-shadow: 0 2px 5px rgba(255,107,53,0.15); word-break: break-word;">
       ${userText}
     </div>
   `;
@@ -2144,7 +2169,7 @@ async function sendChatMessageToServer() {
     : `🤖 LAS Bot đang suy nghĩ câu trả lời...`;
 
   msgZone.innerHTML += `
-    <div id="${loadingId}" style="align-self: flex-start; background-color: #f4f2ec; color: #777; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-style: italic;">
+    <div id="${loadingId}" style="align-self: flex-start; background-color: #0b0b0e; color: #9a9aa3; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-style: italic;">
       ${loadingText}
     </div>
   `;
@@ -2214,7 +2239,7 @@ async function sendChatMessageToServer() {
 
     // Hiển thị câu trả lời thông minh của Trợ lý ảo lên màn hình
     msgZone.innerHTML += `
-      <div style="align-self: flex-start; background-color: #f4f2ec; color: #333; padding: 10px 14px; border-radius: 8px; max-width: 85%; font-size: 13.5px; line-height: 1.4; border-left: 3px solid #e71a0f; word-break: break-word;">
+      <div style="align-self: flex-start; background-color: #0b0b0e; color: #e4e4e7; padding: 10px 14px; border-radius: 8px; max-width: 85%; font-size: 13.5px; line-height: 1.4; border-left: 3px solid #ff6b35; word-break: break-word;">
         ${aiResponseText}
       </div>
     `;
@@ -2231,7 +2256,7 @@ async function sendChatMessageToServer() {
         err.message.includes("RESOURCE_EXHAUSTED"))
     ) {
       msgZone.innerHTML += `
-            <div style="background: #fff3cd; padding: 10px; border-radius: 8px; border-left: 3px solid #ffc107; align-self: flex-start; max-width: 85%;">
+            <div style="background: rgba(229,169,59,0.12); padding: 10px; border-radius: 8px; border-left: 3px solid #ffc107; align-self: flex-start; max-width: 85%;">
                 <b>🤖 Bot:</b> Dạ hiện tại hệ thống AI đang quá tải, mình xem lịch chiếu trực tiếp ở dưới đây nhé:<br>
                 <i style="font-size: 12px;">${dbContext.replace(/\n/g, "<br>")}</i>
             </div>`;
