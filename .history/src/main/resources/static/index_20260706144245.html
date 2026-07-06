@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>LAS Cinemas Vietnam - Official Premium Interface</title>
-    <link rel="stylesheet" href="style.css?v=4.2" />
+    <link rel="stylesheet" href="style.css?v=3.6" />
   </head>
   <body>
     <div class="global-viewport-container">
@@ -47,10 +47,10 @@
       <header>
         <div class="header-container" style="max-width: 1200px">
           <div
-            class="logo logo-has-img"
+            class="logo"
             onclick="switchCgvTab('panel-movies', 'now_showing')"
           >
-            <img src="img/las_logo.png?v=1" alt="LAS Cinemas" class="logo-img" />
+            LAS<span>CINEMAS</span>
           </div>
           <div class="nav-menu">
             <div class="nav-item-wrapper">
@@ -327,7 +327,7 @@
         <div id="booking-step-1" class="booking-step active">
             <div class="select-box-wrapper" style="background: #17171b; border: 1px solid rgba(255,255,255,0.12); padding: 20px; border-radius: 6px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); text-align: left;">
                 <h3 style="color:#ff6b35; font-weight: bold; margin-top:0; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px;">1. Chọn Phim Trực Thuộc</h3>
-                <select id="cgv-combo-movie" style="width:100%; padding:11px; font-size:14px; border: 1px solid rgba(255,255,255,0.15); border-radius:4px; background: #17171b; color:#e4e4e7; cursor: pointer; outline: none;" onchange="onMovieOrTimeChange()">
+                <select id="cgv-combo-movie" style="width:100%; padding:11px; font-size:14px; border: 1px solid rgba(255,255,255,0.15); border-radius:4px; background: #17171b; cursor: pointer; outline: none;" onchange="onMovieOrTimeChange()">
                     <option value="">-- Đang tải danh sách phim khả dụng từ Database... --</option>
                 </select>
             </div>
@@ -338,7 +338,7 @@
             </div>
             
             <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color:#f4f4f5; text-align: left; text-transform: uppercase;">3. Chọn Suất Chiếu Hôm Nay</div>
-            <div style="background: #17171b; border: 1px solid rgba(255,255,255,0.12); padding: 20px; margin-bottom: 20px; border-radius: 6px; text-align: left;">
+            <div style="background: #fafafa; border: 1px solid rgba(255,255,255,0.12); padding: 20px; margin-bottom: 20px; border-radius: 6px; text-align: left;">
                 <div class="showtime-grid" id="cgv-showtime-grid" style="display: flex; gap: 12px; flex-wrap: wrap;"></div>
             </div>
 
@@ -367,7 +367,7 @@
 
         <div id="booking-step-2" class="booking-step">
             <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px; color:#f4f4f5; text-align: left; text-transform: uppercase;">5. Chọn Tiện Ích Combo Bắp Nước</div>
-            <div class="fnb-container" id="cgv-fnb-menu" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;"></div>
+            <div class="fnb-container" id="cgv-fnb-menu" style="display: flex; flex-direction: column; gap: 12px;"></div>
         </div>
 
         <div id="booking-step-3" class="booking-step">
@@ -377,7 +377,7 @@
     <div style="background: #0b0b0e; padding: 18px; margin-bottom: 25px; border: 1px dashed #bba; text-align: left; border-radius: 6px;">
         <strong style="color: #e4e4e7; font-size: 13.5px;">Mã Voucher ưu đãi (Nhập <span style="color:#ff6b35; font-weight:bold;">LAS20</span> để nhận giảm giá 20%):</strong>
         <div style="display: flex; gap: 10px; margin-top: 8px;">
-            <input type="text" id="voucher-input" class="cgv-input-text" style="flex:1; padding: 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; outline: none; font-size: 13px; color:#e4e4e7;" placeholder="Ví dụ: LAS20">
+            <input type="text" id="voucher-input" class="cgv-input-text" style="flex:1; padding: 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; outline: none; font-size: 13px;" placeholder="Ví dụ: LAS20">
             <button onclick="applyVoucher()" class="btn-cgv-submit" style="width: auto; margin-top: 0; padding: 0 20px; font-weight: bold; background: #111; color:#fff; border:none; border-radius:4px; cursor:pointer;">ÁP DỤNG</button>
         </div>
     </div>
@@ -428,7 +428,7 @@
         </div>
         
         <div class="action-flow-buttons-row" style="display: flex; gap: 12px; width: 100%;">
-            <button class="btn-flow-back" onclick="goHomeFromBc()" style="flex: 0 0 46px; width: 46px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; white-space: nowrap; background: #333; color: #fff; border: none; border-radius: 8px; font-weight: bold; font-size: 20px; line-height: 1; cursor: pointer; transition: background 0.2s;">←</button>
+            <button class="btn-flow-back" onclick="goHomeFromBc()" style="flex: 0 0 50px; height: 42px; background: #444; color: #fff; border: none; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.2s;">←</button>
             <button class="btn-flow-next" id="btn-main-action" onclick="handleMainAction()" style="flex: 1; height: 42px; background: #ff6b35; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; transition: background 0.2s;">Tiếp tục</button>
         </div>
     </div>
@@ -1192,7 +1192,7 @@
           width: 450px;
           flex-direction: column;
           padding: 25px;
-          background: #1c1c21;
+          background: #fcf8ee;
           border-radius: 4px;
           border: 2px solid #222;
         "
@@ -1241,7 +1241,7 @@
           width: 420px;
           flex-direction: column;
           padding: 25px;
-          background: #1c1c21;
+          background: #fcf8ee;
           text-align: center;
           border: 2px solid #222;
           border-radius: 4px;
@@ -1318,7 +1318,7 @@
           width: 500px;
           flex-direction: column;
           padding: 25px;
-          background: #17171b;
+          background: white;
         "
       >
         <h3
@@ -1393,7 +1393,7 @@
     <div class="cgv-modal-overlay" id="payment-redirect-modal">
       <div
         style="
-          background: #17171b;
+          background: white;
           padding: 30px;
           text-align: center;
           border-radius: 8px;
@@ -1474,11 +1474,11 @@
         "
       >
         <div class="cgv-modal-close" onclick="closeHistoryDetailModal()">✕</div>
-        <h3 style="color: #f4f4f5; text-align: center">CHI TIẾT HÓA ĐƠN CŨ</h3>
+        <h3 style="color: #222; text-align: center">CHI TIẾT HÓA ĐƠN CŨ</h3>
         <div
           id="history-detail-content"
           style="
-            background: #17171b;
+            background: white;
             padding: 15px;
             border: 1px solid rgba(255,255,255,0.12);
             margin-top: 15px;
@@ -1509,7 +1509,7 @@
   </div>
 
   <div style="padding: 12px; background-color: #0b0b0e; border-top: 1px solid rgba(255,255,255,0.12); display: flex; gap: 8px; align-items: center;">
-    <input type="text" id="las-chat-user-input" placeholder="Nhập câu hỏi của bạn tại đây..." style="flex-grow: 1; padding: 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; font-size: 13px; outline: none; background: #17171b; color: #e4e4e7;" onkeypress="checkChatSendMessageKey(event)" />
+    <input type="text" id="las-chat-user-input" placeholder="Nhập câu hỏi của bạn tại đây..." style="flex-grow: 1; padding: 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; font-size: 13px; outline: none; background: white;" onkeypress="checkChatSendMessageKey(event)" />
     <button onclick="sendChatMessageToServer()" style="background-color: #ff6b35; color: white; border: none; padding: 9px 15px; border-radius: 4px; font-weight: bold; font-size: 13px; cursor: pointer; text-transform: uppercase;">Gửi</button>
   </div>
 </div>

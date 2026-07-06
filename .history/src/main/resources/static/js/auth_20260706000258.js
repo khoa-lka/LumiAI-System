@@ -15,16 +15,16 @@ function closeAuthModal() {
 }
 
 function toggleAuthTab(type) {
-  document.getElementById("tab-login-btn")?.classList.remove("active");
-  document.getElementById("tab-register-btn")?.classList.remove("active");
+  document.getElementById("tab-login-btn").classList.remove("active");
+  document.getElementById("tab-register-btn").classList.remove("active");
   document.getElementById("form-login-panel").classList.remove("active");
   document.getElementById("form-register-panel").classList.remove("active");
 
   if (type === "login") {
-    document.getElementById("tab-login-btn")?.classList.add("active");
+    document.getElementById("tab-login-btn").classList.add("active");
     document.getElementById("form-login-panel").classList.add("active");
   } else if (type === "register") {
-    document.getElementById("tab-register-btn")?.classList.add("active");
+    document.getElementById("tab-register-btn").classList.add("active");
     document.getElementById("form-register-panel").classList.add("active");
   }
 }

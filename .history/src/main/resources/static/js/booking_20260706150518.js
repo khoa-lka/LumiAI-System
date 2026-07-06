@@ -270,7 +270,7 @@ function goToBookingStep(step) {
       mainBtn.style.background = "#ff6b35";
     }
     if (backBtn) {
-      backBtn.innerText = "←";
+      backBtn.innerText = "← Quay Lại";
       backBtn.setAttribute("onclick", "goToBookingStep(1)");
     }
   } else if (step === 3) {
@@ -279,7 +279,7 @@ function goToBookingStep(step) {
       mainBtn.style.background = "#10B981";
     }
     if (backBtn) {
-      backBtn.innerText = "←";
+      backBtn.innerText = "← Chọn F&B";
       backBtn.setAttribute("onclick", "goToBookingStep(2)");
     }
 

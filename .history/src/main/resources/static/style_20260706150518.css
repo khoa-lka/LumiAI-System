@@ -129,22 +129,6 @@ header {
   letter-spacing: -0.5px;
   margin-left: 0;
 }
-/* Logo dạng ảnh của nhóm */
-.logo-has-img {
-  padding: 8px 0;
-}
-.logo-has-img::before {
-  content: none;
-}
-.logo-img {
-  height: 44px;
-  width: auto;
-  display: block;
-  object-fit: contain;
-}
-@media (max-width: 560px) {
-  .logo-img { height: 36px; }
-}
 .nav-menu {
   display: flex;
   height: 100%;
@@ -678,148 +662,6 @@ header {
   color: var(--cgv-red);
   font-family: var(--font-display);
   letter-spacing: -0.5px;
-}
-
-/* --- THẺ COMBO BẮP NƯỚC (STEP 2) --- */
-.fnb-card {
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 18px;
-  box-shadow: var(--shadow-card);
-  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease),
-    transform 0.2s var(--ease);
-}
-.fnb-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(255, 107, 53, 0.35);
-}
-.fnb-card-active {
-  border-color: var(--cgv-red);
-  box-shadow: 0 0 0 1px var(--cgv-red), 0 10px 26px rgba(255, 107, 53, 0.14);
-}
-.fnb-card-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-.fnb-card-icon {
-  font-size: 24px;
-  line-height: 1;
-}
-.fnb-tag-popular {
-  background: rgba(255, 107, 53, 0.15);
-  color: var(--cgv-red);
-  border: 1px solid rgba(255, 107, 53, 0.4);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-}
-.fnb-card-price {
-  margin-left: auto;
-  color: var(--cgv-red);
-  font-size: 18px;
-  font-weight: 800;
-  font-family: var(--font-display);
-  letter-spacing: -0.3px;
-}
-.fnb-card-title {
-  margin: 0 0 4px 0;
-  color: var(--text-light);
-  font-size: 17px;
-  font-weight: 700;
-  font-family: var(--font-display);
-}
-.fnb-card-desc {
-  margin: 0 0 12px 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-.fnb-card-list {
-  list-style: none;
-  margin: 0 0 16px 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.fnb-card-list li {
-  position: relative;
-  padding-left: 22px;
-  font-size: 13px;
-  color: var(--text-dark);
-}
-.fnb-card-list li::before {
-  content: "✓";
-  position: absolute;
-  left: 0;
-  top: 0;
-  color: var(--success);
-  font-weight: 900;
-  font-size: 12px;
-}
-.fnb-card-action {
-  margin-top: auto;
-}
-.fnb-add-btn {
-  width: 100%;
-  padding: 12px;
-  background: var(--surface-2);
-  color: var(--text-light);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-family: var(--font-main);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease);
-}
-.fnb-add-btn:hover {
-  background: rgba(255, 107, 53, 0.12);
-  border-color: rgba(255, 107, 53, 0.45);
-  color: var(--cgv-red);
-}
-.fnb-stepper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.fnb-step-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color);
-  background: var(--surface-2);
-  color: var(--text-light);
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1;
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease), transform 0.15s var(--ease);
-}
-.fnb-step-btn:hover {
-  transform: scale(1.06);
-}
-.fnb-step-plus {
-  background: var(--cgv-red);
-  border-color: var(--cgv-red);
-  color: #fff;
-}
-.fnb-step-plus:hover {
-  background: var(--cgv-red-hover);
-}
-.fnb-step-qty {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--text-light);
-}
-@media (max-width: 620px) {
-  #cgv-fnb-menu { grid-template-columns: 1fr !important; }
 }
 
 .cgv-movie-tab-header {
@@ -2089,17 +1931,14 @@ header {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 4px;
   font-size: 13px;
   box-sizing: border-box;
   background: #17171b;
-  color: var(--text-light);
   outline: none;
   margin-bottom: 0;
 }
-.cgv-input-text::placeholder { color: var(--muted); }
 .cgv-input-text:focus {
-  border: 1px solid var(--cgv-red);
+  border: 1px solid #222;
 }
 
 .captcha-row {
@@ -2183,10 +2022,8 @@ header {
 }
 .select-birth {
   padding: 6px !important;
-  background: var(--surface-2);
-  color: var(--text-light);
+  background: white;
   border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 4px;
   font-size: 13px;
   cursor: pointer;
 }

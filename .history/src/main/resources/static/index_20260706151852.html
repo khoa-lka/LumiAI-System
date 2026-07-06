@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>LAS Cinemas Vietnam - Official Premium Interface</title>
-    <link rel="stylesheet" href="style.css?v=4.2" />
+    <link rel="stylesheet" href="style.css?v=4.0" />
   </head>
   <body>
     <div class="global-viewport-container">
@@ -47,10 +47,10 @@
       <header>
         <div class="header-container" style="max-width: 1200px">
           <div
-            class="logo logo-has-img"
+            class="logo"
             onclick="switchCgvTab('panel-movies', 'now_showing')"
           >
-            <img src="img/las_logo.png?v=1" alt="LAS Cinemas" class="logo-img" />
+            LAS<span>CINEMAS</span>
           </div>
           <div class="nav-menu">
             <div class="nav-item-wrapper">
@@ -367,7 +367,7 @@
 
         <div id="booking-step-2" class="booking-step">
             <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px; color:#f4f4f5; text-align: left; text-transform: uppercase;">5. Chọn Tiện Ích Combo Bắp Nước</div>
-            <div class="fnb-container" id="cgv-fnb-menu" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;"></div>
+            <div class="fnb-container" id="cgv-fnb-menu" style="display: flex; flex-direction: column; gap: 12px;"></div>
         </div>
 
         <div id="booking-step-3" class="booking-step">

@@ -129,22 +129,6 @@ header {
   letter-spacing: -0.5px;
   margin-left: 0;
 }
-/* Logo dạng ảnh của nhóm */
-.logo-has-img {
-  padding: 8px 0;
-}
-.logo-has-img::before {
-  content: none;
-}
-.logo-img {
-  height: 44px;
-  width: auto;
-  display: block;
-  object-fit: contain;
-}
-@media (max-width: 560px) {
-  .logo-img { height: 36px; }
-}
 .nav-menu {
   display: flex;
   height: 100%;

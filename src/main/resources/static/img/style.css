@@ -1,15 +1,15 @@
 /* ==========================================================================
    LAS CINEMAS - TỔNG HỢP GIAO DIỆN HOÀN CHỈNH TỪ A-Z
    ========================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 :root {
   --cgv-black: #0a0a0c;
   --cgv-dark: #17171b;
   --cgv-gold: #e5a93b;
   --cgv-gold-dark: #b37d1b;
-  --cgv-red: #ff6b35;
-  --cgv-red-hover: #ff8a52;
+  --cgv-red: #e71a0f;
+  --cgv-red-hover: #ff3b2f;
   --cgv-gray-bg: #0a0a0c;
   --text-dark: #e4e4e7;
   --text-light: #ffffff;
@@ -20,15 +20,14 @@
   --surface-2: #1c1c21;
   --muted: #9a9aa3;
   --success: #22c55e;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
   --radius-pill: 999px;
   --shadow-card: 0 4px 18px rgba(0, 0, 0, 0.35);
-  --shadow-glow: 0 8px 24px rgba(255, 107, 53, 0.28);
+  --shadow-glow: 0 8px 24px rgba(231, 26, 15, 0.28);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --font-main: "Be Vietnam Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-display: "Sora", "Be Vietnam Pro", "Helvetica Neue", Arial, sans-serif;
+  --font-main: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 * {
@@ -47,19 +46,6 @@ body {
   padding: 0;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* --- Font tiêu đề hiện đại (Sora) cho các heading nổi bật --- */
-.logo,
-.las-section-title,
-.tab-title-main,
-.tab-title-sub,
-.section-title,
-.movie-spec-title,
-.las-hero-cta {
-  font-family: var(--font-display);
-  letter-spacing: -0.4px;
 }
 
 /* --- Hiệu ứng chuyển động dùng chung (mượt hơn, nhẹ, không phá vỡ layout) --- */
@@ -128,22 +114,6 @@ header {
   font-weight: 900;
   letter-spacing: -0.5px;
   margin-left: 0;
-}
-/* Logo dạng ảnh của nhóm */
-.logo-has-img {
-  padding: 8px 0;
-}
-.logo-has-img::before {
-  content: none;
-}
-.logo-img {
-  height: 44px;
-  width: auto;
-  display: block;
-  object-fit: contain;
-}
-@media (max-width: 560px) {
-  .logo-img { height: 36px; }
 }
 .nav-menu {
   display: flex;
@@ -227,10 +197,9 @@ header {
   max-width: 1200px !important;
   margin: 20px auto !important;
   padding: 25px !important;
-  background: var(--cgv-black);
+  background: white;
   border: 1px solid var(--border-color);
-  border-top: 5px solid var(--cgv-red);
-  border-radius: var(--radius-lg);
+  border-top: 5px solid var(--cgv-black);
   box-sizing: border-box;
 }
 
@@ -284,7 +253,7 @@ header {
   padding: 2px 6px;
 }
 .lang-btn.lang-vn {
-  background-color: #ff6b35;
+  background-color: #e71a0f;
   color: white;
 }
 .lang-btn.lang-en {
@@ -318,7 +287,7 @@ header {
 .icon-menu-item .icon-circle {
   width: 45px;
   height: 45px;
-  background: #ff6b35;
+  background: #e71a0f;
   color: white;
   border-radius: 50%;
   display: flex;
@@ -524,304 +493,12 @@ header {
 }
 
 /* --- KHU VỰC TRANG CHỦ & PHIM --- */
-/* --- THANH ĐIỀU HƯỚNG (BREADCRUMB) --- */
-.las-breadcrumb-nav {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  background: var(--surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-pill);
-  padding: 8px 10px 8px 14px;
-  margin-bottom: 22px;
-  box-shadow: var(--shadow-card);
-}
-.bc-back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(255, 107, 53, 0.12);
-  color: var(--cgv-red);
-  border: 1px solid rgba(255, 107, 53, 0.35);
-  border-radius: var(--radius-pill);
-  padding: 6px 15px 6px 12px;
-  font-family: var(--font-main);
+.cgv-breadcrumb-bar {
+  text-align: left;
   font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.2s var(--ease), transform 0.2s var(--ease),
-    border-color 0.2s var(--ease);
+  color: #a8a8b3;
+  margin-bottom: 20px;
 }
-.bc-back-btn:hover {
-  background: var(--cgv-red);
-  color: #fff;
-  border-color: var(--cgv-red);
-  transform: translateX(-2px);
-}
-.bc-back-arrow {
-  font-size: 18px;
-  line-height: 1;
-  font-weight: 900;
-}
-.bc-trail {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  font-size: 13px;
-}
-.bc-crumb {
-  color: var(--muted);
-  font-weight: 600;
-  transition: color 0.2s var(--ease);
-}
-.bc-home,
-.bc-parent {
-  cursor: pointer;
-}
-.bc-home {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-.bc-home:hover,
-.bc-parent:hover {
-  color: var(--cgv-red);
-}
-.bc-home-icon {
-  font-size: 14px;
-}
-.bc-sep {
-  color: rgba(255, 255, 255, 0.28);
-  font-size: 14px;
-  user-select: none;
-}
-.bc-current {
-  color: var(--text-light);
-  font-weight: 700;
-  background: var(--surface-2);
-  border: 1px solid var(--border-color);
-  padding: 4px 12px;
-  border-radius: var(--radius-pill);
-}
-@media (max-width: 560px) {
-  .las-breadcrumb-nav { gap: 10px; padding: 7px 10px; }
-  .bc-trail { font-size: 12px; }
-  .bc-current { padding: 3px 10px; }
-}
-
-/* --- BẢNG RÀ SOÁT HÓA ĐƠN (STEP 3) --- */
-.inv-review {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.inv-line {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
-  padding: 9px 2px;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.09);
-}
-.inv-k {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.inv-v {
-  color: var(--text-light);
-  font-size: 13.5px;
-  font-weight: 700;
-  text-align: right;
-}
-.inv-fnb {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 5px 2px 5px 16px;
-  font-size: 12.5px;
-  color: #c4c4cc;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
-}
-.inv-fnb span:last-child {
-  color: var(--text-light);
-  font-weight: 600;
-  white-space: nowrap;
-}
-.inv-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 12px;
-  padding: 12px 14px;
-  background: rgba(255, 107, 53, 0.08);
-  border: 1px solid rgba(255, 107, 53, 0.25);
-  border-radius: var(--radius-md);
-}
-.inv-total > span:first-child {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-dark);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.inv-total-amt {
-  font-size: 20px;
-  font-weight: 900;
-  color: var(--cgv-red);
-  font-family: var(--font-display);
-  letter-spacing: -0.5px;
-}
-
-/* --- THẺ COMBO BẮP NƯỚC (STEP 2) --- */
-.fnb-card {
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 18px;
-  box-shadow: var(--shadow-card);
-  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease),
-    transform 0.2s var(--ease);
-}
-.fnb-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(255, 107, 53, 0.35);
-}
-.fnb-card-active {
-  border-color: var(--cgv-red);
-  box-shadow: 0 0 0 1px var(--cgv-red), 0 10px 26px rgba(255, 107, 53, 0.14);
-}
-.fnb-card-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-.fnb-card-icon {
-  font-size: 24px;
-  line-height: 1;
-}
-.fnb-tag-popular {
-  background: rgba(255, 107, 53, 0.15);
-  color: var(--cgv-red);
-  border: 1px solid rgba(255, 107, 53, 0.4);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-}
-.fnb-card-price {
-  margin-left: auto;
-  color: var(--cgv-red);
-  font-size: 18px;
-  font-weight: 800;
-  font-family: var(--font-display);
-  letter-spacing: -0.3px;
-}
-.fnb-card-title {
-  margin: 0 0 4px 0;
-  color: var(--text-light);
-  font-size: 17px;
-  font-weight: 700;
-  font-family: var(--font-display);
-}
-.fnb-card-desc {
-  margin: 0 0 12px 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-.fnb-card-list {
-  list-style: none;
-  margin: 0 0 16px 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.fnb-card-list li {
-  position: relative;
-  padding-left: 22px;
-  font-size: 13px;
-  color: var(--text-dark);
-}
-.fnb-card-list li::before {
-  content: "✓";
-  position: absolute;
-  left: 0;
-  top: 0;
-  color: var(--success);
-  font-weight: 900;
-  font-size: 12px;
-}
-.fnb-card-action {
-  margin-top: auto;
-}
-.fnb-add-btn {
-  width: 100%;
-  padding: 12px;
-  background: var(--surface-2);
-  color: var(--text-light);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-family: var(--font-main);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease);
-}
-.fnb-add-btn:hover {
-  background: rgba(255, 107, 53, 0.12);
-  border-color: rgba(255, 107, 53, 0.45);
-  color: var(--cgv-red);
-}
-.fnb-stepper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.fnb-step-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color);
-  background: var(--surface-2);
-  color: var(--text-light);
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1;
-  cursor: pointer;
-  transition: background-color 0.2s var(--ease), transform 0.15s var(--ease);
-}
-.fnb-step-btn:hover {
-  transform: scale(1.06);
-}
-.fnb-step-plus {
-  background: var(--cgv-red);
-  border-color: var(--cgv-red);
-  color: #fff;
-}
-.fnb-step-plus:hover {
-  background: var(--cgv-red-hover);
-}
-.fnb-step-qty {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--text-light);
-}
-@media (max-width: 620px) {
-  #cgv-fnb-menu { grid-template-columns: 1fr !important; }
-}
-
 .cgv-movie-tab-header {
   display: flex;
   justify-content: flex-start;
@@ -872,7 +549,7 @@ header {
 }
 .cgv-search-bar-container:focus-within {
   border-color: var(--cgv-red);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+  box-shadow: 0 0 0 3px rgba(231, 26, 15, 0.15);
 }
 .cgv-search-input {
   flex-grow: 1;
@@ -916,7 +593,7 @@ header {
 }
 .movie-spec-card:hover {
   transform: translateY(-6px);
-  border-color: rgba(255, 107, 53, 0.5);
+  border-color: rgba(231, 26, 15, 0.5);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
 }
 .poster-wrapper-box {
@@ -961,28 +638,9 @@ header {
   border-radius: 20px;
   z-index: 2;
 }
-.status-pill-badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
-  padding: 4px 11px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  border-radius: var(--radius-pill);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-}
-.status-pill-showing {
-  background-color: var(--success);
-}
-.status-pill-soon {
-  background-color: #64748b;
-}
 .rank-ribbon {
   position: absolute;
-  top: 46px;
+  top: 10px;
   right: 10px;
   width: 28px;
   height: 28px;
@@ -1055,7 +713,7 @@ header {
   transition: background-color 0.2s, transform 0.2s;
 }
 .btn-cgv-buy-ticket-spec:hover {
-  background-color: #e0551f;
+  background-color: #b31010;
   transform: translateY(-1px);
 }
 
@@ -1140,7 +798,7 @@ header {
 }
 .news-promo-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(255, 107, 53, 0.4);
+  border-color: rgba(231, 26, 15, 0.4);
 }
 .news-card-img-holder {
   width: 100%;
@@ -1189,7 +847,7 @@ header {
 }
 .step-item.active {
   opacity: 1;
-  color: #ff6b35;
+  color: #e71a0f;
 }
 
 .booking-two-columns-layout {
@@ -1241,23 +899,22 @@ header {
   margin-top: 15px;
 }
 .showtime-btn {
-  background: var(--surface-2);
-  color: var(--text-dark);
-  border: 1px solid var(--border-color);
+  background: white;
+  border: 1px solid rgba(255,255,255,0.15);
   padding: 10px;
   text-align: center;
   font-weight: bold;
   cursor: pointer;
   font-size: 13px;
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
 }
 .showtime-btn:hover,
 .showtime-btn.active {
   border-color: var(--cgv-red);
   color: var(--cgv-red);
-  background: rgba(255,107,53,0.08);
-  box-shadow: 0 3px 10px rgba(255,107,53,0.15);
+  background: rgba(231,26,15,0.08);
+  box-shadow: 0 3px 10px rgba(231,26,15,0.15);
 }
 .showtime-btn:hover {
   transform: translateY(-2px);
@@ -1373,7 +1030,7 @@ header {
 /* 🔴 Ghế VIP (Đồng bộ cả Vip và VIP chống cháy lỗi ghi hoa) */
 .cgv-seat.Vip,
 .cgv-seat.VIP {
-  background-color: #e0551f;
+  background-color: #b31010;
   color: white;
 }
 
@@ -1400,9 +1057,9 @@ header {
 
 /* 🌟 Ghế đang được click chọn (selected) */
 .cgv-seat.selected {
-  background-color: #ff6b35 !important;
+  background-color: #e71a0f !important;
   color: white !important;
-  box-shadow: 0 0 10px #ff6b35;
+  box-shadow: 0 0 10px #e71a0f;
   transform: scale(1.05);
 }
 
@@ -1444,7 +1101,7 @@ header {
   border-radius: 8px;
   padding: 25px;
   text-align: left;
-  border-top: 5px solid #ff6b35;
+  border-top: 5px solid #e71a0f;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 .invoice-total-card {
@@ -1475,7 +1132,7 @@ header {
   background: #1c1c21;
 }
 .btn-flow-next {
-  background: #ff6b35;
+  background: #e71a0f;
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -1488,7 +1145,7 @@ header {
   transition: all 0.2s;
 }
 .btn-flow-next:hover {
-  background: #e0551f;
+  background: #b31010;
 }
 
 /* --- TÀI KHOẢN & THÀNH VIÊN --- */
@@ -1507,7 +1164,7 @@ header {
   flex: 0 0 250px;
 }
 .sidebar-main-title {
-  color: #ff6b35;
+  color: #e71a0f;
   font-size: 20px;
   font-weight: 900;
   margin: 0 0 15px 0;
@@ -1537,9 +1194,9 @@ header {
   background-color: #1c1c21;
 }
 .arrow-btn.active {
-  background-color: #ff6b35;
+  background-color: #e71a0f;
   color: white;
-  border-color: #ff6b35;
+  border-color: #e71a0f;
 }
 .arrow-btn.active::after {
   content: "▶";
@@ -1591,7 +1248,7 @@ header {
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  background-color: #ff6b35;
+  background-color: #e71a0f;
   color: white;
   display: flex;
   align-items: center;
@@ -1745,7 +1402,7 @@ header {
   font-size: 16px;
   font-weight: bold;
   text-transform: uppercase;
-  border-left: 4px solid #ff6b35;
+  border-left: 4px solid #e71a0f;
   padding-left: 10px;
   margin: 25px 0 15px 0;
   color: #f4f4f5;
@@ -1874,7 +1531,7 @@ header {
 .las-input::placeholder { color: #6b6b76; }
 .las-input:focus {
   border-color: var(--cgv-red);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+  box-shadow: 0 0 0 3px rgba(231, 26, 15, 0.15);
 }
 
 .las-toggle-password-icon {
@@ -2039,7 +1696,7 @@ header {
 }
 .cgv-auth-tabs {
   display: flex;
-  background-color: #ff6b35;
+  background-color: #e71a0f;
   padding: 0 10px;
 }
 .cgv-tab-btn {
@@ -2083,23 +1740,20 @@ header {
   color: #e4e4e7;
 }
 .cgv-form-group label span {
-  color: #ff6b35;
+  color: #e71a0f;
 }
 .cgv-input-text {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 4px;
   font-size: 13px;
   box-sizing: border-box;
   background: #17171b;
-  color: var(--text-light);
   outline: none;
   margin-bottom: 0;
 }
-.cgv-input-text::placeholder { color: var(--muted); }
 .cgv-input-text:focus {
-  border: 1px solid var(--cgv-red);
+  border: 1px solid #222;
 }
 
 .captcha-row {
@@ -2137,7 +1791,7 @@ header {
 }
 
 .btn-cgv-submit {
-  background-color: #ff6b35;
+  background-color: #e71a0f;
   color: white;
   font-weight: bold;
   font-size: 15px;
@@ -2151,7 +1805,7 @@ header {
   transition: background 0.2s;
 }
 .btn-cgv-submit:hover {
-  background-color: #e0551f;
+  background-color: #b31010;
 }
 .cgv-auth-footer {
   text-align: center;
@@ -2183,10 +1837,8 @@ header {
 }
 .select-birth {
   padding: 6px !important;
-  background: var(--surface-2);
-  color: var(--text-light);
+  background: white;
   border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 4px;
   font-size: 13px;
   cursor: pointer;
 }
@@ -2229,7 +1881,7 @@ header {
   font-weight: normal;
 }
 .check-item b {
-  color: #ff6b35;
+  color: #e71a0f;
   font-weight: bold;
 }
 
@@ -2303,7 +1955,7 @@ header {
   border-radius: 50%;
 }
 .dot.active {
-  background-color: #ff6b35;
+  background-color: #e71a0f;
 }
 
 /* --- POPUP QUÊN MẬT KHẨU --- */
@@ -2313,7 +1965,7 @@ header {
   border: 1px solid rgba(255,255,255,0.15);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
   position: relative;
-  font-family: var(--font-main);
+  font-family: Arial, sans-serif;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -2337,7 +1989,7 @@ header {
   margin-bottom: 8px;
 }
 .cgv-forgot-body label span {
-  color: #ff6b35;
+  color: #e71a0f;
 }
 .btn-cgv-forgot-submit {
   background-color: #bc251b;
@@ -2365,7 +2017,7 @@ header {
   width: 500px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
   position: relative;
-  font-family: var(--font-main);
+  font-family: Arial, sans-serif;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -2612,8 +2264,8 @@ header {
   background: #17171b;
 }
 .payment-option-row.active {
-  border: 2px solid #ff6b35;
-  background: rgba(255,107,53,0.08);
+  border: 2px solid #e71a0f;
+  background: rgba(231,26,15,0.08);
 }
 .option-check-circle {
   width: 18px;
@@ -2628,9 +2280,9 @@ header {
   margin-right: 15px;
 }
 .payment-option-row.active .option-check-circle {
-  background: #ff6b35;
+  background: #e71a0f;
   color: white;
-  border-color: #ff6b35;
+  border-color: #e71a0f;
 }
 .method-badge-icon {
   width: 45px;
@@ -2686,7 +2338,7 @@ header {
   flex-shrink: 0; /* Ép không cho Sidebar bị co lại */
 }
 .admin-logo {
-  color: #ff6b35;
+  color: #e71a0f;
   font-size: 20px;
   font-weight: 900;
   text-align: center;
@@ -2713,8 +2365,8 @@ header {
 }
 .admin-nav-item.active {
   background: #222;
-  color: #ff6b35;
-  border-left-color: #ff6b35;
+  color: #e71a0f;
+  border-left-color: #e71a0f;
 }
 
 .admin-main-content {
@@ -2812,8 +2464,8 @@ header {
   border-color: #0066cc;
 }
 .btn-admin-action.delete {
-  color: #ff6b35;
-  border-color: #ff6b35;
+  color: #e71a0f;
+  border-color: #e71a0f;
 }
 
 /* --- MA TRẬN LỊCH CHIẾU --- */
@@ -2826,7 +2478,7 @@ header {
 }
 .matrix-timeline {
   display: flex;
-  border-bottom: 2px solid #ff6b35;
+  border-bottom: 2px solid #e71a0f;
   margin-left: 150px;
   position: relative;
   height: 30px;
@@ -2884,7 +2536,7 @@ header {
   z-index: 10;
 }
 .color-red {
-  background: linear-gradient(135deg, #ff6b35, #e0551f);
+  background: linear-gradient(135deg, #e71a0f, #b31010);
 }
 .color-blue {
   background: linear-gradient(135deg, #1976d2, #0d47a1);
@@ -2925,7 +2577,7 @@ header {
   margin-bottom: 5px;
 }
 .fnb-price {
-  color: #ff6b35;
+  color: #e71a0f;
   font-weight: bold;
   font-size: 16px;
 }
@@ -2949,7 +2601,7 @@ header {
   width: 100%;
   min-height: 800px;
   background: #1c1c21;
-  font-family: var(--font-main);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 8px;
   overflow: hidden;
@@ -3960,7 +3612,7 @@ header {
 
 /* Hiệu ứng dòng Tồn kho thấp (Low Stock) */
 .mp-fnb-low-stock-row {
-  background-color: rgba(255,107,53,0.08) !important;
+  background-color: rgba(231,26,15,0.08) !important;
   position: relative;
   z-index: 2;
 }
@@ -4049,7 +3701,7 @@ header {
 
 /* Dòng hết hạn */
 .mp-promo-expired {
-  background-color: rgba(255,107,53,0.08) !important;
+  background-color: rgba(231,26,15,0.08) !important;
   color: #8a8a94;
 }
 .mp-promo-expired td {
@@ -4147,7 +3799,7 @@ header {
   color: white;
 }
 .mp-btn-audit {
-  background: #e0551f;
+  background: #d84315;
   color: white;
 }
 
@@ -4171,7 +3823,7 @@ header {
   font-weight: bold;
 }
 .status-error {
-  background: rgba(255,107,53,0.10);
+  background: rgba(231,26,15,0.10);
   color: #c62828;
 }
 .status-ok {
@@ -4189,8 +3841,8 @@ header {
   background: #1c1c21;
 }
 .mp-upload-zone:hover {
-  border-color: #ff6b35;
-  background: rgba(255,107,53,0.08);
+  border-color: #e71a0f;
+  background: rgba(231,26,15,0.08);
 }
 
 /* Nút hủy/lưu màu sắc */
@@ -4202,7 +3854,7 @@ header {
   border-radius: 4px;
 }
 .mp-btn-confirm {
-  background: #ff6b35;
+  background: #e71a0f;
   color: white;
   border: none;
   padding: 10px;

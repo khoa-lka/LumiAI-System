@@ -270,7 +270,7 @@ function goToBookingStep(step) {
       mainBtn.style.background = "#ff6b35";
     }
     if (backBtn) {
-      backBtn.innerText = "←";
+      backBtn.innerText = "← Quay Lại";
       backBtn.setAttribute("onclick", "goToBookingStep(1)");
     }
   } else if (step === 3) {
@@ -279,27 +279,25 @@ function goToBookingStep(step) {
       mainBtn.style.background = "#10B981";
     }
     if (backBtn) {
-      backBtn.innerText = "←";
+      backBtn.innerText = "← Chọn F&B";
       backBtn.setAttribute("onclick", "goToBookingStep(2)");
     }
 
     const currentMovie = document.getElementById("cgv-combo-movie").value;
-    const fnbItems = fnbMenu.filter((i) => i.qty > 0);
-    let fnbHtml = fnbItems
+    let fnbHtml = fnbMenu
+      .filter((i) => i.qty > 0)
       .map(
         (i) =>
-          `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
+          `<p>+ ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString("vi-VN")} đ</p>`,
       )
       .join("");
     document.getElementById("review-invoice-content").innerHTML = `
-            <div class="inv-review">
-              <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
-              <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
-              <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
-              <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
-              ${fnbHtml}
-              <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
-            </div>
+            <p><strong>Phim:</strong> ${currentMovie}</p>
+            <p><strong>Suất chiếu:</strong> ${selectedDateStr} | ${selectedShowtime}</p>
+            <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
+            <p><strong>Bắp nước:</strong></p>${fnbHtml || "<p>Không có</p>"}
+            <hr style="margin: 10px 0;">
+            <p style="font-size: 16px;"><strong>Tổng cộng (Chưa giảm): <span style="color:#ff6b35;">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></strong></p>
         `;
     document.getElementById("review-final-total").innerText =
       currentPriceTotal.toLocaleString("vi-VN") + " đ";
@@ -394,23 +392,22 @@ function applyVoucher() {
 
 function openCheckoutReview() {
   const currentMovie = document.getElementById("cgv-combo-movie").value;
-  const fnbItems = fnbMenu.filter((i) => i.qty > 0);
-  let fnbHtml = fnbItems
+  let fnbHtml = fnbMenu
+    .filter((i) => i.qty > 0)
     .map(
       (i) =>
-        `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
+        `<p>+ ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString("vi-VN")} đ</p>`,
     )
     .join("");
 
   document.getElementById("review-invoice-content").innerHTML = `
-        <div class="inv-review">
-          <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
-          <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
-          <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
-          <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
-          ${fnbHtml}
-          <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
-        </div>
+        <p><strong>Phim:</strong> ${currentMovie}</p>
+        <p><strong>Suất chiếu:</strong> ${selectedDateStr} | ${selectedShowtime}</p>
+        <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
+        <p><strong>Bắp nước:</strong></p>
+        ${fnbHtml || "<p>Không có</p>"}
+        <hr style="margin: 10px 0;">
+        <p><strong>Tổng cộng (Chưa giảm):</strong> ${currentPriceTotal.toLocaleString("vi-VN")} đ</p>
     `;
 
   appliedVoucherDiscount = 0;

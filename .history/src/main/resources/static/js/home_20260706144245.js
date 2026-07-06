@@ -269,29 +269,21 @@ function renderFnbMenu() {
   if (!container) return;
   container.innerHTML = "";
   fnbMenu.forEach((item, index) => {
-    const inCart = item.qty > 0;
-    const bullets = (item.items || [])
-      .map((t) => `<li>${t}</li>`)
-      .join("");
-    const control = inCart
-      ? `<div class="fnb-stepper">
-            <button class="fnb-step-btn" onclick="updateComboQty(${index}, -1)">−</button>
-            <span class="fnb-step-qty">×${item.qty}</span>
-            <button class="fnb-step-btn fnb-step-plus" onclick="updateComboQty(${index}, 1)">+</button>
-         </div>`
-      : `<button class="fnb-add-btn" onclick="updateComboQty(${index}, 1)">＋ Thêm vào đơn</button>`;
     container.innerHTML += `
-      <div class="fnb-card ${inCart ? "fnb-card-active" : ""}">
-        <div class="fnb-card-head">
-          <div class="fnb-card-icon">${item.icon}</div>
-          ${item.popular ? `<span class="fnb-tag-popular">Phổ biến</span>` : ""}
-          <span class="fnb-card-price">${item.price.toLocaleString("vi-VN")}đ</span>
-        </div>
-        <h4 class="fnb-card-title">${item.name}</h4>
-        ${item.desc ? `<p class="fnb-card-desc">${item.desc}</p>` : ""}
-        ${bullets ? `<ul class="fnb-card-list">${bullets}</ul>` : ""}
-        <div class="fnb-card-action">${control}</div>
-      </div>`;
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#17171b; border:1px solid rgba(255,255,255,0.12); padding:15px; border-radius:8px; margin-bottom:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+              <div style="display:flex; align-items:center; gap:15px;">
+                  <div style="font-size:30px; background:#0b0b0e; width:60px; height:60px; display:flex; justify-content:center; align-items:center; border-radius:8px;">${item.icon}</div>
+                  <div style="text-align:left;">
+                      <div style="font-weight:bold; font-size:14px; color:#e4e4e7;">${item.name}</div>
+                      <div style="color:#ff6b35; font-weight:bold; font-size:14px; margin-top:5px;">${item.price.toLocaleString("vi-VN")} đ</div>
+                  </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                  <button class="fnb-qty-btn" style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, -1)">-</button>
+                  <span style="font-weight:bold; width:20px; text-align:center; font-size: 16px;">${item.qty}</span>
+                  <button class="fnb-qty-btn" style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, 1)">+</button>
+              </div>
+          </div>`;
   });
 }
 
@@ -389,22 +381,21 @@ function viewMovieDetailText(title, genre) {
 
 function openCheckoutReview() {
   const currentMovie = document.getElementById("cgv-combo-movie").value;
-  const fnbItems = fnbMenu.filter((i) => i.qty > 0);
-  let fnbHtml = fnbItems
+  let fnbHtml = fnbMenu
+    .filter((i) => i.qty > 0)
     .map(
       (i) =>
-        `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
+        `<p>+ ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString("vi-VN")} đ</p>`,
     )
     .join("");
   document.getElementById("review-invoice-content").innerHTML = `
-      <div class="inv-review">
-        <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
-        <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
-        <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
-        <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
-        ${fnbHtml}
-        <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
-      </div>
+      <p><strong>Phim:</strong> ${currentMovie}</p>
+      <p><strong>Suất chiếu:</strong> ${selectedDateStr} | ${selectedShowtime}</p>
+      <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
+      <p><strong>Bắp nước:</strong></p>
+      ${fnbHtml || "<p>Không có</p>"}
+      <hr style="margin: 10px 0;">
+      <p><strong>Tổng cộng (Chưa giảm):</strong> ${currentPriceTotal.toLocaleString("vi-VN")} đ</p>
   `;
   appliedVoucherDiscount = 0;
   document.getElementById("voucher-input").value = "";
@@ -479,7 +470,7 @@ function renderTransactionHistory() {
     // 🌟 FIX LỖI TÀNG HÌNH: Ép màu đỏ thương hiệu thật (#ff6b35) thay vì dùng biến hệ thống cũ var(--cgv-red)
     // Đồng thời thêm bộ lọc cứu cánh (inv.movie || "Vé xem phim LAS Cinemas") đề phòng chuỗi dữ liệu trống
     historyZone.innerHTML += `
-          <div style="border: 1px solid rgba(255,255,255,0.15); padding: 15px; margin-bottom: 10px; background: #17171b; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+          <div style="border: 1px solid rgba(255,255,255,0.15); padding: 15px; margin-bottom: 10px; background: white; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
               <div style="text-align: left;">
                   <h4 style="margin: 0 0 6px 0; color: #ff6b35; font-size: 15px; font-weight: bold; text-transform: uppercase;">
                       ${inv.movie ? inv.movie : "Vé xem phim LAS Cinemas"}
@@ -1095,7 +1086,7 @@ window.goToBookingStep = function (step) {
       mainBtn.style.background = "#ff6b35";
     }
     if (backBtn) {
-      backBtn.innerText = "←";
+      backBtn.innerText = "← Quay Lại";
       backBtn.setAttribute("onclick", "window.goToBookingStep(1)");
     }
   } else if (step === 3) {
@@ -1104,7 +1095,7 @@ window.goToBookingStep = function (step) {
       mainBtn.style.background = "#10B981";
     }
     if (backBtn) {
-      backBtn.innerText = "←";
+      backBtn.innerText = "← Chọn F&B";
       backBtn.setAttribute("onclick", "window.goToBookingStep(2)");
     }
 
@@ -1123,22 +1114,13 @@ window.goToBookingStep = function (step) {
       "review-invoice-content",
     );
     if (reviewInvoiceContentEl) {
-      const _fnbItems = fnbMenu.filter((i) => i.qty > 0);
-      const _fnbRows = _fnbItems
-        .map(
-          (i) =>
-            `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
-        )
-        .join("");
       reviewInvoiceContentEl.innerHTML = `
-            <div class="inv-review">
-              <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
-              <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
-              <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
-              <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${_fnbItems.length ? "" : "Không có"}</span></div>
-              ${_fnbRows}
-              <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
-            </div>
+            <p><strong>Phim:</strong> ${currentMovie}</p>
+            <p><strong>Suất chiếu:</strong> ${selectedDateStr} | ${selectedShowtime}</p>
+            <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
+            <p><strong>Bắp nước:</strong></p>${fnbHtml || "<p>Không có</p>"}
+            <hr style="margin: 10px 0;">
+            <p style="font-size: 16px;"><strong>Tổng cộng (Chưa giảm): <span style="color:#ff6b35;">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></strong></p>
         `;
     }
   } else if (step === 4) {

@@ -39,7 +39,7 @@ function renderAdminBanList() {
             const badge =
               u.status === "Active"
                 ? '<span class="status-badge status-now">Hoạt động</span>'
-                : '<span class="status-badge" style="background:#ff6b35;">Bị khóa</span>';
+                : '<span class="status-badge" style="background:#e71a0f;">Bị khóa</span>';
 
             const action =
               u.status === "Active"

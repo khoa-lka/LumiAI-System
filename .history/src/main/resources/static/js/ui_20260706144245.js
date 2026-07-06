@@ -216,29 +216,21 @@ function renderFnbMenu() {
   if (!container) return;
   container.innerHTML = "";
   fnbMenu.forEach((item, index) => {
-    const inCart = item.qty > 0;
-    const bullets = (item.items || [])
-      .map((t) => `<li>${t}</li>`)
-      .join("");
-    const control = inCart
-      ? `<div class="fnb-stepper">
-            <button class="fnb-step-btn" onclick="updateComboQty(${index}, -1)">−</button>
-            <span class="fnb-step-qty">×${item.qty}</span>
-            <button class="fnb-step-btn fnb-step-plus" onclick="updateComboQty(${index}, 1)">+</button>
-         </div>`
-      : `<button class="fnb-add-btn" onclick="updateComboQty(${index}, 1)">＋ Thêm vào đơn</button>`;
     container.innerHTML += `
-      <div class="fnb-card ${inCart ? "fnb-card-active" : ""}">
-        <div class="fnb-card-head">
-          <div class="fnb-card-icon">${item.icon}</div>
-          ${item.popular ? `<span class="fnb-tag-popular">Phổ biến</span>` : ""}
-          <span class="fnb-card-price">${item.price.toLocaleString("vi-VN")}đ</span>
-        </div>
-        <h4 class="fnb-card-title">${item.name}</h4>
-        ${item.desc ? `<p class="fnb-card-desc">${item.desc}</p>` : ""}
-        ${bullets ? `<ul class="fnb-card-list">${bullets}</ul>` : ""}
-        <div class="fnb-card-action">${control}</div>
-      </div>`;
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#17171b; border:1px solid rgba(255,255,255,0.12); padding:15px; border-radius:8px; margin-bottom:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <div style="font-size:30px; background:#0b0b0e; width:60px; height:60px; display:flex; justify-content:center; align-items:center; border-radius:8px;">${item.icon}</div>
+                        <div style="text-align:left;">
+                            <div style="font-weight:bold; font-size:14px; color:#e4e4e7;">${item.name}</div>
+                            <div style="color:#ff6b35; font-weight:bold; font-size:14px; margin-top:5px;">${item.price.toLocaleString("vi-VN")} đ</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <button class="fnb-qty-btn" style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, -1)">-</button>
+                        <span style="font-weight:bold; width:20px; text-align:center; font-size: 16px;">${item.qty}</span>
+                        <button class="fnb-qty-btn" style="width:30px; height:30px; border:1px solid rgba(255,255,255,0.15); background:#17171b; font-weight:bold; cursor:pointer; border-radius:4px; font-size: 16px;" onclick="updateComboQty(${index}, 1)">+</button>
+                    </div>
+                </div>`;
   });
 }
 
