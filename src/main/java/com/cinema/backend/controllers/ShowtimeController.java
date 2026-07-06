@@ -58,4 +58,56 @@ public class ShowtimeController {
             "showtimes", resultList
         ));
     }
+    // 🚀 THÊM MỚI: API hứng yêu cầu POST từ Front-End để tạo suất chiếu và lưu xuống SQL Server
+    @PostMapping("/add")
+    public ResponseEntity<?> addShowtime(@RequestBody Map<String, Object> payload) {
+        try {
+            Showtime newShowtime = new Showtime();
+
+            // 1. Phân rã dữ liệu từ object liên kết movie: { movie: { movieId: X } }
+            if (payload.containsKey("movie")) {
+                Map<String, Object> movieMap = (Map<String, Object>) payload.get("movie");
+                Long movieId = Long.valueOf(movieMap.get("movieId").toString());
+                
+                com.cinema.backend.entities.Movie movie = new com.cinema.backend.entities.Movie();
+                movie.setMovieId(movieId);
+                newShowtime.setMovie(movie);
+            } else {
+                return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Thiếu thông tin bộ phim!"));
+            }
+
+            // 2. Map các trường dữ liệu cơ bản cơ bản chuẩn kiểu dữ liệu
+            newShowtime.setRoomId(Integer.valueOf(payload.get("roomId").toString()));
+            newShowtime.setCreatedBy(Integer.valueOf(payload.get("createdBy").toString()));
+
+            // 3. Ép kiểu an toàn từ số thực/chuỗi JavaScript sang BigDecimal của SQL Server
+            java.math.BigDecimal price = new java.math.BigDecimal(payload.get("ticketPrice").toString());
+            newShowtime.setTicketPrice(price);
+
+            // 4. Định dạng chuỗi ISO "2026-06-20T19:00:00" ngược lại thành LocalDateTime trong Java
+            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+            
+            LocalDateTime startTime = LocalDateTime.parse(payload.get("startTime").toString(), formatter);
+            LocalDateTime endTime = LocalDateTime.parse(payload.get("endTime").toString(), formatter);
+            
+            newShowtime.setStartTime(startTime);
+            newShowtime.setEndTime(endTime);
+
+            // 5. Lưu trực tiếp xuống Database qua JpaRepository
+            Showtime savedShowtime = showtimeRepository.save(newShowtime);
+
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Xếp lịch suất chiếu mới thành công!",
+                "showtimeId", savedShowtime.getShowtimeId()
+            ));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(Map.of(
+                "status", "error",
+                "message", "Lỗi xử lý lưu suất chiếu hệ thống: " + e.getMessage()
+            ));
+        }
+    }
 }

@@ -211,62 +211,96 @@ function loadBannersFromDatabase() {
     .catch((err) => console.error("🚨 Lỗi khi tải banner từ DB: ", err));
 }
 
+// ==========================================================================
+// 🚀 ĐÃ NÂNG CẤP: Vẽ danh sách F&B động bốc trực tiếp từ Database mẫu
+// ==========================================================================
 function renderFnbMenu() {
   const container = document.getElementById("cgv-fnb-menu");
   if (!container) return;
   container.innerHTML = "";
-  fnbMenu.forEach((item, index) => {
-    const inCart = item.qty > 0;
-    const bullets = (item.items || [])
-      .map((t) => `<li>${t}</li>`)
-      .join("");
-    const control = inCart
-      ? `<div class="fnb-stepper">
-            <button class="fnb-step-btn" onclick="updateComboQty(${index}, -1)">−</button>
-            <span class="fnb-step-qty">×${item.qty}</span>
-            <button class="fnb-step-btn fnb-step-plus" onclick="updateComboQty(${index}, 1)">+</button>
-         </div>`
-      : `<button class="fnb-add-btn" onclick="updateComboQty(${index}, 1)">＋ Thêm vào đơn</button>`;
-    container.innerHTML += `
-      <div class="fnb-card ${inCart ? "fnb-card-active" : ""}">
-        <div class="fnb-card-head">
-          <div class="fnb-card-icon">${item.icon}</div>
-          ${item.popular ? `<span class="fnb-tag-popular">Phổ biến</span>` : ""}
-          <span class="fnb-card-price">${item.price.toLocaleString("vi-VN")}đ</span>
-        </div>
-        <h4 class="fnb-card-title">${item.name}</h4>
-        ${item.desc ? `<p class="fnb-card-desc">${item.desc}</p>` : ""}
-        ${bullets ? `<ul class="fnb-card-list">${bullets}</ul>` : ""}
-        <div class="fnb-card-action">${control}</div>
-      </div>`;
+// 1. Giữ đoạn check lỗi an toàn từ nhánh main
+if (!window.fnbMenu || window.fnbMenu.length === 0) {
+  container.innerHTML = "<p style='text-align:center; color:#666; padding:15px; font-size:13px;'>Đang nạp menu bắp nước từ hệ thống...</p>";
+  return;
+}
+
+// Clear container trước khi render (nếu cần) để tránh cộng dồn lặp dữ liệu
+container.innerHTML = ""; 
+
+// 2. Duyệt qua window.fnbMenu của main
+window.fnbMenu.forEach((item, index) => {
+  const inCart = item.qty > 0;
+  
+  // 3. Giữ logic tự động nhận diện icon phòng khi item.icon bị rỗng từ main
+  let icon = item.icon;
+  if (!icon) {
+    const nameLower = (item.name || "").toLowerCase();
+    icon = "🍿"; 
+    if (nameLower.includes("combo") || nameLower.includes("bap rang lon")) icon = "🎁";
+    if (nameLower.includes("nuoc") || nameLower.includes("coca") || nameLower.includes("ly")) icon = "🥤";
+    if (nameLower.includes("khoai") || nameLower.includes("chien")) icon = "🍟";
+  }
+
+  // 4. Giữ cấu trúc render danh sách bullets từ fe-xin-xo
+  const bullets = (item.items || [])
+    .map((t) => `<li>${t}</li>`)
+    .join("");
+
+  // 5. Giữ bộ điều khiển nút bấm thông minh từ fe-xin-xo
+  const control = inCart
+    ? `<div class="fnb-stepper">
+          <button class="fnb-step-btn" onclick="updateComboQty(${index}, -1)">−</button>
+          <span class="fnb-step-qty">×${item.qty}</span>
+          <button class="fnb-step-btn fnb-step-plus" onclick="updateComboQty(${index}, 1)">+</button>
+       </div>`
+    : `<button class="fnb-add-btn" onclick="updateComboQty(${index}, 1)">＋ Thêm vào đơn</button>`;
+
+  // 6. Output chuẩn theo giao diện sạch sẽ, dùng class CSS của fe-xin-xo
+  container.innerHTML += `
+    <div class="fnb-card ${inCart ? "fnb-card-active" : ""}">
+      <div class="fnb-card-head">
+        <div class="fnb-card-icon">${icon}</div>
+        ${item.popular ? `<span class="fnb-tag-popular">Phổ biến</span>` : ""}
+        <span class="fnb-card-price">${item.price.toLocaleString("vi-VN")}đ</span>
+      </div>
+      <h4 class="fnb-card-title">${item.name}</h4>
+      ${item.desc ? `<p class="fnb-card-desc">${item.desc}</p>` : ""}
+      ${bullets ? `<ul class="fnb-card-list">${bullets}</ul>` : ""}
+      <div class="fnb-card-action">${control}</div>
+    </div>`;
   });
 }
 
-// ==========================================================================
-// 🚀 FIX LUỒNG CHỌN NGÀY: Hàm độc lập giúp đổi ngày và gọi API lấy suất chiếu mới
-// ==========================================================================
-// ==========================================================================
-// 🚀 FIX DỨT ĐIỂM LUỒNG CHỌN NGÀY: Đồng bộ biến mạng và ép render Summary vé
-// ==========================================================================
+window.updateComboQty = function(index, change) {
+  if (!window.fnbMenu || !window.fnbMenu[index]) return;
+
+  let newQty = window.fnbMenu[index].qty + change;
+  if (newQty < 0) newQty = 0; 
+
+  window.fnbMenu[index].qty = newQty;
+  renderFnbMenu();
+
+  if (typeof window.calculateCgvCart === "function") {
+    window.calculateCgvCart();
+  } else if (typeof calculateCgvCart === "function") {
+    calculateCgvCart();
+  }
+};
+
 function selectCgvBookingDate(fullDateId) {
   // 1. Găm chặt ngày mới chọn vào biến toàn cục quản lý
-  selectedDateStr = fullDateId;
+  selectedDateStr = fullDateId; 
   // 🚀 RESET GHẾ: Xóa sạch danh sách ghế cũ đang chọn khi đổi ngày
   selectedSeats = [];
-  // 2. Reset suất chiếu đang chọn về rỗng để ép khách hàng chọn giờ chiếu mới của ngày mới
   selectedShowtime = "";
   window.currentSelectedShowtimeId = null;
-
-  // 3. Đồng bộ nhãn hiển thị ngày ở cột Summary bên phải giao diện đặt vé (Bảo trì nhãn UI)
+  
   const sumDateEl = document.getElementById("sum-date");
   if (sumDateEl) {
     sumDateEl.innerText = fullDateId;
   }
-
-  // 4. Vẽ lại thanh cuộn Slider ngày để cập nhật màu nền khối active đen/trắng
-  generateCgvDateSlider();
-
-  // 5. Kích hoạt cào API lấy suất chiếu động của đúng ngày mới này lên màn hình
+  
+  generateCgvDateSlider(); 
   if (typeof renderCgvInterface === "function") {
     renderCgvInterface();
   }
@@ -285,7 +319,6 @@ function generateCgvDateSlider() {
   const daysOfWeek = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
   const now = new Date();
 
-  // 🚀 KHÓA BAN ĐẦU: Chỉ thiết lập ngày hôm nay nếu biến ngày đang trống hoàn toàn (khi mới nạp trang)
   if (!selectedDateStr || selectedDateStr === "") {
     const y = now.getFullYear();
     const m = (now.getMonth() + 1).toString().padStart(2, "0");
@@ -301,14 +334,12 @@ function generateCgvDateSlider() {
     const month = (targetDate.getMonth() + 1).toString().padStart(2, "0");
     const dateNum = targetDate.getDate().toString().padStart(2, "0");
     const dayName = daysOfWeek[targetDate.getDay()];
-
     const fullDateId = `${year}-${month}-${dateNum}`;
 
     const bg = selectedDateStr === fullDateId ? "#111" : "#fff";
     const color = selectedDateStr === fullDateId ? "#fff" : "#555";
     const border = selectedDateStr === fullDateId ? "#111" : "#ccc";
 
-    // Kích hoạt sự kiện gọi hàm chọn ngày độc lập khi click
     container.innerHTML += `
       <div style="flex: 0 0 auto; min-width: 60px; background:${bg}; color:${color}; border:2px solid ${border}; border-radius:6px; cursor:pointer; text-align:center; padding: 10px 5px; box-sizing: border-box; transition: all 0.2s;" 
            onclick="selectCgvBookingDate('${fullDateId}')">
@@ -320,24 +351,17 @@ function generateCgvDateSlider() {
   }
 }
 
-// ==========================================================================
-// 🚀 BỔ SUNG: HÀM VẼ GIAO DIỆN TỔNG HỢP VÀ TỰ ĐỘNG TẢI SUẤT CHIẾU ĐỘNG TỪ DB
-// ==========================================================================
-
-// 🚀 THÊM MỚI: Hàm xử lý click chọn suất chiếu độc lập để triệt tiêu lỗi đệ quy vô hạn
 function selectCgvShowtimeSlot(startTime, showtimeId) {
   selectedShowtime = startTime;
   window.currentSelectedShowtimeId = showtimeId;
-
-  // 🚀 RESET GHẾ: Xóa sạch ghế cũ khi đổi sang khung giờ chiếu khác
   selectedSeats = [];
 
-  // Chỉ render lại cục bộ thay vì ép buộc bắn lại request mạng trùng lặp
   if (typeof renderCgvInterface === "function") {
     renderCgvInterface();
   }
 }
 
+// 🚀 THẦY ĐÃ PHÁT HIỆN VÀ FIX: Gom chuẩn toàn bộ hàm renderCgvInterface bao bọc lấy khối gọi API lấy ghế (Không đóng ngoặc bậy nữa!)
 function renderCgvInterface() {
   const movieZone = document.getElementById("cgv-movie-list");
   const selectCombo = document.getElementById("cgv-combo-movie");
@@ -346,7 +370,6 @@ function renderCgvInterface() {
   movieZone.innerHTML = "";
   let rankCounter = 1;
 
-  // 1. Duyệt mảng phim động từ SQL Server lưu trong state toàn cục để vẽ ra màn hình
   serverData.movies.forEach((m) => {
     if (m.status === currentMovieFilter) {
       const matchesKeyword =
@@ -364,16 +387,9 @@ function renderCgvInterface() {
             : `<button class="btn-cgv-buy-ticket-spec" style="background-color:#555; cursor:not-allowed;" disabled>📋 SẮP CHIẾU</button>`;
 
         let cleanImgUrl =
-          m.mainposter_url ||
-          m.mainposterUrl ||
-          m.mainposterurl ||
-          m.img ||
-          "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
-
-        let displayAge =
-          m.age_rating === 0 || m.ageRating === 0
-            ? "P"
-            : `T${m.age_rating || m.ageRating || (m.status === "now_showing" ? "16" : "P")}`;
+          m.mainposter_url || m.mainposterUrl || m.mainposterurl || m.img || "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
+          
+        let displayAge = m.age_rating === 0 || m.ageRating === 0 ? "P" : `T${m.age_rating || m.ageRating || (m.status === "now_showing" ? "16" : "P")}`;
 
         movieZone.innerHTML += `
             <div class="movie-spec-card">
@@ -402,7 +418,6 @@ function renderCgvInterface() {
     (selectCombo.options[0] ? selectCombo.options[0].value : "");
   document.getElementById("sum-movie-title").innerText = currentMovie || "-";
 
-  // 2. Tải tự động danh sách lịch chiếu động từ Database theo bộ phim đang chọn trên màn hình đặt vé
   const timeGrid = document.getElementById("cgv-showtime-grid");
   if (timeGrid && serverData.movies && serverData.movies.length > 0) {
     const selectedMovieObj = serverData.movies.find(
@@ -448,7 +463,6 @@ function renderCgvInterface() {
           actualShowtimes.forEach((st) => {
             const isSelected = st.startTime === selectedShowtime;
             const activeClass = isSelected ? "active" : "";
-            
             const roomDisplayName = st.roomId === 2 || st.room_id === 2 ? "Phòng 2 (IMAX Siêu Đại)" : "Phòng 1 (3D Standard)";
 
             timeGrid.innerHTML += `
@@ -469,9 +483,6 @@ function renderCgvInterface() {
 
   document.getElementById("sum-showtime").innerText = selectedShowtime || "-";
 
-  // ==========================================================================
-  // 3. 🚀 ĐOẠN ĐÃ ĐỒNG BỘ MỚI: Tự động co giãn Grid linh hoạt theo dữ liệu phòng từ SQL
-  // ==========================================================================
   const seatGrid = document.getElementById("cgv-seat-grid");
   if (seatGrid) {
     if (!selectedShowtime || !window.currentSelectedShowtimeId) {
@@ -498,12 +509,12 @@ function renderCgvInterface() {
       seatGrid.style.gap = "6px";
     }
 
-    // Gọi API bốc toàn bộ danh sách ghế thực tế của phòng chiếu này lên vẽ
     API.getSeatsByShowtime(window.currentSelectedShowtimeId)
       .then((backendSeats) => {
+        // 🚀 ĐÃ SỬA CHUẨN: Găm mảng dữ liệu ghế thật từ Server ra toàn cục đúng vị trí ngữ cảnh
+        window.currentBackendSeats = backendSeats;
         seatGrid.innerHTML = "";
         
-        // 1. Đồng bộ hóa gộp mã ghế đã bán từ DB
         const soldSeatsFromDb = Array.isArray(backendSeats) 
           ? backendSeats
               .filter(
@@ -519,40 +530,39 @@ function renderCgvInterface() {
               })
           : [];
 
-        // 2. Định nghĩa lại hàm tính tiền ngay tại đây để bốc trọn dữ liệu backendSeats chuẩn vừa tải về
-        window.calculateCgvCart = function() {
+        window.calculateSeatOnly = function() {
           document.getElementById("sum-seats").innerText = selectedSeats.join(", ") || "Chưa chọn";
           let total = 0;
           let totalFnbItems = 0;
 
           selectedSeats.forEach((seatId) => {
-            // Tìm trực tiếp chiếc ghế trong mảng dữ liệu thật vừa lấy từ DB lên
             const seatData = backendSeats.find(s => {
               const row = s.seatRow || s.seat_row || "";
               const num = s.seatNumber || s.seat_number || "";
               return `${row}${num}`.trim().toUpperCase() === seatId.toUpperCase();
             });
+            
+            console.log("Found:", seatData);
+
+            if (seatData) {
+                console.log("Type:", seatData.seatType);
+            }
 
             if (seatData) {
               const type = (seatData.seatType || seatData.seat_type || "STANDARD").toUpperCase();
-              if (type === "VIP") {
-                total += 110000;
-              } else if (type === "SWEETBOX") {
-                total += 250000;
-              } else {
-                total += 90000;
-              }
+              if (type === "VIP") total += 110000;
+              else if (type === "SWEETBOX") total += 250000;
+              else total += 90000;
             } else {
               total += 90000;
             }
           });
 
-          if (typeof fnbMenu !== "undefined") {
-            fnbMenu.forEach((item) => {
-              total += item.qty * item.price;
-              totalFnbItems += item.qty;
-            });
-          }
+          const activeFnb = window.fnbMenu || [];
+          activeFnb.forEach((item) => {
+            total += item.qty * item.price;
+            totalFnbItems += item.qty;
+          });
           
           const sumFnb = document.getElementById("sum-fnb");
           if (sumFnb) sumFnb.innerText = totalFnbItems + " Combo";
@@ -564,14 +574,12 @@ function renderCgvInterface() {
           if (sumTotal) sumTotal.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
         };
 
-        // 3. Tiến hành vẽ ma trận ghế lên màn hình
         if (Array.isArray(backendSeats) && backendSeats.length > 0) {
           backendSeats.forEach((seat) => {
             const rowLetter = seat.seatRow || seat.seat_row || "";
             const seatNum = seat.seatNumber || seat.seat_number || "";
             const id = `${rowLetter}${seatNum}`.trim().toUpperCase();
 
-            // Sửa lỗi hiển thị: Ép chữ hoa chuẩn để so khớp CSS của nhóm (.Standard, .VIP, .Sweetbox)
             const rawType = (seat.seatType || seat.seat_type || "STANDARD").toUpperCase();
             let cssType = "Standard";
             if (rawType === "VIP") cssType = "VIP";
@@ -585,7 +593,6 @@ function renderCgvInterface() {
             const div = document.createElement("div");
             div.className = `cgv-seat ${cssType} ${status}`;
             div.innerText = id;
-
             div.style.gridColumn = seat.colIndex || seat.col_index;
             div.style.gridRow = seat.rowIndex || seat.row_index;
 
@@ -597,21 +604,22 @@ function renderCgvInterface() {
                   selectedSeats = selectedSeats.filter((x) => x !== id);
                 else selectedSeats.push(id);
                 
-                // Gọi hàm tính tiền cục bộ siêu tốc rồi vẽ lại giao diện
-                window.calculateCgvCart();
-                renderCgvInterface();
+                // 🚀 ĐÃ SỬA KHÔN NGOAN: Chỉ đổi class UI cục bộ và chạy tính tiền, cấm renderCgvInterface() làm re-fetch
+                if (selectedSeats.includes(id)) div.classList.add("selected");
+                else div.classList.remove("selected");
+
+                window.calculateSeatOnly();
               };
             }
             seatGrid.appendChild(div);
           });
         }
-        
-        // Cập nhật lại tiền giỏ hàng hiển thị ban đầu khi nạp phòng
-        window.calculateCgvCart();
+        window.calculateSeatOnly();
+        console.log(backendSeats);
       })
       .catch((err) => {
         console.error("🚨 Lỗi nạp sơ đồ ghế ma trận động từ DB:", err);
         seatGrid.innerHTML = `<p style="color:red; font-size:13px; text-align:center; grid-column:1/-1;">Lỗi tải sơ đồ ghế phòng chiếu!</p>`;
       });
   }
-}
+} // 🚀 ĐÚNG NƠI ĐÚNG CHỖ: Dấu đóng ngoặc chuẩn của hàm renderCgvInterface kết thúc toàn vẹn ở đây!

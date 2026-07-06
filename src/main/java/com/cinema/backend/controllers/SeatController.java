@@ -6,9 +6,12 @@ import com.cinema.backend.entities.Ticket;
 import com.cinema.backend.repositories.SeatRepository;
 import com.cinema.backend.repositories.ShowtimeRepository;
 import com.cinema.backend.repositories.TicketRepository;
+import com.cinema.backend.service.VoucherService;
+
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.*;
 
@@ -25,7 +28,10 @@ public class SeatController {
     @Autowired
     private ShowtimeRepository showtimeRepository;
 
-    // 🚀 ĐỒNG BỘ HOÀN HẢO: Chỉ bốc đúng danh sách ghế của phòng chiếu thuộc suất chiếu đó
+    @Autowired
+    private VoucherService voucherService;
+
+    // 🚀 ĐÓN ĐÚNG API: /api/seats/matrix?showtimeId=...
     @GetMapping("/matrix")
     public List<Map<String, Object>> getSeatsMatrix(@RequestParam("showtimeId") Integer showtimeId) {
         List<Map<String, Object>> result = new ArrayList<>();
@@ -80,6 +86,7 @@ public class SeatController {
         Map<String, Object> response = new HashMap<>();
 
         try {
+            System.out.println("===== NEW CHECKOUT =====");
             System.out.println("CHECKOUT PAYLOAD = " + payload);
 
             Integer showtimeId = Integer.valueOf(payload.get("showtime").toString());
@@ -132,5 +139,24 @@ public class SeatController {
             response.put("message", e.getMessage());
             return response;
         }
+
+        String voucherCode = (String) payload.get("voucherCode");
+        System.out.println("VoucherCode = " + voucherCode);
+
+        if (voucherCode != null && !voucherCode.isBlank()) {
+           boolean ok = voucherService.useVoucher(voucherCode);
+            System.out.println("Use voucher = " + ok);
+        }
+
+        response.put("success", true);
+        response.put("ticketId", savedTickets.get(0).getTicketCode());
+        response.put("totalTickets", savedTickets.size());
+
+        return response;
+
+    } catch (Exception e) {
+        response.put("success", false);
+        response.put("message", e.getMessage());
+        return response;
     }
 }

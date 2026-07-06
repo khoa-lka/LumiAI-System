@@ -357,119 +357,52 @@
           </div>
         </div>
 
+        <!-- ========================================== -->
+        <!-- 📅 PHÂN HỆ MA TRẬN LỊCH CHIẾU ĐỘNG -->
+        <!-- ========================================== -->
         <div id="mp-tab-matrix" class="mp-tab-section">
           <div class="mp-action-bar">
             <div style="font-weight: bold; color: #e4e4e7; cursor: pointer">
               Lịch chiếu ∨
             </div>
             <div class="mp-filters">
-              <div class="mp-date-picker">📅 20/06/2026</div>
-              <button class="mp-btn-add">Tạo suất chiếu mới</button>
-              <button class="mp-btn-outline">Auto-Schedule</button>
+              <!-- Thay thế date picker tĩnh bằng ô input date động -->
+              <input type="date" id="mp-matrix-date-input" class="mp-filter-select" style="width: 160px; font-weight: bold;" onchange="loadManagerMatrix()" />
+              <button class="mp-btn-add" onclick="openAddShowtimeModal()">Tạo suất chiếu mới</button>
+              <button class="mp-btn-outline" onclick="loadManagerMatrix()">🔄 Làm mới</button>
             </div>
           </div>
+          
           <div class="mp-matrix-container">
             <div class="mp-matrix-header">
-              <div class="mp-matrix-room-col"></div>
+              <div class="mp-matrix-room-col">Phòng</div>
               <div class="mp-matrix-timeline">
-                <span>08:00</span><span>09:00</span><span>10:00</span
-                ><span>11:00</span><span>12:00</span><span>13:00</span
-                ><span>14:00</span><span>16:00</span><span>17:00</span
-                ><span>18:00</span><span>19:00</span><span>20:00</span
-                ><span>21:00</span><span>22:00</span><span>23:00</span>
+                <span>08:00</span><span>09:00</span><span>10:00</span><span>11:00</span>
+                <span>12:00</span><span>13:00</span><span>14:00</span><span>15:00</span>
+                <span>16:00</span><span>17:00</span><span>18:00</span><span>19:00</span>
+                <span>20:00</span><span>21:00</span><span>22:00</span><span>23:00</span>
               </div>
             </div>
+            
+            <!-- Hàng của Phòng chiếu số 1 -->
             <div class="mp-matrix-row">
               <div class="mp-matrix-room-col">
                 <span class="mp-matrix-room-name">Screen 1</span>
+                <span style="font-size:10px;color:#666;display:block;">Standard</span>
               </div>
-              <div class="mp-matrix-tracks">
-                <div
-                  class="mp-track-block mp-bg-yellow"
-                  style="left: 3%; width: 25%"
-                >
-                  <strong>Minions</strong><br />20:00<br />75/120 Ghế
-                </div>
-                <div
-                  class="mp-track-block mp-bg-gray"
-                  style="left: 31%; width: 5%"
-                >
-                  Dọn<br />phòng
-                </div>
-                <div
-                  class="mp-track-block mp-bg-green"
-                  style="left: 38%; width: 8%"
-                ></div>
-                <div class="mp-gap-text" style="left: 48%; width: 5%">
-                  15 min
-                </div>
-                <div
-                  class="mp-track-block mp-bg-blue"
-                  style="left: 55%; width: 25%"
-                >
-                  <strong>Thor</strong><br />20:00
-                </div>
-                <div
-                  class="mp-track-block mp-bg-gray"
-                  style="left: 85%; width: 5%"
-                >
-                  Dọn<br />phòng
-                </div>
+              <div class="mp-matrix-tracks" id="matrix-track-room-1">
+                <!-- Suất chiếu động của phòng 1 tự đổ vào đây -->
               </div>
             </div>
+            
+            <!-- Hàng của Phòng chiếu số 2 -->
             <div class="mp-matrix-row">
               <div class="mp-matrix-room-col">
                 <span class="mp-matrix-room-name">Screen 2</span>
+                <span style="font-size:10px;color:#d32f2f;display:block;">IMAX</span>
               </div>
-              <div class="mp-matrix-tracks">
-                <div
-                  class="mp-track-block mp-bg-yellow"
-                  style="left: 4%; width: 18%"
-                >
-                  <strong>Minions</strong><br />20:00<br />75/120 Ghế
-                </div>
-                <div class="mp-gap-text" style="left: 23%; width: 5%">
-                  15 min
-                </div>
-                <div
-                  class="mp-track-block mp-bg-blue"
-                  style="left: 29%; width: 15%"
-                >
-                  <strong>Thor</strong><br />20:00<br />75/120 Ghế
-                </div>
-                <div
-                  class="mp-track-block mp-bg-blue"
-                  style="left: 46%; width: 7%"
-                >
-                  <strong>Ti...</strong><br />16:00
-                </div>
-                <div
-                  class="mp-track-block mp-bg-blue mp-conflict-box"
-                  style="left: 55%; width: 20%"
-                >
-                  <div class="mp-conflict-tooltip">
-                    <div class="mp-icon-error">!</div>
-                    <div>
-                      <strong>Xung đột lịch chiếu!</strong><br /><span
-                        style="font-weight: normal; color: #a8a8b3"
-                        >Phòng chiếu đã có suất khác</span
-                      >
-                    </div>
-                  </div>
-                  <strong>Thor</strong><br />20:00<br />75/120 Ghế
-                </div>
-                <div
-                  class="mp-track-block mp-bg-red mp-conflict-box"
-                  style="left: 68%; width: 15%; z-index: 6"
-                >
-                  <strong>Conan</strong><br />20:00<br />75/20 Ghế
-                </div>
-                <div
-                  class="mp-track-block mp-bg-gray"
-                  style="left: 86%; width: 5%"
-                >
-                  Dọn<br />phòng
-                </div>
+              <div class="mp-matrix-tracks" id="matrix-track-room-2">
+                <!-- Suất chiếu động của phòng 2 tự đổ vào đây -->
               </div>
             </div>
           </div>
@@ -482,26 +415,28 @@
                 F&B Services & Inventory Control
               </h3>
               <div class="mp-fnb-actions">
-                <button class="mp-btn-add">Thêm sản phẩm mới</button>
-                <button class="mp-btn-add" style="background: #d32f2f">
-                  Nhập hàng
-                </button>
-                <button class="mp-btn-add" style="background: #c62828">
-                  Tái cung ứng
-                </button>
+                <button class="mp-btn-add" onclick="openAddFnbModal()">Thêm sản phẩm mới</button>
+                <button class="mp-btn-add" style="background: #d32f2f" onclick="openQuickRestockModal()">Nhập hàng</button>
+                <button class="mp-btn-add" style="background: #c62828" onclick="handleAutoReplenish()">Tái cung ứng</button>
               </div>
             </div>
             <div class="mp-fnb-bottom-row">
               <div class="mp-search-box">
-                <span class="mp-search-icon">🔍</span
-                ><input type="text" placeholder="Search" />
+                <span class="mp-search-icon">🔍</span>
+                <input type="text" id="mp-fnb-search-input" placeholder="Tìm tên bắp nước, combo..." oninput="filterManagerFnb()" />
               </div>
               <div class="mp-filters">
-                <select class="mp-filter-select" style="width: 120px">
-                  <option>Type</option>
+                <select class="mp-filter-select" id="mp-fnb-filter-type" style="width: 120px" onchange="filterManagerFnb()">
+                  <option value="all">Loại (Tất cả)</option>
+                  <option value="combo">Combo</option>
+                  <option value="bap">Bắp rang</option>
+                  <option value="nuoc">Nước ngọt</option>
+                  <option value="anvat">Đồ ăn vặt</option>
                 </select>
-                <select class="mp-filter-select" style="width: 120px">
-                  <option>Status</option>
+                <select class="mp-filter-select" id="mp-fnb-filter-stock" style="width: 120px" onchange="filterManagerFnb()">
+                  <option value="all">Tồn kho (Tất cả)</option>
+                  <option value="available">Còn hàng (>30)</option>
+                  <option value="low">Tồn kho thấp (≤30)</option>
                 </select>
               </div>
             </div>
@@ -521,57 +456,20 @@
                   <th style="text-align: center">
                     Tồn kho<br /><span
                       style="font-size: 10px; font-weight: normal"
-                      >(Hiện tại/Tối)</span
+                      >(Hiện tại)</span
                     >
                   </th>
-                  <th style="text-align: center">Trạng thái</th>
+                  <th style="text-align: center">Hành động</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="mp-fnb-tbody">
                 <tr>
-                  <td style="text-align: center"><input type="checkbox" /></td>
-                  <td style="text-align: center">
-                    <div style="font-size: 24px">🍿</div>
-                  </td>
-                  <td><strong>Bắp ngọt L</strong></td>
-                  <td>Bắp rang</td>
-                  <td style="text-align: right; font-weight: bold">
-                    65,000 VND
-                  </td>
-                  <td style="text-align: center">120kg / 30kg</td>
-                  <td style="text-align: center">
-                    <span class="mp-status active">ACTIVE</span>
-                  </td>
-                </tr>
-                <tr class="mp-fnb-low-stock-row">
-                  <td style="text-align: center"><input type="checkbox" /></td>
-                  <td style="text-align: center">
-                    <div style="font-size: 24px">🥤</div>
-                  </td>
-                  <td><strong>Coca-Cola M</strong></td>
-                  <td>Nước ngọt</td>
-                  <td style="text-align: right; font-weight: bold">
-                    38,000 VND
-                  </td>
-                  <td style="text-align: center">
-                    <strong>25/40</strong>
-                    <span class="mp-badge-lowstock">Low Stock</span>
-                  </td>
-                  <td style="text-align: center">
-                    <span class="mp-status active">ACTIVE</span>
+                  <td colspan="7" style="text-align:center; padding:15px; color:#666;">
+                    Đang quét dữ liệu kho hàng...
                   </td>
                 </tr>
               </tbody>
             </table>
-            <div class="mp-fnb-tooltip">
-              <div style="color: #f57c00; font-size: 16px">⚠️</div>
-              <div>
-                <strong>Coca-Cola M:</strong> Tồn kho thấp<br /><span
-                  style="color: #a8a8b3"
-                  >&lt; mức tối thiểu (còn 25 đơn vị)</span
-                >
-              </div>
-            </div>
           </div>
         </div>
 
@@ -1378,12 +1276,28 @@
         const titleEl = document.getElementById("mp-dynamic-title");
         if (titleEl) titleEl.innerText = titles[tabId] || "Manager Portal";
 
-        // Gọi API nạp dữ liệu phim khi qua Tab Movies
+        // 1. Gọi API nạp dữ liệu phim khi qua Tab Movies
         if (tabId === "movies" && typeof loadManagerMovies === "function") {
           try {
             loadManagerMovies();
           } catch (err) {
             console.error("Lỗi khi load danh sách phim:", err);
+          }
+        }
+        // 2. Tự động kích hoạt gọi API nạp bắp nước từ DB khi chuyển sang Tab F&B
+        if (tabId === "fnb" && typeof loadManagerFnb === "function") {
+          try {
+            loadManagerFnb();
+          } catch (err) {
+            console.error("Lỗi khi load danh sách F&B từ database:", err);
+          }
+        }
+        // 3. Tự động kích hoạt gọi ma trận lịch chiếu tổng hợp khi qua Tab Matrix
+        if (tabId === "matrix" && typeof loadManagerMatrix === "function") {
+          try {
+            loadManagerMatrix();
+          } catch (err) {
+            console.error("Lỗi khi load ma trận lịch chiếu:", err);
           }
         }
       };
@@ -1396,5 +1310,63 @@
         document.getElementById("mp-user-dropdown").classList.toggle("open");
       }
     </script>
+
+    <div class="mp-modal-overlay" id="mp-fnb-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+      <div class="mp-modal-box" style="background: white; width: 450px; padding: 25px; border-radius: 8px;">
+        <div class="mp-modal-close" onclick="closeFnbModal()" style="cursor: pointer; float: right; font-weight: bold;">✕</div>
+        <div class="mp-modal-header" id="fnb-modal-title" style="font-weight: bold; font-size: 18px; margin-bottom: 20px;">Thêm Sản Phẩm F&B Mới</div>
+        <input type="hidden" id="fnb-item-id" />
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px;">Tên bắp nước / combo</label>
+          <input type="text" id="fnb-name" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px;">Giá bán (VND)</label>
+          <input type="number" id="fnb-price" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+        <div class="mp-form-group" style="margin-bottom: 20px;">
+          <label style="display:block; margin-bottom:5px;">Số lượng tồn kho</label>
+          <input type="number" id="fnb-stock" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-cgv-cancel" onclick="closeFnbModal()" style="flex: 1; cursor: pointer; padding:10px; border-radius:4px; border:1px solid #ccc;">Hủy</button>
+          <button class="btn-cgv-submit" onclick="submitFnbForm()" style="flex: 1; cursor: pointer; background:#e71a0f; color:white; border:none; padding:10px; border-radius:4px;">LƯU LẠI</button>
+        </div>
+      </div>
+    </div>
+    <div class="mp-modal-overlay" id="mp-add-showtime-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+      <div class="mp-modal-box" style="background: white; width: 450px; padding: 25px; border-radius: 8px; box-sizing: border-box;">
+        <div class="mp-modal-close" onclick="closeAddShowtimeModal()" style="cursor: pointer; float: right; font-weight: bold;">✕</div>
+        <div class="mp-modal-header" style="font-weight: bold; font-size: 18px; margin-bottom: 20px; color:#111;">Tạo Suất Chiếu Mới</div>
+        
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Chọn bộ phim</label>
+          <select id="st-movie-select" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></select>
+        </div>
+        
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Chọn phòng chiếu</label>
+          <select id="st-room-select" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <option value="1">Phòng 1 (3D Standard)</option>
+            <option value="2">Phòng 2 (IMAX Siêu Đại)</option>
+          </select>
+        </div>
+        
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Giờ bắt đầu (Ví dụ: 14:30, 19:00)</label>
+          <input type="time" id="st-start-time" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+
+        <div class="mp-form-group" style="margin-bottom: 20px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Giá vé cơ bản (VND)</label>
+          <input type="number" id="st-ticket-price" class="cgv-input-text" value="90000" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-cgv-cancel" onclick="closeAddShowtimeModal()" style="flex: 1; cursor: pointer; padding:10px; border-radius:4px; border:1px solid #ccc; background:#fff;">Hủy bỏ</button>
+          <button class="btn-cgv-submit" onclick="submitAddShowtimeForm()" style="flex: 1; cursor: pointer; background:#e71a0f; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold;">XẾP LỊCH NGAY</button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
