@@ -270,9 +270,7 @@ function renderFnbMenu() {
   container.innerHTML = "";
   fnbMenu.forEach((item, index) => {
     const inCart = item.qty > 0;
-    const bullets = (item.items || [])
-      .map((t) => `<li>${t}</li>`)
-      .join("");
+    const bullets = (item.items || []).map((t) => `<li>${t}</li>`).join("");
     const control = inCart
       ? `<div class="fnb-stepper">
             <button class="fnb-step-btn" onclick="updateComboQty(${index}, -1)">−</button>
