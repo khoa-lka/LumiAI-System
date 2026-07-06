@@ -1,5 +1,33 @@
 console.log("BOOKING JS LOADED");
 let selectedPaymentGateway = "qr";
+
+// 🚀 THÊM MỚI: Khai báo mảng fnbMenu toàn cục ban đầu trống
+window.fnbMenu = [];
+
+// Hàm tự động gọi lên Spring Boot lấy toàn bộ bắp nước thật bốc từ Database
+function initFnbMenuFromServer() {
+  if (typeof API !== "undefined" && typeof API.getFnbItems === "function") {
+    API.getFnbItems()
+      .then((dbItems) => {
+        // Map chuyển đổi cấu trúc DB sang cấu trúc mảng cũ của em để không lỗi logic tính tiền
+        window.fnbMenu = dbItems.map(item => ({
+          id: item.foodItemId,
+          name: item.itemName,      // Đổi itemName sang name để khớp code cũ
+          price: item.price,
+          qty: 0                    // Khởi tạo số lượng đặt mua ban đầu bằng 0
+        }));
+        
+        // Sau khi nạp xong data thật, gọi hàm vẽ giao diện F&B ở màn hình đặt vé của em
+        if (typeof renderFnbMenu === "function") {
+          renderFnbMenu();
+        }
+      })
+      .catch((err) => {
+        console.error("🚨 Lỗi nạp dữ liệu F&B động cho trang đặt vé:", err);
+      });
+  }
+}
+
 function handleBookNowClick() {
   const ticket = document.getElementById("final-ticket-result");
   if (ticket) ticket.innerHTML = "";
@@ -80,7 +108,7 @@ function renderDynamicShowtimeGrid() {
   timeGrid.innerHTML = "";
 
   if (serverData.showtimes.length === 0) {
-    timeGrid.innerHTML = "<p style='color:#666'>Không có suất chiếu.</p>";
+    timeGrid.innerHTML = "<p style='color:#a8a8b3'>Không có suất chiếu.</p>";
     return;
   }
 
@@ -129,42 +157,45 @@ function loadSeatMap(showtimeId) {
   }
 
   API.getSeatsByShowtime(showtimeId)
-    .then((bookedSeatsList = []) => {
+    .then((backendSeats = []) => {
+      // 🚀 KHÓA CHẶT TẠI ĐÂY: Đồng bộ găm biến toàn cục cho cả booking.js bốc dùng ở Bước 3
+      window.currentBackendSeats = backendSeats;
+
       const currentMovie = document.getElementById("cgv-combo-movie").value;
 
-      // đảm bảo structure tồn tại
+      // Đảm bảo structure tồn tại
       if (!serverData.masterSeatStore[currentMovie]) {
         serverData.masterSeatStore[currentMovie] = {};
       }
 
-      // init template nếu chưa có
-      if (!serverData.masterSeatStore[currentMovie][showtimeId]) {
-        serverData.masterSeatStore[currentMovie][showtimeId] =
-          initSeatTemplate();
+      // Khởi tạo trạng thái dựa trên danh sách ghế thật từ server nhả về
+      const activeSeatMap = {};
+      if (Array.isArray(backendSeats)) {
+        backendSeats.forEach(s => {
+          const row = s.seatRow || s.seat_row || "";
+          const num = s.seatNumber || s.seat_number || "";
+          const id = `${row}${num}`.trim().toUpperCase();
+          
+          activeSeatMap[id] = {
+            status: (s.status === "sold" || s.status === "BOOKED" || s.status === "SLOT_LOCKED") ? "sold" : "available",
+            seatType: s.seatType || s.seat_type || "STANDARD"
+          };
+        });
       }
-
-      // clone để tránh mutate trực tiếp object gốc
-      const baseMap = serverData.masterSeatStore[currentMovie][showtimeId];
-
-      const activeSeatMap = JSON.parse(JSON.stringify(baseMap));
-
-      // normalize bookedSeatsList
-      const bookedSet = new Set(bookedSeatsList || []);
-
-      Object.keys(activeSeatMap).forEach((id) => {
-        activeSeatMap[id].status = bookedSet.has(id) ? "sold" : "available";
-      });
 
       serverData.masterSeatStore[currentMovie][showtimeId] = activeSeatMap;
 
+      // Tính toán giỏ hàng dựa trên logic backend mới của Khoa
       calculateCgvCart();
-      renderCgvInterface();
+      
+      // Nếu có ui.js thì vẽ giao diện, không thì bọc lót an toàn
+      if (typeof renderCgvInterface === "function") {
+        renderCgvInterface();
+      }
     })
     .catch((err) => {
       console.error("🚨 Lỗi đồng bộ dữ liệu ghế từ Server:", err);
-
       calculateCgvCart();
-      renderCgvInterface();
     });
 }
 
@@ -198,38 +229,53 @@ function onMovieOrTimeChange() {
 window.selectCgvBookingDate = selectCgvBookingDate;
 
 function calculateCgvCart() {
+  window.calculateCgvCart = calculateCgvCart;
+
   document.getElementById("sum-seats").innerText =
     selectedSeats.join(", ") || "Chưa chọn";
   let total = 0;
   let totalFnbItems = 0;
 
-  // 🚀 ĐÃ SỬA: Tính tiền động theo đúng Loại Ghế bốc từ Database lên
+  // 🚀 LOGIC ĐỘC LẬP HOÀN TOÀN TỪ BACKEND CỦA KHOA: Cấm quét DOM
   selectedSeats.forEach((seatId) => {
-    // Tìm thông tin chi tiết của chiếc ghế này trong danh sách ghế Back-end trả về
-    // Giao diện vẽ dựa trên backendSeats nên ta tìm trong bộ nhớ hoặc query qua DOM element
-    const seatEl = Array.from(document.querySelectorAll('.cgv-seat')).find(el => el.innerText.trim() === seatId);
-    
-    if (seatEl) {
-      if (seatEl.classList.contains('vip')) {
-        total += 110000; // 🔴 Giá ghế VIP của nhóm em
-      } else if (seatEl.classList.contains('sweetbox')) {
-        total += 250000; // 💗 Giá ghế đôi Sweetbox của nhóm em
-      } else {
-        total += 90000;  // 🟢 Giá ghế Standard thường
+    let price = 90000;
+
+    if (window.currentBackendSeats && Array.isArray(window.currentBackendSeats)) {
+      const seatData = window.currentBackendSeats.find(s => {
+        const row = (s.seatRow || s.seat_row || "").toString().trim().toUpperCase();
+        const num = (s.seatNumber || s.seat_number || "").toString().trim();
+        return `${row}${num}` === seatId.toUpperCase();
+      });
+
+      if (seatData) {
+        const type = (seatData.seatType || seatData.seat_type || "STANDARD").toUpperCase();
+        switch (type) {
+          case "VIP":
+            price = 110000;
+            break;
+          case "SWEETBOX":
+            price = 250000;
+            break;
+          default:
+            price = 90000;
+        }
       }
-    } else {
-      total += 90000; // Bọc lót giá mặc định nếu không tìm thấy ô DOM
     }
+    total += price;
   });
 
-  fnbMenu.forEach((item) => {
-    total += item.qty * item.price;
-    totalFnbItems += item.qty;
+  // 2. Tính tiền F&B động từ database mẫu
+  const activeFnbMenu = window.fnbMenu || fnbMenu || [];
+  activeFnbMenu.forEach((item) => {
+    total += (Number(item.qty) || 0) * (Number(item.price) || 0);
+    totalFnbItems += (Number(item.qty) || 0);
   });
 
-  document.getElementById("sum-fnb").innerText = totalFnbItems + " Combo";
+  const sumFnbEl = document.getElementById("sum-fnb");
+  if (sumFnbEl) sumFnbEl.innerText = totalFnbItems + " Combo";
+
   currentPriceTotal = total;
-
+// 🎟️ HỢP NHẤT LOGIC TÍNH TỔNG TIỀN SAU GIẢM GIÁ VOUCHER
   let discount = 0;
 
   if (window.currentVoucher) {
@@ -243,12 +289,22 @@ function calculateCgvCart() {
       discount = Number(currentVoucher.discountValue);
     }
   }
-  appliedVoucherDiscount = discount;
+  
+  // Lưu số tiền giảm giá thực tế vào biến toàn cục
+  appliedVoucherDiscount = discount; 
+  
   const finalTotal = Math.max(currentPriceTotal - discount, 0);
   window.finalPriceTotal = finalTotal;
-  document.getElementById("sum-total").innerText =
-    finalTotal.toLocaleString("vi-VN") + " đ";
+
+  // Cập nhật lên giao diện hiển thị cho khách hàng (Bọc an toàn từ main)
+  const sumTotalEl = document.getElementById("sum-total");
+  if (sumTotalEl) {
+    sumTotalEl.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
+  }
 }
+
+// Chạy mồi một lần ngay lập tức để window nhận diện hàm này toàn cục
+window.calculateCgvCart = calculateCgvCart;
 
 function goToBookingStep(step) {
   document
@@ -274,19 +330,51 @@ function goToBookingStep(step) {
     if (rightColumn) rightColumn.style.display = "flex";
     if (mainBtn) {
       mainBtn.innerText = "Tiếp Tục";
-      mainBtn.style.background = "#e71a0f";
+      mainBtn.style.background = "#ff6b35";
     }
     if (backBtn) {
       backBtn.innerText = "←";
       backBtn.setAttribute("onclick", "goHomeFromBc()");
     }
   } else if (step === 2) {
+    // 🚀 NÂNG CẤP BẤT TỬ: Đồng bộ dữ liệu từ DB nhưng bảo toàn số lượng qty cực kỳ nghiêm ngặt
+    if (typeof API !== "undefined" && typeof API.getFnbItems === "function") {
+      API.getFnbItems()
+        .then((dbItems) => {
+          const oldMenu = window.fnbMenu || [];
+          
+          window.fnbMenu = dbItems.map(item => {
+            // So khớp chuẩn xác theo foodItemId
+            const matchedOldItem = oldMenu.find(o => String(o.id) === String(item.foodItemId));
+            return {
+              id: item.foodItemId,
+              name: item.itemName,
+              // Khóa ép kiểu số đề phòng Database trả về chuỗi text gây lỗi NaN khi tính tiền
+              price: Number(item.price) || 0,
+              qty: matchedOldItem ? matchedOldItem.qty : 0 
+            };
+          });
+          
+          // Phơi hàm tính tiền ra toàn cục ngay lập tức đề phòng file khác không gọi được
+          window.calculateCgvCart = calculateCgvCart;
+          
+          // Cào xong data thì vẽ ra giao diện và tính tiền luôn
+          if (typeof renderFnbMenu === "function") renderFnbMenu();
+          if (typeof calculateCgvCart === "function") calculateCgvCart();
+        })
+        .catch((err) => {
+          console.error("🚨 Lỗi nạp F&B cập nhật từ Server:", err);
+        });
+    } else {
+      if (typeof renderFnbMenu === "function") renderFnbMenu();
+    }
+
     if (mainBtn) {
       mainBtn.innerText = "Đến Thanh Toán";
-      mainBtn.style.background = "#e71a0f";
+      mainBtn.style.background = "#ff6b35";
     }
     if (backBtn) {
-      backBtn.innerText = "← Quay Lại";
+      backBtn.innerText = "←";
       backBtn.setAttribute("onclick", "goToBookingStep(1)");
     }
   } else if (step === 3) {
@@ -295,28 +383,51 @@ function goToBookingStep(step) {
       mainBtn.style.background = "#10B981";
     }
     if (backBtn) {
-      backBtn.innerText = "← Chọn F&B";
+      backBtn.innerText = "←";
       backBtn.setAttribute("onclick", "goToBookingStep(2)");
     }
 
+    // 🚀 Ép hàm tính toán lại giỏ hàng chạy trước để đảm bảo tính đúng
+    if (typeof calculateCgvCart === "function") {
+      calculateCgvCart();
+    }
+
     const currentMovie = document.getElementById("cgv-combo-movie").value;
-    let fnbHtml = fnbMenu
+    
+    const verifiedInvoiceTotal = currentPriceTotal;
+    const activeFnbReview = window.fnbMenu || fnbMenu || [];
+
+    let fnbHtml = activeFnbReview
       .filter((i) => i.qty > 0)
       .map(
         (i) =>
-          `<p>+ ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString("vi-VN")} đ</p>`,
+          `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
       )
       .join("");
+      
     document.getElementById("review-invoice-content").innerHTML = `
-            <p><strong>Phim:</strong> ${currentMovie}</p>
-            <p><strong>Suất chiếu:</strong> ${selectedDateStr} | ${selectedShowtime}</p>
-            <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
-            <p><strong>Bắp nước:</strong></p>${fnbHtml || "<p>Không có</p>"}
-            <hr style="margin: 10px 0;">
-            <p style="font-size: 16px;"><strong>Tổng cộng (Chưa giảm): <span style="color:#e71a0f;">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></strong></p>
+            <div class="inv-review">
+              <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
+              <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
+              <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
+              <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
+              ${fnbHtml}
+              <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
+            </div>
         `;
-    document.getElementById("review-final-total").innerText =
-      window.finalPriceTotal.toLocaleString("vi-VN") + " đ";
+    const finalPrice = window.finalPriceTotal || 0;
+    
+    console.log("Step3 currentPriceTotal =", currentPriceTotal);
+    
+    const reviewTotalEl = document.getElementById("review-final-total");
+    if (reviewTotalEl) {
+      reviewTotalEl.innerText = finalPrice.toLocaleString("vi-VN") + " đ";
+    }
+    
+    const sumTotalEl = document.getElementById("sum-total");
+    if (sumTotalEl) {
+      sumTotalEl.innerText = finalPrice.toLocaleString("vi-VN") + " đ";
+    }
   } else if (step === 4) {
     if (rightColumn) rightColumn.style.display = "none";
     if (layoutGrid) layoutGrid.style.gridTemplateColumns = "1fr";
@@ -383,29 +494,30 @@ function selectPaymentGatewayType(type, element) {
 
   const circle = element.querySelector(".option-check-circle");
   if (circle) {
-    circle.style.borderColor = "#e71a0f";
-    circle.style.color = "#e71a0f";
+    circle.style.borderColor = "#ff6b35";
+    circle.style.color = "#ff6b35";
   }
 }
 
 function openCheckoutReview() {
   const currentMovie = document.getElementById("cgv-combo-movie").value;
-  let fnbHtml = fnbMenu
-    .filter((i) => i.qty > 0)
+  const fnbItems = fnbMenu.filter((i) => i.qty > 0);
+  let fnbHtml = fnbItems
     .map(
       (i) =>
-        `<p>+ ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString("vi-VN")} đ</p>`,
+        `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
     )
     .join("");
 
   document.getElementById("review-invoice-content").innerHTML = `
-        <p><strong>Phim:</strong> ${currentMovie}</p>
-        <p><strong>Suất chiếu:</strong> ${selectedDateStr} | ${selectedShowtime}</p>
-        <p><strong>Ghế:</strong> ${selectedSeats.join(", ")}</p>
-        <p><strong>Bắp nước:</strong></p>
-        ${fnbHtml || "<p>Không có</p>"}
-        <hr style="margin: 10px 0;">
-        <p><strong>Tổng cộng (Chưa giảm):</strong> ${currentPriceTotal.toLocaleString("vi-VN")} đ</p>
+        <div class="inv-review">
+          <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
+          <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
+          <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
+          <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
+          ${fnbHtml}
+          <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
+        </div>
     `;
 
   document.getElementById("review-final-total").innerText =
@@ -472,6 +584,12 @@ function openVnpayPayment(finalTotal) {
             showtime: window.currentSelectedShowtimeId,
             seats: [...selectedSeats],
             email: document.getElementById("profile-field-email").value,
+            total: window.finalPriceTotal,
+            originalTotal: currentPriceTotal,
+            discount: appliedVoucherDiscount,
+            voucherCode: document.getElementById("voucher-input").value.trim(),
+            voucher: window.currentVoucher,
+            fnb: fnbMenu.map((i) => ({ ...i })),
           }),
         );
 
@@ -512,8 +630,16 @@ function checkVnpayReturn() {
   if (!payload) return;
 
   const data = JSON.parse(payload);
-  currentPriceTotal = data.total || 0;
-  appliedVoucherDiscount = data.discount || 0;
+
+  currentPriceTotal = data.originalTotal;
+  appliedVoucherDiscount = data.discount;
+  window.finalPriceTotal = data.total;
+
+  document.getElementById("voucher-input").value = data.voucherCode || "";
+
+  window.currentVoucher = data.voucher || null;
+  console.log("Voucher restored:", window.currentVoucher);
+
   if (data.fnb) {
     fnbMenu.forEach((item) => {
       const old = data.fnb.find((x) => x.name === item.name);
@@ -633,11 +759,10 @@ function executeFinalCheckout() {
     alert("Bạn chưa chọn suất chiếu!");
     return;
   }
-  // 1. Tạo gói dữ liệu chuẩn bị gửi
   const checkoutPayload = {
     movie: currentMovie,
     showtime: showtimeId,
-    seats: selectedSeats,
+    seats: [...selectedSeats],
     email: currentEmail,
     voucherCode: document.getElementById("voucher-input")?.value.trim() || "",
     total: window.finalPriceTotal,
@@ -679,17 +804,21 @@ function executeFinalCheckout() {
           ? data.ticketId.replace("CGV-", "LAS-")
           : "LAS-" + Math.floor(Math.random() * 1000000);
 
+        // 🚀 ĐÃ SỬA: Lấy đúng data bắp nước từ database để lưu lịch sử hóa đơn
+        const activeFnb = window.fnbMenu || fnbMenu || [];
+        
         // Lưu lịch sử hóa đơn
         console.log("currentPriceTotal =", currentPriceTotal);
         console.log("appliedVoucherDiscount =", appliedVoucherDiscount);
+        
         const invoiceObj = {
           id: lasTicketId,
           movie: currentMovie,
           date: selectedDateStr,
           time: selectedShowtime,
           seats: [...selectedSeats],
-          fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
-          total: window.finalPriceTotal,
+          fnb: activeFnb.filter((i) => i.qty > 0).map((i) => ({ ...i })),
+          total: window.finalPriceTotal || 0,
           status: "Đã thanh toán",
         };
         userPastInvoices.unshift(invoiceObj);
@@ -697,7 +826,10 @@ function executeFinalCheckout() {
         // Reset trạng thái chọn ghế & giỏ hàng
         resetHoldState();
         selectedSeats = [];
-        fnbMenu.forEach((i) => (i.qty = 0));
+        
+        // 🚀 ĐÃ SỬA CHỖ 2: Đưa số lượng combo động về lại 0 sau khi thanh toán xong
+        activeFnb.forEach((i) => (i.qty = 0));
+        
         renderFnbMenu();
         calculateCgvCart();
         //renderCgvInterface();
@@ -709,10 +841,10 @@ function executeFinalCheckout() {
         const beautifulTicketHTML = `
             <div style="text-align: center; margin-bottom: 25px;">
                 <h2 style="color: #10B981; margin-bottom: 10px; font-size: 28px;">ĐẶT VÉ THÀNH CÔNG!</h2>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 1px solid #ccc; padding: 5px;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 1px solid rgba(255,255,255,0.15); padding: 5px;">
                 <p style="color: #222; font-weight: bold; font-size: 13px; margin-top: 10px;">Hệ thống cũng đã gửi 1 bản sao vào Email của bạn.</p>
             </div>
-            <div style="background: #fdfcf7; padding: 25px 40px; border: 2px dashed #ccc; border-radius: 8px; text-align: left; display: inline-block; min-width: 90%; margin: 0 auto; box-sizing: border-box;">
+            <div style="background: #0b0b0e; padding: 25px 40px; border: 2px dashed rgba(255,255,255,0.15); border-radius: 8px; text-align: left; display: inline-block; min-width: 90%; margin: 0 auto; box-sizing: border-box;">
                 <p><strong>Mã vé:</strong> <span style="color:red; font-size: 22px;">${invoiceObj.id}</span></p>
                 <p><strong>Phim:</strong> ${invoiceObj.movie}</p>
                 <p><strong>Suất chiếu:</strong> ${invoiceObj.time} ngày ${invoiceObj.date}</p>
@@ -827,7 +959,7 @@ function resetHoldState() {
   document.getElementById("hold-timer").style.display = "none";
 
   document.getElementById("btn-main-action").innerText = "Tiếp tục";
-  document.getElementById("btn-main-action").style.background = "#e71a0f";
+  document.getElementById("btn-main-action").style.background = "#ff6b35";
 
   currentBookingStep = 1;
 }

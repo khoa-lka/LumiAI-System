@@ -90,6 +90,7 @@ public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
     System.out.println("===== NEW CHECKOUT =====");
 
         try {
+            System.out.println("===== NEW CHECKOUT =====");
             System.out.println("CHECKOUT PAYLOAD = " + payload);
 
             Integer showtimeId = Integer.valueOf(payload.get("showtime").toString());
@@ -142,5 +143,24 @@ public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
             response.put("message", e.getMessage());
             return response;
         }
+
+        String voucherCode = (String) payload.get("voucherCode");
+        System.out.println("VoucherCode = " + voucherCode);
+
+        if (voucherCode != null && !voucherCode.isBlank()) {
+           boolean ok = voucherService.useVoucher(voucherCode);
+            System.out.println("Use voucher = " + ok);
+        }
+
+        response.put("success", true);
+        response.put("ticketId", savedTickets.get(0).getTicketCode());
+        response.put("totalTickets", savedTickets.size());
+
+        return response;
+
+    } catch (Exception e) {
+        response.put("success", false);
+        response.put("message", e.getMessage());
+        return response;
     }
 }
