@@ -918,7 +918,7 @@ window.renderCgvInterface = function () {
           let isNowShowing =
             movieStatus.includes("now") || movieStatus.includes("chieu");
           let actionBtnHTML = isNowShowing
-            ? `<button class="btn-cgv-buy-ticket-spec" onclick="quickBookMovie('${titleStr}')">🎟️ MUA VÉ</button>`
+            ? `<button class="btn-cgv-buy-ticket-spec" onclick="quickBookMovie('${titleStr}')">MUA VÉ</button>`
             : `<button class="btn-cgv-buy-ticket-spec" style="background-color:#555; cursor:not-allowed;" disabled>📋 SẮP CHIẾU</button>`;
 
           let cleanImgUrl =

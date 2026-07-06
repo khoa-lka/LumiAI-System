@@ -17,7 +17,7 @@
                 class="sub-nav-item"
                 onclick="switchCgvTab('panel-news')"
               >
-                <span class="sub-nav-icon"></span> SỰ KIỆN & ƯU ĐÃI
+                <span class="sub-nav-icon">🎫</span> TIN MỚI & ƯU ĐÃI
               </a>
               <a
                 href="#"
@@ -25,7 +25,7 @@
                 id="top-bar-ticket-link"
                 onclick="handleTicketViewAccess()"
               >
-                <span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH
+                <span class="sub-nav-icon">🎬</span> VÉ CỦA TÔI
               </a>
               <a
                 href="#"
@@ -33,7 +33,7 @@
                 id="top-bar-auth-link"
                 onclick="openAuthModal()"
               >
-                <span class="sub-nav-icon"></span> ĐĂNG NHẬP/ ĐĂNG KÝ
+                <span class="sub-nav-icon">👤</span> ĐĂNG NHẬP/ ĐĂNG KÝ
               </a>
               <div class="lang-selector-box">
                 <span class="lang-btn lang-vn">VN</span>
@@ -107,8 +107,10 @@
           </button>
           <ol class="bc-trail">
             <li class="bc-crumb bc-home" onclick="goHomeFromBc()">
-              <span class="bc-home-icon"></span> Trang chủ
+              <span class="bc-home-icon">🏠</span> Trang chủ
             </li>
+            <li class="bc-sep" aria-hidden="true">›</li>
+            <li class="bc-crumb bc-parent" id="bc-parent-text">Phim</li>
             <li class="bc-sep" aria-hidden="true">›</li>
             <li class="bc-crumb bc-current" id="bc-current-text" aria-current="page">
               Danh Sách Phim
@@ -123,7 +125,7 @@
             <div class="las-hero-fade"></div>
             <div class="las-hero-arrow las-hero-arrow-left" onclick="moveBannerLeft()">‹</div>
             <div class="las-hero-arrow las-hero-arrow-right" onclick="moveBannerRight()">›</div>
-            <button class="las-hero-cta" onclick="document.getElementById('movie-selection-anchor').scrollIntoView({behavior:'smooth'})">ĐẶT VÉ NGAY</button>
+            <button class="las-hero-cta" onclick="document.getElementById('movie-selection-anchor').scrollIntoView({behavior:'smooth'})">🎬 Đặt vé ngay</button>
           </div>
 
           <div id="movie-selection-anchor" class="las-section-heading">
@@ -307,13 +309,13 @@
 
         <div id="panel-booking" class="cgv-panel">
           <div class="las-step-bar-container">
-            <div class="step-item active">1. Chọn ghế</div>
+            <div class="step-item active">🔴 1. Chọn ghế</div>
             <div style="opacity: 0.3">➔</div>
-            <div class="step-item">2. Bắp nước</div>
+            <div class="step-item">🍿 2. Bắp nước</div>
             <div style="opacity: 0.3">➔</div>
-            <div class="step-item">3. Thanh toán</div>
+            <div class="step-item">💳 3. Thanh toán</div>
             <div style="opacity: 0.3">➔</div>
-            <div class="step-item">4. Thông tin vé</div>
+            <div class="step-item">🎟️ 4. Thông tin vé</div>
           </div>
 
           <div class="booking-two-columns-layout" style="display: flex; gap: 25px; align-items: flex-start; margin-top: 15px;">
@@ -443,7 +445,7 @@
               margin: 30px 0 25px 0;
             "
           >
-            — SỰ KIỆN VÀ ƯU ĐÃI —
+            — TIN MỚI VÀ ƯU ĐÃI —
           </div>
 <div class="news-grid-layout" id="cgv-event-grid-news" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;"></div>
           
@@ -459,7 +461,7 @@
                   id="pro-subtab-btn-chung"
                   onclick="switchProfileSubTab('chung')"
                 >
-                  <span class="arrow-btn-icon"></span>
+                  <span class="arrow-btn-icon">👤</span>
                   THÔNG TIN CHUNG
                 </button>
                 <button
@@ -467,7 +469,7 @@
                   id="pro-subtab-btn-lichsu"
                   onclick="switchProfileSubTab('lichsu')"
                 >
-                  <span class="arrow-btn-icon"></span>
+                  <span class="arrow-btn-icon">🧾</span>
                   LỊCH SỬ GIAO DỊCH
                 </button>
               </div>
@@ -489,6 +491,17 @@
                     </div>
                     <button class="btn-avatar-change" onclick="alert('Tính năng đổi ảnh đại diện sẽ sớm ra mắt!')">Thay đổi ảnh</button>
                   </div>
+                  <div class="summary-barcode-zone">
+                    <p class="barcode-title-label">Thẻ thành viên</p>
+                    <div class="mock-barcode-img">
+                      <div class="line-bar"></div>
+                      <div class="line-bar thick"></div>
+                      <div class="line-bar"></div>
+                      <div class="line-bar thick"></div>
+                      <div class="line-bar"></div>
+                      <span class="barcode-label">Barcode</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="welcome-text-line">
@@ -503,6 +516,11 @@
                     <span class="dash-stat-icon">🎫</span>
                     <b class="dash-stat-value">0</b>
                     <span class="dash-stat-label">Tổng lượt đặt vé</span>
+                  </div>
+                  <div class="dash-stat-box">
+                    <span class="dash-stat-icon">🏅</span>
+                    <b class="dash-stat-value">0 P</b>
+                    <span class="dash-stat-label">Điểm thành viên</span>
                   </div>
                   <div class="dash-stat-box">
                     <span class="dash-stat-icon">💳</span>
@@ -561,6 +579,18 @@
                           <select class="select-birth profile-readonly-input" id="profile-birth-month" disabled></select>
                           <select class="select-birth profile-readonly-input" id="profile-birth-year" disabled></select>
                         </div>
+                      </div>
+                    </div>
+                    <div class="account-info-row">
+                      <div class="account-info-text">
+                        <label>Vai trò hệ thống</label>
+                        <input
+                          type="text"
+                          id="profile-field-role"
+                          class="profile-readonly-input"
+                          value=""
+                          readonly
+                        />
                       </div>
                     </div>
                     <div class="account-info-row account-info-row-action">
@@ -993,6 +1023,7 @@
         <div class="las-auth-close" onclick="closeAuthModal()">✕</div>
 
         <div class="las-auth-logo-row">
+          <div class="las-auth-logo-icon">🎬</div>
           <div class="las-auth-logo-text">LAS<span>Cinemas</span></div>
         </div>
 

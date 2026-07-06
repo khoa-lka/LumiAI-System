@@ -17,7 +17,7 @@
                 class="sub-nav-item"
                 onclick="switchCgvTab('panel-news')"
               >
-                <span class="sub-nav-icon"></span> SỰ KIỆN & ƯU ĐÃI
+                <span class="sub-nav-icon">🎫</span> TIN MỚI & ƯU ĐÃI
               </a>
               <a
                 href="#"
@@ -25,7 +25,7 @@
                 id="top-bar-ticket-link"
                 onclick="handleTicketViewAccess()"
               >
-                <span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH
+                <span class="sub-nav-icon">🎬</span> VÉ CỦA TÔI
               </a>
               <a
                 href="#"
@@ -33,7 +33,7 @@
                 id="top-bar-auth-link"
                 onclick="openAuthModal()"
               >
-                <span class="sub-nav-icon"></span> ĐĂNG NHẬP/ ĐĂNG KÝ
+                <span class="sub-nav-icon">👤</span> ĐĂNG NHẬP/ ĐĂNG KÝ
               </a>
               <div class="lang-selector-box">
                 <span class="lang-btn lang-vn">VN</span>
@@ -107,8 +107,10 @@
           </button>
           <ol class="bc-trail">
             <li class="bc-crumb bc-home" onclick="goHomeFromBc()">
-              <span class="bc-home-icon"></span> Trang chủ
+              <span class="bc-home-icon">🏠</span> Trang chủ
             </li>
+            <li class="bc-sep" aria-hidden="true">›</li>
+            <li class="bc-crumb bc-parent" id="bc-parent-text">Phim</li>
             <li class="bc-sep" aria-hidden="true">›</li>
             <li class="bc-crumb bc-current" id="bc-current-text" aria-current="page">
               Danh Sách Phim
@@ -123,7 +125,7 @@
             <div class="las-hero-fade"></div>
             <div class="las-hero-arrow las-hero-arrow-left" onclick="moveBannerLeft()">‹</div>
             <div class="las-hero-arrow las-hero-arrow-right" onclick="moveBannerRight()">›</div>
-            <button class="las-hero-cta" onclick="document.getElementById('movie-selection-anchor').scrollIntoView({behavior:'smooth'})">ĐẶT VÉ NGAY</button>
+            <button class="las-hero-cta" onclick="document.getElementById('movie-selection-anchor').scrollIntoView({behavior:'smooth'})">🎬 Đặt vé ngay</button>
           </div>
 
           <div id="movie-selection-anchor" class="las-section-heading">
@@ -307,13 +309,13 @@
 
         <div id="panel-booking" class="cgv-panel">
           <div class="las-step-bar-container">
-            <div class="step-item active">1. Chọn ghế</div>
+            <div class="step-item active">🔴 1. Chọn ghế</div>
             <div style="opacity: 0.3">➔</div>
-            <div class="step-item">2. Bắp nước</div>
+            <div class="step-item">🍿 2. Bắp nước</div>
             <div style="opacity: 0.3">➔</div>
-            <div class="step-item">3. Thanh toán</div>
+            <div class="step-item">💳 3. Thanh toán</div>
             <div style="opacity: 0.3">➔</div>
-            <div class="step-item">4. Thông tin vé</div>
+            <div class="step-item">🎟️ 4. Thông tin vé</div>
           </div>
 
           <div class="booking-two-columns-layout" style="display: flex; gap: 25px; align-items: flex-start; margin-top: 15px;">
@@ -443,7 +445,7 @@
               margin: 30px 0 25px 0;
             "
           >
-            — SỰ KIỆN VÀ ƯU ĐÃI —
+            — TIN MỚI VÀ ƯU ĐÃI —
           </div>
 <div class="news-grid-layout" id="cgv-event-grid-news" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;"></div>
           
@@ -452,22 +454,48 @@
         <div id="panel-profile" class="cgv-panel">
           <div class="cgv-profile-layout">
             <div class="profile-arrow-sidebar">
-              <h2 class="sidebar-main-title">TÀI KHOẢN LAS</h2>
+              <h2 class="sidebar-main-title">TÀI KHOẢN CGV</h2>
               <div class="arrow-menu-list">
                 <button
                   class="arrow-btn active"
                   id="pro-subtab-btn-chung"
                   onclick="switchProfileSubTab('chung')"
                 >
-                  <span class="arrow-btn-icon"></span>
                   THÔNG TIN CHUNG
+                </button>
+                <button
+                  class="arrow-btn"
+                  id="pro-subtab-btn-chitiet"
+                  onclick="switchProfileSubTab('chitiet')"
+                >
+                  CHI TIẾT TÀI KHOẢN
+                </button>
+                <button
+                  class="arrow-btn"
+                  id="pro-subtab-btn-matma"
+                  onclick="switchProfileSubTab('matma')"
+                >
+                  CÀI MẶT MÃ THANH TOÁN
+                </button>
+                <button
+                  class="arrow-btn"
+                  id="pro-subtab-btn-the"
+                  onclick="switchProfileSubTab('the')"
+                >
+                  THẺ THÀNH VIÊN
+                </button>
+                <button
+                  class="arrow-btn"
+                  id="pro-subtab-btn-diem"
+                  onclick="switchProfileSubTab('diem')"
+                >
+                  ĐIỂM THƯỞNG
                 </button>
                 <button
                   class="arrow-btn"
                   id="pro-subtab-btn-lichsu"
                   onclick="switchProfileSubTab('lichsu')"
                 >
-                  <span class="arrow-btn-icon"></span>
                   LỊCH SỬ GIAO DỊCH
                 </button>
               </div>
@@ -476,103 +504,149 @@
             <div class="profile-content-display">
               <div id="pro-panel-chung" class="profile-sub-content active">
                 <div class="sub-content-header-title">THÔNG TIN CHUNG</div>
-
                 <div class="profile-top-summary">
                   <div class="summary-avatar-zone">
-                    <div class="avatar-status-wrap">
-                      <div id="profile-summary-avatar" class="avatar-placeholder-img">VY</div>
-                      <span class="avatar-online-dot"></span>
+                <div id="profile-summary-avatar" class="avatar-placeholder-img" style="background-color: #ff6b35; color: white; font-size: 28px; font-weight: bold;">VY</div>
+                    <button class="btn-avatar-change">Thay đổi</button>
+                  </div>
+                    <button class="btn-avatar-change">Thay đổi</button>
+                  </div>
+                  <div class="summary-barcode-zone">
+                    <p
+                      style="
+                        margin: 0 0 5px 0;
+                        font-size: 12px;
+                        font-weight: bold;
+                        color: #e4e4e7;
+                        text-align: right;
+                      "
+                    >
+                      Thẻ thành viên
+                    </p>
+                    <div class="mock-barcode-img">
+                      <div class="line-bar"></div>
+                      <div class="line-bar thick"></div>
+                      <div class="line-bar"></div>
+                      <div class="line-bar thick"></div>
+                      <div class="line-bar"></div>
+                      <span class="barcode-label">Barcode</span>
                     </div>
-                    <div class="summary-name-block">
-                      <strong id="profile-welcome-name" class="summary-name-text"></strong>
-                      <span class="summary-role-badge">★ <span id="profile-star-role">MEMBER</span></span>
-                    </div>
-                    <button class="btn-avatar-change" onclick="alert('Tính năng đổi ảnh đại diện sẽ sớm ra mắt!')">Thay đổi ảnh</button>
                   </div>
                 </div>
 
                 <div class="welcome-text-line">
+                  <strong
+                    >Xin chào <span id="profile-welcome-name"></span>,</strong
+                  >
                   <p>
-                    👋 Xin chào! Với trang này, bạn sẽ quản lý được tất cả
-                    thông tin tài khoản của mình.
+                    Với trang này, bạn sẽ quản lý được tất cả thông tin tài
+                    khoản của mình.
                   </p>
                 </div>
 
                 <div class="cgv-membership-dashboard-table">
-                  <div class="dash-stat-box">
-                    <span class="dash-stat-icon">🎫</span>
-                    <b class="dash-stat-value">0</b>
-                    <span class="dash-stat-label">Tổng lượt đặt vé</span>
+                  <div class="dashboard-column info-col">
+                    <p>
+                      <strong>Cấp Độ Thẻ</strong>
+                      <span class="member-star-icon">★</span>
+                      <span
+                        id="profile-star-role"
+                        style="color: #5b9dff; font-weight: 900"
+                        >MEMBER</span
+                      >
+                    </p>
+                    <p><strong>Tổng Chi Tiêu</strong> <b>0 đ</b></p>
+                    <p><strong>Điểm CGV</strong> <b>0 P</b></p>
                   </div>
-                  <div class="dash-stat-box">
-                    <span class="dash-stat-icon">💳</span>
-                    <b class="dash-stat-value">0 đ</b>
-                    <span class="dash-stat-label">Tổng chi tiêu</span>
+                  <div class="dashboard-column action-col">
+                    <span class="dash-box-label">Thẻ Thành Viên</span>
+                    <span class="dash-box-value">1</span>
+                    <button
+                      class="btn-dash-view"
+                      onclick="switchProfileSubTab('the')"
+                    >
+                      Xem
+                    </button>
                   </div>
                 </div>
 
                 <div class="account-details-section">
-                  <div class="details-section-title">
+                  <div
+                    class="details-section-title"
+                    style="
+                      font-size: 18px;
+                      border-bottom: 1px solid rgba(255,255,255,0.12);
+                      padding-bottom: 5px;
+                    "
+                  >
                     Thông tin tài khoản
                   </div>
-
-                  <div class="account-info-list">
-                    <div class="account-info-row">
-                      <div class="account-info-text">
-                        <label>Họ và tên</label>
-                        <input
-                          type="text"
-                          id="profile-field-name"
-                          class="profile-readonly-input"
-                          value="Nguyễn Ngọc Gia Vy"
-                          readonly
-                        />
-                      </div>
-                    </div>
-                    <div class="account-info-row">
-                      <div class="account-info-text">
-                        <label>Số điện thoại</label>
-                        <input
-                          type="text"
-                          id="profile-field-phone"
-                          class="profile-readonly-input"
-                          value="0348340006"
-                          readonly
-                        />
-                      </div>
-                    </div>
-                    <div class="account-info-row">
-                      <div class="account-info-text">
-                        <label>Địa chỉ Email</label>
-                        <input
-                          type="text"
-                          id="profile-field-email"
-                          class="profile-readonly-input"
-                          value="nguyenngocgiavy1812@gmail.com"
-                          readonly
-                        />
-                      </div>
-                    </div>
-                    <div class="account-info-row">
-                      <div class="account-info-text">
-                        <label>Ngày sinh</label>
-                        <div class="birth-gender-row">
-                          <select class="select-birth profile-readonly-input" id="profile-birth-day" disabled></select>
-                          <select class="select-birth profile-readonly-input" id="profile-birth-month" disabled></select>
-                          <select class="select-birth profile-readonly-input" id="profile-birth-year" disabled></select>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="account-info-row account-info-row-action">
-                      <button
-                        class="btn-avatar-change"
-                        onclick="activateEditableFormFields()"
-                      >
-                        Chỉnh sửa thông tin
-                      </button>
-                    </div>
+                  <div class="details-sub-row" style="margin-top: 10px">
+                    <span style="font-size: 14px; letter-spacing: 0.5px"
+                      >LIÊN HỆ</span
+                    >
+                    <button
+                      class="btn-avatar-change"
+                      style="margin: 0"
+                      onclick="activateEditableFormFields()"
+                    >
+                      Thay đổi
+                    </button>
                   </div>
 
+                  <div class="profile-input-forms-grid">
+                    <div class="profile-input-group">
+                      <label>Họ và tên</label
+                      ><input
+                        type="text"
+                        id="profile-field-name"
+                        class="profile-readonly-input"
+                        value="Nguyễn Ngọc Gia Vy"
+                        readonly
+                      />
+                    </div>
+                    <div class="profile-input-group">
+                      <label>Số điện thoại</label
+                      ><input
+                        type="text"
+                        id="profile-field-phone"
+                        class="profile-readonly-input"
+                        value="0348340006"
+                        readonly
+                      />
+                    </div>
+                    <div class="profile-input-group">
+                      <label>Địa chỉ Email</label
+                      ><input
+                        type="text"
+                        id="profile-field-email"
+                        class="profile-readonly-input"
+                        value="nguyenngocgiavy1812@gmail.com"
+                        readonly
+                      />
+                    </div>
+                    <div class="profile-input-group">
+                      <label>Ngày sinh</label>
+                        <div class="birth-gender-row">
+                        <select class="select-birth profile-readonly-input" id="profile-birth-day" disabled style="padding: 8px; background: #0b0b0e; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; font-size: 14px; cursor: pointer;"></select>
+                        <select class="select-birth profile-readonly-input" id="profile-birth-month" disabled style="padding: 8px; background: #0b0b0e; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; font-size: 14px; cursor: pointer;"></select>
+                        <select class="select-birth profile-readonly-input" id="profile-birth-year" disabled style="padding: 8px; background: #0b0b0e; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; font-size: 14px; cursor: pointer;"></select>
+                        </div>
+                    </div>
+                    <div
+                      class="profile-input-group"
+                      style="grid-column: span 2"
+                    >
+                      <label>Vai trò hệ thống</label
+                      ><input
+                        type="text"
+                        id="profile-field-role"
+                        class="profile-readonly-input"
+                        value=""
+                        readonly
+                      />
+                    </div>
+                  </div>
                   <button
                     class="btn-save-profile-data-action"
                     id="btn-save-profile"
@@ -584,6 +658,32 @@
                 </div>
               </div>
 
+              <div id="pro-panel-chitiet" class="profile-sub-content">
+                <div class="sub-content-header-title">CHI TIẾT TÀI KHOẢN</div>
+                <p style="padding: 20px; color: #a8a8b3">
+                  Cấu hình dữ liệu hồ sơ nâng cao.
+                </p>
+              </div>
+              <div id="pro-panel-matma" class="profile-sub-content">
+                <div class="sub-content-header-title">
+                  CÀI MẶT MÃ THANH TOÁN
+                </div>
+                <p style="padding: 20px; color: #a8a8b3">
+                  Thiết lập mã PIN giao dịch bảo mật.
+                </p>
+              </div>
+              <div id="pro-panel-the" class="profile-sub-content">
+                <div class="sub-content-header-title">THẺ THÀNH VIÊN CARD</div>
+                <p style="padding: 20px; color: #a8a8b3">
+                  Mã thẻ cứng vật lý định danh thành viên.
+                </p>
+              </div>
+              <div id="pro-panel-diem" class="profile-sub-content">
+                <div class="sub-content-header-title">ĐIỂM THƯỞNG TÍCH LŨY</div>
+                <p style="padding: 20px; color: #a8a8b3">
+                  Số điểm CGV point đang tích lũy.
+                </p>
+              </div>
               <div id="pro-panel-lichsu" class="profile-sub-content">
                 <div class="sub-content-header-title">LỊCH SỬ GIAO DỊCH VÉ</div>
                 <div id="cgv-invoice-zone" style="padding: 15px">
@@ -993,6 +1093,7 @@
         <div class="las-auth-close" onclick="closeAuthModal()">✕</div>
 
         <div class="las-auth-logo-row">
+          <div class="las-auth-logo-icon">🎬</div>
           <div class="las-auth-logo-text">LAS<span>Cinemas</span></div>
         </div>
 

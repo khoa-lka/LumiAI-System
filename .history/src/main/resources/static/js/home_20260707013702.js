@@ -1871,7 +1871,6 @@ function switchProfileSubTab(sub) {
 function activateEditableFormFields() {
   document.querySelectorAll(".profile-readonly-input").forEach((input) => {
     input.removeAttribute("readonly");
-    input.removeAttribute("disabled");
     input.style.border = "1px solid #ff6b35";
     input.style.background = "#0b0b0e";
   });
@@ -1917,7 +1916,6 @@ function submitOtpVerification() {
 function saveUpdatedProfileInformationData() {
   document.querySelectorAll(".profile-readonly-input").forEach((input) => {
     input.setAttribute("readonly", true);
-    if (input.tagName === "SELECT") input.setAttribute("disabled", true);
     input.style.border = "1px solid rgba(255,255,255,0.15)";
     input.style.background = "#1c1c21";
   });

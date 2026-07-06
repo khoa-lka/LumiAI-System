@@ -1828,57 +1828,15 @@ header {
   box-sizing: border-box;
   color: #f4f4f5;
   font-weight: 700;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
 }
-.profile-readonly-input:not([readonly]):not([disabled]) {
+.profile-readonly-input:not([readonly]) {
   background-color: #0b0b0e;
   border: 1px solid #ff6b35;
   border-radius: 4px;
   padding: 8px 12px;
-}
-select.profile-readonly-input {
-  background-color: #1c1c21;
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 4px;
-  padding: 8px 12px;
-}
-select.profile-readonly-input:not([disabled]) {
-  background-color: #0b0b0e;
-  border: 1px solid #ff6b35;
-  color: #f4f4f5;
-}
-/* Chặn Chrome tự phủ nền trắng/vàng lên input đã có sẵn giá trị (autofill) */
-.profile-readonly-input:-webkit-autofill,
-.profile-readonly-input:-webkit-autofill:hover,
-.profile-readonly-input:-webkit-autofill:focus {
-  -webkit-text-fill-color: #f4f4f5;
-  -webkit-box-shadow: 0 0 0px 1000px #1c1c21 inset;
-  box-shadow: 0 0 0px 1000px #1c1c21 inset;
-  transition: background-color 9999s ease-in-out 0s;
 }
 .select-birth {
   cursor: pointer;
-}
-.btn-save-profile-data-action {
-  display: block;
-  margin-top: 20px;
-  width: 100%;
-  background: #ff6b35;
-  color: #fff;
-  border: none;
-  padding: 13px 0;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.btn-save-profile-data-action:hover {
-  background: #e0551f;
 }
 
 /* --- Card lịch sử giao dịch --- */

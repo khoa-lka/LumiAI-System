@@ -16,7 +16,7 @@
     "panel-movies": { parent: "Phim", current: "Danh Sách Phim" },
     "panel-movie-detail": { parent: "Phim", current: "Chi Tiết Phim" },
     "panel-booking": { parent: "Đặt Vé Trực Tuyến", current: "Chọn Ghế Ngồi" },
-    "panel-news": { parent: "Ưu Đãi", current: "Sự kiện & Ưu đãi" },
+    "panel-news": { parent: "Ưu Đãi", current: "Tin Mới & Khuyến Mãi" },
     "panel-news-detail": { parent: "Ưu Đãi", current: "Chi Tiết Ưu Đãi" },
     "panel-profile": { parent: "Thành Viên", current: "Tài Khoản LAS" },
     "panel-about": { parent: "Giới Thiệu", current: "Về LAS Cinemas" },

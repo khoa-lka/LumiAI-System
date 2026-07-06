@@ -102,7 +102,7 @@ function submitCgvLogin(event) {
             "profile-welcome-name",
           );
           if (welcomeNameBox)
-            welcomeNameBox.innerText = uData.fullName;
+            welcomeNameBox.innerText = `Xin chào ${uData.fullName},`;
 
           const starRoleBox = document.getElementById("profile-star-role");
           if (starRoleBox) starRoleBox.innerText = "MEMBER";
@@ -255,10 +255,9 @@ function saveUpdatedProfileInformationData() {
           .querySelectorAll(".profile-readonly-input")
           .forEach((input) => {
             input.setAttribute("readonly", true);
-            if (input.tagName === "SELECT") input.setAttribute("disabled", true);
-            input.style.border = "1px solid rgba(255,255,255,0.15)";
-            input.style.background = "#1c1c21";
-            input.style.color = "#f4f4f5";
+            input.setAttribute("disabled", true);
+            input.style.border = "1px solid #ccc";
+            input.style.background = "#f4f2ec";
           });
         document.getElementById("btn-save-profile").style.display = "none";
 
@@ -267,7 +266,7 @@ function saveUpdatedProfileInformationData() {
           if (profileRes.status === "success") {
             const updatedData = profileRes.data;
             document.getElementById("profile-welcome-name").innerText =
-              updatedData.fullName;
+              `Xin chào ${updatedData.fullName},`;
 
             const [year, month, day] = updatedData.dateOfBirth.split("-");
             document.getElementById("profile-birth-day").value = parseInt(day);
@@ -301,7 +300,7 @@ function switchProfileSubTab(sub) {
   document
     .querySelectorAll(".arrow-btn")
     .forEach((b) => b.classList.remove("active"));
-  ["chung", "lichsu"].forEach((p) => {
+  ["chung", "chitiet", "matma", "the", "diem", "lichsu"].forEach((p) => {
     const panel = document.getElementById("pro-panel-" + p);
     if (panel) panel.classList.remove("active");
   });
@@ -315,9 +314,8 @@ function activateEditableFormFields() {
   document.querySelectorAll(".profile-readonly-input").forEach((input) => {
     input.removeAttribute("readonly");
     input.removeAttribute("disabled");
-    input.style.border = "1px solid #ff6b35";
-    input.style.background = "#0b0b0e";
-    input.style.color = "#f4f4f5";
+    input.style.border = "1px solid var(--cgv-red)";
+    input.style.background = "#fff";
   });
   document.getElementById("btn-save-profile").style.display = "block";
 }

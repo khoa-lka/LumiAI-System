@@ -456,29 +456,19 @@ function renderTransactionHistory() {
 
   historyZone.innerHTML = "";
   userPastInvoices.forEach((inv) => {
-    // 🌟 FIX LỖI TÀNG HÌNH: Ép màu chữ sáng trên nền tối thay vì màu mặc định của trình duyệt
-    const movieName = inv.movie ? inv.movie : "Vé xem phim LAS Cinemas";
-    const isPaid = inv.status === "Đã thanh toán";
-    const statusClass = isPaid ? "history-badge-success" : "history-badge-pending";
+    // 🌟 FIX LỖI TÀNG HÌNH: Ép màu đỏ thương hiệu thật (#ff6b35) thay vì dùng biến hệ thống cũ var(--cgv-red)
+    // Đồng thời thêm bộ lọc cứu cánh (inv.movie || "Vé xem phim LAS Cinemas") đề phòng chuỗi dữ liệu trống
     historyZone.innerHTML += `
-          <div class="history-card-item">
-              <div class="history-card-icon">🎬</div>
-              <div class="history-card-main">
-                  <div class="history-card-top-row">
-                      <h4 class="history-card-title">${movieName}</h4>
-                      <span class="history-badge ${statusClass}">${inv.status}</span>
-                  </div>
-                  <div class="history-card-meta">
-                      <span>Mã ĐH: <b>${inv.id}</b></span>
-                      <span>📅 ${inv.date}</span>
-                      ${inv.time ? `<span>🕐 ${inv.time}</span>` : ""}
-                      ${inv.seats && inv.seats.length ? `<span>💺 ${inv.seats.join(", ")}</span>` : ""}
-                  </div>
+          <div style="border: 1px solid rgba(255,255,255,0.15); padding: 15px; margin-bottom: 10px; background: #17171b; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+              <div style="text-align: left;">
+                  <h4 style="margin: 0 0 6px 0; color: #ff6b35; font-size: 15px; font-weight: bold; text-transform: uppercase;">
+                      ${inv.movie ? inv.movie : "Vé xem phim LAS Cinemas"}
+                  </h4>
+                  <p style="margin: 0; font-size: 13px; color: #c4c4cc;">
+                      Mã ĐH: <b>${inv.id}</b> | Ngày: ${inv.date} | Trạng thái: <span style="color: green; font-weight: bold;">${inv.status}</span>
+                  </p>
               </div>
-              <div class="history-card-side">
-                  <b class="history-card-total">${(inv.total || 0).toLocaleString("vi-VN")} đ</b>
-                  <button class="history-card-btn" onclick="viewHistoryDetail('${inv.id}')">Xem chi tiết</button>
-              </div>
+              <button onclick="viewHistoryDetail('${inv.id}')" style="background: #ff9900; color: #fff; border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 12.5px;">Xem Chi Tiết</button>
           </div>
       `;
   });
@@ -616,7 +606,7 @@ function submitCgvLogin() {
 
         const welcomeNameBox = document.getElementById("profile-welcome-name");
         if (welcomeNameBox)
-          welcomeNameBox.innerText = uData.fullName;
+          welcomeNameBox.innerText = `Xin chào ${uData.fullName},`;
 
         const starRoleBox = document.getElementById("profile-star-role");
         if (starRoleBox)
@@ -1858,7 +1848,7 @@ function switchProfileSubTab(sub) {
   document
     .querySelectorAll(".arrow-btn")
     .forEach((b) => b.classList.remove("active"));
-  ["chung", "lichsu"].forEach((p) => {
+  ["chung", "chitiet", "matma", "the", "diem", "lichsu"].forEach((p) => {
     const panel = document.getElementById("pro-panel-" + p);
     if (panel) panel.classList.remove("active");
   });
@@ -1871,9 +1861,8 @@ function switchProfileSubTab(sub) {
 function activateEditableFormFields() {
   document.querySelectorAll(".profile-readonly-input").forEach((input) => {
     input.removeAttribute("readonly");
-    input.removeAttribute("disabled");
-    input.style.border = "1px solid #ff6b35";
-    input.style.background = "#0b0b0e";
+    input.style.border = "1px solid var(--cgv-red)";
+    input.style.background = "#fff";
   });
   document.getElementById("btn-save-profile").style.display = "block";
 }
@@ -1917,9 +1906,8 @@ function submitOtpVerification() {
 function saveUpdatedProfileInformationData() {
   document.querySelectorAll(".profile-readonly-input").forEach((input) => {
     input.setAttribute("readonly", true);
-    if (input.tagName === "SELECT") input.setAttribute("disabled", true);
-    input.style.border = "1px solid rgba(255,255,255,0.15)";
-    input.style.background = "#1c1c21";
+    input.style.border = "1px solid #ccc";
+    input.style.background = "#f4f2ec";
   });
   document.getElementById("btn-save-profile").style.display = "none";
   alert("Cập nhật thông tin tài khoản mới thành công!");

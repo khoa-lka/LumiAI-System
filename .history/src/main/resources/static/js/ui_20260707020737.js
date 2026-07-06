@@ -388,7 +388,7 @@ function renderCgvInterface() {
 
         let actionBtnHTML =
           m.status === "now_showing"
-            ? `<button class="btn-cgv-buy-ticket-spec" onclick="quickBookMovie('${m.title}')"> MUA VÉ</button>`
+            ? `<button class="btn-cgv-buy-ticket-spec" onclick="quickBookMovie('${m.title}')">MUA VÉ</button>`
             : `<button class="btn-cgv-buy-ticket-spec" style="background-color:#555; cursor:not-allowed;" disabled>📋 SẮP CHIẾU</button>`;
 
         let cleanImgUrl =
