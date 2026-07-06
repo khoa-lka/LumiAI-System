@@ -94,6 +94,13 @@ const API = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(cancelData),
     }).then(handleResponse),
+    // 🚀 THÊM MỚI: Gọi API gửi yêu cầu tạo suất chiếu xuống Spring Boot
+  addShowtime: (showtimeData) =>
+    fetch(`${BASE_URL}/showtimes/add`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(showtimeData),
+    }).then(handleResponse),
 
   // 5. ADMIN/MANAGER
   getAdminUsers: () => fetch(`${BASE_URL}/admin/users`).then(handleResponse),
@@ -105,11 +112,21 @@ const API = {
     fetch(`${BASE_URL}/admin/users/ban/${userId}`, { method: "PUT" }).then(
       handleResponse,
     ),
+  // Voucher
+  checkVoucher: (code) =>
+    fetch(`${BASE_URL}/voucher/${code}`).then(handleResponse),
 
-  checkVoucher(code) {
-    return fetch(API_BASE + "/voucher/" + code).then((res) => {
-      if (!res.ok) throw new Error("Voucher không hợp lệ");
-      return res.json();
-    });
-  },
+  // 🍿 Kho F&B
+  getFnbItems: () => fetch(`${BASE_URL}/fnb`).then(handleResponse),
+  addFnbItem: (data) => fetch(`${BASE_URL}/fnb`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  updateFnbItem: (id, data) => fetch(`${BASE_URL}/fnb/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  deleteFnbItem: (id) => fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then(res => res.ok ? true : Promise.reject(res))
 };
