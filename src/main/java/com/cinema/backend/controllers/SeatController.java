@@ -23,8 +23,8 @@ public class SeatController {
 
      @Autowired
     private SeatRepository seatRepository;
-@Autowired
-    private TicketRepository ticketRepository;
+
+
 
     @Autowired
     private ShowtimeRepository showtimeRepository;
@@ -32,7 +32,16 @@ public class SeatController {
     @Autowired
     private VoucherService voucherService;
 
-    // 🚀 ĐỒNG BỘ HOÀN HẢO: Chỉ bốc đúng danh sách ghế của phòng chiếu thuộc suất chiếu đó
+
+
+    @Autowired
+    private TicketRepository ticketRepository;
+
+  
+
+    
+
+    // 🚀 API: Lấy ma trận ghế
     @GetMapping("/matrix")
     public List<Map<String, Object>> getSeatsMatrix(@RequestParam("showtimeId") Integer showtimeId) {
         List<Map<String, Object>> result = new ArrayList<>();
@@ -153,3 +162,4 @@ public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
     }
 }
 }
+
