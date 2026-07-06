@@ -266,7 +266,7 @@ window.fnbMenu.forEach((item, index) => {
       ${item.desc ? `<p class="fnb-card-desc">${item.desc}</p>` : ""}
       ${bullets ? `<ul class="fnb-card-list">${bullets}</ul>` : ""}
       <div class="fnb-card-action">${control}</div>
-    </div>`;s
+    </div>`;
   });
 }
 
