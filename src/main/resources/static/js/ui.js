@@ -218,44 +218,50 @@ function renderFnbMenu() {
   const container = document.getElementById("cgv-fnb-menu");
   if (!container) return;
   container.innerHTML = "";
-if (!window.fnbMenu || window.fnbMenu.length === 0) {
-  container.innerHTML = "<p style='text-align:center; color:#666; padding:15px; font-size:13px;'>Đang nạp menu bắp nước từ hệ thống...</p>";
-  return;
-}
-
-// Clear container trước khi render (nếu cần) để tránh cộng dồn lặp dữ liệu
-container.innerHTML = ""; 
-
-// 2. Duyệt qua window.fnbMenu của main
-window.fnbMenu.forEach((item, index) => {
-  const inCart = item.qty > 0;
-  
-  // 3. Giữ logic tự động nhận diện icon phòng khi item.icon bị rỗng từ main
-  let icon = item.icon;
-  if (!icon) {
-    const nameLower = (item.name || "").toLowerCase();
-    icon = "🍿"; 
-    if (nameLower.includes("combo") || nameLower.includes("bap rang lon")) icon = "🎁";
-    if (nameLower.includes("nuoc") || nameLower.includes("coca") || nameLower.includes("ly")) icon = "🥤";
-    if (nameLower.includes("khoai") || nameLower.includes("chien")) icon = "🍟";
+  if (!window.fnbMenu || window.fnbMenu.length === 0) {
+    container.innerHTML =
+      "<p style='text-align:center; color:#666; padding:15px; font-size:13px;'>Đang nạp menu bắp nước từ hệ thống...</p>";
+    return;
   }
 
-  // 4. Giữ cấu trúc render danh sách bullets từ fe-xin-xo
-  const bullets = (item.items || [])
-    .map((t) => `<li>${t}</li>`)
-    .join("");
+  // Clear container trước khi render (nếu cần) để tránh cộng dồn lặp dữ liệu
+  container.innerHTML = "";
 
-  // 5. Giữ bộ điều khiển nút bấm thông minh từ fe-xin-xo
-  const control = inCart
-    ? `<div class="fnb-stepper">
+  // 2. Duyệt qua window.fnbMenu của main
+  window.fnbMenu.forEach((item, index) => {
+    const inCart = item.qty > 0;
+
+    // 3. Giữ logic tự động nhận diện icon phòng khi item.icon bị rỗng từ main
+    let icon = item.icon;
+    if (!icon) {
+      const nameLower = (item.name || "").toLowerCase();
+      icon = "🍿";
+      if (nameLower.includes("combo") || nameLower.includes("bap rang lon"))
+        icon = "🎁";
+      if (
+        nameLower.includes("nuoc") ||
+        nameLower.includes("coca") ||
+        nameLower.includes("ly")
+      )
+        icon = "🥤";
+      if (nameLower.includes("khoai") || nameLower.includes("chien"))
+        icon = "🍟";
+    }
+
+    // 4. Giữ cấu trúc render danh sách bullets từ fe-xin-xo
+    const bullets = (item.items || []).map((t) => `<li>${t}</li>`).join("");
+
+    // 5. Giữ bộ điều khiển nút bấm thông minh từ fe-xin-xo
+    const control = inCart
+      ? `<div class="fnb-stepper">
           <button class="fnb-step-btn" onclick="updateComboQty(${index}, -1)">−</button>
           <span class="fnb-step-qty">×${item.qty}</span>
           <button class="fnb-step-btn fnb-step-plus" onclick="updateComboQty(${index}, 1)">+</button>
        </div>`
-    : `<button class="fnb-add-btn" onclick="updateComboQty(${index}, 1)">＋ Thêm vào đơn</button>`;
+      : `<button class="fnb-add-btn" onclick="updateComboQty(${index}, 1)">＋ Thêm vào đơn</button>`;
 
-  // 6. Output chuẩn theo giao diện sạch sẽ, dùng class CSS của fe-xin-xo
-  container.innerHTML += `
+    // 6. Output chuẩn theo giao diện sạch sẽ, dùng class CSS của fe-xin-xo
+    container.innerHTML += `
     <div class="fnb-card ${inCart ? "fnb-card-active" : ""}">
       <div class="fnb-card-head">
         <div class="fnb-card-icon">${icon}</div>
@@ -270,11 +276,11 @@ window.fnbMenu.forEach((item, index) => {
   });
 }
 
-window.updateComboQty = function(index, change) {
+window.updateComboQty = function (index, change) {
   if (!window.fnbMenu || !window.fnbMenu[index]) return;
 
   let newQty = window.fnbMenu[index].qty + change;
-  if (newQty < 0) newQty = 0; 
+  if (newQty < 0) newQty = 0;
 
   window.fnbMenu[index].qty = newQty;
   renderFnbMenu();
@@ -288,18 +294,18 @@ window.updateComboQty = function(index, change) {
 
 function selectCgvBookingDate(fullDateId) {
   // 1. Găm chặt ngày mới chọn vào biến toàn cục quản lý
-  selectedDateStr = fullDateId; 
+  selectedDateStr = fullDateId;
   // 🚀 RESET GHẾ: Xóa sạch danh sách ghế cũ đang chọn khi đổi ngày
   selectedSeats = [];
   selectedShowtime = "";
   window.currentSelectedShowtimeId = null;
-  
+
   const sumDateEl = document.getElementById("sum-date");
   if (sumDateEl) {
     sumDateEl.innerText = fullDateId;
   }
-  
-  generateCgvDateSlider(); 
+
+  generateCgvDateSlider();
   if (typeof renderCgvInterface === "function") {
     renderCgvInterface();
   }
@@ -386,9 +392,16 @@ function renderCgvInterface() {
             : `<button class="btn-cgv-buy-ticket-spec" style="background-color:#555; cursor:not-allowed;" disabled>📋 SẮP CHIẾU</button>`;
 
         let cleanImgUrl =
-          m.mainposter_url || m.mainposterUrl || m.mainposterurl || m.img || "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
-          
-        let displayAge = m.age_rating === 0 || m.ageRating === 0 ? "P" : `T${m.age_rating || m.ageRating || (m.status === "now_showing" ? "16" : "P")}`;
+          m.mainposter_url ||
+          m.mainposterUrl ||
+          m.mainposterurl ||
+          m.img ||
+          "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
+
+        let displayAge =
+          m.age_rating === 0 || m.ageRating === 0
+            ? "P"
+            : `T${m.age_rating || m.ageRating || (m.status === "now_showing" ? "16" : "P")}`;
 
         movieZone.innerHTML += `
             <div class="movie-spec-card">
@@ -462,7 +475,10 @@ function renderCgvInterface() {
           actualShowtimes.forEach((st) => {
             const isSelected = st.startTime === selectedShowtime;
             const activeClass = isSelected ? "active" : "";
-            const roomDisplayName = st.roomId === 2 || st.room_id === 2 ? "Phòng 2 (IMAX Siêu Đại)" : "Phòng 1 (3D Standard)";
+            const roomDisplayName =
+              st.roomId === 2 || st.room_id === 2
+                ? "Phòng 2 (IMAX Siêu Đại)"
+                : "Phòng 1 (3D Standard)";
 
             timeGrid.innerHTML += `
               <div class="showtime-btn ${activeClass}" onclick="selectCgvShowtimeSlot('${st.startTime}', ${st.showtimeId})">
@@ -489,7 +505,7 @@ function renderCgvInterface() {
       return;
     }
 
-    let currentRoomId = 1; 
+    let currentRoomId = 1;
     if (serverData.showtimes && serverData.showtimes.length > 0) {
       const currentStObj = serverData.showtimes.find(
         (st) => st.showtimeId == window.currentSelectedShowtimeId,
@@ -502,7 +518,7 @@ function renderCgvInterface() {
     seatGrid.style.display = "grid";
     if (currentRoomId == 2) {
       seatGrid.style.gridTemplateColumns = "repeat(21, 1fr)";
-      seatGrid.style.gap = "4px"; 
+      seatGrid.style.gap = "4px";
     } else {
       seatGrid.style.gridTemplateColumns = "repeat(10, 1fr)";
       seatGrid.style.gap = "6px";
@@ -513,8 +529,8 @@ function renderCgvInterface() {
         // 🚀 ĐÃ SỬA CHUẨN: Găm mảng dữ liệu ghế thật từ Server ra toàn cục đúng vị trí ngữ cảnh
         window.currentBackendSeats = backendSeats;
         seatGrid.innerHTML = "";
-        
-        const soldSeatsFromDb = Array.isArray(backendSeats) 
+
+        const soldSeatsFromDb = Array.isArray(backendSeats)
           ? backendSeats
               .filter(
                 (s) =>
@@ -529,26 +545,33 @@ function renderCgvInterface() {
               })
           : [];
 
-        window.calculateSeatOnly = function() {
-          document.getElementById("sum-seats").innerText = selectedSeats.join(", ") || "Chưa chọn";
+        window.calculateSeatOnly = function () {
+          document.getElementById("sum-seats").innerText =
+            selectedSeats.join(", ") || "Chưa chọn";
           let total = 0;
           let totalFnbItems = 0;
 
           selectedSeats.forEach((seatId) => {
-            const seatData = backendSeats.find(s => {
+            const seatData = backendSeats.find((s) => {
               const row = s.seatRow || s.seat_row || "";
               const num = s.seatNumber || s.seat_number || "";
-              return `${row}${num}`.trim().toUpperCase() === seatId.toUpperCase();
+              return (
+                `${row}${num}`.trim().toUpperCase() === seatId.toUpperCase()
+              );
             });
-            
+
             console.log("Found:", seatData);
 
             if (seatData) {
-                console.log("Type:", seatData.seatType);
+              console.log("Type:", seatData.seatType);
             }
 
             if (seatData) {
-              const type = (seatData.seatType || seatData.seat_type || "STANDARD").toUpperCase();
+              const type = (
+                seatData.seatType ||
+                seatData.seat_type ||
+                "STANDARD"
+              ).toUpperCase();
               if (type === "VIP") total += 110000;
               else if (type === "SWEETBOX") total += 250000;
               else total += 90000;
@@ -562,15 +585,21 @@ function renderCgvInterface() {
             total += item.qty * item.price;
             totalFnbItems += item.qty;
           });
-          
+
           const sumFnb = document.getElementById("sum-fnb");
           if (sumFnb) sumFnb.innerText = totalFnbItems + " Combo";
-          
+
           currentPriceTotal = total;
-          let finalTotal = currentPriceTotal * (1 - (typeof appliedVoucherDiscount !== "undefined" ? appliedVoucherDiscount : 0));
-          
+          let finalTotal =
+            currentPriceTotal *
+            (1 -
+              (typeof appliedVoucherDiscount !== "undefined"
+                ? appliedVoucherDiscount
+                : 0));
+
           const sumTotal = document.getElementById("sum-total");
-          if (sumTotal) sumTotal.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
+          if (sumTotal)
+            sumTotal.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
         };
 
         if (Array.isArray(backendSeats) && backendSeats.length > 0) {
@@ -579,7 +608,11 @@ function renderCgvInterface() {
             const seatNum = seat.seatNumber || seat.seat_number || "";
             const id = `${rowLetter}${seatNum}`.trim().toUpperCase();
 
-            const rawType = (seat.seatType || seat.seat_type || "STANDARD").toUpperCase();
+            const rawType = (
+              seat.seatType ||
+              seat.seat_type ||
+              "STANDARD"
+            ).toUpperCase();
             let cssType = "Standard";
             if (rawType === "VIP") cssType = "VIP";
             if (rawType === "SWEETBOX") cssType = "Sweetbox";
@@ -602,7 +635,7 @@ function renderCgvInterface() {
                 if (selectedSeats.includes(id))
                   selectedSeats = selectedSeats.filter((x) => x !== id);
                 else selectedSeats.push(id);
-                
+
                 // 🚀 ĐÃ SỬA KHÔN NGOAN: Chỉ đổi class UI cục bộ và chạy tính tiền, cấm renderCgvInterface() làm re-fetch
                 if (selectedSeats.includes(id)) div.classList.add("selected");
                 else div.classList.remove("selected");

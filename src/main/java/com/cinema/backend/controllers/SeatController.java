@@ -137,6 +137,7 @@ public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
                 ticket.setTicketCode(ticketCode);
                 ticket.setQrCode(ticketCode);
 
+<<<<<<< HEAD
             savedTickets.add(ticketRepository.save(ticket));
         }
 
@@ -163,3 +164,31 @@ public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
 }
 }
 
+=======
+                savedTickets.add(ticketRepository.save(ticket));
+            }
+
+            // Trả về response thành công khớp với đoạn đuôi file của em
+            // dùng voucher
+    String voucherCode = (String) payload.get("voucherCode");
+
+    if (voucherCode != null && !voucherCode.isBlank()) {
+        boolean ok = voucherService.useVoucher(voucherCode);
+        System.out.println("Use voucher = " + ok);
+    }
+
+    response.put("success", true);
+    response.put("ticketId", savedTickets.get(0).getTicketCode());
+    response.put("totalTickets", savedTickets.size());
+
+    return response;
+
+}
+catch(Exception e){
+
+    response.put("success", false);
+    response.put("message", e.getMessage());
+
+    return response;
+}}}
+>>>>>>> c56321bf71d226c6d012477e4d5386ac1efc1107
