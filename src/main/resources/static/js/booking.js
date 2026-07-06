@@ -459,6 +459,12 @@ function openVnpayPayment(finalTotal) {
             showtime: window.currentSelectedShowtimeId,
             seats: [...selectedSeats],
             email: document.getElementById("profile-field-email").value,
+            total: window.finalPriceTotal,
+            originalTotal: currentPriceTotal,
+            discount: appliedVoucherDiscount,
+            voucherCode: document.getElementById("voucher-input").value.trim(),
+            voucher: window.currentVoucher,
+            fnb: fnbMenu.map((i) => ({ ...i })),
           }),
         );
 
@@ -499,8 +505,16 @@ function checkVnpayReturn() {
   if (!payload) return;
 
   const data = JSON.parse(payload);
-  currentPriceTotal = data.total || 0;
-  appliedVoucherDiscount = data.discount || 0;
+
+  currentPriceTotal = data.originalTotal;
+  appliedVoucherDiscount = data.discount;
+  window.finalPriceTotal = data.total;
+
+  document.getElementById("voucher-input").value = data.voucherCode || "";
+
+  window.currentVoucher = data.voucher || null;
+  console.log("Voucher restored:", window.currentVoucher);
+
   if (data.fnb) {
     fnbMenu.forEach((item) => {
       const old = data.fnb.find((x) => x.name === item.name);
@@ -620,11 +634,10 @@ function executeFinalCheckout() {
     alert("Bạn chưa chọn suất chiếu!");
     return;
   }
-  // 1. Tạo gói dữ liệu chuẩn bị gửi
   const checkoutPayload = {
     movie: currentMovie,
     showtime: showtimeId,
-    seats: selectedSeats,
+    seats: [...selectedSeats],
     email: currentEmail,
     voucherCode: document.getElementById("voucher-input")?.value.trim() || "",
     total: window.finalPriceTotal,
