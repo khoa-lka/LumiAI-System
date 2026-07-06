@@ -357,119 +357,52 @@
           </div>
         </div>
 
+        <!-- ========================================== -->
+        <!-- 📅 PHÂN HỆ MA TRẬN LỊCH CHIẾU ĐỘNG -->
+        <!-- ========================================== -->
         <div id="mp-tab-matrix" class="mp-tab-section">
           <div class="mp-action-bar">
-            <div style="font-weight: bold; color: #333; cursor: pointer">
-              Lịch chiếu ∨
+            <div style="font-weight: bold; color: #333;">
+              Quản lý ma trận phân bổ phòng chiếu
             </div>
             <div class="mp-filters">
-              <div class="mp-date-picker">📅 20/06/2026</div>
-              <button class="mp-btn-add">Tạo suất chiếu mới</button>
-              <button class="mp-btn-outline">Auto-Schedule</button>
+              <!-- Thay thế date picker tĩnh bằng ô input date động -->
+              <input type="date" id="mp-matrix-date-input" class="mp-filter-select" style="width: 160px; font-weight: bold;" onchange="loadManagerMatrix()" />
+              <button class="mp-btn-add" onclick="openAddShowtimeModal()">Tạo suất chiếu mới</button>
+              <button class="mp-btn-outline" onclick="loadManagerMatrix()">🔄 Làm mới</button>
             </div>
           </div>
+          
           <div class="mp-matrix-container">
             <div class="mp-matrix-header">
-              <div class="mp-matrix-room-col"></div>
+              <div class="mp-matrix-room-col">Phòng</div>
               <div class="mp-matrix-timeline">
-                <span>08:00</span><span>09:00</span><span>10:00</span
-                ><span>11:00</span><span>12:00</span><span>13:00</span
-                ><span>14:00</span><span>16:00</span><span>17:00</span
-                ><span>18:00</span><span>19:00</span><span>20:00</span
-                ><span>21:00</span><span>22:00</span><span>23:00</span>
+                <span>08:00</span><span>09:00</span><span>10:00</span><span>11:00</span>
+                <span>12:00</span><span>13:00</span><span>14:00</span><span>15:00</span>
+                <span>16:00</span><span>17:00</span><span>18:00</span><span>19:00</span>
+                <span>20:00</span><span>21:00</span><span>22:00</span><span>23:00</span>
               </div>
             </div>
+            
+            <!-- Hàng của Phòng chiếu số 1 -->
             <div class="mp-matrix-row">
               <div class="mp-matrix-room-col">
                 <span class="mp-matrix-room-name">Screen 1</span>
+                <span style="font-size:10px;color:#666;display:block;">Standard</span>
               </div>
-              <div class="mp-matrix-tracks">
-                <div
-                  class="mp-track-block mp-bg-yellow"
-                  style="left: 3%; width: 25%"
-                >
-                  <strong>Minions</strong><br />20:00<br />75/120 Ghế
-                </div>
-                <div
-                  class="mp-track-block mp-bg-gray"
-                  style="left: 31%; width: 5%"
-                >
-                  Dọn<br />phòng
-                </div>
-                <div
-                  class="mp-track-block mp-bg-green"
-                  style="left: 38%; width: 8%"
-                ></div>
-                <div class="mp-gap-text" style="left: 48%; width: 5%">
-                  15 min
-                </div>
-                <div
-                  class="mp-track-block mp-bg-blue"
-                  style="left: 55%; width: 25%"
-                >
-                  <strong>Thor</strong><br />20:00
-                </div>
-                <div
-                  class="mp-track-block mp-bg-gray"
-                  style="left: 85%; width: 5%"
-                >
-                  Dọn<br />phòng
-                </div>
+              <div class="mp-matrix-tracks" id="matrix-track-room-1">
+                <!-- Suất chiếu động của phòng 1 tự đổ vào đây -->
               </div>
             </div>
+            
+            <!-- Hàng của Phòng chiếu số 2 -->
             <div class="mp-matrix-row">
               <div class="mp-matrix-room-col">
                 <span class="mp-matrix-room-name">Screen 2</span>
+                <span style="font-size:10px;color:#d32f2f;display:block;">IMAX</span>
               </div>
-              <div class="mp-matrix-tracks">
-                <div
-                  class="mp-track-block mp-bg-yellow"
-                  style="left: 4%; width: 18%"
-                >
-                  <strong>Minions</strong><br />20:00<br />75/120 Ghế
-                </div>
-                <div class="mp-gap-text" style="left: 23%; width: 5%">
-                  15 min
-                </div>
-                <div
-                  class="mp-track-block mp-bg-blue"
-                  style="left: 29%; width: 15%"
-                >
-                  <strong>Thor</strong><br />20:00<br />75/120 Ghế
-                </div>
-                <div
-                  class="mp-track-block mp-bg-blue"
-                  style="left: 46%; width: 7%"
-                >
-                  <strong>Ti...</strong><br />16:00
-                </div>
-                <div
-                  class="mp-track-block mp-bg-blue mp-conflict-box"
-                  style="left: 55%; width: 20%"
-                >
-                  <div class="mp-conflict-tooltip">
-                    <div class="mp-icon-error">!</div>
-                    <div>
-                      <strong>Xung đột lịch chiếu!</strong><br /><span
-                        style="font-weight: normal; color: #666"
-                        >Phòng chiếu đã có suất khác</span
-                      >
-                    </div>
-                  </div>
-                  <strong>Thor</strong><br />20:00<br />75/120 Ghế
-                </div>
-                <div
-                  class="mp-track-block mp-bg-red mp-conflict-box"
-                  style="left: 68%; width: 15%; z-index: 6"
-                >
-                  <strong>Conan</strong><br />20:00<br />75/20 Ghế
-                </div>
-                <div
-                  class="mp-track-block mp-bg-gray"
-                  style="left: 86%; width: 5%"
-                >
-                  Dọn<br />phòng
-                </div>
+              <div class="mp-matrix-tracks" id="matrix-track-room-2">
+                <!-- Suất chiếu động của phòng 2 tự đổ vào đây -->
               </div>
             </div>
           </div>
@@ -1359,6 +1292,14 @@
             console.error("Lỗi khi load danh sách F&B từ database:", err);
           }
         }
+        // 3. Tự động kích hoạt gọi ma trận lịch chiếu tổng hợp khi qua Tab Matrix
+        if (tabId === "matrix" && typeof loadManagerMatrix === "function") {
+          try {
+            loadManagerMatrix();
+          } catch (err) {
+            console.error("Lỗi khi load ma trận lịch chiếu:", err);
+          }
+        }
       };
 
       // Các hàm Dropdown
@@ -1390,6 +1331,40 @@
         <div style="display: flex; gap: 10px;">
           <button class="btn-cgv-cancel" onclick="closeFnbModal()" style="flex: 1; cursor: pointer; padding:10px; border-radius:4px; border:1px solid #ccc;">Hủy</button>
           <button class="btn-cgv-submit" onclick="submitFnbForm()" style="flex: 1; cursor: pointer; background:#e71a0f; color:white; border:none; padding:10px; border-radius:4px;">LƯU LẠI</button>
+        </div>
+      </div>
+    </div>
+    <div class="mp-modal-overlay" id="mp-add-showtime-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+      <div class="mp-modal-box" style="background: white; width: 450px; padding: 25px; border-radius: 8px; box-sizing: border-box;">
+        <div class="mp-modal-close" onclick="closeAddShowtimeModal()" style="cursor: pointer; float: right; font-weight: bold;">✕</div>
+        <div class="mp-modal-header" style="font-weight: bold; font-size: 18px; margin-bottom: 20px; color:#111;">Tạo Suất Chiếu Mới</div>
+        
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Chọn bộ phim</label>
+          <select id="st-movie-select" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></select>
+        </div>
+        
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Chọn phòng chiếu</label>
+          <select id="st-room-select" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <option value="1">Phòng 1 (3D Standard)</option>
+            <option value="2">Phòng 2 (IMAX Siêu Đại)</option>
+          </select>
+        </div>
+        
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Giờ bắt đầu (Ví dụ: 14:30, 19:00)</label>
+          <input type="time" id="st-start-time" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+
+        <div class="mp-form-group" style="margin-bottom: 20px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Giá vé cơ bản (VND)</label>
+          <input type="number" id="st-ticket-price" class="cgv-input-text" value="90000" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-cgv-cancel" onclick="closeAddShowtimeModal()" style="flex: 1; cursor: pointer; padding:10px; border-radius:4px; border:1px solid #ccc; background:#fff;">Hủy bỏ</button>
+          <button class="btn-cgv-submit" onclick="submitAddShowtimeForm()" style="flex: 1; cursor: pointer; background:#e71a0f; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold;">XẾP LỊCH NGAY</button>
         </div>
       </div>
     </div>
