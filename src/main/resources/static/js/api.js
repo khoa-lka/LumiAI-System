@@ -112,6 +112,9 @@ const API = {
     fetch(`${BASE_URL}/admin/users/ban/${userId}`, { method: "PUT" }).then(
       handleResponse,
     ),
+  // Voucher
+  checkVoucher: (code) =>
+    fetch(`${BASE_URL}/voucher/${code}`).then(handleResponse),
 
   // 🍿 Kho F&B
   getFnbItems: () => fetch(`${BASE_URL}/fnb`).then(handleResponse),
