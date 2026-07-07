@@ -446,6 +446,19 @@ function cancelCurrentTransaction() {
   }
 }
 
+function getPosterByMovieName(name) {
+  try {
+    const m = (serverData.movies || []).find(
+      (x) => (x.title || "").trim() === (name || "").trim(),
+    );
+    if (m)
+      return (
+        m.mainposter_url || m.mainposterUrl || m.mainposterurl || m.img || ""
+      );
+  } catch (e) {}
+  return "";
+}
+
 function renderTransactionHistory() {
   const historyZone = document.getElementById("cgv-invoice-zone");
   if (userPastInvoices.length === 0) {
@@ -456,28 +469,37 @@ function renderTransactionHistory() {
 
   historyZone.innerHTML = "";
   userPastInvoices.forEach((inv) => {
-    // 🌟 FIX LỖI TÀNG HÌNH: Ép màu chữ sáng trên nền tối thay vì màu mặc định của trình duyệt
     const movieName = inv.movie ? inv.movie : "Vé xem phim LAS Cinemas";
     const isPaid = inv.status === "Đã thanh toán";
-    const statusClass = isPaid ? "history-badge-success" : "history-badge-pending";
+    const statusClass = isPaid
+      ? "history-badge-success"
+      : "history-badge-pending";
+    const poster = getPosterByMovieName(inv.movie);
+    const thumb = poster
+      ? `<div class="history-poster"><img src="${poster}" alt="${movieName}"></div>`
+      : `<div class="history-poster history-poster-fallback">🎬</div>`;
+
     historyZone.innerHTML += `
           <div class="history-card-item">
-              <div class="history-card-icon">🎬</div>
+              ${thumb}
               <div class="history-card-main">
                   <div class="history-card-top-row">
                       <h4 class="history-card-title">${movieName}</h4>
                       <span class="history-badge ${statusClass}">${inv.status}</span>
                   </div>
                   <div class="history-card-meta">
-                      <span>Mã ĐH: <b>${inv.id}</b></span>
+                      <span>🎫 ${inv.id}</span>
                       <span>📅 ${inv.date}</span>
                       ${inv.time ? `<span>🕐 ${inv.time}</span>` : ""}
                       ${inv.seats && inv.seats.length ? `<span>💺 ${inv.seats.join(", ")}</span>` : ""}
                   </div>
+                  <div class="history-card-actions">
+                      <button class="history-card-btn" onclick="viewHistoryDetail('${inv.id}')">Xem chi tiết</button>
+                      <button class="history-card-btn ghost" onclick="openFeedbackModal('${inv.id}')">💬 Gửi Feedback</button>
+                  </div>
               </div>
               <div class="history-card-side">
-                  <b class="history-card-total">${(inv.total || 0).toLocaleString("vi-VN")} đ</b>
-                  <button class="history-card-btn" onclick="viewHistoryDetail('${inv.id}')">Xem chi tiết</button>
+                  <span class="history-price-badge">${(inv.total || 0).toLocaleString("vi-VN")} đ</span>
               </div>
           </div>
       `;
@@ -487,17 +509,39 @@ function renderTransactionHistory() {
 function viewHistoryDetail(invoiceId) {
   const inv = userPastInvoices.find((i) => i.id === invoiceId);
   if (!inv) return;
-  let fnbHtml = inv.fnb.map((i) => `<li>${i.name} x${i.qty}</li>`).join("");
+  const isPaid = inv.status === "Đã thanh toán";
+  const statusClass = isPaid
+    ? "history-badge-success"
+    : "history-badge-pending";
+  let fnbHtml = (inv.fnb || [])
+    .map((i) => `<li>${i.name} × ${i.qty}</li>`)
+    .join("");
+  const seatBadges = (inv.seats || [])
+    .map((s) => `<span class="bc-seat-badge">${s}</span>`)
+    .join("");
+
   document.getElementById("history-detail-content").innerHTML = `
-      <p><strong>Mã vé:</strong> <span style="color:red;">${inv.id}</span></p>
-      <p><strong>Phim:</strong> ${inv.movie}</p>
-      <p><strong>Suất:</strong> ${inv.time} ngày ${inv.date}</p>
-      <hr style="margin: 10px 0;">
-      <p><strong>🎟️ Vé ghế ngồi:</strong> ${inv.seats.join(", ")}</p>
-      <p><strong>🍿 Bắp nước:</strong></p>
-      <ul>${fnbHtml || "<li>Không có</li>"}</ul>
-      <hr style="margin: 10px 0;">
-      <p style="font-size: 16px; text-align: right;"><strong>Thành tiền: <span style="color:red;">${inv.total.toLocaleString("vi-VN")} đ</span></strong></p>
+      <div class="hist-inv">
+        <div class="hist-inv-head">
+          <div class="hist-inv-movie">${inv.movie}</div>
+          <span class="history-badge ${statusClass}">${inv.status}</span>
+        </div>
+        <div class="hist-inv-rows">
+          <div class="hist-inv-row"><span>Mã vé</span><span class="hist-inv-code">${inv.id}</span></div>
+          <div class="hist-inv-row"><span>Suất chiếu</span><span>${inv.time} • ${inv.date}</span></div>
+        </div>
+        <div class="hist-inv-label">Ghế đã đặt</div>
+        <div class="hist-inv-seats">${seatBadges || "—"}</div>
+        <div class="hist-inv-label">Bắp nước</div>
+        <ul class="hist-inv-fnb">${fnbHtml || "<li>Không có</li>"}</ul>
+        <div class="hist-inv-total">
+          <span>Thành tiền</span>
+          <span class="hist-inv-amt">${(inv.total || 0).toLocaleString("vi-VN")} đ</span>
+        </div>
+        <div class="hist-inv-actions">
+          <button class="hist-feedback-btn" onclick="openFeedbackModal('${inv.id}')">💬 Gửi Feedback</button>
+        </div>
+      </div>
   `;
   document.getElementById("history-detail-modal").classList.add("open");
 }
@@ -505,6 +549,73 @@ function viewHistoryDetail(invoiceId) {
 function closeHistoryDetailModal() {
   document.getElementById("history-detail-modal").classList.remove("open");
 }
+
+/* ---------- FEEDBACK ---------- */
+let _feedbackRating = 0;
+let _feedbackInvoiceId = null;
+
+function openFeedbackModal(invoiceId) {
+  _feedbackInvoiceId = invoiceId || null;
+  _feedbackRating = 0;
+  const inv = userPastInvoices.find((i) => i.id === invoiceId);
+  const refEl = document.getElementById("feedback-invoice-ref");
+  if (refEl)
+    refEl.innerText = inv
+      ? `Phim: ${inv.movie} • Mã vé: ${inv.id}`
+      : "Chia sẻ trải nghiệm của bạn";
+  const txt = document.getElementById("feedback-text");
+  if (txt) txt.value = "";
+  setFeedbackStars(0);
+  document.getElementById("feedback-modal").classList.add("open");
+}
+
+function setFeedbackStars(n) {
+  _feedbackRating = n;
+  document.querySelectorAll("#feedback-stars .fb-star").forEach((el) => {
+    const v = Number(el.getAttribute("data-v"));
+    el.classList.toggle("active", v <= n);
+  });
+}
+
+function submitFeedback() {
+  const txt = document.getElementById("feedback-text").value.trim();
+  if (_feedbackRating === 0) {
+    alert("Vui lòng chọn số sao đánh giá!");
+    return;
+  }
+  if (!txt) {
+    alert("Vui lòng nhập nội dung feedback!");
+    return;
+  }
+  const entry = {
+    invoiceId: _feedbackInvoiceId,
+    rating: _feedbackRating,
+    content: txt,
+    at: new Date().toISOString(),
+  };
+  try {
+    const list = JSON.parse(localStorage.getItem("las_feedbacks") || "[]");
+    list.unshift(entry);
+    localStorage.setItem("las_feedbacks", JSON.stringify(list));
+  } catch (e) {}
+
+  closeFeedbackModal();
+  const toast = document.getElementById("feedback-toast");
+  if (toast) {
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2600);
+  } else {
+    alert("Cảm ơn bạn đã gửi feedback! 🧡");
+  }
+}
+
+function closeFeedbackModal() {
+  document.getElementById("feedback-modal").classList.remove("open");
+}
+window.openFeedbackModal = openFeedbackModal;
+window.setFeedbackStars = setFeedbackStars;
+window.submitFeedback = submitFeedback;
+window.closeFeedbackModal = closeFeedbackModal;
 
 function executeMovieRealTimeSearch() {
   const inputField = document.getElementById("movie-search-input");
