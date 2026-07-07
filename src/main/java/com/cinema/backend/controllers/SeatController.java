@@ -1,14 +1,17 @@
 package com.cinema.backend.controllers;
 import com.cinema.backend.repositories.ShowtimeRepository; // Thêm dòng này
 import com.cinema.backend.repositories.TicketRepository;
+import com.cinema.backend.entities.FoodBeverage;
 import com.cinema.backend.entities.Seat;
 import com.cinema.backend.entities.Showtime;
 import com.cinema.backend.entities.Ticket;
+import com.cinema.backend.repositories.FoodBeverageRepository;
 import com.cinema.backend.repositories.SeatRepository;
 
 import com.cinema.backend.service.VoucherService;
 
 import org.springframework.transaction.annotation.Transactional;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,9 +40,9 @@ public class SeatController {
     @Autowired
     private TicketRepository ticketRepository;
 
-  
+    @Autowired
+    private FoodBeverageRepository foodBeverageRepository;
 
-    
 
     // 🚀 API: Lấy ma trận ghế
     @GetMapping("/matrix")
@@ -91,75 +94,96 @@ public class SeatController {
 
     // 🚀 LUỒNG CHECKOUT: Đặt vé và lưu thông tin Ticket vào database mẫu của nhóm
     @PostMapping("/checkout")
-@Transactional
-public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
+    @Transactional
+    public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
 
-    Map<String, Object> response = new HashMap<>();
-    System.out.println("===== NEW CHECKOUT =====");
+        Map<String, Object> response = new HashMap<>();
+        System.out.println("===== NEW CHECKOUT =====");
 
-        try {
-            System.out.println("===== NEW CHECKOUT =====");
-            System.out.println("CHECKOUT PAYLOAD = " + payload);
+            try {
+                System.out.println("===== NEW CHECKOUT =====");
+                System.out.println("CHECKOUT PAYLOAD = " + payload);
 
-            Integer showtimeId = Integer.valueOf(payload.get("showtime").toString());
-            List<String> seats = (List<String>) payload.get("seats");
+                Integer showtimeId = Integer.valueOf(payload.get("showtime").toString());
+                List<String> seats = (List<String>) payload.get("seats");
 
-            if (seats == null || seats.isEmpty()) {
-                throw new RuntimeException("Seats is empty");
-            }
-
-            Showtime showtime = showtimeRepository.findById(showtimeId)
-                    .orElseThrow(() -> new RuntimeException("Showtime không tồn tại"));
-
-            List<String> soldSeats = seatRepository.findSoldSeatCodesByShowtime(showtimeId);
-            List<Ticket> savedTickets = new ArrayList<>();
-
-            for (String seatCode : seats) {
-                String row = seatCode.substring(0, 1);
-                Integer number = Integer.parseInt(seatCode.substring(1));
-
-                Optional<Seat> seatOpt = seatRepository.findByRoomIdAndSeatRowAndSeatNumber(
-                        showtime.getRoomId(), row, number
-                );
-
-                Seat seat = seatOpt.orElseThrow(() -> new RuntimeException("Seat not found: " + seatCode));
-
-                if (soldSeats.contains(seatCode)) {
-                    throw new RuntimeException("Seat already booked: " + seatCode);
+                if (seats == null || seats.isEmpty()) {
+                    throw new RuntimeException("Seats is empty");
                 }
 
-                Ticket ticket = new Ticket();
-                ticket.setShowtimeId(showtimeId);
-                ticket.setSeatId(seat.getSeatId());
-                ticket.setTicketStatus("SOLD");
+                Showtime showtime = showtimeRepository.findById(showtimeId)
+                        .orElseThrow(() -> new RuntimeException("Showtime không tồn tại"));
 
-                String ticketCode = "TICKET-" + System.currentTimeMillis() + "-" + seatCode;
-                ticket.setTicketCode(ticketCode);
-                ticket.setQrCode(ticketCode);
+                List<String> soldSeats = seatRepository.findSoldSeatCodesByShowtime(showtimeId);
+                List<Ticket> savedTickets = new ArrayList<>();
+                // 1. Vòng lặp xử lý và lưu vé xem phim
+                for (String seatCode : seats) {
+                    String row = seatCode.substring(0, 1);
+                    Integer number = Integer.parseInt(seatCode.substring(1));
 
-                savedTickets.add(ticketRepository.save(ticket));
+                    Optional<Seat> seatOpt = seatRepository.findByRoomIdAndSeatRowAndSeatNumber(
+                            showtime.getRoomId(), row, number
+                    );
+
+                    Seat seat = seatOpt.orElseThrow(() -> new RuntimeException("Seat not found: " + seatCode));
+
+                    if (soldSeats.contains(seatCode)) {
+                        throw new RuntimeException("Seat already booked: " + seatCode);
+                    }
+
+                    Ticket ticket = new Ticket();
+                    ticket.setShowtimeId(showtimeId);
+                    ticket.setSeatId(seat.getSeatId());
+                    ticket.setTicketStatus("SOLD");
+
+                    String ticketCode = "TICKET-" + System.currentTimeMillis() + "-" + seatCode;
+                    ticket.setTicketCode(ticketCode);
+                    ticket.setQrCode(ticketCode);
+
+                    savedTickets.add(ticketRepository.save(ticket));
+                }
+                // 🍿 2. LOGIC XỬ LÝ TRỪ KHO BẮP NƯỚC (F&B) TRỰC TIẾP QUA REPOSITORY
+                List<Map<String, Object>> fnbList = (List<Map<String, Object>>) payload.get("fnb");
+                if (fnbList != null && !fnbList.isEmpty()) {
+                    for (Map<String, Object> fnbItem : fnbList) {
+                        // Bốc Id sản phẩm và số lượng mua từ Front-End truyền lên
+                        Integer fnbId = Integer.valueOf(fnbItem.get("id").toString());
+                        Integer quantityBought = Integer.valueOf(fnbItem.get("qty").toString());
+                        
+                        // Tìm món bắp nước đó trong Database lên
+                        FoodBeverage fnbProduct = foodBeverageRepository.findById(fnbId)
+                                .orElseThrow(() -> new RuntimeException("Món bắp nước không tồn tại: " + fnbId));
+                        
+                        // Kiểm tra xem kho còn đủ hàng để bán không
+                        if (fnbProduct.getStockQuantity() < quantityBought) {
+                            throw new RuntimeException("Món " + fnbProduct.getItemName() + " đã hết hàng hoặc không đủ số lượng!");
+                        }
+                        
+                        // Thực hiện trừ kho và lưu lại trực tiếp xuống SQL Server
+                        fnbProduct.setStockQuantity(fnbProduct.getStockQuantity() - quantityBought);
+                        foodBeverageRepository.save(fnbProduct);
+                    }
+                }
+
+                // 🎟️ 3. Xử lý dùng Voucher nếu có
+                String voucherCode = (String) payload.get("voucherCode");
+
+                if (voucherCode != null && !voucherCode.isBlank()) {
+                    boolean ok = voucherService.useVoucher(voucherCode);
+                    System.out.println("Use voucher = " + ok);
+                }
+
+                response.put("success", true);
+                response.put("ticketId", savedTickets.get(0).getTicketCode());
+                response.put("totalTickets", savedTickets.size());
+
+                return response;
+
+            } catch(Exception e){
+                response.put("success", false);
+                response.put("message", e.getMessage());
+
+                return response;
             }
-
-            // Trả về response thành công khớp với đoạn đuôi file của em
-            // dùng voucher
-    String voucherCode = (String) payload.get("voucherCode");
-
-    if (voucherCode != null && !voucherCode.isBlank()) {
-        boolean ok = voucherService.useVoucher(voucherCode);
-        System.out.println("Use voucher = " + ok);
     }
-
-    response.put("success", true);
-    response.put("ticketId", savedTickets.get(0).getTicketCode());
-    response.put("totalTickets", savedTickets.size());
-
-    return response;
-
 }
-catch(Exception e){
-
-    response.put("success", false);
-    response.put("message", e.getMessage());
-
-    return response;
-}}}
