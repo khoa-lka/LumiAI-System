@@ -228,7 +228,9 @@ function renderFnbMenu() {
   container.innerHTML = "";
 
   // 2. Duyệt qua window.fnbMenu của main
-  window.fnbMenu.forEach((item, index) => {
+  const menu = window.fnbMenu || [];
+
+  menu.forEach((item, index) => {
     const inCart = item.qty > 0;
 
     // 3. Giữ logic tự động nhận diện icon phòng khi item.icon bị rỗng từ main

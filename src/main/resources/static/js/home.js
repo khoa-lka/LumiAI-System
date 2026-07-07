@@ -265,6 +265,9 @@ function closeAuthModal() {
 }
 
 function renderFnbMenu() {
+  console.log("window.fnbMenu =", window.fnbMenu);
+  console.log("fnbMenu =", fnbMenu);
+  console.log("same =", window.fnbMenu === fnbMenu);
   const container = document.getElementById("cgv-fnb-menu");
   if (!container) return;
   container.innerHTML = "";
@@ -294,10 +297,10 @@ function renderFnbMenu() {
 }
 
 function updateComboQty(index, change) {
-  fnbMenu[index].qty += change;
-  if (fnbMenu[index].qty < 0) fnbMenu[index].qty = 0;
+  window.fnbMenu[index].qty += change;
+  if (window.fnbMenu[index].qty < 0) window.fnbMenu[index].qty = 0;
 
-  let totalFnbItems = fnbMenu.reduce((sum, item) => sum + item.qty, 0);
+  let totalFnbItems = window.fnbMenu.reduce((sum, item) => sum + item.qty, 0);
   document.getElementById("sum-fnb").innerText = totalFnbItems + " Combo";
 
   renderFnbMenu();
@@ -387,7 +390,7 @@ function viewMovieDetailText(title, genre) {
 
 function openCheckoutReview() {
   const currentMovie = document.getElementById("cgv-combo-movie").value;
-  const fnbItems = fnbMenu.filter((i) => i.qty > 0);
+  const fnbItems = window.fnbMenu.filter((i) => i.qty > 0);
   let fnbHtml = fnbItems
     .map(
       (i) =>
@@ -437,7 +440,7 @@ function cancelCurrentTransaction() {
     }).then(() => {
       resetHoldState();
       selectedSeats = [];
-      fnbMenu.forEach((i) => (i.qty = 0));
+      window.fnbMenu.forEach((i) => (i.qty = 0));
       renderFnbMenu();
       calculateCgvCart();
       window.renderCgvInterface();
@@ -1576,7 +1579,7 @@ window.executeFinalCheckout = function () {
       localStorage.removeItem("las_current_booking_cache");
       localStorage.removeItem("pending_booking");
       selectedSeats = [];
-      fnbMenu.forEach((i) => (i.qty = 0));
+      window.fnbMenu.forEach((i) => (i.qty = 0));
       window.renderFnbMenu();
       window.calculateCgvCart();
       window.renderCgvInterface();
@@ -1598,7 +1601,7 @@ window.cancelCurrentTransaction = function () {
   ) {
     window.resetHoldState();
     selectedSeats = [];
-    fnbMenu.forEach((i) => (i.qty = 0));
+    window.fnbMenu.forEach((i) => (i.qty = 0));
     window.renderFnbMenu();
     window.calculateCgvCart();
     window.renderCgvInterface();
@@ -1862,7 +1865,7 @@ window.processToPaymentGateway = function () {
             showtime: selectedShowtime,
             seats: [...selectedSeats],
             date: selectedDateStr,
-            fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
+            fnb: window.fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
             total: currentPriceTotal * (1 - appliedVoucherDiscount),
           };
           localStorage.setItem(
@@ -1872,7 +1875,7 @@ window.processToPaymentGateway = function () {
               showtime: selectedShowtime,
               seats: [...selectedSeats],
               date: selectedDateStr,
-              fnb: fnbMenu.filter((i) => i.qty > 0),
+              fnb: window.fnbMenu.filter((i) => i.qty > 0),
               total: currentPriceTotal * (1 - appliedVoucherDiscount),
             }),
           );
@@ -2173,7 +2176,7 @@ function goHomeFromBc() {
   currentPriceTotal = 0;
   appliedVoucherDiscount = 0;
 
-  fnbMenu.forEach((i) => (i.qty = 0));
+  window.fnbMenu.forEach((i) => (i.qty = 0));
 
   const ticket = document.getElementById("final-ticket-result");
   if (ticket) {
