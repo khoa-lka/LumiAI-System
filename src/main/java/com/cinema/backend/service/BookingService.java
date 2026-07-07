@@ -76,7 +76,7 @@ public Booking checkout(CheckoutRequest request) {
     .orElseThrow(() -> new RuntimeException("Seat not found: " + seatCode));
 
         Ticket ticket = new Ticket();
-        ticket.setBookingId(booking.getBookingId());
+       // ticket.setBookingId(booking.getBookingId());
         ticket.setSeatId(seat.getSeatId());
         ticket.setShowtimeId(request.getShowtimeId());
         ticket.setTicketStatus("SOLD");

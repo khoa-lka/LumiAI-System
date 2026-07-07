@@ -881,9 +881,13 @@ function executeFinalCheckout() {
                 <hr style="margin: 15px 0;">
                 <p style="font-size: 20px; text-align: right; margin: 0;"><strong>Đã thanh toán: <span style="color:red;">${invoiceObj.total.toLocaleString("vi-VN")} đ</span></strong></p>
             </div>
-            <div style="margin-top: 30px; text-align: center;">
-                <button class="btn-cgv-submit" style="width: auto; padding: 12px 30px; background: #555;" onclick="document.getElementById('history-detail-modal').classList.remove('open'); goHomeFromBc()">VỀ TRANG CHỦ</button>
-            </div>
+           <div style="margin-top: 30px; text-align: center; display: flex; justify-content: center; gap: 15px;">
+    <!-- Nút Đánh giá -->
+    <button class="btn-cgv-submit" style="width: auto; padding: 12px 30px; background: #ff6b35; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;" onclick="openFeedbackModal(999)">ĐÁNH GIÁ TRẢI NGHIỆM</button>
+    
+    <!-- Nút Trang chủ -->
+    <button class="btn-cgv-submit" style="width: auto; padding: 12px 30px; background: #555; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;" onclick="document.getElementById('history-detail-modal').classList.remove('open'); goHomeFromBc()">VỀ TRANG CHỦ</button>
+</div>
         `;
 
         const finalResultDiv = document.getElementById("final-ticket-result");

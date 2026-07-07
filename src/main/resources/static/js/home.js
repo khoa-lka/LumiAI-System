@@ -382,6 +382,9 @@ function viewMovieDetailText(title, genre) {
       quickBookMovie(title);
     };
   }
+  if (typeof window.loadAllFeedbacks === "function") {
+      window.loadAllFeedbacks();
+  }
   switchCgvTab("panel-movie-detail");
 }
 
@@ -1400,6 +1403,7 @@ window.executeFinalCheckout = function () {
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 2px solid #222; padding: 6px; background:#17171b;">
             <p style="color: #d4d4d8; font-weight: bold; font-size: 13px; margin-top: 12px;">LAS Cinemas đã gửi một bản sao hóa đơn vé qua Email của bạn.</p>
         </div>
+       
         <div style="background: #0b0b0e; padding: 25px; border: 2px dashed #cca23b; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto; box-sizing: border-box; color:#222;">
             <p><strong>Mã tra cứu vé:</strong> <span style="color:#ff6b35; font-size: 20px; font-family: monospace; font-weight:bold;">${invoiceObj.id}</span></p>
             <p><strong>Tên bộ phim:</strong> <b>${invoiceObj.movie}</b></p>
@@ -2305,3 +2309,101 @@ window.sendChatMessageToServer = sendChatMessageToServer;
 window.toggleLasChatbox = toggleLasChatbox;
 window.checkChatSendMessageKey = checkChatSendMessageKey;
 window.formatGeminiResponseToHtml = formatGeminiResponseToHtml;
+
+
+let currentFeedbackOrderId = 1; 
+
+// Hàm mở Modal và truyền ID Đơn hàng
+function openFeedbackModal(orderId) {
+    // Nếu không có orderId thật, tạo 1 số ngẫu nhiên để lưu vào DB không bị lỗi null
+    currentFeedbackOrderId = orderId || Math.floor(Math.random() * 1000) + 1; 
+    
+    document.getElementById("fb-title").value = "";
+    document.getElementById("fb-rating").value = "5";
+    document.getElementById("fb-content").value = "";
+    document.getElementById("feedback-modal").style.display = "flex";
+}
+
+// Hàm thu thập dữ liệu và bắn API
+function submitFeedbackForm() {
+    const title = document.getElementById("fb-title").value.trim();
+    const rating = document.getElementById("fb-rating").value;
+    const content = document.getElementById("fb-content").value.trim();
+    
+    if (!title) {
+        alert("Vui lòng nhập tiêu đề đánh giá!");
+        return;
+    }
+
+    // Lấy ID người dùng (account_staff_id)
+    let accId = 1; // Mặc định nếu test không login
+    const cachedUser = localStorage.getItem("las_logged_in_user");
+    if (cachedUser) {
+        const parsedUser = JSON.parse(cachedUser);
+        accId = parsedUser.accountId || parsedUser.account_id || 1;
+    }
+
+    // Gửi body JSON với các field CamelCase khớp với Entity
+    fetch("http://localhost:8080/api/feedback/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            title: title,
+            content: content,
+            ratingStars: parseInt(rating),
+            orderId: parseInt(currentFeedbackOrderId),
+            accountStaffId: parseInt(accId)
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert("Cảm ơn bạn đã đóng góp ý kiến!");
+            document.getElementById("feedback-modal").style.display = "none";
+        } else {
+            alert("Lỗi gửi đánh giá: " + data.message);
+        }
+    })
+    .catch(err => console.error("Lỗi API Feedback:", err));
+}
+
+// Hàm kéo danh sách đánh giá từ SQL Server lên Web
+window.loadAllFeedbacks = function() {
+    const container = document.getElementById("feedback-list-container");
+    if (!container) return;
+
+    container.innerHTML = "<p style='color: #a8a8b3; font-size: 13.5px;'>Đang tải dữ liệu đánh giá...</p>";
+
+    fetch("http://localhost:8080/api/feedback/all")
+        .then(res => res.json())
+        .then(data => {
+            if (!data || data.length === 0) {
+                container.innerHTML = "<p style='color: #a8a8b3; font-style: italic; font-size: 13.5px;'>Chưa có đánh giá nào. Hãy là người đầu tiên trải nghiệm và chia sẻ!</p>";
+                return;
+            }
+
+            let htmlContent = "";
+            
+            // Đảo ngược mảng để feedback mới nhất lên đầu
+            data.reverse().forEach(fb => {
+                const starCount = fb.ratingStars || 5;
+                const starsHTML = "⭐".repeat(starCount) + '<span style="opacity: 0.2;">' + "⭐".repeat(5 - starCount) + '</span>';
+
+                htmlContent += `
+                    <div style="background: #111; padding: 15px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="color: #e4e4e7; font-size: 14.5px;">${fb.title || "Khách hàng ẩn danh"}</strong>
+                            <span style="font-size: 11px; letter-spacing: 2px;">${starsHTML}</span>
+                        </div>
+                        <p style="color: #c4c4cc; font-size: 13.5px; margin: 0; line-height: 1.5;">"${fb.content || "..."}"</p>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = htmlContent;
+        })
+        .catch(err => {
+            console.error("Lỗi API Feedback:", err);
+            container.innerHTML = "<p style='color: #e71a0f; font-size: 13.5px;'>Lỗi kết nối máy chủ.</p>";
+        });
+};
