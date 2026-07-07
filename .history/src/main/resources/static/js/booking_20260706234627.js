@@ -508,10 +508,24 @@ function handleMainAction() {
 
 function selectPaymentGatewayType(type, element) {
   selectedPaymentGateway = type;
+
   document.querySelectorAll(".payment-option-row").forEach((row) => {
     row.classList.remove("active");
+
+    const circle = row.querySelector(".option-check-circle");
+    if (circle) {
+      circle.style.borderColor = "#ccc";
+      circle.style.color = "transparent";
+    }
   });
-  if (element) element.classList.add("active");
+
+  element.classList.add("active");
+
+  const circle = element.querySelector(".option-check-circle");
+  if (circle) {
+    circle.style.borderColor = "#ff6b35";
+    circle.style.color = "#ff6b35";
+  }
 }
 
 function openCheckoutReview() {
@@ -567,63 +581,14 @@ function openQrPayment(finalTotal) {
   const bankId = "ICB";
   const accountNo = "101879388698";
   const accountName = "NGUYEN BAO HOANG";
+
   const qrData = "LAS CINEMAS THANH TOAN";
 
   document.getElementById("bank-qr-img").src =
     `https://img.vietqr.io/image/${bankId}-${accountNo}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(qrData)}&accountName=${encodeURIComponent(accountName)}`;
 
-  // Mở modal ở bước "Tạo mã QR" (chưa hiện mã)
-  const genView = document.getElementById("vietqr-generate-view");
-  const codeView = document.getElementById("vietqr-code-view");
-  if (genView) genView.style.display = "";
-  if (codeView) codeView.style.display = "none";
-  stopVietQRTimer();
-
   document.getElementById("payment-redirect-modal").classList.add("open");
 }
-
-let _vietqrTimerId = null;
-function stopVietQRTimer() {
-  if (_vietqrTimerId) {
-    clearInterval(_vietqrTimerId);
-    _vietqrTimerId = null;
-  }
-}
-
-function generateVietQR() {
-  const genView = document.getElementById("vietqr-generate-view");
-  const codeView = document.getElementById("vietqr-code-view");
-  if (genView) genView.style.display = "none";
-  if (codeView) codeView.style.display = "";
-
-  // Bắt đầu đếm ngược 10 phút
-  stopVietQRTimer();
-  let remaining = 10 * 60;
-  const timerEl = document.getElementById("vietqr-timer");
-  const timerBox = document.getElementById("vietqr-timer-box");
-  const render = () => {
-    const m = Math.floor(remaining / 60);
-    const s = remaining % 60;
-    if (timerEl)
-      timerEl.innerText = `${m}:${s < 10 ? "0" : ""}${s}`;
-  };
-  render();
-  _vietqrTimerId = setInterval(() => {
-    remaining--;
-    if (remaining <= 0) {
-      stopVietQRTimer();
-      if (timerBox) {
-        timerBox.classList.add("vietqr-timer-expired");
-        timerBox.innerHTML =
-          `⚠ Mã QR đã hết hạn. <span class="vietqr-regen" onclick="generateVietQR()">Tạo lại mã</span>`;
-      }
-      return;
-    }
-    render();
-  }, 1000);
-}
-window.generateVietQR = generateVietQR;
-window.stopVietQRTimer = stopVietQRTimer;
 
 function openVnpayPayment(finalTotal) {
   const safeAmount = Math.round(finalTotal);
@@ -758,7 +723,6 @@ function backToPaymentSelection() {
 
 function closePaymentModal() {
   document.getElementById("payment-redirect-modal").classList.remove("open");
-  if (typeof stopVietQRTimer === "function") stopVietQRTimer();
 }
 
 function executeFinalCheckout() {
@@ -900,61 +864,26 @@ function executeFinalCheckout() {
 
         // Chuẩn bị in vé xịn xò ra màn hình
         let fnbHtml = invoiceObj.fnb
-          .map((i) => `<li>${i.name} × ${i.qty}</li>`)
-          .join("");
-        const seatBadges = invoiceObj.seats
-          .map((s) => `<span class="bc-seat-badge">${s}</span>`)
+          .map((i) => `<li>${i.name} x${i.qty}</li>`)
           .join("");
         const beautifulTicketHTML = `
-          <div class="bc-confirm">
-            <div class="bc-hero">
-              <div class="bc-check">✓</div>
-              <h2 class="bc-title">Đặt Vé Thành Công!</h2>
-              <p class="bc-subtitle">Vé xem phim của bạn đã được đặt thành công.</p>
-              <div class="bc-id-pill">Mã vé: ${invoiceObj.id}</div>
+            <div style="text-align: center; margin-bottom: 25px;">
+                <h2 style="color: #10B981; margin-bottom: 10px; font-size: 28px;">ĐẶT VÉ THÀNH CÔNG!</h2>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 1px solid rgba(255,255,255,0.15); padding: 5px;">
+                <p style="color: #222; font-weight: bold; font-size: 13px; margin-top: 10px;">Hệ thống cũng đã gửi 1 bản sao vào Email của bạn.</p>
             </div>
-
-            <div class="bc-card">
-              <div class="bc-card-head">🎫 Thông tin vé</div>
-              <div class="bc-movie">${invoiceObj.movie}</div>
-              <div class="bc-meta">
-                <span>📅 ${invoiceObj.date}</span>
-                <span>🕐 ${invoiceObj.time}</span>
-                <span>💺 ${invoiceObj.seats.length} ghế</span>
-              </div>
-
-              <div class="bc-section-label">Ghế đã chọn</div>
-              <div class="bc-seats">${seatBadges}</div>
-
-              <div class="bc-section-label">Bắp nước</div>
-              <ul class="bc-fnb">${fnbHtml || "<li>Không có</li>"}</ul>
-
-              <div class="bc-qr-row">
-                <img class="bc-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(invoiceObj.id)}" alt="QR vé">
-                <div class="bc-qr-note">Xuất trình mã QR này tại quầy soát vé.<br>Bản sao đã được gửi vào Email của bạn.</div>
-              </div>
-
-              <div class="bc-total-row">
-                <span>Đã thanh toán</span>
-                <span class="bc-total-amt">${invoiceObj.total.toLocaleString("vi-VN")} đ</span>
-              </div>
+            <div style="background: #0b0b0e; padding: 25px 40px; border: 2px dashed rgba(255,255,255,0.15); border-radius: 8px; text-align: left; display: inline-block; min-width: 90%; margin: 0 auto; box-sizing: border-box;">
+                <p><strong>Mã vé:</strong> <span style="color:red; font-size: 22px;">${invoiceObj.id}</span></p>
+                <p><strong>Phim:</strong> ${invoiceObj.movie}</p>
+                <p><strong>Suất chiếu:</strong> ${invoiceObj.time} ngày ${invoiceObj.date}</p>
+                <hr style="margin: 15px 0;"><p><strong>🎟️ Ghế:</strong> ${invoiceObj.seats.join(", ")}</p>
+                <p><strong>🍿 F&B:</strong></p><ul>${fnbHtml || "<li>Không có</li>"}</ul>
+                <hr style="margin: 15px 0;">
+                <p style="font-size: 20px; text-align: right; margin: 0;"><strong>Đã thanh toán: <span style="color:red;">${invoiceObj.total.toLocaleString("vi-VN")} đ</span></strong></p>
             </div>
-
-            <div class="bc-info-box">
-              <div class="bc-info-title">ℹ️ Thông tin quan trọng</div>
-              <ul>
-                <li>Vui lòng đến rạp trước giờ chiếu ít nhất 15 phút.</li>
-                <li>Mang theo giấy tờ tùy thân (CCCD) nếu phim giới hạn độ tuổi.</li>
-                <li>Không mang đồ ăn, thức uống bên ngoài vào rạp.</li>
-                <li>Vé không hoàn/đổi trong vòng 2 giờ trước suất chiếu.</li>
-              </ul>
+            <div style="margin-top: 30px; text-align: center;">
+                <button class="btn-cgv-submit" style="width: auto; padding: 12px 30px; background: #555;" onclick="document.getElementById('history-detail-modal').classList.remove('open'); goHomeFromBc()">VỀ TRANG CHỦ</button>
             </div>
-
-            <div class="bc-actions">
-              <button class="bc-btn bc-btn-primary" onclick="window.print()">⬇ Tải / In vé</button>
-              <button class="bc-btn bc-btn-ghost" onclick="goHomeFromBc()">Về trang chủ</button>
-            </div>
-          </div>
         `;
 
         const finalResultDiv = document.getElementById("final-ticket-result");

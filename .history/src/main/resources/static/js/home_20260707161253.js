@@ -1391,55 +1391,28 @@ window.executeFinalCheckout = function () {
       );
 
       let fnbTicketHtml = invoiceObj.fnb
-        .map((i) => `<li>${i.name} × ${i.qty}</li>`)
-        .join("");
-      const seatBadgesH = invoiceObj.seats
-        .map((s) => `<span class="bc-seat-badge">${s}</span>`)
+        .map((i) => `<li>${i.name} x${i.qty}</li>`)
         .join("");
 
       const beautifulTicketHTML = `
-          <div class="bc-confirm">
-            <div class="bc-hero">
-              <div class="bc-check">✓</div>
-              <h2 class="bc-title">Đặt Vé Thành Công!</h2>
-              <p class="bc-subtitle">Vé xem phim của bạn đã được đặt thành công.</p>
-              <div class="bc-id-pill">Mã vé: ${invoiceObj.id}</div>
-            </div>
-            <div class="bc-card">
-              <div class="bc-card-head">🎫 Thông tin vé</div>
-              <div class="bc-movie">${invoiceObj.movie}</div>
-              <div class="bc-meta">
-                <span>📅 ${invoiceObj.date}</span>
-                <span>🕐 ${invoiceObj.time}</span>
-                <span>💺 ${invoiceObj.seats.length} ghế</span>
-              </div>
-              <div class="bc-section-label">Ghế đã chọn</div>
-              <div class="bc-seats">${seatBadgesH}</div>
-              <div class="bc-section-label">Bắp nước</div>
-              <ul class="bc-fnb">${fnbTicketHtml || "<li>Không có</li>"}</ul>
-              <div class="bc-qr-row">
-                <img class="bc-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(invoiceObj.id)}" alt="QR vé">
-                <div class="bc-qr-note">Xuất trình mã QR này tại quầy soát vé.<br>Bản sao đã được gửi vào Email của bạn.</div>
-              </div>
-              <div class="bc-total-row">
-                <span>Đã thanh toán</span>
-                <span class="bc-total-amt">${invoiceObj.total.toLocaleString("vi-VN")} đ</span>
-              </div>
-            </div>
-            <div class="bc-info-box">
-              <div class="bc-info-title">ℹ️ Thông tin quan trọng</div>
-              <ul>
-                <li>Vui lòng đến rạp trước giờ chiếu ít nhất 15 phút.</li>
-                <li>Mang theo giấy tờ tùy thân (CCCD) nếu phim giới hạn độ tuổi.</li>
-                <li>Không mang đồ ăn, thức uống bên ngoài vào rạp.</li>
-                <li>Vé không hoàn/đổi trong vòng 2 giờ trước suất chiếu.</li>
-              </ul>
-            </div>
-            <div class="bc-actions">
-              <button class="bc-btn bc-btn-primary" onclick="window.print()">⬇ Tải / In vé</button>
-              <button class="bc-btn bc-btn-ghost" onclick="window.goHomeFromBc()">Về trang chủ</button>
-            </div>
-          </div>
+        <div style="text-align: center; margin-bottom: 25px;">
+            <h2 style="color: #10B981; margin-bottom: 10px; font-size: 26px;">🎟️ ĐẶT VÉ ĐIỆN TỬ THÀNH CÔNG!</h2>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 2px solid #222; padding: 6px; background:#17171b;">
+            <p style="color: #d4d4d8; font-weight: bold; font-size: 13px; margin-top: 12px;">LAS Cinemas đã gửi một bản sao hóa đơn vé qua Email của bạn.</p>
+        </div>
+        <div style="background: #0b0b0e; padding: 25px; border: 2px dashed #cca23b; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto; box-sizing: border-box; color:#222;">
+            <p><strong>Mã tra cứu vé:</strong> <span style="color:#ff6b35; font-size: 20px; font-family: monospace; font-weight:bold;">${invoiceObj.id}</span></p>
+            <p><strong>Tên bộ phim:</strong> <b>${invoiceObj.movie}</b></p>
+            <p><strong>Suất chiếu rạp:</strong> Suất ${invoiceObj.time} | Ngày ${invoiceObj.date}</p>
+            <hr style="margin: 15px 0; border: none; border-top: 1px dashed rgba(255,255,255,0.15);">
+            <p><strong>🎟️ Vị trí ghế ngồi:</strong> <span style="color:#ff6b35; font-weight:bold;">${invoiceObj.seats.join(", ")}</span></p>
+            <p><strong>🍿 Dịch vụ kèm theo:</strong></p><ul>${fnbTicketHtml || "<li>Không có dịch vụ ăn kèm</li>"}</ul>
+            <hr style="margin: 15px 0; border: none; border-top: 1px dashed rgba(255,255,255,0.15);">
+            <p style="font-size: 18px; text-align: right; margin: 0;">Tổng tiền: <span style="color:#10B981; font-weight:bold;">${invoiceObj.total.toLocaleString("vi-VN")} đ</span></p>
+        </div>
+        <div style="margin-top: 35px; text-align: center;">
+            <button class="btn-cgv-submit" style="width: auto; padding: 12px 35px; background: #333; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="window.goHomeFromBc()">HOÀN TẤT & QUAY VỀ</button>
+        </div>
       `;
 
       const finalResultDiv = document.getElementById("final-ticket-result");
