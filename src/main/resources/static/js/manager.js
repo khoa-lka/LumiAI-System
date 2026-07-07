@@ -20,6 +20,16 @@ window.addEventListener("DOMContentLoaded", () => {
   loadManagerMovies();
 });
 
+// --- THOÁT VAI TRÒ MANAGER, QUAY VỀ GIAO DIỆN CUSTOMER (index.html) ---
+// Lưu ý: KHÔNG xóa localStorage "las_logged_in_user" / sessionStorage đăng nhập
+// -> Tài khoản Manager vẫn được xem là "đã đăng nhập" khi quay lại trang chủ,
+//    để Manager có thể tự trải nghiệm & kiểm tra thao tác trên giao diện Customer.
+function exitManagerRoleToCustomerView() {
+  console.log("[Manager] Thoát vai trò Manager -> quay về Trang chủ Customer");
+  window.location.replace("index.html");
+}
+window.exitManagerRoleToCustomerView = exitManagerRoleToCustomerView;
+
 // --- 1. CHUYỂN TAB TRONG MANAGER DASHBOARD ---
 function switchMpTab(tabId) {
   // Ẩn tất cả tab section
