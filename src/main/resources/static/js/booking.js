@@ -280,7 +280,7 @@ function calculateCgvCart() {
   });
 
   // 2. Tính tiền F&B động từ database mẫu
-  const activeFnbMenu = window.fnbMenu || fnbMenu || [];
+  const activeFnbMenu = window.fnbMenu;
   activeFnbMenu.forEach((item) => {
     total += (Number(item.qty) || 0) * (Number(item.price) || 0);
     totalFnbItems += Number(item.qty) || 0;
@@ -322,6 +322,7 @@ function calculateCgvCart() {
 window.calculateCgvCart = calculateCgvCart;
 
 function goToBookingStep(step) {
+  console.log("goToBookingStep =", step);
   document
     .querySelectorAll(".las-step-bar-container .step-item")
     .forEach((el, idx) => {
@@ -530,7 +531,7 @@ function selectPaymentGatewayType(type, element) {
 
 function openCheckoutReview() {
   const currentMovie = document.getElementById("cgv-combo-movie").value;
-  const fnbItems = fnbMenu.filter((i) => i.qty > 0);
+  const fnbItems = window.fnbMenu.filter((i) => i.qty > 0);
   let fnbHtml = fnbItems
     .map(
       (i) =>
@@ -618,7 +619,7 @@ function openVnpayPayment(finalTotal) {
             discount: appliedVoucherDiscount,
             voucherCode: document.getElementById("voucher-input").value.trim(),
             voucher: window.currentVoucher,
-            fnb: fnbMenu.map((i) => ({ ...i })),
+            fnb: window.fnbMenu.map((i) => ({ ...i })),
           }),
         );
 
@@ -672,6 +673,33 @@ function checkVnpayReturn() {
   console.log("window.fnbMenu =", window.fnbMenu);
   console.log("data.fnb =", data.fnb);
   window.vnpayRestoreFnb = data.fnb || [];
+  // 🚀 FIX RACE CONDITION: lưu lại promise để executeFinalCheckout có thể
+  // "chờ" cho việc restore qty FnB hoàn tất trước khi build payload gửi server.
+  // Trước đây promise này không được lưu lại, nên restoreMovie() (chạy độc lập,
+  // chỉ đợi dropdown phim) có thể gọi executeFinalCheckout() TRƯỚC KHI qty
+  // được gán vào window.fnbMenu -> server nhận toàn bộ fnb với qty=0.
+  window.fnbRestorePromise = API.getFnbItems().then((dbItems) => {
+    const oldMenu = data.fnb || [];
+
+    // Không tạo Array mới nữa
+    window.fnbMenu.length = 0;
+
+    dbItems.forEach((item) => {
+      const old = oldMenu.find((x) => String(x.id) === String(item.foodItemId));
+
+      window.fnbMenu.push({
+        id: item.foodItemId,
+        name: item.itemName,
+        price: Number(item.price) || 0,
+        qty: old ? old.qty : 0,
+      });
+    });
+
+    renderFnbMenu();
+    calculateCgvCart();
+    console.log("Sau restore:", JSON.stringify(window.fnbMenu, null, 2));
+  });
+  console.log("restoreFnb =", window.vnpayRestoreFnb);
 
   console.log("===== VNPAY RETURN =====");
   console.log(data);
@@ -707,7 +735,12 @@ function checkVnpayReturn() {
       console.log(serverData.showtimes);
       console.log(document.getElementById("cgv-combo-movie").value);
       console.log(window.currentSelectedShowtimeId);
-      executeFinalCheckout();
+
+      // 🚀 FIX RACE CONDITION: đợi restore FnB (qty bắp nước) xong hẳn
+      // rồi mới build & gửi payload checkout, tránh gửi qty=0 lên server
+      Promise.resolve(window.fnbRestorePromise).then(() => {
+        executeFinalCheckout();
+      });
     } else {
       setTimeout(restoreMovie, 100);
     }
@@ -792,13 +825,18 @@ function executeFinalCheckout() {
     email: currentEmail,
     voucherCode: document.getElementById("voucher-input")?.value.trim() || "",
     total: window.finalPriceTotal,
-    fnb: fnbMenu.map((item) => ({ ...item })),
+    fnb: window.fnbMenu.map((i) => ({ ...i })),
   };
   console.log("Checkout payload:", checkoutPayload);
   console.log("Showtime:", window.currentSelectedShowtimeId);
   console.log("Selected:", selectedShowtime);
   console.log("Seats:", selectedSeats);
   // 2. Gọi API chuẩn qua api.js
+  console.log("window.fnbMenu =", window.fnbMenu);
+
+  console.log("fnbMenu =", fnbMenu);
+
+  console.log("checkout fnb =", checkoutPayload.fnb);
   API.checkoutTickets(checkoutPayload)
     .then((data) => {
       console.log("BACKEND RESPONSE:", data);
@@ -831,7 +869,7 @@ function executeFinalCheckout() {
           : "LAS-" + Math.floor(Math.random() * 1000000);
 
         // 🚀 ĐÃ SỬA: Lấy đúng data bắp nước từ database để lưu lịch sử hóa đơn
-        const activeFnb = window.fnbMenu || fnbMenu || [];
+        const activeFnb = window.fnbMenu;
         console.log("===== BEFORE CREATE INVOICE =====");
         console.log(activeFnb);
 
@@ -856,7 +894,7 @@ function executeFinalCheckout() {
         selectedSeats = [];
 
         // 🚀 ĐÃ SỬA CHỖ 2: Đưa số lượng combo động về lại 0 sau khi thanh toán xong
-        activeFnb.forEach((i) => (i.qty = 0));
+        window.fnbMenu.forEach((i) => (i.qty = 0));
 
         renderFnbMenu();
         calculateCgvCart();
@@ -951,7 +989,7 @@ function cancelCurrentTransaction() {
         selectedSeats = [];
         selectedShowtime = "";
         window.currentSelectedShowtimeId = null;
-        fnbMenu.forEach((i) => (i.qty = 0));
+        window.fnbMenu.forEach((i) => (i.qty = 0));
         renderFnbMenu();
         calculateCgvCart();
         renderCgvInterface();
