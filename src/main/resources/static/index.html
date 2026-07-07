@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>LAS Cinemas Vietnam - Official Premium Interface</title>
-    <link rel="stylesheet" href="style.css?v=4.2" />
+    <link rel="stylesheet" href="style.css?v=7.0" />
   </head>
   <body>
     <div class="global-viewport-container">
@@ -17,7 +17,7 @@
                 class="sub-nav-item"
                 onclick="switchCgvTab('panel-news')"
               >
-                <span class="sub-nav-icon">🎫</span> TIN MỚI & ƯU ĐÃI
+                <span class="sub-nav-icon"></span> SỰ KIỆN & ƯU ĐÃI
               </a>
               <a
                 href="#"
@@ -25,7 +25,7 @@
                 id="top-bar-ticket-link"
                 onclick="handleTicketViewAccess()"
               >
-                <span class="sub-nav-icon">🎬</span> VÉ CỦA TÔI
+                <span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH
               </a>
               <a
                 href="#"
@@ -33,7 +33,7 @@
                 id="top-bar-auth-link"
                 onclick="openAuthModal()"
               >
-                <span class="sub-nav-icon">👤</span> ĐĂNG NHẬP/ ĐĂNG KÝ
+                <span class="sub-nav-icon"></span> ĐĂNG NHẬP/ ĐĂNG KÝ
               </a>
               <div class="lang-selector-box">
                 <span class="lang-btn lang-vn">VN</span>
@@ -85,9 +85,7 @@
                 >Thành Viên</a
               >
               <div class="dropdown-menu">
-                <a href="#" class="dropdown-item" onclick="openAuthModal()"
-                  >Tài Khoản LAS</a
-                >
+                <a href="#" class="dropdown-item" onclick="handleProfileTabAccess()">Tài Khoản LAS</a>
               </div>
             </div>
           </div>
@@ -109,10 +107,8 @@
           </button>
           <ol class="bc-trail">
             <li class="bc-crumb bc-home" onclick="goHomeFromBc()">
-              <span class="bc-home-icon">🏠</span> Trang chủ
+              <span class="bc-home-icon"></span> Trang chủ
             </li>
-            <li class="bc-sep" aria-hidden="true">›</li>
-            <li class="bc-crumb bc-parent" id="bc-parent-text">Phim</li>
             <li class="bc-sep" aria-hidden="true">›</li>
             <li class="bc-crumb bc-current" id="bc-current-text" aria-current="page">
               Danh Sách Phim
@@ -127,7 +123,7 @@
             <div class="las-hero-fade"></div>
             <div class="las-hero-arrow las-hero-arrow-left" onclick="moveBannerLeft()">‹</div>
             <div class="las-hero-arrow las-hero-arrow-right" onclick="moveBannerRight()">›</div>
-            <button class="las-hero-cta" onclick="document.getElementById('movie-selection-anchor').scrollIntoView({behavior:'smooth'})">🎬 Đặt vé ngay</button>
+            <button class="las-hero-cta" onclick="document.getElementById('movie-selection-anchor').scrollIntoView({behavior:'smooth'})">ĐẶT VÉ NGAY</button>
           </div>
 
           <div id="movie-selection-anchor" class="las-section-heading">
@@ -310,13 +306,13 @@
 
         <div id="panel-booking" class="cgv-panel">
           <div class="las-step-bar-container">
-            <div class="step-item active">🔴 1. Chọn ghế</div>
+            <div class="step-item active">1. Chọn ghế</div>
             <div style="opacity: 0.3">➔</div>
-            <div class="step-item">🍿 2. Bắp nước</div>
+            <div class="step-item">2. Bắp nước</div>
             <div style="opacity: 0.3">➔</div>
-            <div class="step-item">💳 3. Thanh toán</div>
+            <div class="step-item">3. Thanh toán</div>
             <div style="opacity: 0.3">➔</div>
-            <div class="step-item">🎟️ 4. Thông tin vé</div>
+            <div class="step-item">4. Thông tin vé</div>
           </div>
 
           <div class="booking-two-columns-layout" style="display: flex; gap: 25px; align-items: flex-start; margin-top: 15px;">
@@ -383,22 +379,25 @@
     <div class="payment-selection-block" style="text-align: left;">
         <div class="payment-selection-title" style="font-weight: bold; font-size: 14px; color: #f4f4f5; margin-bottom: 12px; text-transform: uppercase;">Hình thức thanh toán cổng trực tuyến</div> 
         
-        <div class="payment-selection-body" style="display: flex; flex-direction: column; gap: 10px;">
-            <div class="payment-option-row" onclick="window.selectPaymentGatewayType('qr', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid rgba(255,255,255,0.12); padding: 15px; border-radius: 6px; background: #17171b; cursor: pointer; transition: all 0.2s;">
-                <div class="option-check-circle" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ff6b35; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #ff6b35;">✓</div>
-                <div class="method-badge-icon badge-mv" style="background: #1a73e8; color: white; padding: 4px 8px; font-weight: bold; font-size: 12px; border-radius: 4px; min-width: 32px; text-align: center;">QR</div>
-                <div class="method-info-texts" style="flex: 1;">
-                    <div class="method-main-name" style="font-weight: bold; color: #e4e4e7; font-size: 13.5px;">Chuyển khoản / Quét mã QR Quốc Gia VietQR</div>
+        <div class="payment-selection-body pay-methods">
+            <div class="payment-option-row active" onclick="window.selectPaymentGatewayType('qr', this)">
+                <span class="option-check-circle"></span>
+                <span class="pay-method-emoji">📱</span>
+                <div class="method-info-texts">
+                    <div class="method-main-name">Chuyển khoản / QR Quốc Gia VietQR</div>
+                    <div class="method-sub-name">Quét mã QR bằng ứng dụng ngân hàng bất kỳ</div>
                 </div>
+                <span class="method-badge-icon badge-vietqr">VietQR</span>
             </div>
 
-            <div class="payment-option-row" onclick="window.selectPaymentGatewayType('vnpay', this)" style="display: flex; align-items: center; gap: 15px; border: 1px solid rgba(255,255,255,0.12); padding: 15px; border-radius: 6px; background: #17171b; cursor: pointer; transition: all 0.2s;">
-                <div class="option-check-circle" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 11px; color: transparent;">✓</div>
-                <div class="method-badge-icon" style="background: #005baa; color: white; padding: 4px 8px; font-weight: bold; font-size: 12px; border-radius: 4px; min-width: 32px; text-align: center;">VN_QR</div>
-                <div class="method-info-texts" style="flex: 1;">
-                    <div class="method-main-name" style="font-weight: bold; color: #e4e4e7; font-size: 13.5px;">Cổng Thanh Toán VNPAY-QR</div>
-                    <div style="color: #a8a8b3; font-size: 12px; margin-top: 2px;">Sử dụng ứng dụng Mobile Banking quét mã QR nhanh chóng an toàn</div>
+            <div class="payment-option-row" onclick="window.selectPaymentGatewayType('vnpay', this)">
+                <span class="option-check-circle"></span>
+                <span class="pay-method-emoji">💳</span>
+                <div class="method-info-texts">
+                    <div class="method-main-name">Cổng Thanh Toán VNPAY-QR</div>
+                    <div class="method-sub-name">Mobile Banking quét mã QR nhanh chóng, an toàn</div>
                 </div>
+                <span class="method-badge-icon badge-vnpay">VNPAY</span>
             </div>
 
         </div>
@@ -446,7 +445,7 @@
               margin: 30px 0 25px 0;
             "
           >
-            — TIN MỚI VÀ ƯU ĐÃI —
+            — SỰ KIỆN VÀ ƯU ĐÃI —
           </div>
 
           
@@ -455,48 +454,22 @@
         <div id="panel-profile" class="cgv-panel">
           <div class="cgv-profile-layout">
             <div class="profile-arrow-sidebar">
-              <h2 class="sidebar-main-title">TÀI KHOẢN CGV</h2>
+              <h2 class="sidebar-main-title">TÀI KHOẢN LAS</h2>
               <div class="arrow-menu-list">
                 <button
                   class="arrow-btn active"
                   id="pro-subtab-btn-chung"
                   onclick="switchProfileSubTab('chung')"
                 >
+                  <span class="arrow-btn-icon"></span>
                   THÔNG TIN CHUNG
-                </button>
-                <button
-                  class="arrow-btn"
-                  id="pro-subtab-btn-chitiet"
-                  onclick="switchProfileSubTab('chitiet')"
-                >
-                  CHI TIẾT TÀI KHOẢN
-                </button>
-                <button
-                  class="arrow-btn"
-                  id="pro-subtab-btn-matma"
-                  onclick="switchProfileSubTab('matma')"
-                >
-                  CÀI MẶT MÃ THANH TOÁN
-                </button>
-                <button
-                  class="arrow-btn"
-                  id="pro-subtab-btn-the"
-                  onclick="switchProfileSubTab('the')"
-                >
-                  THẺ THÀNH VIÊN
-                </button>
-                <button
-                  class="arrow-btn"
-                  id="pro-subtab-btn-diem"
-                  onclick="switchProfileSubTab('diem')"
-                >
-                  ĐIỂM THƯỞNG
                 </button>
                 <button
                   class="arrow-btn"
                   id="pro-subtab-btn-lichsu"
                   onclick="switchProfileSubTab('lichsu')"
                 >
+                  <span class="arrow-btn-icon"></span>
                   LỊCH SỬ GIAO DỊCH
                 </button>
               </div>
@@ -505,149 +478,103 @@
             <div class="profile-content-display">
               <div id="pro-panel-chung" class="profile-sub-content active">
                 <div class="sub-content-header-title">THÔNG TIN CHUNG</div>
+
                 <div class="profile-top-summary">
                   <div class="summary-avatar-zone">
-                <div id="profile-summary-avatar" class="avatar-placeholder-img" style="background-color: #ff6b35; color: white; font-size: 28px; font-weight: bold;">VY</div>
-                    <button class="btn-avatar-change">Thay đổi</button>
-                  </div>
-                    <button class="btn-avatar-change">Thay đổi</button>
-                  </div>
-                  <div class="summary-barcode-zone">
-                    <p
-                      style="
-                        margin: 0 0 5px 0;
-                        font-size: 12px;
-                        font-weight: bold;
-                        color: #e4e4e7;
-                        text-align: right;
-                      "
-                    >
-                      Thẻ thành viên
-                    </p>
-                    <div class="mock-barcode-img">
-                      <div class="line-bar"></div>
-                      <div class="line-bar thick"></div>
-                      <div class="line-bar"></div>
-                      <div class="line-bar thick"></div>
-                      <div class="line-bar"></div>
-                      <span class="barcode-label">Barcode</span>
+                    <div class="avatar-status-wrap">
+                      <div id="profile-summary-avatar" class="avatar-placeholder-img">VY</div>
+                      <span class="avatar-online-dot"></span>
                     </div>
+                    <div class="summary-name-block">
+                      <strong id="profile-welcome-name" class="summary-name-text"></strong>
+                      <span class="summary-role-badge">★ <span id="profile-star-role">MEMBER</span></span>
+                    </div>
+                    <button class="btn-avatar-change" onclick="alert('Tính năng đổi ảnh đại diện sẽ sớm ra mắt!')">Thay đổi ảnh</button>
                   </div>
                 </div>
 
                 <div class="welcome-text-line">
-                  <strong
-                    >Xin chào <span id="profile-welcome-name"></span>,</strong
-                  >
                   <p>
-                    Với trang này, bạn sẽ quản lý được tất cả thông tin tài
-                    khoản của mình.
+                    👋 Xin chào! Với trang này, bạn sẽ quản lý được tất cả
+                    thông tin tài khoản của mình.
                   </p>
                 </div>
 
                 <div class="cgv-membership-dashboard-table">
-                  <div class="dashboard-column info-col">
-                    <p>
-                      <strong>Cấp Độ Thẻ</strong>
-                      <span class="member-star-icon">★</span>
-                      <span
-                        id="profile-star-role"
-                        style="color: #5b9dff; font-weight: 900"
-                        >MEMBER</span
-                      >
-                    </p>
-                    <p><strong>Tổng Chi Tiêu</strong> <b>0 đ</b></p>
-                    <p><strong>Điểm CGV</strong> <b>0 P</b></p>
+                  <div class="dash-stat-box">
+                    <span class="dash-stat-icon">🎫</span>
+                    <b class="dash-stat-value">0</b>
+                    <span class="dash-stat-label">Tổng lượt đặt vé</span>
                   </div>
-                  <div class="dashboard-column action-col">
-                    <span class="dash-box-label">Thẻ Thành Viên</span>
-                    <span class="dash-box-value">1</span>
-                    <button
-                      class="btn-dash-view"
-                      onclick="switchProfileSubTab('the')"
-                    >
-                      Xem
-                    </button>
+                  <div class="dash-stat-box">
+                    <span class="dash-stat-icon">💳</span>
+                    <b class="dash-stat-value">0 đ</b>
+                    <span class="dash-stat-label">Tổng chi tiêu</span>
                   </div>
                 </div>
 
                 <div class="account-details-section">
-                  <div
-                    class="details-section-title"
-                    style="
-                      font-size: 18px;
-                      border-bottom: 1px solid rgba(255,255,255,0.12);
-                      padding-bottom: 5px;
-                    "
-                  >
+                  <div class="details-section-title">
                     Thông tin tài khoản
                   </div>
-                  <div class="details-sub-row" style="margin-top: 10px">
-                    <span style="font-size: 14px; letter-spacing: 0.5px"
-                      >LIÊN HỆ</span
-                    >
-                    <button
-                      class="btn-avatar-change"
-                      style="margin: 0"
-                      onclick="activateEditableFormFields()"
-                    >
-                      Thay đổi
-                    </button>
+
+                  <div class="account-info-list">
+                    <div class="account-info-row">
+                      <div class="account-info-text">
+                        <label>Họ và tên</label>
+                        <input
+                          type="text"
+                          id="profile-field-name"
+                          class="profile-readonly-input"
+                          value="Nguyễn Ngọc Gia Vy"
+                          readonly
+                        />
+                      </div>
+                    </div>
+                    <div class="account-info-row">
+                      <div class="account-info-text">
+                        <label>Số điện thoại</label>
+                        <input
+                          type="text"
+                          id="profile-field-phone"
+                          class="profile-readonly-input"
+                          value="0348340006"
+                          readonly
+                        />
+                      </div>
+                    </div>
+                    <div class="account-info-row">
+                      <div class="account-info-text">
+                        <label>Địa chỉ Email</label>
+                        <input
+                          type="text"
+                          id="profile-field-email"
+                          class="profile-readonly-input"
+                          value="nguyenngocgiavy1812@gmail.com"
+                          readonly
+                        />
+                      </div>
+                    </div>
+                    <div class="account-info-row">
+                      <div class="account-info-text">
+                        <label>Ngày sinh</label>
+                        <div class="birth-gender-row">
+                          <select class="select-birth profile-readonly-input" id="profile-birth-day" disabled></select>
+                          <select class="select-birth profile-readonly-input" id="profile-birth-month" disabled></select>
+                          <select class="select-birth profile-readonly-input" id="profile-birth-year" disabled></select>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="account-info-row account-info-row-action">
+                      <button
+                        class="btn-avatar-change"
+                        onclick="activateEditableFormFields()"
+                      >
+                        Chỉnh sửa thông tin
+                      </button>
+                    </div>
                   </div>
 
-                  <div class="profile-input-forms-grid">
-                    <div class="profile-input-group">
-                      <label>Họ và tên</label
-                      ><input
-                        type="text"
-                        id="profile-field-name"
-                        class="profile-readonly-input"
-                        value="Nguyễn Ngọc Gia Vy"
-                        readonly
-                      />
-                    </div>
-                    <div class="profile-input-group">
-                      <label>Số điện thoại</label
-                      ><input
-                        type="text"
-                        id="profile-field-phone"
-                        class="profile-readonly-input"
-                        value="0348340006"
-                        readonly
-                      />
-                    </div>
-                    <div class="profile-input-group">
-                      <label>Địa chỉ Email</label
-                      ><input
-                        type="text"
-                        id="profile-field-email"
-                        class="profile-readonly-input"
-                        value="nguyenngocgiavy1812@gmail.com"
-                        readonly
-                      />
-                    </div>
-                    <div class="profile-input-group">
-                      <label>Ngày sinh</label>
-                        <div class="birth-gender-row">
-                        <select class="select-birth profile-readonly-input" id="profile-birth-day" disabled style="padding: 8px; background: #0b0b0e; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; font-size: 14px; cursor: pointer;"></select>
-                        <select class="select-birth profile-readonly-input" id="profile-birth-month" disabled style="padding: 8px; background: #0b0b0e; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; font-size: 14px; cursor: pointer;"></select>
-                        <select class="select-birth profile-readonly-input" id="profile-birth-year" disabled style="padding: 8px; background: #0b0b0e; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; font-size: 14px; cursor: pointer;"></select>
-                        </div>
-                    </div>
-                    <div
-                      class="profile-input-group"
-                      style="grid-column: span 2"
-                    >
-                      <label>Vai trò hệ thống</label
-                      ><input
-                        type="text"
-                        id="profile-field-role"
-                        class="profile-readonly-input"
-                        value=""
-                        readonly
-                      />
-                    </div>
-                  </div>
                   <button
                     class="btn-save-profile-data-action"
                     id="btn-save-profile"
@@ -659,32 +586,6 @@
                 </div>
               </div>
 
-              <div id="pro-panel-chitiet" class="profile-sub-content">
-                <div class="sub-content-header-title">CHI TIẾT TÀI KHOẢN</div>
-                <p style="padding: 20px; color: #a8a8b3">
-                  Cấu hình dữ liệu hồ sơ nâng cao.
-                </p>
-              </div>
-              <div id="pro-panel-matma" class="profile-sub-content">
-                <div class="sub-content-header-title">
-                  CÀI MẶT MÃ THANH TOÁN
-                </div>
-                <p style="padding: 20px; color: #a8a8b3">
-                  Thiết lập mã PIN giao dịch bảo mật.
-                </p>
-              </div>
-              <div id="pro-panel-the" class="profile-sub-content">
-                <div class="sub-content-header-title">THẺ THÀNH VIÊN CARD</div>
-                <p style="padding: 20px; color: #a8a8b3">
-                  Mã thẻ cứng vật lý định danh thành viên.
-                </p>
-              </div>
-              <div id="pro-panel-diem" class="profile-sub-content">
-                <div class="sub-content-header-title">ĐIỂM THƯỞNG TÍCH LŨY</div>
-                <p style="padding: 20px; color: #a8a8b3">
-                  Số điểm CGV point đang tích lũy.
-                </p>
-              </div>
               <div id="pro-panel-lichsu" class="profile-sub-content">
                 <div class="sub-content-header-title">LỊCH SỬ GIAO DỊCH VÉ</div>
                 <div id="cgv-invoice-zone" style="padding: 15px">
@@ -696,7 +597,6 @@
             </div>
           </div>
         </div>
-      </div>
        <div id="panel-about" class="cgv-panel">
             <div style="text-align: center; font-size: 24px; font-weight: bold; color: #f4f4f5; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 25px 0;">
                 — GIỚI THIỆU VỀ LAS CINEMAS —
@@ -773,7 +673,7 @@
                 — ĐIỀU KHOẢN GIAO DỊCH TRỰC TUYẾN —
             </div>
             
-            <div class="about-container" style="max-height: 500px; overflow-y: auto; padding-right: 15px;">
+            <div class="about-container">
                 <p>Chào mừng Quý Khách Hàng đến với hệ thống đặt vé trực tuyến của <strong>CÔNG TY TNHH CJ LAS VIỆT NAM</strong>.</p>
                 <p>Chúng tôi là CÔNG TY TNHH CJ LAS VIỆT NAM, địa chỉ trụ sở chính tại Lầu 2, số 7/28, đường Thành Thái, phường Diên Hồng, Thành phố Hồ Chí Minh (“LAS Việt Nam”), đơn vị sở hữu và vận hành chính thức website <strong>las.vn</strong> và ứng dụng di động LAS Cinemas (“Ứng Dụng”).</p>
                 <p>Khi Quý Khách Hàng truy cập và thực hiện bất kỳ giao dịch nào trên Ứng Dụng, đồng nghĩa với việc Quý Khách Hàng đã tự nguyện đồng ý và cam kết tuân thủ các điều kiện và điều khoản giao dịch này. LAS Việt Nam có quyền thay đổi, chỉnh sửa, thêm hoặc lược bỏ bất kỳ phần nào trong Điều Khoản Giao Dịch vào bất cứ lúc nào. Các thay đổi có hiệu lực ngay khi được đăng tải công khai trên Ứng Dụng mà không cần thông báo trước.</p>
@@ -833,7 +733,7 @@
                 — CHÍNH SÁCH BẢO MẬT THÔNG TIN CÁ NHÂN —
             </div>
             
-            <div class="about-container" style="max-height: 500px; overflow-y: auto; padding-right: 15px;">
+            <div class="about-container">
                 <p>Chào mừng bạn đến với <strong>CÔNG TY TNHH CJ LAS VIỆT NAM</strong>.</p>
                 
                 <p>Chúng tôi, CÔNG TY TNHH CJ LAS VIỆT NAM, địa chỉ trụ sở chính tại Lầu 2, số 7/28, đường Thành Thái, Phường Diên Hồng, Thành phố Hồ Chí Minh, Việt Nam (“LAS Việt Nam”), đơn vị sở hữu và vận hành website las.vn và ứng dụng di động LAS Cinemas (“Ứng Dụng”), luôn xem trọng sự riêng tư và bảo vệ dữ liệu cá nhân của bạn.</p>
@@ -896,7 +796,7 @@
                 — NHỮNG QUY ĐỊNH TẠI RẠP PHIM LAS CINEMAS —
             </div>
             
-            <div class="about-container" style="max-height: 500px; overflow-y: auto; padding-right: 15px;">
+            <div class="about-container">
                 
                 <h4 style="color: #ff6b35; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 5px; margin-top: 0;">I. NỘI QUY PHÒNG CHIẾU</h4>
                 <ul style="color: #d4d4d8; line-height: 1.8; font-size: 14px;">
@@ -967,7 +867,7 @@
                 — CÂU HỎI THƯỜNG GẶP (FAQ) —
             </div>
             
-            <div class="about-container" style="max-height: 600px; overflow-y: auto; padding-right: 15px;">
+            <div class="about-container">
                 
                 <!-- MỤC 1: PHIM -->
                 <h4 style="color: #ff6b35; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 5px; margin-top: 0;">I. THÔNG TIN VỀ PHIM & SUẤT CHIẾU</h4>
@@ -1033,6 +933,7 @@
 
             </div>
         </div>
+      </div>
     </div> 
       <footer class="las-footer">
         <div class="las-footer-grid">
@@ -1055,10 +956,29 @@
             <div>
                 <h4 class="las-footer-heading">Kết nối với chúng tôi</h4>
                 <div class="las-footer-social-row">
-                    <div class="las-social-icon" style="background: #3b5998;">f</div>
-                    <div class="las-social-icon" style="background: #c4302b;">▶</div>
-                    <div class="las-social-icon" style="background: #e1306c;">📷</div>
-                    <div class="las-social-icon las-social-icon-text" style="background: #0088CC;">Zalo</div>
+                    <a href="#" class="las-social-icon" aria-label="Instagram">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="5"></rect>
+                            <circle cx="12" cy="12" r="4"></circle>
+                            <circle cx="17.5" cy="6.5" r="1"></circle>
+                        </svg>
+                    </a>
+                    <a href="#" class="las-social-icon" aria-label="Twitter">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 5.9c-.7.3-1.5.5-2.3.6.8-.5 1.5-1.3 1.8-2.3-.8.5-1.7.8-2.6 1a4 4 0 0 0-6.9 3.7A11.4 11.4 0 0 1 3.8 4.6a4 4 0 0 0 1.2 5.4c-.6 0-1.2-.2-1.8-.5v.1a4 4 0 0 0 3.2 4c-.5.1-1.1.2-1.7.1a4 4 0 0 0 3.7 2.8A8 8 0 0 1 2 18.3a11.3 11.3 0 0 0 6.1 1.8c7.4 0 11.4-6.1 11.4-11.4v-.5c.8-.6 1.5-1.3 2-2.2z"></path>
+                        </svg>
+                    </a>
+                    <a href="#" class="las-social-icon" aria-label="Facebook">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                        </svg>
+                    </a>
+                    <a href="#" class="las-social-icon" aria-label="YouTube">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="5" width="20" height="14" rx="4"></rect>
+                            <path d="M10 9l5 3-5 3z"></path>
+                        </svg>
+                    </a>
                 </div>
                 <div class="las-verified-badge">
                     <div class="las-verified-check">✓</div>
@@ -1094,7 +1014,6 @@
         <div class="las-auth-close" onclick="closeAuthModal()">✕</div>
 
         <div class="las-auth-logo-row">
-          <div class="las-auth-logo-icon">🎬</div>
           <div class="las-auth-logo-text">LAS<span>Cinemas</span></div>
         </div>
 
@@ -1389,74 +1308,77 @@
     </div>
 
     <div class="cgv-modal-overlay" id="payment-redirect-modal">
-      <div
-        style="
-          background: #17171b;
-          padding: 30px;
-          text-align: center;
-          border-radius: 8px;
-          border: 2px solid #0066cc;
-          width: 400px;
-          position: relative;
-        "
-      >
-        <div
-          class="cgv-modal-close"
-          onclick="closePaymentModal()"
-          style="color: #e4e4e7; top: 10px; right: 15px"
-        >
-          ✕
+      <div class="vietqr-modal-box">
+        <div class="cgv-modal-close" onclick="closePaymentModal()">✕</div>
+
+        <div class="vietqr-head">
+          <div class="vietqr-head-icon">📱</div>
+          <h2 class="vietqr-title">Chuyển khoản QR Quốc Gia</h2>
+          <p class="vietqr-sub">Thanh toán an toàn qua VietQR - Napas 247</p>
         </div>
-        <h2 style="color: #5b9dff; margin-top: 0; margin-bottom: 5px">CỔNG THANH TOÁN TRỰC TUYẾN</h2>
-        <p style="font-size: 13px; color: #c4c4cc; margin-bottom: 15px">
-          Quét mã QR bằng ứng dụng ngân hàng để thanh toán
-        </p>
-        <div
-          style="
-            border: 1px solid rgba(255,255,255,0.12);
-            padding: 15px;
-            border-radius: 8px;
-            display: inline-block;
-            background: #1c1c21;
-          "
-        >
-          <img
-            id="bank-qr-img"
-            src=""
-            alt="QR Code"
-            style="
-              width: 200px;
-              height: 200px;
-              border: 1px solid rgba(255,255,255,0.15);
-              display: block;
-              margin: 0 auto;
-            "
-          />
-          <div
-            style="
-              margin-top: 15px;
-              font-size: 20px;
-              font-weight: bold;
-              color: #ff6b35;
-            "
-            id="qr-total-price"
-          >
-            0 đ
+
+        <!-- Bước 1: chưa tạo mã -->
+        <div id="vietqr-generate-view" class="vietqr-generate-view">
+          <div class="vietqr-glow-circle">📱</div>
+          <div class="vietqr-gen-title">Tạo mã QR thanh toán của bạn</div>
+          <p class="vietqr-gen-desc">Nhấn nút bên dưới để tạo mã QR VietQR an toàn cho ứng dụng ngân hàng của bạn</p>
+          <button class="vietqr-gen-btn" onclick="generateVietQR()">
+            <span>📱</span> Tạo Mã QR
+          </button>
+        </div>
+
+        <!-- Bước 2: đã tạo mã QR -->
+        <div id="vietqr-code-view" class="vietqr-code-view" style="display: none;">
+          <div class="vietqr-qr-frame">
+            <img id="bank-qr-img" src="" alt="Mã QR VietQR" />
+            <div class="vietqr-qr-caption">Mã QR VietQR — Napas 247</div>
           </div>
-        </div>
-        <p style="font-size: 13px; color: #e4e4e7; margin-top: 15px">
-          Trạng thái:
-          <span style="color: #f57c00; font-weight: bold"
-            >Đang chờ người dùng quét mã...</span
+
+          <div class="vietqr-amount-box">
+            <span class="vietqr-amount-label">Số tiền cần thanh toán</span>
+            <span class="vietqr-amount-value" id="qr-total-price">0 đ</span>
+          </div>
+
+          <div class="vietqr-banks">
+            <span class="vietqr-banks-label">Hỗ trợ mọi ngân hàng &amp; ví điện tử:</span>
+            <div class="vietqr-bank-badges">
+              <span class="vietqr-bank-badge b-vcb">Vietcombank</span>
+              <span class="vietqr-bank-badge b-tcb">Techcombank</span>
+              <span class="vietqr-bank-badge b-mb">MB Bank</span>
+              <span class="vietqr-bank-badge b-momo">Momo</span>
+            </div>
+          </div>
+
+          <div class="vietqr-timer" id="vietqr-timer-box">
+            <span>⏱</span> Mã QR hết hạn sau <strong id="vietqr-timer">10:00</strong>
+          </div>
+
+          <div class="vietqr-steps">
+            <div class="vietqr-step">
+              <div class="vietqr-step-no">1</div>
+              <div class="vietqr-step-txt"><b>Mở app ngân hàng</b><span>Chọn quét mã QR</span></div>
+            </div>
+            <div class="vietqr-step">
+              <div class="vietqr-step-no">2</div>
+              <div class="vietqr-step-txt"><b>Quét mã QR</b><span>Kiểm tra số tiền</span></div>
+            </div>
+            <div class="vietqr-step">
+              <div class="vietqr-step-no">3</div>
+              <div class="vietqr-step-txt"><b>Xác nhận</b><span>Hoàn tất thanh toán</span></div>
+            </div>
+          </div>
+
+          <p class="vietqr-status">
+            Trạng thái: <span class="vietqr-status-wait">Đang chờ thanh toán...</span>
+          </p>
+
+          <button
+            class="vietqr-done-btn"
+            onclick="document.getElementById('payment-redirect-modal').classList.remove('open'); stopVietQRTimer(); executeFinalCheckout();"
           >
-        </p>
-        <button
-          class="btn-cgv-submit"
-          style="margin-top: 15px; background: #10b981"
-          onclick="document.getElementById('payment-redirect-modal').classList.remove('open'); executeFinalCheckout();"
-        >
-          ĐÃ CHUYỂN KHOẢN THÀNH CÔNG
-        </button>
+            ✓ Đã Chuyển Khoản Thành Công
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1513,18 +1435,18 @@
 </div>
 
 
-<script src="js/state.js"></script>
+<script src="js/state.js?v=7"></script>
 
   <!-- 2. Nhúng file trang chủ ngay sau state.js để dùng chung 'serverData' không bị trùng lặp -->
   <!-- Thêm đuôi ?v=... để diệt tận gốc lỗi dính cache file cũ của Chrome/Edge -->
-<script src="js/home.js?v=lasCinemas_v2"></script>
+<script src="js/home.js?v=7"></script>
 
   <!-- 3. Các file giao diện và tính năng chạy sau cùng omg omg omg omg  -->
-  <script src="js/api.js"></script>   
-  <script src="js/ui.js"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
-  <script src="js/auth.js"></script>
-  <script src="js/admin.js"></script>
-  <script src="js/booking.js"></script>
-  <script src="js/breadcrumb.js"></script>
+  <script src="js/api.js?v=7"></script>   
+  <script src="js/ui.js?v=7"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
+  <script src="js/auth.js?v=7"></script>
+  <script src="js/admin.js?v=7"></script>
+  <script src="js/booking.js?v=7"></script>
+  <script src="js/breadcrumb.js?v=7"></script>
   </body>
 </html>

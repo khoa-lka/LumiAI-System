@@ -38,13 +38,13 @@ window.syncUserLoginSession = function () {
       authLinkBox.onclick = () => switchCgvTab("panel-profile");
       authLinkBox.style.cursor = "pointer";
       authLinkBox.innerHTML = `
-          <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
+          <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
           <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
       `;
     }
     if (document.getElementById("top-bar-ticket-link")) {
       document.getElementById("top-bar-ticket-link").innerHTML =
-        `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
+        `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
     }
 
     // 🚀 ĐỒNG BỘ DỮ LIỆU ĐÃ ĐƯỢC CHUẨN HÓA TỪ DATABASE
@@ -456,19 +456,29 @@ function renderTransactionHistory() {
 
   historyZone.innerHTML = "";
   userPastInvoices.forEach((inv) => {
-    // 🌟 FIX LỖI TÀNG HÌNH: Ép màu đỏ thương hiệu thật (#ff6b35) thay vì dùng biến hệ thống cũ var(--cgv-red)
-    // Đồng thời thêm bộ lọc cứu cánh (inv.movie || "Vé xem phim LAS Cinemas") đề phòng chuỗi dữ liệu trống
+    // 🌟 FIX LỖI TÀNG HÌNH: Ép màu chữ sáng trên nền tối thay vì màu mặc định của trình duyệt
+    const movieName = inv.movie ? inv.movie : "Vé xem phim LAS Cinemas";
+    const isPaid = inv.status === "Đã thanh toán";
+    const statusClass = isPaid ? "history-badge-success" : "history-badge-pending";
     historyZone.innerHTML += `
-          <div style="border: 1px solid rgba(255,255,255,0.15); padding: 15px; margin-bottom: 10px; background: #17171b; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-              <div style="text-align: left;">
-                  <h4 style="margin: 0 0 6px 0; color: #ff6b35; font-size: 15px; font-weight: bold; text-transform: uppercase;">
-                      ${inv.movie ? inv.movie : "Vé xem phim LAS Cinemas"}
-                  </h4>
-                  <p style="margin: 0; font-size: 13px; color: #c4c4cc;">
-                      Mã ĐH: <b>${inv.id}</b> | Ngày: ${inv.date} | Trạng thái: <span style="color: green; font-weight: bold;">${inv.status}</span>
-                  </p>
+          <div class="history-card-item">
+              <div class="history-card-icon">🎬</div>
+              <div class="history-card-main">
+                  <div class="history-card-top-row">
+                      <h4 class="history-card-title">${movieName}</h4>
+                      <span class="history-badge ${statusClass}">${inv.status}</span>
+                  </div>
+                  <div class="history-card-meta">
+                      <span>Mã ĐH: <b>${inv.id}</b></span>
+                      <span>📅 ${inv.date}</span>
+                      ${inv.time ? `<span>🕐 ${inv.time}</span>` : ""}
+                      ${inv.seats && inv.seats.length ? `<span>💺 ${inv.seats.join(", ")}</span>` : ""}
+                  </div>
               </div>
-              <button onclick="viewHistoryDetail('${inv.id}')" style="background: #ff9900; color: #fff; border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 12.5px;">Xem Chi Tiết</button>
+              <div class="history-card-side">
+                  <b class="history-card-total">${(inv.total || 0).toLocaleString("vi-VN")} đ</b>
+                  <button class="history-card-btn" onclick="viewHistoryDetail('${inv.id}')">Xem chi tiết</button>
+              </div>
           </div>
       `;
   });
@@ -528,9 +538,9 @@ function confirmCgvLogoutAction() {
   const authLinkBox = document.getElementById("top-bar-auth-link");
   authLinkBox.removeAttribute("style");
   authLinkBox.onclick = openAuthModal;
-  authLinkBox.innerHTML = `<span class="sub-nav-icon">👤</span> ĐĂNG NHẬP/ ĐĂNG KÝ`;
+  authLinkBox.innerHTML = `<span class="sub-nav-icon"></span> ĐĂNG NHẬP/ ĐĂNG KÝ`;
   document.getElementById("top-bar-ticket-link").innerHTML =
-    `<span class="sub-nav-icon">🎬</span> VÉ CỦA TÔI`;
+    `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
   switchCgvTab("panel-movies", "now_showing");
 }
 
@@ -599,11 +609,11 @@ localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
         authLinkBox.onclick = () => switchCgvTab("panel-profile");
         authLinkBox.style.cursor = "pointer";
         authLinkBox.innerHTML = `
-            <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
+            <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
               <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
           `;
         document.getElementById("top-bar-ticket-link").innerHTML =
-          `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
+          `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
 
         let roleString = "Khách hàng thành viên";
         if (uData.roleId === 1) roleString = "Quản lý hệ thống (ADMIN)";
@@ -616,7 +626,7 @@ localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
 
         const welcomeNameBox = document.getElementById("profile-welcome-name");
         if (welcomeNameBox)
-          welcomeNameBox.innerText = `Xin chào ${uData.fullName},`;
+          welcomeNameBox.innerText = uData.fullName;
 
         const starRoleBox = document.getElementById("profile-star-role");
         if (starRoleBox)
@@ -1391,28 +1401,55 @@ window.executeFinalCheckout = function () {
       );
 
       let fnbTicketHtml = invoiceObj.fnb
-        .map((i) => `<li>${i.name} x${i.qty}</li>`)
+        .map((i) => `<li>${i.name} × ${i.qty}</li>`)
+        .join("");
+      const seatBadgesH = invoiceObj.seats
+        .map((s) => `<span class="bc-seat-badge">${s}</span>`)
         .join("");
 
       const beautifulTicketHTML = `
-        <div style="text-align: center; margin-bottom: 25px;">
-            <h2 style="color: #10B981; margin-bottom: 10px; font-size: 26px;">🎟️ ĐẶT VÉ ĐIỆN TỬ THÀNH CÔNG!</h2>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 2px solid #222; padding: 6px; background:#17171b;">
-            <p style="color: #d4d4d8; font-weight: bold; font-size: 13px; margin-top: 12px;">LAS Cinemas đã gửi một bản sao hóa đơn vé qua Email của bạn.</p>
-        </div>
-        <div style="background: #0b0b0e; padding: 25px; border: 2px dashed #cca23b; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto; box-sizing: border-box; color:#222;">
-            <p><strong>Mã tra cứu vé:</strong> <span style="color:#ff6b35; font-size: 20px; font-family: monospace; font-weight:bold;">${invoiceObj.id}</span></p>
-            <p><strong>Tên bộ phim:</strong> <b>${invoiceObj.movie}</b></p>
-            <p><strong>Suất chiếu rạp:</strong> Suất ${invoiceObj.time} | Ngày ${invoiceObj.date}</p>
-            <hr style="margin: 15px 0; border: none; border-top: 1px dashed rgba(255,255,255,0.15);">
-            <p><strong>🎟️ Vị trí ghế ngồi:</strong> <span style="color:#ff6b35; font-weight:bold;">${invoiceObj.seats.join(", ")}</span></p>
-            <p><strong>🍿 Dịch vụ kèm theo:</strong></p><ul>${fnbTicketHtml || "<li>Không có dịch vụ ăn kèm</li>"}</ul>
-            <hr style="margin: 15px 0; border: none; border-top: 1px dashed rgba(255,255,255,0.15);">
-            <p style="font-size: 18px; text-align: right; margin: 0;">Tổng tiền: <span style="color:#10B981; font-weight:bold;">${invoiceObj.total.toLocaleString("vi-VN")} đ</span></p>
-        </div>
-        <div style="margin-top: 35px; text-align: center;">
-            <button class="btn-cgv-submit" style="width: auto; padding: 12px 35px; background: #333; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="window.goHomeFromBc()">HOÀN TẤT & QUAY VỀ</button>
-        </div>
+          <div class="bc-confirm">
+            <div class="bc-hero">
+              <div class="bc-check">✓</div>
+              <h2 class="bc-title">Đặt Vé Thành Công!</h2>
+              <p class="bc-subtitle">Vé xem phim của bạn đã được đặt thành công.</p>
+              <div class="bc-id-pill">Mã vé: ${invoiceObj.id}</div>
+            </div>
+            <div class="bc-card">
+              <div class="bc-card-head">🎫 Thông tin vé</div>
+              <div class="bc-movie">${invoiceObj.movie}</div>
+              <div class="bc-meta">
+                <span>📅 ${invoiceObj.date}</span>
+                <span>🕐 ${invoiceObj.time}</span>
+                <span>💺 ${invoiceObj.seats.length} ghế</span>
+              </div>
+              <div class="bc-section-label">Ghế đã chọn</div>
+              <div class="bc-seats">${seatBadgesH}</div>
+              <div class="bc-section-label">Bắp nước</div>
+              <ul class="bc-fnb">${fnbTicketHtml || "<li>Không có</li>"}</ul>
+              <div class="bc-qr-row">
+                <img class="bc-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(invoiceObj.id)}" alt="QR vé">
+                <div class="bc-qr-note">Xuất trình mã QR này tại quầy soát vé.<br>Bản sao đã được gửi vào Email của bạn.</div>
+              </div>
+              <div class="bc-total-row">
+                <span>Đã thanh toán</span>
+                <span class="bc-total-amt">${invoiceObj.total.toLocaleString("vi-VN")} đ</span>
+              </div>
+            </div>
+            <div class="bc-info-box">
+              <div class="bc-info-title">ℹ️ Thông tin quan trọng</div>
+              <ul>
+                <li>Vui lòng đến rạp trước giờ chiếu ít nhất 15 phút.</li>
+                <li>Mang theo giấy tờ tùy thân (CCCD) nếu phim giới hạn độ tuổi.</li>
+                <li>Không mang đồ ăn, thức uống bên ngoài vào rạp.</li>
+                <li>Vé không hoàn/đổi trong vòng 2 giờ trước suất chiếu.</li>
+              </ul>
+            </div>
+            <div class="bc-actions">
+              <button class="bc-btn bc-btn-primary" onclick="window.print()">⬇ Tải / In vé</button>
+              <button class="bc-btn bc-btn-ghost" onclick="window.goHomeFromBc()">Về trang chủ</button>
+            </div>
+          </div>
       `;
 
       const finalResultDiv = document.getElementById("final-ticket-result");
@@ -1834,7 +1871,7 @@ function switchProfileSubTab(sub) {
   document
     .querySelectorAll(".arrow-btn")
     .forEach((b) => b.classList.remove("active"));
-  ["chung", "chitiet", "matma", "the", "diem", "lichsu"].forEach((p) => {
+  ["chung", "lichsu"].forEach((p) => {
     const panel = document.getElementById("pro-panel-" + p);
     if (panel) panel.classList.remove("active");
   });
@@ -1847,8 +1884,9 @@ function switchProfileSubTab(sub) {
 function activateEditableFormFields() {
   document.querySelectorAll(".profile-readonly-input").forEach((input) => {
     input.removeAttribute("readonly");
-    input.style.border = "1px solid var(--cgv-red)";
-    input.style.background = "#fff";
+    input.removeAttribute("disabled");
+    input.style.border = "1px solid #ff6b35";
+    input.style.background = "#0b0b0e";
   });
   document.getElementById("btn-save-profile").style.display = "block";
 }
@@ -1892,8 +1930,9 @@ function submitOtpVerification() {
 function saveUpdatedProfileInformationData() {
   document.querySelectorAll(".profile-readonly-input").forEach((input) => {
     input.setAttribute("readonly", true);
-    input.style.border = "1px solid #ccc";
-    input.style.background = "#f4f2ec";
+    if (input.tagName === "SELECT") input.setAttribute("disabled", true);
+    input.style.border = "1px solid rgba(255,255,255,0.15)";
+    input.style.background = "#1c1c21";
   });
   document.getElementById("btn-save-profile").style.display = "none";
   alert("Cập nhật thông tin tài khoản mới thành công!");
