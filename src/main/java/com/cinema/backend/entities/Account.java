@@ -49,4 +49,7 @@ public class Account {
 
     @OneToMany(mappedBy = "staff")
     private List<Order1> staffOrders;
+
+    @Column(name = "status")
+    private String status; // Giá trị: "Active", "Banned"
 }
