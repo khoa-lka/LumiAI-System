@@ -31,26 +31,59 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
     @Override
-   public boolean useVoucher(String code){
+    public boolean useVoucher(String code){
 
-    System.out.println("useVoucher chạy");
+        System.out.println("useVoucher chạy");
 
-    Voucher voucher = checkVoucher(code);
+        Voucher voucher = checkVoucher(code);
 
-    if(voucher==null){
-        System.out.println("voucher null");
-        return false;
+        if(voucher==null){
+            System.out.println("voucher null");
+            return false;
+        }
+
+        System.out.println("Before = " + voucher.getUsageLimit());
+
+        voucher.setUsageLimit(voucher.getUsageLimit()-1);
+
+        voucherRepository.save(voucher);
+
+        System.out.println("After = " + voucher.getUsageLimit());
+
+        return true;
     }
 
-    System.out.println("Before = " + voucher.getUsageLimit());
+    @Override
+    public java.util.List<Voucher> getAllVouchers() {
+        return voucherRepository.findAll();
+    }
 
-    voucher.setUsageLimit(voucher.getUsageLimit()-1);
+    @Override
+    public Voucher createVoucher(Voucher voucher) {
+        return voucherRepository.save(voucher);
+    }
 
-    voucherRepository.save(voucher);
+    @Override
+    public Voucher updateVoucher(Integer id, Voucher voucherDetails) {
+        Voucher voucher = voucherRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Voucher không tồn tại với id: " + id));
+        
+        voucher.setVoucherCode(voucherDetails.getVoucherCode());
+        voucher.setDiscountValue(voucherDetails.getDiscountValue());
+        voucher.setDiscountType(voucherDetails.getDiscountType());
+        voucher.setMaxDiscount(voucherDetails.getMaxDiscount());
+        voucher.setMinimumOrder(voucherDetails.getMinimumOrder());
+        voucher.setUsageLimit(voucherDetails.getUsageLimit());
+        voucher.setExpiredDate(voucherDetails.getExpiredDate());
+        voucher.setUpdatedBy(voucherDetails.getUpdatedBy());
+        
+        return voucherRepository.save(voucher);
+    }
 
-    System.out.println("After = " + voucher.getUsageLimit());
-
-    return true;
-}
-    
+    @Override
+    public void deleteVoucher(Integer id) {
+        Voucher voucher = voucherRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Voucher không tồn tại with id: " + id));
+        voucherRepository.delete(voucher);
+    }
 }

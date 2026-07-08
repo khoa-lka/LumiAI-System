@@ -75,6 +75,10 @@ function switchMpTab(tabId) {
   if (tabId === "fnb") {
     loadManagerFnb();
   }
+  // Tìm trong hàm switchMpTab, đắp thêm logic này vào cuối hàm:
+  if (tabId === "promo") {
+    loadManagerVouchers();
+  }
 }
 
 // --- 2. QUẢN LÝ MODAL & POPUP (CÁC MODAL KHÁC) ---
@@ -1093,4 +1097,149 @@ window.submitAddShowtimeForm = function() {
       console.error("Lỗi khi kiểm tra trùng lịch:", err);
       alert("🚨 Không thể xác thực trùng lịch do lỗi kết nối!");
     });
+};
+
+// ==========================================================================
+// 🚀 BỘ CHỨC NĂNG QUẢN LÝ CHIẾN DỊCH VOUCHER / KHUYẾN MÃI (BẢO ĐẢM THÔNG NÚT 100%)
+// ==========================================================================
+
+// Hàm ẩn/hiện Modal gốc (🎯 ĐÃ SỬA: Khớp chuẩn đét ID mp-create-promo-modal bên HTML)
+window.openCreatePromoModal = function() {
+  const modal = document.getElementById("mp-create-promo-modal");
+  if (modal) modal.style.display = "flex";
+};
+
+window.closeCreatePromoModal = function() {
+  const modal = document.getElementById("mp-create-promo-modal");
+  if (modal) modal.style.display = "none";
+};
+
+// 1. Tải danh sách Voucher từ database lên bảng Admin thông qua API tổng
+window.loadManagerVouchers = function() {
+  const tbody = document.getElementById("mp-promo-tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Đang quét danh sách chiến dịch khuyến mãi...</td></tr>';
+
+  API.getManagerVouchers()
+    .then((vouchers) => {
+      tbody.innerHTML = "";
+      window.vouchersList = vouchers;
+
+      if (!vouchers || vouchers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Chưa có chiến dịch khuyến mãi nào được tạo!</td></tr>';
+        return;
+      }
+
+      vouchers.forEach((v, index) => {
+        let expiryDate = v.expiredDate ? new Date(v.expiredDate).toLocaleDateString("vi-VN") : "Vô thời hạn";
+        let discountText = v.discountType === "PERCENT" ? `${v.discountValue}%` : `${v.discountValue.toLocaleString("vi-VN")} đ`;
+        
+        tbody.innerHTML += `
+          <tr>
+              <td style="text-align: center; font-weight: bold;">${index + 1}</td>
+              <td><span class="mp-badge-code" style="background:#e8f5e9; color:#2e7d32; font-weight:bold; padding:4px 8px; border-radius:4px;">${v.voucherCode}</span></td>
+              <td>${v.discountType === "PERCENT" ? "Giảm theo phần禅 (%)" : "Giảm tiền mặt trực tiếp"}</td>
+              <td style="text-align: right; font-weight: bold; color: #b71c1c;">${discountText}</td>
+              <td style="text-align: center;">${v.usageLimit} lượt</td>
+              <td style="text-align: center;">${expiryDate}</td>
+              <td style="text-align: center;">
+                  <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
+                      <button class="mp-action-btn" onclick="openEditVoucherModal(${v.voucherId})" style="cursor:pointer;">✏️ Sửa</button>
+                      <button class="mp-action-btn" onclick="submitDeleteVoucher(${v.voucherId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;">🗑️ Xóa</button>
+                  </div>
+              </td>
+          </tr>
+        `;
+      });
+    })
+    .catch((err) => {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Lỗi kết nối danh mục Voucher: ${err.message}</td></tr>`;
+    });
+};
+
+// 2. Mở modal để THÊM MỚI Voucher (Xóa sạch dữ liệu cũ trong form)
+window.openAddVoucherModal = function() {
+  document.getElementById("v-id").value = "";
+  document.getElementById("v-code").value = "";
+  document.getElementById("v-type").value = "PERCENT";
+  document.getElementById("v-value").value = "";
+  document.getElementById("v-max").value = "0";
+  document.getElementById("v-min").value = "0";
+  document.getElementById("v-limit").value = "100";
+  document.getElementById("v-expired").value = "";
+
+  document.getElementById("mp-promo-modal-title").innerText = "Thêm Mới Chiến Dịch Khuyến Mãi";
+  window.openCreatePromoModal();
+};
+
+// 3. Mở modal để CHỈNH SỬA Voucher đã có
+window.openEditVoucherModal = function(id) {
+  const v = window.vouchersList.find(x => x.voucherId === id);
+  if (!v) return;
+
+  document.getElementById("v-id").value = v.voucherId;
+  document.getElementById("v-code").value = v.voucherCode;
+  document.getElementById("v-type").value = v.discountType;
+  document.getElementById("v-value").value = v.discountValue;
+  document.getElementById("v-max").value = v.maxDiscount || 0;
+  document.getElementById("v-min").value = v.minimumOrder || 0;
+  document.getElementById("v-limit").value = v.usageLimit;
+  
+  if (v.expiredDate) {
+    document.getElementById("v-expired").value = v.expiredDate.substring(0, 16);
+  }
+
+  document.getElementById("mp-promo-modal-title").innerText = "Cập Nhật Chiến Dịch Khuyến Mãi";
+  window.openCreatePromoModal();
+};
+
+// 4. Xử lý bấm nút "Lưu chiến dịch" (Form Submit)
+window.submitVoucherForm = function() {
+  const id = document.getElementById("v-id").value;
+  const code = document.getElementById("v-code").value.trim().toUpperCase();
+  const type = document.getElementById("v-type").value;
+  const value = parseFloat(document.getElementById("v-value").value) || 0;
+  const max = parseFloat(document.getElementById("v-max").value) || 0;
+  const min = parseFloat(document.getElementById("v-min").value) || 0;
+  const limit = parseInt(document.getElementById("v-limit").value) || 0;
+  const expired = document.getElementById("v-expired").value;
+
+  if (!code) { alert("Vui lòng nhập mã Voucher!"); return; }
+  if (value <= 0) { alert("Giá trị giảm phải lớn hơn 0!"); return; }
+
+  const voucherData = {
+    voucherCode: code,
+    discountType: type,
+    discountValue: value,
+    maxDiscount: max,
+    minimumOrder: min,
+    usageLimit: limit,
+    expiredDate: expired ? `${expired}:00` : null,
+    createdBy: parseInt(sessionStorage.getItem("roleId")) || 1,
+    updatedBy: parseInt(sessionStorage.getItem("roleId")) || 1
+  };
+
+  const apiCall = id ? API.updateVoucher(id, voucherData) : API.addVoucher(voucherData);
+
+  apiCall
+    .then(() => {
+      alert(id ? "✅ Cập nhật chiến dịch thành công!" : "✅ Tạo mã Voucher khuyến mãi mới thành công!");
+      window.closeCreatePromoModal();
+      loadManagerVouchers();
+    })
+    .catch(err => alert("Lỗi xử lý Voucher: " + err.message));
+};
+
+// 5. Xử lý Xóa Voucher qua API tổng
+window.submitDeleteVoucher = function(id) {
+  if (confirm("⚠️ Bạn có chắc chắn muốn gỡ bỏ hoàn toàn mã Voucher này khỏi hệ thống không?")) {
+    API.deleteVoucher(id)
+      .then(() => {
+        alert("✅ Đã gỡ chiến dịch khuyến mãi thành công!");
+        loadManagerVouchers();
+      })
+      .catch(err => alert("Lỗi khi xóa voucher: " + err.message));
+  }
 };
