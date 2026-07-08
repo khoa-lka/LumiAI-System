@@ -20,6 +20,11 @@ public class CheckoutRequest {
 
     private String voucherCode;
 
+    private List<CheckoutFoodItem> fnb;
+
+    private BigDecimal grossAmount;
+
+    
     public String getVoucherCode() {
     return voucherCode;
 }
@@ -82,5 +87,21 @@ public void setVoucherCode(String voucherCode) {
 
     public void setMovieName(String movieName) {
         this.movieName = movieName;
+    }
+
+    public List<CheckoutFoodItem> getFnb() {
+        return fnb;
+    }
+
+    public void setFnb(List<CheckoutFoodItem> fnb) {
+        this.fnb = fnb;
+    }
+
+    public BigDecimal getGrossAmount() {
+        return grossAmount;
+    }
+
+    public void setGrossAmount(BigDecimal grossAmount) {
+        this.grossAmount = grossAmount;
     }
 }

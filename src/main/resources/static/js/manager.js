@@ -104,8 +104,9 @@ function switchMpTab(tabId) {
   if (tabId === "fnb") {
     loadManagerFnb();
   }
-  if (tabId === "promo" && typeof loadManagerPromo === "function") {
-    loadManagerPromo();
+  // Tìm trong hàm switchMpTab, đắp thêm logic này vào cuối hàm:
+  if (tabId === "promo") {
+    loadManagerVouchers();
   }
 }
 
@@ -1399,231 +1400,146 @@ window.submitAddShowtimeForm = function() {
 };
 
 // ==========================================================================
-// --- 8. BỘ CHỨC NĂNG QUẢN LÝ CHIẾN DỊCH KHUYẾN MÃI ---
-// ⚠️ Backend chưa có API riêng cho Khuyến mãi (chưa có bảng Promotion trong DB),
-// nên tạm thời quản lý bằng mảng dữ liệu trong bộ nhớ trình duyệt (demo UI đầy đủ
-// thao tác Thêm/Sửa/Xóa/Tìm kiếm/Lọc). Khi backend bổ sung API, chỉ cần thay các
-// hàm loadManagerPromo/submitPromoForm/confirmDeletePromo bằng lời gọi API.* tương ứng.
+// 🚀 BỘ CHỨC NĂNG QUẢN LÝ CHIẾN DỊCH VOUCHER / KHUYẾN MÃI (BẢO ĐẢM THÔNG NÚT 100%)
 // ==========================================================================
-window.promoList = [
-  {
-    promoId: 1,
-    name: "Mừng AI 45K",
-    code: "LUMIAI45K",
-    icon: "🎟️",
-    type: "fixed",
-    value: "45,000 VND",
-    dateStart: "2026-06-01",
-    dateEnd: "2026-07-31",
-    condition: "Hóa đơn >= 150k",
-    status: "active",
-  },
-  {
-    promoId: 2,
-    name: "Combo Mùa Hè",
-    code: "SUMMER2026",
-    icon: "🍿",
-    type: "combo",
-    value: "1 Combo",
-    dateStart: "2026-05-01",
-    dateEnd: "2026-06-20",
-    condition: "Voucher vật lý",
-    status: "expired",
-  },
-];
-window._promoIdCounter = 3;
 
-// Định dạng khoảng ngày kiểu "01/06 - 31/07/2026" từ chuỗi yyyy-mm-dd
-function formatPromoDateRange(startStr, endStr) {
-  const fmt = (s) => {
-    if (!s) return "?";
-    const parts = s.split("-");
-    return parts.length === 3 ? `${parts[2]}/${parts[1]}` : s;
-  };
-  const endYear = endStr ? endStr.split("-")[0] : "";
-  return `${fmt(startStr)} - ${fmt(endStr)}${endYear ? "/" + endYear : ""}`;
-}
+// Hàm ẩn/hiện Modal gốc (🎯 ĐÃ SỬA: Khớp chuẩn đét ID mp-create-promo-modal bên HTML)
+window.openCreatePromoModal = function() {
+  const modal = document.getElementById("mp-create-promo-modal");
+  if (modal) modal.style.display = "flex";
+};
 
-// Vẽ 1 dòng bảng Khuyến mãi theo đúng format của bảng Phim / F&B (STT, thumbnail, badge, action icon-only)
-function renderPromoRow(item, index) {
-  const typeText = item.type === "combo" ? "Voucher Combo" : "Giảm giá cố định";
-  const statusClass = item.status === "expired" ? "status-expired" : "status-active";
-  const statusText = item.status === "expired" ? "EXPIRED" : "ACTIVE";
-  const rowClass = item.status === "expired" ? 'class="mp-promo-expired"' : "";
+window.closeCreatePromoModal = function() {
+  const modal = document.getElementById("mp-create-promo-modal");
+  if (modal) modal.style.display = "none";
+};
 
-  return `
-    <tr ${rowClass}>
-        <td style="text-align: center; font-weight: bold;">${index + 1}</td>
-        <td style="text-align: center;"><div class="mp-fnb-thumb">${item.icon}</div></td>
-        <td>
-            <div class="mp-movie-title">${item.name}</div>
-            <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">${item.code}</div>
-        </td>
-        <td>${typeText}</td>
-        <td>${item.value}</td>
-        <td>${formatPromoDateRange(item.dateStart, item.dateEnd)}</td>
-        <td>${item.condition || "—"}</td>
-        <td style="text-align: center;"><span class="mp-promo-status ${statusClass}">${statusText}</span></td>
-        <td>
-            <div class="mp-table-actions">
-                <button class="mp-action-btn" onclick="openEditPromoModal(${item.promoId})" title="Sửa">✏️</button>
-                <button class="mp-action-btn" onclick="submitDeletePromo(${item.promoId})" title="Xóa">🗑️</button>
-            </div>
-        </td>
-    </tr>
-  `;
-}
-
-function renderPromoTable(list) {
+// 1. Tải danh sách Voucher từ database lên bảng Admin thông qua API tổng
+window.loadManagerVouchers = function() {
   const tbody = document.getElementById("mp-promo-tbody");
   if (!tbody) return;
 
-  if (!list || list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#888; padding:15px;">Không tìm thấy chiến dịch nào khớp với bộ lọc!</td></tr>';
-    return;
-  }
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Đang quét danh sách chiến dịch khuyến mãi...</td></tr>';
 
-  tbody.innerHTML = list.map((item, index) => renderPromoRow(item, index)).join("");
-}
+  API.getManagerVouchers()
+    .then((vouchers) => {
+      tbody.innerHTML = "";
+      window.vouchersList = vouchers;
 
-function loadManagerPromo() {
-  renderPromoTable(window.promoList);
-}
-window.loadManagerPromo = loadManagerPromo;
+      if (!vouchers || vouchers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Chưa có chiến dịch khuyến mãi nào được tạo!</td></tr>';
+        return;
+      }
 
-// Tìm kiếm + lọc theo Loại giảm giá / Trạng thái
-function filterManagerPromo() {
-  const keyword = (document.getElementById("mp-promo-search-input")?.value || "").toLowerCase().trim();
-  const typeFilter = document.getElementById("mp-promo-filter-type")?.value || "all";
-  const statusFilter = document.getElementById("mp-promo-filter-status")?.value || "all";
-
-  const filtered = (window.promoList || []).filter((item) => {
-    const matchesKeyword =
-      item.name.toLowerCase().includes(keyword) || item.code.toLowerCase().includes(keyword);
-    const matchesType = typeFilter === "all" || item.type === typeFilter;
-    const matchesStatus = statusFilter === "all" || item.status === statusFilter;
-    return matchesKeyword && matchesType && matchesStatus;
-  });
-
-  renderPromoTable(filtered);
-}
-window.filterManagerPromo = filterManagerPromo;
-
-// --- Modal Tạo mới ---
-function openCreatePromoModal() {
-  document.getElementById("promo-item-id").value = "";
-  document.getElementById("promo-name").value = "";
-  document.getElementById("promo-code").value = "";
-  document.getElementById("promo-icon").value = "🎟️";
-  document.getElementById("promo-type").value = "fixed";
-  document.getElementById("promo-value").value = "";
-  document.getElementById("promo-date-start").value = "";
-  document.getElementById("promo-date-end").value = "";
-  document.getElementById("promo-condition").value = "";
-  document.getElementById("promo-status").value = "active";
-  document.getElementById("promo-modal-title").innerText = "Tạo Chiến Dịch Khuyến Mãi";
-
-  const el = document.getElementById("mp-create-promo-modal");
-  if (el) el.classList.add("open");
-}
-window.openCreatePromoModal = openCreatePromoModal;
-
-// --- Modal Sửa (dùng chung modal Tạo, chỉ đổ dữ liệu có sẵn vào) ---
-function openEditPromoModal(id) {
-  const item = (window.promoList || []).find((x) => x.promoId === id);
-  if (!item) return;
-
-  document.getElementById("promo-item-id").value = item.promoId;
-  document.getElementById("promo-name").value = item.name;
-  document.getElementById("promo-code").value = item.code;
-  document.getElementById("promo-icon").value = item.icon;
-  document.getElementById("promo-type").value = item.type;
-  document.getElementById("promo-value").value = item.value;
-  document.getElementById("promo-date-start").value = item.dateStart || "";
-  document.getElementById("promo-date-end").value = item.dateEnd || "";
-  document.getElementById("promo-condition").value = item.condition || "";
-  document.getElementById("promo-status").value = item.status;
-  document.getElementById("promo-modal-title").innerText = "Cập Nhật Chiến Dịch Khuyến Mãi";
-
-  const el = document.getElementById("mp-create-promo-modal");
-  if (el) el.classList.add("open");
-}
-window.openEditPromoModal = openEditPromoModal;
-
-function closeCreatePromoModal() {
-  const el = document.getElementById("mp-create-promo-modal");
-  if (el) el.classList.remove("open");
-}
-window.closeCreatePromoModal = closeCreatePromoModal;
-
-// Lưu (Thêm mới hoặc Cập nhật) chiến dịch khuyến mãi
-function submitPromoForm() {
-  const id = document.getElementById("promo-item-id").value;
-  const name = document.getElementById("promo-name").value.trim();
-  const code = document.getElementById("promo-code").value.trim().toUpperCase();
-  const icon = document.getElementById("promo-icon").value;
-  const type = document.getElementById("promo-type").value;
-  const value = document.getElementById("promo-value").value.trim();
-  const dateStart = document.getElementById("promo-date-start").value;
-  const dateEnd = document.getElementById("promo-date-end").value;
-  const condition = document.getElementById("promo-condition").value.trim();
-  const status = document.getElementById("promo-status").value;
-
-  if (!name || !code || !value) {
-    alert("Vui lòng điền đầy đủ Tên chiến dịch, Mã Promo và Giá trị!");
-    return;
-  }
-
-  if (id) {
-    const item = window.promoList.find((x) => String(x.promoId) === String(id));
-    if (item) {
-      Object.assign(item, { name, code, icon, type, value, dateStart, dateEnd, condition, status });
-    }
-    alert("✅ Đã cập nhật chiến dịch khuyến mãi!");
-  } else {
-    window.promoList.push({
-      promoId: window._promoIdCounter++,
-      name, code, icon, type, value, dateStart, dateEnd, condition, status,
+      vouchers.forEach((v, index) => {
+        let expiryDate = v.expiredDate ? new Date(v.expiredDate).toLocaleDateString("vi-VN") : "Vô thời hạn";
+        let discountText = v.discountType === "PERCENT" ? `${v.discountValue}%` : `${v.discountValue.toLocaleString("vi-VN")} đ`;
+        
+        tbody.innerHTML += `
+          <tr>
+              <td style="text-align: center; font-weight: bold;">${index + 1}</td>
+              <td><span class="mp-badge-code" style="background:#e8f5e9; color:#2e7d32; font-weight:bold; padding:4px 8px; border-radius:4px;">${v.voucherCode}</span></td>
+              <td>${v.discountType === "PERCENT" ? "Giảm theo phần禅 (%)" : "Giảm tiền mặt trực tiếp"}</td>
+              <td style="text-align: right; font-weight: bold; color: #b71c1c;">${discountText}</td>
+              <td style="text-align: center;">${v.usageLimit} lượt</td>
+              <td style="text-align: center;">${expiryDate}</td>
+              <td style="text-align: center;">
+                  <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
+                      <button class="mp-action-btn" onclick="openEditVoucherModal(${v.voucherId})" style="cursor:pointer;">✏️ Sửa</button>
+                      <button class="mp-action-btn" onclick="submitDeleteVoucher(${v.voucherId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;">🗑️ Xóa</button>
+                  </div>
+              </td>
+          </tr>
+        `;
+      });
+    })
+    .catch((err) => {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Lỗi kết nối danh mục Voucher: ${err.message}</td></tr>`;
     });
-    alert("✅ Đã tạo chiến dịch khuyến mãi mới!");
+};
+
+// 2. Mở modal để THÊM MỚI Voucher (Xóa sạch dữ liệu cũ trong form)
+window.openAddVoucherModal = function() {
+  document.getElementById("v-id").value = "";
+  document.getElementById("v-code").value = "";
+  document.getElementById("v-type").value = "PERCENT";
+  document.getElementById("v-value").value = "";
+  document.getElementById("v-max").value = "0";
+  document.getElementById("v-min").value = "0";
+  document.getElementById("v-limit").value = "100";
+  document.getElementById("v-expired").value = "";
+
+  document.getElementById("mp-promo-modal-title").innerText = "Thêm Mới Chiến Dịch Khuyến Mãi";
+  window.openCreatePromoModal();
+};
+
+// 3. Mở modal để CHỈNH SỬA Voucher đã có
+window.openEditVoucherModal = function(id) {
+  const v = window.vouchersList.find(x => x.voucherId === id);
+  if (!v) return;
+
+  document.getElementById("v-id").value = v.voucherId;
+  document.getElementById("v-code").value = v.voucherCode;
+  document.getElementById("v-type").value = v.discountType;
+  document.getElementById("v-value").value = v.discountValue;
+  document.getElementById("v-max").value = v.maxDiscount || 0;
+  document.getElementById("v-min").value = v.minimumOrder || 0;
+  document.getElementById("v-limit").value = v.usageLimit;
+  
+  if (v.expiredDate) {
+    document.getElementById("v-expired").value = v.expiredDate.substring(0, 16);
   }
 
-  closeCreatePromoModal();
-  filterManagerPromo();
-}
-window.submitPromoForm = submitPromoForm;
+  document.getElementById("mp-promo-modal-title").innerText = "Cập Nhật Chiến Dịch Khuyến Mãi";
+  window.openCreatePromoModal();
+};
 
-// --- Xác nhận xóa chiến dịch bằng modal riêng (không dùng confirm() mặc định) ---
-function submitDeletePromo(id) {
-  window._pendingDeletePromoId = id;
-  const item = (window.promoList || []).find((x) => x.promoId === id);
+// 4. Xử lý bấm nút "Lưu chiến dịch" (Form Submit)
+window.submitVoucherForm = function() {
+  const id = document.getElementById("v-id").value;
+  const code = document.getElementById("v-code").value.trim().toUpperCase();
+  const type = document.getElementById("v-type").value;
+  const value = parseFloat(document.getElementById("v-value").value) || 0;
+  const max = parseFloat(document.getElementById("v-max").value) || 0;
+  const min = parseFloat(document.getElementById("v-min").value) || 0;
+  const limit = parseInt(document.getElementById("v-limit").value) || 0;
+  const expired = document.getElementById("v-expired").value;
 
-  const nameBox = document.getElementById("promo-delete-item-name");
-  if (nameBox) {
-    nameBox.innerText = item
-      ? `Bạn có chắc chắn muốn xóa chiến dịch "${item.name}" (${item.code}) không?`
-      : "Bạn có chắc chắn muốn xóa chiến dịch này không?";
+  if (!code) { alert("Vui lòng nhập mã Voucher!"); return; }
+  if (value <= 0) { alert("Giá trị giảm phải lớn hơn 0!"); return; }
+
+  const voucherData = {
+    voucherCode: code,
+    discountType: type,
+    discountValue: value,
+    maxDiscount: max,
+    minimumOrder: min,
+    usageLimit: limit,
+    expiredDate: expired ? `${expired}:00` : null,
+    createdBy: parseInt(sessionStorage.getItem("roleId")) || 1,
+    updatedBy: parseInt(sessionStorage.getItem("roleId")) || 1
+  };
+
+  const apiCall = id ? API.updateVoucher(id, voucherData) : API.addVoucher(voucherData);
+
+  apiCall
+    .then(() => {
+      alert(id ? "✅ Cập nhật chiến dịch thành công!" : "✅ Tạo mã Voucher khuyến mãi mới thành công!");
+      window.closeCreatePromoModal();
+      loadManagerVouchers();
+    })
+    .catch(err => alert("Lỗi xử lý Voucher: " + err.message));
+};
+
+// 5. Xử lý Xóa Voucher qua API tổng
+window.submitDeleteVoucher = function(id) {
+  if (confirm("⚠️ Bạn có chắc chắn muốn gỡ bỏ hoàn toàn mã Voucher này khỏi hệ thống không?")) {
+    API.deleteVoucher(id)
+      .then(() => {
+        alert("✅ Đã gỡ chiến dịch khuyến mãi thành công!");
+        loadManagerVouchers();
+      })
+      .catch(err => alert("Lỗi khi xóa voucher: " + err.message));
   }
-
-  const el = document.getElementById("mp-promo-delete-modal");
-  if (el) el.classList.add("open");
-}
-window.submitDeletePromo = submitDeletePromo;
-
-function closePromoDeleteModal() {
-  const el = document.getElementById("mp-promo-delete-modal");
-  if (el) el.classList.remove("open");
-  window._pendingDeletePromoId = null;
-}
-window.closePromoDeleteModal = closePromoDeleteModal;
-
-function confirmDeletePromo() {
-  const id = window._pendingDeletePromoId;
-  if (!id) return;
-
-  window.promoList = (window.promoList || []).filter((x) => x.promoId !== id);
-  closePromoDeleteModal();
-  filterManagerPromo();
-  alert("✅ Đã xóa chiến dịch khuyến mãi!");
-}
-window.confirmDeletePromo = confirmDeletePromo;
+};
