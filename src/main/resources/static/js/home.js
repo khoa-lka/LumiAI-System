@@ -590,9 +590,24 @@ function renderTransactionHistory() {
              </div>`
           : `<div class="history-poster history-poster-fallback">🎬</div>`;
 
-        const status = "Đã thanh toán";
+        const status = order.ticketStatus || "Không xác định";
 
-        const statusClass = "history-badge-success";
+        switch (status) {
+          case "Sắp chiếu":
+            statusClass = "history-badge-upcoming";
+            break;
+
+          case "Đang chiếu":
+            statusClass = "history-badge-showing";
+            break;
+
+          case "Đã sử dụng":
+            statusClass = "history-badge-used";
+            break;
+
+          default:
+            statusClass = "history-badge-pending";
+        }
 
         historyZone.innerHTML += `
           <div class="history-card-item">
@@ -698,26 +713,42 @@ function viewHistoryDetail(invoiceId) {
   }
 
   const movieName = inv.showtime?.movie?.title || "Không xác định";
+  let statusClass = "";
+  switch (inv.ticketStatus) {
+    case "Sắp chiếu":
+      statusClass = "history-badge-upcoming";
+      break;
 
-  const isPaid = inv.orderStatus === "COMPLETED";
+    case "Đang chiếu":
+      statusClass = "history-badge-showing";
+      break;
+
+    case "Đã sử dụng":
+      statusClass = "history-badge-used";
+      break;
+
+    default:
+      statusClass = "history-badge-pending";
+  }
+
+  const isPaid =
+    inv.paymentStatus === "PAID" || inv.paymentStatus === "SUCCESS";
   const showtimeText = inv.showtime?.startTime
     ? new Date(inv.showtime.startTime).toLocaleString("vi-VN")
     : "";
 
   const hasSeats = inv.seats && inv.seats.length > 0;
   const hasFnb = inv.fnb && inv.fnb.length > 0;
-  const statusClass = isPaid
-    ? "history-badge-success"
-    : "history-badge-pending";
 
   // Danh sách ghế
   const seatBadges =
     (inv.seats || [])
       .map(
-        (s) =>
-          `<span class="bc-seat-badge">
-                        ${s.seatLabel || s.seatCode || s.seatNumber}
-                    </span>`,
+        (seat) => `
+        <span class="bc-seat-badge">
+            ${seat}
+        </span>
+    `,
       )
       .join("") || "—";
 
@@ -748,6 +779,13 @@ function viewHistoryDetail(invoiceId) {
                     <span class="hist-inv-code">
                         ${inv.orderCode}
                     </span>
+                </div>
+
+                <div class="hist-inv-row">
+                  <span>Trạng thái vé</span>
+                  <span class="${statusClass}">
+                        ${inv.ticketStatus}
+                  </span>
                 </div>
 
                 <div class="hist-inv-row">

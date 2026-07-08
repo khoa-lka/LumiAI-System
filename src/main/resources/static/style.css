@@ -6259,3 +6259,35 @@ select.profile-readonly-input:not([disabled]) {
 .mp-tab-section.active {
   display: block;
 }
+
+.history-badge-upcoming {
+  background: #2563eb;
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-weight: 600;
+}
+
+.history-badge-showing {
+  background: #16a34a; /* xanh lá đậm */
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-weight: 600;
+}
+
+.history-badge-used {
+  background: #6b7280; /* xám đậm */
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-weight: 600;
+}
+
+.history-badge-pending {
+  background: #f59e0b; /* vàng cam đậm */
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-weight: 600;
+}
