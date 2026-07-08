@@ -3936,6 +3936,14 @@ select.profile-readonly-input:not([disabled]) {
   background: rgba(255,255,255,0.06);
   color: var(--muted);
 }
+.mp-status.available {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+.mp-status.lowstock {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
 
 /* Các nút hành động Icon */
 .mp-table-actions {
@@ -3960,6 +3968,50 @@ select.profile-readonly-input:not([disabled]) {
 }
 .mp-row-inactive {
   background-color: transparent !important;
+}
+
+/* ==========================================================================
+   CINEMA MANAGER PRO - BẢNG KHO & DỊCH VỤ F&B (đồng bộ format với bảng Phim)
+   ========================================================================== */
+.mp-fnb-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.mp-fnb-type {
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.mp-fnb-type.combo {
+  background: rgba(229, 169, 59, 0.15);
+  color: var(--cgv-gold);
+}
+.mp-fnb-type.bap {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+.mp-fnb-type.nuoc {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+.mp-fnb-type.anvat {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.mp-row-lowstock {
+  background: rgba(255, 107, 53, 0.05) !important;
 }
 
 /* Genre pill + Rating chip (dùng cho bảng danh sách phim bên dưới Ma trận Lịch chiếu) */
@@ -4459,45 +4511,13 @@ select.profile-readonly-input:not([disabled]) {
 .mp-fnb-table td {
   padding: 12px 10px;
   vertical-align: middle;
-  border-bottom: 1px solid #f5f5f5;
 }
 
-/* Ảnh sản phẩm F&B */
+/* Ảnh sản phẩm F&B (legacy, không còn dùng sau khi đổi sang .mp-fnb-thumb) */
 .mp-fnb-img {
   width: 24px;
   height: 32px;
   object-fit: contain;
-}
-
-/* Hiệu ứng dòng Tồn kho thấp (Low Stock) */
-.mp-fnb-low-stock-row {
-  background-color: rgba(255,107,53,0.08) !important;
-  position: relative;
-  z-index: 2;
-}
-/* Tạo viền đỏ nhấp nháy bằng box-shadow outline */
-.mp-fnb-low-stock-row td {
-  border-top: 2px solid #e53935;
-  border-bottom: 2px solid #e53935;
-}
-.mp-fnb-low-stock-row td:first-child {
-  border-left: 2px solid #e53935;
-  border-radius: 6px 0 0 6px;
-}
-.mp-fnb-low-stock-row td:last-child {
-  border-right: 2px solid #e53935;
-  border-radius: 0 6px 6px 0;
-}
-
-.mp-badge-lowstock {
-  background: #f57c00;
-  color: white;
-  padding: 3px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: bold;
-  margin-left: 5px;
-  text-transform: uppercase;
 }
 
 /* Tooltip cảnh báo nổi lên */
@@ -4505,18 +4525,21 @@ select.profile-readonly-input:not([disabled]) {
   position: absolute;
   right: 30px;
   bottom: 40px;
-  background: white;
-  border: 1px solid #f57c00;
-  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--warning);
+  border-radius: 8px;
   padding: 12px 15px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   font-size: 12px;
-  color: #e4e4e7;
+  color: var(--text-dark);
   z-index: 10;
   display: flex;
   gap: 8px;
   align-items: flex-start;
   animation: fadeIn 0.3s ease-in-out;
+}
+.mp-fnb-tooltip strong {
+  color: var(--warning-text);
 }
 .mp-fnb-tooltip::before {
   content: "";
@@ -4525,7 +4548,7 @@ select.profile-readonly-input:not([disabled]) {
   right: 20px;
   border-width: 0 6px 6px;
   border-style: solid;
-  border-color: transparent transparent #f57c00 transparent;
+  border-color: transparent transparent var(--warning) transparent;
 }
 .mp-fnb-tooltip::after {
   content: "";
@@ -4534,37 +4557,37 @@ select.profile-readonly-input:not([disabled]) {
   right: 20px;
   border-width: 0 6px 6px;
   border-style: solid;
-  border-color: transparent transparent white transparent;
+  border-color: transparent transparent var(--surface-2) transparent;
 }
 /* ==========================================================================
    CINEMA MANAGER PRO - QUẢN LÝ KHUYẾN MÃI
    ========================================================================== */
 .mp-promo-status {
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-pill);
   font-size: 11px;
   font-weight: bold;
 }
 .status-active {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 .status-running {
-  background: #fff3e0;
-  color: #ef6c00;
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 .status-expired {
-  background: #1c1c21;
-  color: #616161;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
 }
 
 /* Dòng hết hạn */
 .mp-promo-expired {
-  background-color: rgba(255,107,53,0.08) !important;
-  color: #8a8a94;
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  color: var(--muted);
 }
 .mp-promo-expired td {
-  border-bottom: 1px solid #ffebee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Modal Tạo Khuyến Mãi (dùng chung .mp-modal-box / .mp-modal-header / .mp-modal-close đã định nghĩa ở trên) */

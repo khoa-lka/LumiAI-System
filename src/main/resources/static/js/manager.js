@@ -41,6 +41,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const titleEl = document.getElementById("mp-dynamic-title");
   if (titleEl) titleEl.innerText = `Xin chào Manager: ${info.fullName}`;
   loadManagerMovies();
+  if (typeof window.loadManagerPromo === "function") window.loadManagerPromo();
   if (typeof window.loadManagerDashboard === "function")
     window.loadManagerDashboard();
 });
@@ -119,14 +120,7 @@ function closeMpDeleteModal() {
   if (el) el.classList.remove("open");
 }
 
-function openCreatePromoModal() {
-  const el = document.getElementById("mp-create-promo-modal");
-  if (el) el.classList.add("open");
-}
-function closeCreatePromoModal() {
-  const el = document.getElementById("mp-create-promo-modal");
-  if (el) el.classList.remove("open");
-}
+// (Modal Tạo/Sửa Chiến dịch Khuyến mãi được định nghĩa đầy đủ ở mục 8 bên dưới)
 
 // --- 3. ĐIỀU KHIỂN DROPDOWN (USER & NOTIFICATION) ---
 function toggleUserDropdown() {
@@ -149,6 +143,10 @@ window.addEventListener("click", function (event) {
   const notifDropdown = document.getElementById("mp-notif-dropdown");
   const bellIcon = document.querySelector(".mp-bell");
   const editMovieModal = document.getElementById("mp-edit-movie-modal");
+  const restockModal = document.getElementById("mp-restock-modal");
+  const fnbDeleteModal = document.getElementById("mp-fnb-delete-modal");
+  const createPromoModal = document.getElementById("mp-create-promo-modal");
+  const promoDeleteModal = document.getElementById("mp-promo-delete-modal");
 
   // Đóng User Dropdown
   if (
@@ -173,6 +171,26 @@ window.addEventListener("click", function (event) {
   // Bấm ra ngoài vùng nền mờ để đóng Modal Sửa Phim
   if (event.target === editMovieModal) {
     closeEditMovie();
+  }
+
+  // Bấm ra ngoài vùng nền mờ để đóng Modal Nhập Hàng
+  if (event.target === restockModal) {
+    closeRestockModal();
+  }
+
+  // Bấm ra ngoài vùng nền mờ để đóng Modal Xác nhận Xóa F&B
+  if (event.target === fnbDeleteModal) {
+    closeFnbDeleteModal();
+  }
+
+  // Bấm ra ngoài vùng nền mờ để đóng Modal Tạo/Sửa Chiến dịch Khuyến mãi
+  if (event.target === createPromoModal) {
+    closeCreatePromoModal();
+  }
+
+  // Bấm ra ngoài vùng nền mờ để đóng Modal Xác nhận Xóa Chiến dịch Khuyến mãi
+  if (event.target === promoDeleteModal) {
+    closePromoDeleteModal();
   }
 });
 
@@ -705,6 +723,45 @@ document.addEventListener("DOMContentLoaded", displayCurrentDate);
 // --- 7. BỘ CHỨC NĂNG QUẢN LÝ KHO F&B CHUYÊN NGHIỆP ---
 // ==========================================================================
 
+// Hàm tự động phân loại sản phẩm dựa theo từ khóa trong tên (dùng chung cho load + filter)
+function getFnbTypeMeta(itemName) {
+  const nameLower = (itemName || "").toLowerCase();
+  if (nameLower.includes("combo")) return { key: "combo", text: "Combo", icon: "🎁" };
+  if (nameLower.includes("nuoc") || nameLower.includes("coca")) return { key: "nuoc", text: "Nước ngọt", icon: "🥤" };
+  if (nameLower.includes("khoai") || nameLower.includes("chien")) return { key: "anvat", text: "Đồ ăn vặt", icon: "🍟" };
+  return { key: "bap", text: "Bắp rang", icon: "🍿" };
+}
+
+// Vẽ 1 dòng bảng F&B theo đúng format của bảng Quản lý Danh mục Phim
+// (cột STT, ảnh/thumbnail, badge phân loại, badge trạng thái tồn kho, action icon-only)
+function renderFnbRow(item, index) {
+  const type = getFnbTypeMeta(item.itemName);
+  const isLowStock = item.stockQuantity <= 30;
+  const rowClass = isLowStock ? 'class="mp-row-lowstock"' : "";
+  const stockStatusClass = isLowStock ? "lowstock" : "available";
+  const stockStatusText = isLowStock ? "Tồn thấp" : "Còn hàng";
+
+  return `
+    <tr ${rowClass}>
+        <td style="text-align: center; font-weight: bold;">${index + 1}</td>
+        <td style="text-align: center;"><div class="mp-fnb-thumb">${type.icon}</div></td>
+        <td><div class="mp-movie-title">${item.itemName}</div></td>
+        <td><span class="mp-fnb-type ${type.key}">${type.text}</span></td>
+        <td style="text-align: right; font-weight: bold; color: var(--text-light);">${item.price.toLocaleString("vi-VN")} đ</td>
+        <td style="text-align: center;">
+            <div style="font-weight: bold; color: var(--text-light); margin-bottom: 4px;">${item.stockQuantity}</div>
+            <span class="mp-status ${stockStatusClass}">${stockStatusText}</span>
+        </td>
+        <td>
+            <div class="mp-table-actions">
+                <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" title="Sửa thông tin">✏️</button>
+                <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" title="Xóa">🗑️</button>
+            </div>
+        </td>
+    </tr>
+  `;
+}
+
 // Hàm tải danh sách F&B thực tế từ database lên giao diện
 window.loadManagerFnb = function() {
   const tbody = document.getElementById("mp-fnb-tbody");
@@ -722,39 +779,8 @@ window.loadManagerFnb = function() {
         return;
       }
 
-      items.forEach((item) => {
-        // Tự động phân loại dựa theo từ khóa trong tên để hiển thị lên UI khớp thiết kế của em
-        const nameLower = item.itemName.toLowerCase();
-        let typeText = "Bắp rang";
-        let icon = "🍿";
-        if (nameLower.includes("combo")) { typeText = "Combo"; icon = "🎁"; }
-        else if (nameLower.includes("nuoc") || nameLower.includes("coca")) { typeText = "Nước ngọt"; icon = "🥤"; }
-        else if (nameLower.includes("khoai") || nameLower.includes("chien")) { typeText = "Đồ ăn vặt"; icon = "🍟"; }
-
-        // Logic kiểm tra cảnh báo tồn kho thấp (Low Stock < 30 đơn vị)
-        let stockHTML = `${item.stockQuantity} ly`;
-        let rowStyle = "";
-        if (item.stockQuantity <= 30) {
-          rowStyle = 'style="background-color: #fff8f8;"';
-          stockHTML = `<strong>${item.stockQuantity}</strong> <span class="mp-badge-lowstock" style="background:#fff3e0; color:#e65100; font-size:10px; padding:2px 4px; border-radius:3px; margin-left:5px;">Tồn thấp</span>`;
-        }
-
-        tbody.innerHTML += `
-          <tr ${rowStyle}>
-              <td style="text-align: center;"><input type="checkbox" value="${item.foodItemId}" /></td>
-              <td style="text-align: center;"><div style="font-size: 22px">${icon}</div></td>
-              <td><strong>${item.itemName}</strong></td>
-              <td>${typeText}</td>
-              <td style="text-align: right; font-weight: bold; color:#b71c1c;">${item.price.toLocaleString("vi-VN")} đ</td>
-              <td style="text-align: center;">${stockHTML}</td>
-              <td style="text-align: center;">
-                  <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
-                      <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" style="cursor:pointer;" title="Sửa thông tin">✏️ Sửa</button>
-                      <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" style="cursor:pointer; background:rgba(255,107,53,0.12); color:#ff6b35;" title="Xóa">🗑️ Xóa</button>
-                  </div>
-              </td>
-          </tr>
-        `;
+      items.forEach((item, index) => {
+        tbody.innerHTML += renderFnbRow(item, index);
       });
     })
     .catch((err) => {
@@ -824,16 +850,40 @@ window.submitFnbForm = function() {
   }
 };
 
-// Hàm xử lý kích hoạt xóa sản phẩm
+// --- XÁC NHẬN XÓA SẢN PHẨM F&B BẰNG MODAL RIÊNG (thay cho confirm() mặc định) ---
 window.submitDeleteFnb = function(id) {
-  if (confirm("⚠️ Bạn có chắc chắn muốn gỡ sản phẩm bắp nước này ra khỏi kho hệ thống không?")) {
-    API.deleteFnbItem(id)
-      .then(() => {
-        alert("✅ Đã xóa sản phẩm khỏi kho thành công!");
-        loadManagerFnb();
-      })
-      .catch(err => alert("Thất bại! Sản phẩm này đang dính vào lịch sử hóa đơn đặt vé cũ nên không thể xóa vật lý."));
+  const item = (window.fnbItemsList || []).find((x) => x.foodItemId === id);
+  window._pendingDeleteFnbId = id;
+
+  const nameBox = document.getElementById("fnb-delete-item-name");
+  if (nameBox) {
+    nameBox.innerText = item
+      ? `Bạn có chắc chắn muốn gỡ "${item.itemName}" ra khỏi kho hệ thống không?`
+      : "Bạn có chắc chắn muốn gỡ sản phẩm này ra khỏi kho hệ thống không?";
   }
+
+  document.getElementById("mp-fnb-delete-modal").style.display = "flex";
+};
+
+window.closeFnbDeleteModal = function() {
+  document.getElementById("mp-fnb-delete-modal").style.display = "none";
+  window._pendingDeleteFnbId = null;
+};
+
+window.confirmDeleteFnb = function() {
+  const id = window._pendingDeleteFnbId;
+  if (!id) return;
+
+  API.deleteFnbItem(id)
+    .then(() => {
+      alert("✅ Đã xóa sản phẩm khỏi kho thành công!");
+      closeFnbDeleteModal();
+      loadManagerFnb();
+    })
+    .catch(() => {
+      alert("Thất bại! Sản phẩm này đang dính vào lịch sử hóa đơn đặt vé cũ nên không thể xóa vật lý.");
+      closeFnbDeleteModal();
+    });
 };
 
 // ==========================================================================
@@ -856,11 +906,7 @@ function filterManagerFnb() {
     const matchesKeyword = item.itemName ? item.itemName.toLowerCase().includes(keyword) : false;
     
     // 2. Tự động nhận diện Phân loại dựa theo từ khóa chuỗi tên tương tự hàm load gốc
-    const nameLower = (item.itemName || "").toLowerCase();
-    let currentType = "bap";
-    if (nameLower.includes("combo")) currentType = "combo";
-    else if (nameLower.includes("nuoc") || nameLower.includes("coca")) currentType = "nuoc";
-    else if (nameLower.includes("khoai") || nameLower.includes("chien")) currentType = "anvat";
+    const currentType = getFnbTypeMeta(item.itemName).key;
 
     const matchesType = typeFilter === "all" || currentType === typeFilter;
 
@@ -881,7 +927,7 @@ function filterManagerFnb() {
 // Phơi hàm ra phạm vi toàn cục window để các thẻ select/input HTML kích hoạt được
 window.filterManagerFnb = filterManagerFnb;
 
-// Hàm tái render bảng dữ liệu sau khi lọc (Đảm bảo giữ nguyên cấu trúc icon, tồn kho thấp của em)
+// Hàm tái render bảng dữ liệu sau khi lọc (giữ đồng bộ format với renderFnbRow dùng chung)
 function renderFilteredFnbTable(items) {
   const tbody = document.getElementById("mp-fnb-tbody");
   if (!tbody) return;
@@ -893,37 +939,8 @@ function renderFilteredFnbTable(items) {
     return;
   }
 
-  items.forEach((item) => {
-    const nameLower = item.itemName.toLowerCase();
-    let typeText = "Bắp rang";
-    let icon = "🍿";
-    if (nameLower.includes("combo")) { typeText = "Combo"; icon = "🎁"; }
-    else if (nameLower.includes("nuoc") || nameLower.includes("coca")) { typeText = "Nước ngọt"; icon = "🥤"; }
-    else if (nameLower.includes("khoai") || nameLower.includes("chien")) { typeText = "Đồ ăn vặt"; icon = "🍟"; }
-
-    let stockHTML = `${item.stockQuantity} ly`;
-    let rowStyle = "";
-    if (item.stockQuantity <= 30) {
-      rowStyle = 'style="background-color: #fff8f8;"';
-      stockHTML = `<strong>${item.stockQuantity}</strong> <span class="mp-badge-lowstock" style="background:#fff3e0; color:#e65100; font-size:10px; padding:2px 4px; border-radius:3px; margin-left:5px;">Tồn thấp</span>`;
-    }
-
-    tbody.innerHTML += `
-      <tr ${rowStyle}>
-          <td style="text-align: center;"><input type="checkbox" value="${item.foodItemId}" /></td>
-          <td style="text-align: center;"><div style="font-size: 22px">${icon}</div></td>
-          <td><strong>${item.itemName}</strong></td>
-          <td>${typeText}</td>
-          <td style="text-align: right; font-weight: bold; color:#b71c1c;">${item.price.toLocaleString("vi-VN")} đ</td>
-          <td style="text-align: center;">${stockHTML}</td>
-          <td style="text-align: center;">
-              <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
-                  <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" style="cursor:pointer;" title="Sửa thông tin">✏️ Sửa</button>
-                  <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" style="cursor:pointer; background:rgba(255,107,53,0.12); color:#ff6b35;" title="Xóa">🗑️ Xóa</button>
-              </div>
-          </td>
-      </tr>
-    `;
+  items.forEach((item, index) => {
+    tbody.innerHTML += renderFnbRow(item, index);
   });
 }
 
@@ -972,27 +989,45 @@ window.handleAutoReplenish = function() {
 };
 
 // --- CHỨC NĂNG 2: NHẬP HÀNG NHANH (QUICK RESTOCK) ---
+// 🚀 ĐÃ SỬA: Thay thế hoàn toàn prompt()/confirm() mặc định xấu xí của trình duyệt
+// bằng modal riêng #mp-restock-modal, đồng bộ giao diện với modal Thêm/Sửa F&B.
 window.openQuickRestockModal = function() {
   if (!window.fnbItemsList || window.fnbItemsList.length === 0) {
     alert("Kho hàng trống, vui lòng thêm sản phẩm mới trước!");
     return;
   }
 
-  // Tận dụng Modal Form điền dữ liệu có sẵn của Khoa để làm form nhập nhanh
-  // Tìm một sản phẩm bất kỳ hoặc mở modal chỉnh số lượng tồn kho
-  const itemId = prompt("Nhập mã ID sản phẩm F&B bạn muốn nhập thêm hàng vào kho:", "");
-  if (!itemId) return;
+  const select = document.getElementById("restock-product-select");
+  select.innerHTML = window.fnbItemsList
+    .map((item) => `<option value="${item.foodItemId}">${item.itemName} (Tồn: ${item.stockQuantity})</option>`)
+    .join("");
 
-  const item = window.fnbItemsList.find(x => String(x.foodItemId) === String(itemId).trim());
+  document.getElementById("restock-add-qty").value = "";
+  onRestockProductChange();
+  document.getElementById("mp-restock-modal").style.display = "flex";
+};
+
+// Cập nhật số tồn kho hiện tại hiển thị khi đổi sản phẩm trong dropdown
+window.onRestockProductChange = function() {
+  const select = document.getElementById("restock-product-select");
+  const item = window.fnbItemsList.find((x) => String(x.foodItemId) === String(select.value));
+  document.getElementById("restock-current-stock").innerText = item ? `${item.stockQuantity} ly` : "0";
+};
+
+window.closeRestockModal = function() {
+  document.getElementById("mp-restock-modal").style.display = "none";
+};
+
+// Xử lý xác nhận nhập hàng: cộng dồn số lượng mới vào tồn kho hiện tại rồi gửi API
+window.submitRestockForm = function() {
+  const select = document.getElementById("restock-product-select");
+  const item = window.fnbItemsList.find((x) => String(x.foodItemId) === String(select.value));
   if (!item) {
-    alert("❌ Không tìm thấy sản phẩm nào mang ID #" + itemId);
+    alert("❌ Vui lòng chọn sản phẩm cần nhập hàng!");
     return;
   }
 
-  const addQtyStr = prompt(`Sản phẩm: ${item.itemName}\nTồn kho hiện tại: ${item.stockQuantity} ly\n\nNhập số lượng bạn muốn CỘNG THÊM vào kho:`, "50");
-  if (!addQtyStr) return;
-
-  const addQty = parseInt(addQtyStr) || 0;
+  const addQty = parseInt(document.getElementById("restock-add-qty").value) || 0;
   if (addQty <= 0) {
     alert("Số lượng nhập kho phải lớn hơn 0!");
     return;
@@ -1001,16 +1036,16 @@ window.openQuickRestockModal = function() {
   const fnbData = {
     itemName: item.itemName,
     price: item.price,
-    stockQuantity: item.stockQuantity + addQty // Cộng dồn số lượng mới vào số lượng cũ
+    stockQuantity: item.stockQuantity + addQty, // Cộng dồn số lượng mới vào số lượng cũ
   };
 
-  // Gửi request cập nhật lên Spring Boot
   API.updateFnbItem(item.foodItemId, fnbData)
     .then(() => {
       alert(`✅ Nhập hàng thành công! Đã cộng thêm ${addQty} đơn vị vào sản phẩm ${item.itemName}.`);
+      closeRestockModal();
       loadManagerFnb();
     })
-    .catch(err => alert("Lỗi khi nhập hàng: " + err.message));
+    .catch((err) => alert("Lỗi khi nhập hàng: " + err.message));
 };
 
 // ==========================================================================
