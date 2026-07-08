@@ -1,1336 +1,2546 @@
 // ==========================================================================
-// MÃ NGUỒN XỬ LÝ GIAO DIỆN QUẢN LÝ RẠP (MANAGER)
-// File: js/manager.js
+// MÃ NGUỒN XỬ LÝ LOGIC TRANG CHỦ (HOME & BOOKING FLOW) - BẢN KHÔI PHỤC HIỂN THỊ
+// File: js/home.js
 // ==========================================================================
-window.addEventListener("DOMContentLoaded", () => {
-  // Xác định vai trò: ưu tiên localStorage (bền vững), dự phòng sessionStorage
-  function resolveRoleAndName() {
-    var roleId = null,
-      fullName = "";
-    try {
-      var raw = localStorage.getItem("las_logged_in_user");
-      if (raw) {
-        var u = JSON.parse(raw);
-        roleId =
-          u.roleId != null ? u.roleId : u.role_id != null ? u.role_id : null;
-        fullName = u.fullName || u.fullname || "";
+
+let fnbQty = 0;
+let globalBannerTimer = null;
+
+// Tận dụng trực tiếp các biến toàn cục đã được state.js khai báo trước đó, không khai báo lại bằng let/const
+appliedVoucherDiscount = 0;
+userPastInvoices = window.userPastInvoices || [];
+selectedSeats = window.selectedSeats || [];
+selectedShowtime = "";
+currentMovieFilter = "now_showing";
+currentPriceTotal = 0;
+isHoldingState = false;
+timerInterval = null;
+isUserLoggedInState = false;
+cgvNavigationHistory = ["panel-movies"];
+activeSearchKeyword = "";
+selectedDateStr = "";
+currentBannerIndex = 0;
+totalBanners = 0;
+temporaryRegisterEmail = "";
+
+// ==========================================================================
+// 🌟 THẦN CHÚ KHÔI PHỤC SESSION: Ép tài khoản luôn luôn đăng nhập khi Reload
+// ==========================================================================
+// 🌟 HIỂN THỊ/ẨN TAB "TRUY CẬP DASHBOARD" THEO VAI TRÒ (role 1 = Manager, role 4 = Admin)
+window.refreshDashboardTab = function (roleId) {
+  const btn = document.getElementById("pro-subtab-btn-dashboard");
+  if (!btn) return;
+
+  let rid = roleId;
+  if (rid === undefined || rid === null || rid === "") {
+    rid = sessionStorage.getItem("roleId");
+  }
+  if (rid === undefined || rid === null || rid === "") {
+    const cached = localStorage.getItem("las_logged_in_user");
+    if (cached) {
+      try {
+        rid = JSON.parse(cached).roleId;
+      } catch (e) {
+        rid = null;
       }
-    } catch (e) {}
-    if (roleId == null) {
-      var sr = sessionStorage.getItem("roleId");
-      if (sr != null && sr !== "") roleId = parseInt(sr, 10);
     }
-    if (!fullName) fullName = sessionStorage.getItem("fullName") || "Manager";
-    return {
-      roleId: roleId != null ? parseInt(roleId, 10) : null,
-      fullName: fullName,
-    };
+  }
+  rid = parseInt(rid, 10);
+  window.currentUserRoleId = rid;
+
+  if (rid === 1 || rid === 4) {
+    btn.style.display = "flex";
+  } else {
+    btn.style.display = "none";
+  }
+};
+
+// 🌟 POPUP XÁC NHẬN CHUYỂN SANG TRANG DASHBOARD (Manager/Admin)
+function openDashboardConfirm() {
+  const modal = document.getElementById("dashboard-confirm-modal");
+  if (modal) modal.classList.add("open");
+}
+
+function closeDashboardConfirm() {
+  const modal = document.getElementById("dashboard-confirm-modal");
+  if (modal) modal.classList.remove("open");
+}
+
+function confirmGoDashboard() {
+  let rid = window.currentUserRoleId;
+  if (rid === undefined || rid === null || isNaN(rid)) {
+    rid = parseInt(sessionStorage.getItem("roleId"), 10);
+  }
+  if (rid === 4) {
+    window.location.href = "admin.html";
+  } else if (rid === 1) {
+    window.location.href = "manager.html";
+  } else {
+    closeDashboardConfirm();
+  }
+}
+window.openDashboardConfirm = openDashboardConfirm;
+window.closeDashboardConfirm = closeDashboardConfirm;
+window.confirmGoDashboard = confirmGoDashboard;
+
+// 🌟 HÀM DÙNG CHUNG: Lấy chữ cái đại diện Avatar = chữ cái ĐẦU TIÊN của tên
+function getNameAvatarInitial(fullName) {
+  if (!fullName) return "?";
+  const trimmed = fullName.trim();
+  if (!trimmed) return "?";
+  return trimmed.charAt(0).toUpperCase();
+}
+window.getNameAvatarInitial = getNameAvatarInitial;
+
+window.syncUserLoginSession = function () {
+  const cachedUser = localStorage.getItem("las_logged_in_user");
+  if (cachedUser) {
+    isUserLoggedInState = true;
+    const uData = JSON.parse(cachedUser);
+
+    // Điền thông tin giao diện thanh điều hướng (Giữ nguyên logic UI)
+    const authLinkBox = document.getElementById("top-bar-auth-link");
+    if (authLinkBox) {
+      authLinkBox.onclick = () => switchCgvTab("panel-profile");
+      authLinkBox.style.cursor = "pointer";
+      authLinkBox.innerHTML = `
+          <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
+          <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+      `;
+    }
+    if (document.getElementById("top-bar-ticket-link")) {
+      document.getElementById("top-bar-ticket-link").innerHTML =
+        `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
+    }
+
+    // 🌟 Đồng bộ lại Avatar / Tên / Vai trò trên tab "Tài Khoản LAS"
+    // (bắt buộc phải làm lại ở đây vì khi RELOAD trang, hàm xử lý đăng nhập
+    //  gốc không chạy lại, nếu không phần này sẽ đứng yên ở giá trị mặc định)
+    if (document.getElementById("profile-summary-avatar")) {
+      document.getElementById("profile-summary-avatar").innerText =
+        getNameAvatarInitial(uData.fullName);
+    }
+    const welcomeNameBoxSync = document.getElementById("profile-welcome-name");
+    if (welcomeNameBoxSync) welcomeNameBoxSync.innerText = uData.fullName;
+
+    let syncRoleString = "Khách hàng thành viên";
+    if (uData.roleId === 1) syncRoleString = "Quản lý (MANAGER)";
+    if (uData.roleId === 2) syncRoleString = "Nhân viên cụm rạp (STAFF)";
+    if (uData.roleId === 4) syncRoleString = "Quản trị viên (ADMIN)";
+
+    if (document.getElementById("profile-field-name"))
+      document.getElementById("profile-field-name").value = uData.fullName;
+    if (document.getElementById("profile-field-phone"))
+      document.getElementById("profile-field-phone").value = uData.phoneNumber;
+    if (document.getElementById("profile-field-email"))
+      document.getElementById("profile-field-email").value = uData.email;
+    if (document.getElementById("profile-field-role"))
+      document.getElementById("profile-field-role").value = syncRoleString;
+
+    // 🌟 Khôi phục hiển thị tab "TRUY CẬP DASHBOARD" theo vai trò đã lưu
+    window.refreshDashboardTab(uData.roleId);
+
+    // 🚀 ĐỒNG BỘ DỮ LIỆU ĐÃ ĐƯỢC CHUẨN HÓA TỪ DATABASE
+    const accountId = uData.account_id || uData.accountId;
+    if (accountId) {
+      fetch(`http://localhost:8080/api/bookings/user/${accountId}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Thất bại khi lấy dữ liệu từ DB");
+          return res.json();
+        })
+        .then((dbBookings) => {
+          // Map chính xác các thuộc tính sạch từ backend trả về
+          window.userPastInvoices = dbBookings.map((b) => ({
+            id: "BK-" + b.bookingId,
+            movie: b.movieTitle, // Lấy từ kết quả JOIN movie
+            date: new Date(b.bookingDate).toLocaleDateString("vi-VN"), // Ngày đặt thực tế trong DB
+            time: b.showStartTime, // Giờ chiếu thực tế lấy từ bảng showtime chứ không lấy biến tạm b.js
+            seats: b.reservedSeats ? b.reservedSeats.split(", ") : [], // Mảng ghế thật trích từ ticket + seat
+            fnb: [], // Có thể bổ sung orderdetail food sau nếu cần
+            total: b.totalMoney,
+            status:
+              b.paymentStatus === "SUCCESS" || b.paymentStatus === "COMPLETELY"
+                ? "Đã thanh toán"
+                : "Chờ xử lý",
+          }));
+
+          // Gọi hàm render hiển thị giao diện lịch sử trong Profile
+          if (typeof renderTransactionHistory === "function") {
+            renderTransactionHistory();
+          }
+        })
+        .catch((err) =>
+          console.error(
+            "🚨 Lỗi nghiêm trọng khi đồng bộ phiên làm việc từ DB:",
+            err,
+          ),
+        );
+    }
+  }
+};
+
+// 1. Hàm tải Banner từ Database Spring Boot
+function loadBannersFromDatabase() {
+  fetch("http://localhost:8080/api/banners")
+    .then((response) => response.json())
+    .then((banners) => {
+      const carousel = document.getElementById("las-banner-carousel");
+      if (!carousel || !banners || banners.length === 0) return;
+
+      totalBanners = banners.length;
+      carousel.style.width = `${totalBanners * 100}%`;
+
+      let htmlContent = "";
+      banners.forEach((b) => {
+        let imgWidth = 100 / totalBanners;
+        htmlContent += `<img src="${b.imageUrl || b.image_url}" alt="${b.title}" style="width: ${imgWidth}%; height: 100%; object-fit: cover;">`;
+      });
+
+      carousel.innerHTML = htmlContent;
+    })
+    .catch((err) => console.error("🚨 Lỗi khi tải banner từ DB: ", err));
+}
+
+function updateBannerMovement() {
+  const carousel = document.getElementById("las-banner-carousel");
+  if (carousel) {
+    let percentage = -(currentBannerIndex * (100 / totalBanners));
+    carousel.style.transform = `translateX(${percentage}%)`;
+  }
+}
+
+function moveBannerRight() {
+  if (totalBanners === 0) return;
+  currentBannerIndex = (currentBannerIndex + 1) % totalBanners;
+  updateBannerMovement();
+}
+
+function moveBannerLeft() {
+  if (totalBanners === 0) return;
+  currentBannerIndex = (currentBannerIndex - 1 + totalBanners) % totalBanners;
+  updateBannerMovement();
+}
+
+function startAutoBannerSlider() {
+  if (globalBannerTimer) clearInterval(globalBannerTimer);
+  globalBannerTimer = setInterval(moveBannerRight, 3000);
+}
+
+// 🌟 ĐỒNG BỘ CỔNG KÍCH HOẠT ĐỂ UI.JS GỌI KHÔNG BỊ SẬP
+window.fetchSyncData = function () {
+  console.log("🚀 Đồng bộ dữ liệu phim từ Spring Boot...");
+
+  if (typeof serverData === "undefined") {
+    window.serverData = { masterSeatStore: {}, movies: [], showtimes: [] };
   }
 
-  var info = resolveRoleAndName();
-  var ALLOWED_ROLES = [1]; // Chỉ MANAGER (1) — Admin(4) dùng admin.html riêng
+  fetch("http://localhost:8080/api/movies")
+    .then((res) => {
+      if (!res.ok) throw new Error("Không thể kết nối API Spring Boot");
+      return res.json();
+    })
+    .then((moviesList) => {
+      console.log("🎯 Đã nhận danh sách phim từ Spring Boot:", moviesList);
 
-  // Nếu không phải Manager -> Đuổi về trang chủ
-  if (ALLOWED_ROLES.indexOf(info.roleId) === -1) {
-    alert("CẢNH BÁO: Khu vực nội bộ! Bạn không có quyền truy cập.");
-    window.location.href = "index.html";
+      serverData.movies = moviesList;
+
+      if (!serverData.showtimes || serverData.showtimes.length === 0) {
+        serverData.showtimes = [
+          "09:30",
+          "12:15",
+          "15:00",
+          "17:45",
+          "20:30",
+          "23:15",
+        ];
+      }
+      if (!serverData.masterSeatStore) {
+        serverData.masterSeatStore = {};
+      }
+
+      const selectCombo = document.getElementById("cgv-combo-movie");
+      if (selectCombo && serverData.movies && serverData.movies.length > 0) {
+        selectCombo.innerHTML = "";
+        serverData.movies.forEach((m) => {
+          const mStatus = (m.status || "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "");
+          if (mStatus === "nowshowing" || mStatus === "now_showing") {
+            selectCombo.innerHTML += `<option value="${m.title}">${m.title}</option>`;
+          }
+        });
+      }
+
+      if (
+        !selectedShowtime &&
+        serverData.showtimes &&
+        serverData.showtimes.length > 0
+      ) {
+        selectedShowtime = serverData.showtimes[0];
+      }
+
+      // Gọi hàm vẽ lại giao diện
+      window.renderCgvInterface();
+    })
+    .catch((err) => {
+      console.error("🚨 Lỗi kết nối API phim trang chủ:", err);
+    });
+};
+
+// Khởi chạy khi tải trang
+// Khởi chạy khi tải trang và phục hồi trạng thái từ LocalStorage tránh lỗi refresh mất biến
+window.addEventListener("DOMContentLoaded", () => {
+  const daySelect = document.getElementById("reg-birth-day");
+  const monthSelect = document.getElementById("reg-birth-month");
+  const yearSelect = document.getElementById("reg-birth-year");
+  generateCgvDateSlider();
+  renderFnbMenu();
+
+  if (daySelect && monthSelect && yearSelect) {
+    for (let i = 1; i <= 31; i++)
+      daySelect.innerHTML += `<option value="${i}">${i}</option>`;
+    for (let i = 1; i <= 12; i++)
+      monthSelect.innerHTML += `<option value="${i}">Tháng ${i}</option>`;
+    for (let i = 2026; i >= 1950; i--)
+      yearSelect.innerHTML += `<option value="${i}">${i}</option>`;
+  }
+
+  loadBannersFromDatabase();
+  startAutoBannerSlider();
+
+  if (typeof switchCgvTab === "function")
+    switchCgvTab("panel-movies", "now_showing");
+  window.fetchSyncData();
+
+  // 🌟 KHÓA TRÌ HOÃN 150MS: Đợi các file JS khác nạp xong giao diện mặc định rồi mới khôi phục Đăng Nhập
+  setTimeout(() => {
+    window.syncUserLoginSession();
+
+    // ĐÓN KẾT QUẢ VNPAY-CALLBACK TRẢ VỀ ĐỂ ĐIỀU HƯỚNG BƯỚC 4
+  }, 150);
+});
+
+function generateRandomCaptcha(length = 6) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+function generateNewLoginCaptcha() {
+  document.getElementById("login-captcha-text").innerText =
+    generateRandomCaptcha();
+}
+function generateNewRegisterCaptcha() {
+  document.getElementById("reg-captcha-text").innerText =
+    generateRandomCaptcha();
+}
+function generateForgotCaptcha() {
+  document.getElementById("forgot-captcha-text").innerText =
+    generateRandomCaptcha();
+}
+
+function toggleRegPasswordState() {
+  const passInput = document.getElementById("reg-password");
+  if (passInput) {
+    passInput.type = passInput.type === "password" ? "text" : "password";
+  }
+}
+
+function openAuthModal() {
+  document.getElementById("auth-modal").classList.add("open");
+  generateNewLoginCaptcha();
+  generateNewRegisterCaptcha();
+}
+function closeAuthModal() {
+  document.getElementById("auth-modal").remove("open");
+}
+
+function renderFnbMenu() {
+  const container = document.getElementById("cgv-fnb-menu");
+  if (!container) return;
+  container.innerHTML = "";
+  fnbMenu.forEach((item, index) => {
+    const inCart = item.qty > 0;
+    const bullets = (item.items || []).map((t) => `<li>${t}</li>`).join("");
+    const control = inCart
+      ? `<div class="fnb-stepper">
+            <button class="fnb-step-btn" onclick="updateComboQty(${index}, -1)">−</button>
+            <span class="fnb-step-qty">×${item.qty}</span>
+            <button class="fnb-step-btn fnb-step-plus" onclick="updateComboQty(${index}, 1)">+</button>
+         </div>`
+      : `<button class="fnb-add-btn" onclick="updateComboQty(${index}, 1)">＋ Thêm vào đơn</button>`;
+    container.innerHTML += `
+      <div class="fnb-card ${inCart ? "fnb-card-active" : ""}">
+        <div class="fnb-card-head">
+          <div class="fnb-card-icon">${item.icon}</div>
+          ${item.popular ? `<span class="fnb-tag-popular">Phổ biến</span>` : ""}
+          <span class="fnb-card-price">${item.price.toLocaleString("vi-VN")}đ</span>
+        </div>
+        <h4 class="fnb-card-title">${item.name}</h4>
+        ${item.desc ? `<p class="fnb-card-desc">${item.desc}</p>` : ""}
+        ${bullets ? `<ul class="fnb-card-list">${bullets}</ul>` : ""}
+        <div class="fnb-card-action">${control}</div>
+      </div>`;
+  });
+}
+
+function updateComboQty(index, change) {
+  fnbMenu[index].qty += change;
+  if (fnbMenu[index].qty < 0) fnbMenu[index].qty = 0;
+
+  let totalFnbItems = fnbMenu.reduce((sum, item) => sum + item.qty, 0);
+  document.getElementById("sum-fnb").innerText = totalFnbItems + " Combo";
+
+  renderFnbMenu();
+  calculateCgvCart();
+}
+
+function toggleAuthTab(type) {
+  document.getElementById("tab-login-btn")?.classList.remove("active");
+  document.getElementById("tab-register-btn")?.classList.remove("active");
+  document.getElementById("form-login-panel").classList.remove("active");
+  document.getElementById("form-register-panel").classList.remove("active");
+
+  if (type === "login") {
+    document.getElementById("tab-login-btn")?.classList.add("active");
+    document.getElementById("form-login-panel").classList.add("active");
+  } else if (type === "register") {
+    document.getElementById("tab-register-btn")?.classList.add("active");
+    document.getElementById("form-register-panel").classList.add("active");
+  }
+}
+
+function viewMovieDetailText(title, genre) {
+  document.getElementById("detail-movie-title").innerText = title;
+  document.getElementById("detail-movie-genre").innerText = genre;
+
+  if (!serverData.movies || serverData.movies.length === 0) {
+    alert("Dự án đang tải dữ liệu phim từ SQL Server, vui lòng đợi vài giây!");
     return;
   }
 
-  // Nếu hợp lệ, tự động load danh sách phim + dashboard analytics
-  const titleEl = document.getElementById("mp-dynamic-title");
-  if (titleEl) titleEl.innerText = `Xin chào Manager: ${info.fullName}`;
-  loadManagerMovies();
-  if (typeof window.loadManagerDashboard === "function")
-    window.loadManagerDashboard();
-});
+  const targetMovie = serverData.movies.find((m) => m.title === title);
+  if (targetMovie) {
+    if (document.getElementById("detail-movie-duration")) {
+      document.getElementById("detail-movie-duration").innerText =
+        targetMovie.duration || "-";
+    }
+    if (document.getElementById("detail-movie-country")) {
+      document.getElementById("detail-movie-country").innerText =
+        targetMovie.country || "Đang cập nhật";
+    }
+    if (document.getElementById("detail-movie-director")) {
+      document.getElementById("detail-movie-director").innerText =
+        targetMovie.director || "Đang cập nhật";
+    }
+    if (document.getElementById("detail-movie-performer")) {
+      document.getElementById("detail-movie-performer").innerText =
+        targetMovie.performer || "Đang cập nhật";
+    }
 
-// --- THOÁT VAI TRÒ MANAGER, QUAY VỀ GIAO DIỆN CUSTOMER (index.html) ---
-// Lưu ý: KHÔNG xóa localStorage "las_logged_in_user" / sessionStorage đăng nhập
-// -> Tài khoản Manager vẫn được xem là "đã đăng nhập" khi quay lại trang chủ,
-//    để Manager có thể tự trải nghiệm & kiểm tra thao tác trên giao diện Customer.
-function exitManagerRoleToCustomerView() {
-  console.log("[Manager] Thoát vai trò Manager -> quay về Trang chủ Customer");
-  window.location.replace("index.html");
-}
-window.exitManagerRoleToCustomerView = exitManagerRoleToCustomerView;
+    const posterBox = document.getElementById("detail-movie-poster-box");
+    if (posterBox) {
+      let subPoster =
+        targetMovie.subposterUrl ||
+        targetMovie.subposter_url ||
+        targetMovie.subposterurl;
+      let mainPoster =
+        targetMovie.mainposterUrl ||
+        targetMovie.mainposter_url ||
+        targetMovie.mainposterurl;
+      let backupImg =
+        targetMovie.img ||
+        "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
+      let validPoster = subPoster || mainPoster || backupImg;
 
-// --- 1. CHUYỂN TAB TRONG MANAGER DASHBOARD ---
-function switchMpTab(tabId) {
-  // Ẩn tất cả tab section
-  document.querySelectorAll(".mp-tab-section").forEach((tab) => {
-    tab.style.display = "none";
-    tab.classList.remove("active");
-  });
+      posterBox.style.backgroundImage = `url("${validPoster}")`;
+      posterBox.style.backgroundSize = "cover";
+      posterBox.style.backgroundRepeat = "no-repeat";
+      posterBox.style.backgroundPosition = "center";
+      posterBox.innerHTML = "";
+    }
 
-  // Gỡ active trên thanh điều hướng sidebar
-  document.querySelectorAll(".mp-nav-item").forEach((nav) => {
-    nav.classList.remove("active");
-  });
-
-  // Bật tab được chọn
-  const targetTab = document.getElementById("mp-tab-" + tabId);
-  const targetNav = document.getElementById("mp-nav-" + tabId);
-
-  if (targetTab) {
-    targetTab.style.display = "block";
-    targetTab.classList.add("active");
+    const synopsisBox = document.getElementById("detail-movie-synopsis");
+    if (synopsisBox) {
+      synopsisBox.innerText =
+        targetMovie.synopsis || "Chưa có tóm tắt cho bộ phim điện ảnh này.";
+    }
   }
-  if (targetNav) targetNav.classList.add("active");
 
-  if (tabId === "dashboard" && typeof window.loadManagerDashboard === "function")
-    window.loadManagerDashboard();
-
-  // Cập nhật tiêu đề trang
-  const titleElement = document.getElementById("mp-dynamic-title");
-  if (titleElement) {
-    const titles = {
-      dashboard: "Tổng quan hoạt động rạp",
-      movies: "Quản lý Danh mục Phim",
-      matrix: "Ma trận Lịch chiếu",
-      fnb: "Quản lý Kho F&B",
-      promo: "Quản lý Chiến dịch Khuyến mãi",
-      audit: "Báo cáo và Kiểm toán Tài chính",
+  const bookBtn = document.getElementById("btn-detail-book-now");
+  if (bookBtn) {
+    bookBtn.onclick = () => {
+      quickBookMovie(title);
     };
-    titleElement.innerText = titles[tabId] || "Chức năng đang phát triển...";
   }
-
-  // Nếu chuyển sang tab phim, tự động gọi API load danh sách phim
-  if (tabId === "movies") {
-    loadManagerMovies();
-  }
-  // Bổ sung vào cuối hàm switchMpTab của em:
-  if (tabId === "fnb") {
-    loadManagerFnb();
-  }
+  switchCgvTab("panel-movie-detail");
 }
 
-// --- 2. QUẢN LÝ MODAL & POPUP (CÁC MODAL KHÁC) ---
-function openMpDeleteModal() {
-  const el = document.getElementById("mp-delete-modal");
-  if (el) el.classList.add("open");
-}
-function closeMpDeleteModal() {
-  const el = document.getElementById("mp-delete-modal");
-  if (el) el.classList.remove("open");
-}
-
-function openCreatePromoModal() {
-  const el = document.getElementById("mp-create-promo-modal");
-  if (el) el.classList.add("open");
-}
-function closeCreatePromoModal() {
-  const el = document.getElementById("mp-create-promo-modal");
-  if (el) el.classList.remove("open");
-}
-
-// --- 3. ĐIỀU KHIỂN DROPDOWN (USER & NOTIFICATION) ---
-function toggleUserDropdown() {
-  const dropdown = document.getElementById("mp-user-dropdown");
-  if (dropdown) dropdown.classList.toggle("open");
-}
-
-function toggleNotifDropdown() {
-  const dropdown = document.getElementById("mp-notif-dropdown");
-  if (dropdown) dropdown.classList.toggle("open");
-
-  const bell = document.querySelector(".mp-bell");
-  if (bell) bell.classList.remove("has-new"); // Xóa chấm đỏ khi xem thông báo
+function openCheckoutReview() {
+  const currentMovie = document.getElementById("cgv-combo-movie").value;
+  const fnbItems = fnbMenu.filter((i) => i.qty > 0);
+  let fnbHtml = fnbItems
+    .map(
+      (i) =>
+        `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
+    )
+    .join("");
+  document.getElementById("review-invoice-content").innerHTML = `
+      <div class="inv-review">
+        <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
+        <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
+        <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
+        <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
+        ${fnbHtml}
+        <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
+      </div>
+  `;
+  appliedVoucherDiscount = 0;
+  document.getElementById("voucher-input").value = "";
+  document.getElementById("review-final-total").innerText =
+    currentPriceTotal.toLocaleString("vi-VN") + " đ";
+  document.getElementById("checkout-review-modal").classList.add("open");
 }
 
-// LẮNG NGHE SỰ KIỆN CLICK TOÀN TRANG (GỘP CHUNG ĐÓNG DROPDOWN & MODAL)
-window.addEventListener("click", function (event) {
-  const userDropdown = document.getElementById("mp-user-dropdown");
-  const userProfile = document.querySelector(".mp-profile");
-  const notifDropdown = document.getElementById("mp-notif-dropdown");
-  const bellIcon = document.querySelector(".mp-bell");
-  const editMovieModal = document.getElementById("mp-edit-movie-modal");
+function closeCheckoutReview() {
+  document.getElementById("checkout-review-modal").classList.remove("open");
+  appliedVoucherDiscount = 0;
+  calculateCgvCart();
+}
 
-  // Đóng User Dropdown
+function closePaymentModal() {
+  document.getElementById("payment-redirect-modal").classList.remove("open");
+}
+
+function cancelCurrentTransaction() {
   if (
-    userDropdown &&
-    userProfile &&
-    !userProfile.contains(event.target) &&
-    !userDropdown.contains(event.target)
+    confirm("Bạn có chắc chắn muốn hủy giao dịch và bỏ giữ các ghế này không?")
   ) {
-    userDropdown.classList.remove("open");
+    const currentMovie = document.getElementById("cgv-combo-movie").value;
+    fetch("http://localhost:8080/api/seats/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        movie: currentMovie,
+        showtime: selectedShowtime,
+        seats: selectedSeats,
+      }),
+    }).then(() => {
+      resetHoldState();
+      selectedSeats = [];
+      fnbMenu.forEach((i) => (i.qty = 0));
+      renderFnbMenu();
+      calculateCgvCart();
+      window.renderCgvInterface();
+      alert("Đã hủy giao dịch và giải phóng ghế!");
+    });
   }
+}
 
-  // Đóng Notification Dropdown
-  if (
-    notifDropdown &&
-    bellIcon &&
-    !bellIcon.contains(event.target) &&
-    !notifDropdown.contains(event.target)
-  ) {
-    notifDropdown.classList.remove("open");
-  }
+function getPosterByMovieName(name) {
+  try {
+    const m = (serverData.movies || []).find(
+      (x) => (x.title || "").trim() === (name || "").trim(),
+    );
+    if (m)
+      return (
+        m.mainposter_url || m.mainposterUrl || m.mainposterurl || m.img || ""
+      );
+  } catch (e) {}
+  return "";
+}
 
-  // Bấm ra ngoài vùng nền mờ để đóng Modal Sửa Phim
-  if (event.target === editMovieModal) {
-    closeEditMovie();
-  }
-});
-
-// ==========================================================================
-// --- 4. GIAO TIẾP DATABASE & LỌC DỮ LIỆU ĐỘNG ---
-// ==========================================================================
-
-// Hàm tách riêng chuyên đảm nhận việc vẽ bảng phim lên giao diện HTML
-function renderMoviesTable(movies) {
-  const tbody = document.getElementById("mp-movies-tbody");
-  if (!tbody) return;
-
-  tbody.innerHTML = "";
-
-  if (!movies || movies.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 20px; color: #888;">Không tìm thấy bộ phim nào khớp với bộ lọc!</td></tr>`;
+function renderTransactionHistory() {
+  const historyZone = document.getElementById("cgv-invoice-zone");
+  if (userPastInvoices.length === 0) {
+    historyZone.innerHTML =
+      '<p style="color:#9a9aa3; font-size: 13px;">Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.</p>';
     return;
   }
 
-  // Thay thế đoạn vẽ bảng trong hàm renderMoviesTable thành đoạn này:
-  movies.forEach((m, index) => { // 🚀 ĐÃ SỬA: Thêm index để đếm số thứ tự
-    let ageBadgeClass = m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
-    let ageText = m.ageRating === 0 ? "P" : `T${m.ageRating}`;
-    let statusClass = m.status === "now_showing" ? "active" : m.status === "coming_soon" ? "coming" : "inactive";
-    let statusText = m.status === "now_showing" ? "Đang chiếu" : m.status === "coming_soon" ? "Sắp chiếu" : "Ngưng chiếu";
-    let posterUrl = m.mainposter_url ? m.mainposter_url : "img/default-poster.jpg";
+  historyZone.innerHTML = "";
+  userPastInvoices.forEach((inv) => {
+    const movieName = inv.movie ? inv.movie : "Vé xem phim LAS Cinemas";
+    const isPaid = inv.status === "Đã thanh toán";
+    const statusClass = isPaid
+      ? "history-badge-success"
+      : "history-badge-pending";
+    const poster = getPosterByMovieName(inv.movie);
+    const thumb = poster
+      ? `<div class="history-poster"><img src="${poster}" alt="${movieName}"></div>`
+      : `<div class="history-poster history-poster-fallback">🎬</div>`;
 
-    tbody.innerHTML += `
-      <tr>
-          <td style="text-align: center; font-weight: bold;">${index + 1}</td> <td>
-              <div class="mp-movie-info">
-                  <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
-                  <div>
-                      <div class="mp-movie-title">${m.title}</div>
+    historyZone.innerHTML += `
+          <div class="history-card-item">
+              ${thumb}
+              <div class="history-card-main">
+                  <div class="history-card-top-row">
+                      <h4 class="history-card-title">${movieName}</h4>
+                      <span class="history-badge ${statusClass}">${inv.status}</span>
+                  </div>
+                  <div class="history-card-meta">
+                      <span>🎫 ${inv.id}</span>
+                      <span>📅 ${inv.date}</span>
+                      ${inv.time ? `<span>🕐 ${inv.time}</span>` : ""}
+                      ${inv.seats && inv.seats.length ? `<span>💺 ${inv.seats.join(", ")}</span>` : ""}
+                  </div>
+                  <div class="history-card-actions">
+                      <button class="history-card-btn" onclick="viewHistoryDetail('${inv.id}')">Xem chi tiết</button>
+                      <button class="history-card-btn ghost" onclick="openFeedbackModal('${inv.id}')">💬 Gửi Feedback</button>
                   </div>
               </div>
-          </td>
-          <td>${m.duration} phút</td>
-          <td><div class="mp-age-badges"><span class="mp-badge ${ageBadgeClass}">${ageText}</span></div></td>
-          <td>${m.country || "N/A"}</td>
-          <td><span class="mp-status ${statusClass}">${statusText}</span></td>
-          <td>${m.releaseDate || "N/A"}</td>
-          <td>
-              <div class="mp-table-actions">
-                  <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết">👁️</button>
-                  <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa">✏️</button>
-                  <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
+              <div class="history-card-side">
+                  <span class="history-price-badge">${(inv.total || 0).toLocaleString("vi-VN")} đ</span>
               </div>
-          </td>
-      </tr>
-    `;
-  });
-}
-// Gắn thêm vào window cho chắc chắn
-function filterMovies() {
-  const searchInput = document.getElementById("mp-search-input");
-  const statusSelect = document.getElementById("mp-filter-status");
-  const genreSelect = document.getElementById("mp-filter-genre");
-
-  const keyword = searchInput ? searchInput.value.toLowerCase().trim() : "";
-  const statusFilter = statusSelect ? statusSelect.value : "all";
-  const genreFilter = genreSelect ? genreSelect.value : "all";
-
-  if (!window.moviesList) return;
-
-  const filteredResult = window.moviesList.filter((movie) => {
-    const matchesKeyword = movie.title
-      ? movie.title.toLowerCase().includes(keyword)
-      : false;
-    const matchesStatus =
-      statusFilter === "all" || movie.status === statusFilter;
-    const matchesGenre =
-      genreFilter === "all" ||
-      (movie.genre &&
-        movie.genre.toLowerCase().includes(genreFilter.toLowerCase()));
-
-    return matchesKeyword && matchesStatus && matchesGenre;
-  });
-
-  renderMoviesTable(filteredResult);
-}
-// Gắn thêm vào window để đảm bảo phạm vi toàn cục hoạt động ở mọi nơi
-window.filterMovies = filterMovies;
-
-// Hàm tải danh sách phim gốc cho bảng Quản lý
-
-function loadManagerMovies() {
-  const tbody = document.getElementById("mp-movies-tbody");
-  if (!tbody) return;
-
-  tbody.innerHTML =
-    '<tr><td colspan="8" style="text-align:center;">Đang tải danh sách phim từ Database...</td></tr>';
-
-  // Gọi API lấy danh sách phim chuẩn chỉnh từ Spring Boot
-  API.getMovies()
-    .then((movies) => {
-      tbody.innerHTML = "";
-      window.moviesList = movies; // Lưu tạm danh sách phim vào biến toàn cục để dùng cho bộ lọc filter
-
-      // Duyệt danh sách phim và gán index tăng dần làm số thứ tự (STT) tự động cập nhật
-      movies.forEach((m, index) => { 
-        let ageBadgeClass = m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
-        let ageText = m.ageRating === 0 ? "P" : `T${m.ageRating}`;
-
-        let statusClass = m.status === "now_showing" ? "active" : "inactive";
-        let statusText = m.status === "now_showing" ? "Đang chiếu" : m.status === "coming_soon" ? "Sắp chiếu" : "Ngưng chiếu";
-        let rowClass = m.status !== "now_showing" ? 'class="mp-row-inactive"' : "";
-
-        let posterUrl = m.mainposterUrl || m.mainposter_url || "img/default-poster.jpg";
-
-        tbody.innerHTML += `
-            <tr ${rowClass}>
-                <td style="text-align: center; font-weight: bold;">${index + 1}</td> 
-                <td>
-                    <div class="mp-movie-info">
-                        <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
-                        <div>
-                            <div class="mp-movie-title">${m.title}</div>
-                        </div>
-                    </div>
-                </td>
-                <td>${m.duration || m.durationMinutes || 0} phút</td>
-                <td><div class="mp-age-badges"><span class="mp-badge ${ageBadgeClass}">${ageText}</span></div></td>
-                <td>${m.country || "N/A"}</td>
-                <td><span class="mp-status ${statusClass}">${statusText}</span></td>
-                <td>${m.releaseDate || "N/A"}</td>
-                <td>
-                    <div class="mp-table-actions">
-                        <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết">👁️</button>
-                        <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa">✏️</button>
-                        <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
-                    </div>
-                </td>
-            </tr>
-        `;
-      });
-    })
-    .catch((err) => {
-      console.error("Lỗi:", err);
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Lỗi kết nối CSDL: ${err.message}</td></tr>`;
-    });
-}
-
-// ==========================================================================
-// --- 5. LOGIC MODAL THÊM / SỬA PHIM MỚI NHẤT ---
-// ==========================================================================
-
-window.openAddMovie = function () {
-  document.getElementById("add-title").value = "";
-  document.getElementById("add-genre").value = "";
-  document.getElementById("add-duration").value = "";
-  document.getElementById("add-release").value = "";
-  document.getElementById("add-country").value = "";
-  document.getElementById("add-director").value = "";
-  document.getElementById("add-performer").value = "";
-  document.getElementById("add-synopsis").value = "";
-  document.getElementById("add-mainposter").value = "";
-  document.getElementById("add-subposter").value = "";
-  document.getElementById("add-age").value = "0";
-  document.querySelector(
-    'input[name="add_status"][value="now_showing"]',
-  ).checked = true;
-
-  document.getElementById("mp-add-movie-modal").style.display = "flex";
-};
-
-window.closeAddMovie = function () {
-  const modal = document.getElementById("mp-add-movie-modal");
-  if (modal) modal.style.display = "none";
-};
-
-window.submitAddMovie = function () {
-  const movieData = {
-    title: document.getElementById("add-title").value,
-    genre: document.getElementById("add-genre").value,
-    duration: parseInt(document.getElementById("add-duration").value) || 0,
-    director: document.getElementById("add-director").value,
-    country: document.getElementById("add-country").value,
-    performer: document.getElementById("add-performer").value,
-    synopsis: document.getElementById("add-synopsis").value,
-    mainposter_url: document.getElementById("add-mainposter").value,
-    subposter_url: document.getElementById("add-subposter").value,
-    releaseDate: document.getElementById("add-release").value,
-    ageRating: parseInt(document.getElementById("add-age").value) || 0,
-    status: document.querySelector('input[name="add_status"]:checked').value,
-    rating: 0.0,
-  };
-
-  API.addMovie(movieData)
-    .then(() => {
-      alert("✅ Thêm phim thành công!");
-      closeAddMovie();
-      loadManagerMovies();
-    })
-    .catch((err) => alert("Lỗi khi thêm phim: " + err));
-};
-
-// ==========================================================================
-// --- PHẦN DÙNG CHUNG: HIỂN THỊ DANH SÁCH SUẤT CHIẾU (NGÀY / GIỜ / PHÒNG) ---
-// Dùng cho cả Modal "Xem" ở tab Ma trận và phần thông tin trong Modal "Sửa Phim"
-// ==========================================================================
-function getMatrixRoomLabel(roomId) {
-  if (roomId === 1) return "Screen 1 · Standard";
-  if (roomId === 2) return "Screen 2 · IMAX";
-  return `Phòng ${roomId}`;
-}
-
-function renderShowtimeListInto(containerId, movieId, date) {
-  const container = document.getElementById(containerId);
-  if (!container || !movieId || !date) return;
-
-  container.innerHTML =
-    '<div style="padding:10px;color:#888;font-size:12px;">Đang tải suất chiếu...</div>';
-
-  API.getShowtimes(movieId, date)
-    .then((resData) => {
-      const list = resData.showtimes || [];
-
-      if (list.length === 0) {
-        container.innerHTML = `<div style="padding:10px;color:#888;font-size:12px;">Không có suất chiếu nào được xếp trong ngày ${date}.</div>`;
-        return;
-      }
-
-      const rowsHTML = list
-        .slice()
-        .sort((a, b) => (a.startTime > b.startTime ? 1 : -1))
-        .map(
-          (st) => `
-            <tr>
-              <td>${date}</td>
-              <td>${st.startTime} - ${st.endTime}</td>
-              <td>${getMatrixRoomLabel(st.roomId)}</td>
-            </tr>
-          `,
-        )
-        .join("");
-
-      container.innerHTML = `
-        <div style="font-size:12px;color:#9a9aa3;margin-bottom:8px;">
-          Tổng số suất chiếu trong ngày: <strong style="color:#f4f4f5;">${list.length}</strong>
-        </div>
-        <table class="mp-table" style="width:100%;font-size:12px;">
-          <thead>
-            <tr><th>Ngày</th><th>Giờ chiếu</th><th>Phòng</th></tr>
-          </thead>
-          <tbody>${rowsHTML}</tbody>
-        </table>
+          </div>
       `;
-    })
-    .catch((err) => {
-      container.innerHTML = `<div style="padding:10px;color:#e57373;font-size:12px;">Lỗi tải suất chiếu: ${err.message || err}</div>`;
-    });
+  });
 }
 
-function getMatrixDefaultDate() {
-  const dateInput = document.getElementById("mp-matrix-date-input");
-  if (window.matrixSelectedDate) return window.matrixSelectedDate;
-  if (dateInput && dateInput.value) return dateInput.value;
-  const today = new Date();
-  const y = today.getFullYear();
-  const m = String(today.getMonth() + 1).padStart(2, "0");
-  const d = String(today.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
+function viewHistoryDetail(invoiceId) {
+  const inv = userPastInvoices.find((i) => i.id === invoiceId);
+  if (!inv) return;
+  const isPaid = inv.status === "Đã thanh toán";
+  const statusClass = isPaid
+    ? "history-badge-success"
+    : "history-badge-pending";
+  let fnbHtml = (inv.fnb || [])
+    .map((i) => `<li>${i.name} × ${i.qty}</li>`)
+    .join("");
+  const seatBadges = (inv.seats || [])
+    .map((s) => `<span class="bc-seat-badge">${s}</span>`)
+    .join("");
 
-// --- MODAL "XEM" RIÊNG CHO TAB MA TRẬN LỊCH CHIẾU ---
-window.openMatrixViewMovie = function (id) {
-  const movie = window.moviesList.find((item) => item.movieId === id);
-  if (!movie) {
-    console.error("Không tìm thấy dữ liệu của phim mang ID:", id);
-    return;
-  }
-
-  document.getElementById("mxview-movie-id").value = id;
-  document.getElementById("mxview-title").innerText = movie.title || "Chưa cập nhật";
-  document.getElementById("mxview-genre").innerText = movie.genre || "Chưa cập nhật";
-  document.getElementById("mxview-duration").innerText =
-    movie.durationMinutes || movie.duration || "0";
-  document.getElementById("mxview-director").innerText = movie.director || "Chưa cập nhật";
-  document.getElementById("mxview-country").innerText = movie.country || "Chưa cập nhật";
-
-  const statusEl = document.getElementById("mxview-status");
-  statusEl.innerText =
-    movie.status === "now_showing"
-      ? "Đang chiếu"
-      : movie.status === "coming_soon"
-        ? "Sắp chiếu"
-        : "Ngừng chiếu";
-  statusEl.style.color = movie.status === "now_showing" ? "#2e7d32" : "#f57c00";
-
-  const imgUrl =
-    movie.mainposterUrl || movie.mainposter_url || "img/default-poster.jpg";
-  document.getElementById("mxview-poster").src = imgUrl;
-
-  const defaultDate = getMatrixDefaultDate();
-  document.getElementById("mxview-date-input").value = defaultDate;
-  renderShowtimeListInto("mxview-schedule-list", id, defaultDate);
-
-  document.getElementById("mp-matrix-view-modal").style.display = "flex";
-};
-
-window.closeMatrixViewMovie = function () {
-  document.getElementById("mp-matrix-view-modal").style.display = "none";
-};
-
-window.reloadMatrixViewSchedule = function () {
-  const id = parseInt(document.getElementById("mxview-movie-id").value);
-  const date = document.getElementById("mxview-date-input").value;
-  renderShowtimeListInto("mxview-schedule-list", id, date);
-};
-
-// --- MODAL "SỬA" GỌN NHẸ RIÊNG CHO TAB MA TRẬN (chỉ Thời lượng + Trạng thái) ---
-window.openMatrixEditMovie = function (id) {
-  const movie = window.moviesList.find((item) => item.movieId === id);
-  if (!movie) {
-    console.error("Không tìm thấy dữ liệu của phim mang ID:", id);
-    return;
-  }
-
-  document.getElementById("mxedit-movie-id").value = id;
-
-  const imgUrl =
-    movie.mainposterUrl || movie.mainposter_url || "img/default-poster.jpg";
-  document.getElementById("mxedit-poster").src = imgUrl;
-  document.getElementById("mxedit-title").innerText = movie.title || "Chưa cập nhật";
-  document.getElementById("mxedit-meta").innerText =
-    `${movie.genre || "Chưa cập nhật"} · Dir. ${movie.director || "Chưa cập nhật"}`;
-
-  document.getElementById("mxedit-duration").value =
-    movie.durationMinutes || movie.duration || "";
-
-  const statusRadio = document.querySelector(
-    `input[name="mxedit_status"][value="${movie.status}"]`,
-  );
-  if (statusRadio) statusRadio.checked = true;
-
-  const defaultDate = getMatrixDefaultDate();
-  document.getElementById("mxedit-date-input").value = defaultDate;
-  renderShowtimeListInto("mxedit-schedule-list", id, defaultDate);
-
-  document.getElementById("mp-matrix-edit-modal").style.display = "flex";
-};
-
-window.closeMatrixEditMovie = function () {
-  document.getElementById("mp-matrix-edit-modal").style.display = "none";
-};
-
-window.reloadMatrixEditSchedule = function () {
-  const id = parseInt(document.getElementById("mxedit-movie-id").value);
-  const date = document.getElementById("mxedit-date-input").value;
-  renderShowtimeListInto("mxedit-schedule-list", id, date);
-};
-
-window.submitMatrixEditMovie = function () {
-  const id = parseInt(document.getElementById("mxedit-movie-id").value);
-  const original = window.moviesList.find((item) => item.movieId === id);
-  if (!original) return;
-
-  const statusChecked = document.querySelector('input[name="mxedit_status"]:checked');
-
-  // Giữ nguyên toàn bộ thông tin gốc của phim, chỉ ghi đè 2 trường được phép sửa ở đây
-  const movieData = {
-    ...original,
-    duration: parseInt(document.getElementById("mxedit-duration").value) || original.duration,
-    status: statusChecked ? statusChecked.value : original.status,
-  };
-
-  API.updateMovie(movieData)
-    .then(() => {
-      alert("✅ Cập nhật thành công!");
-      closeMatrixEditMovie();
-      loadManagerMovies();
-      if (typeof window.loadManagerMatrix === "function") window.loadManagerMatrix();
-    })
-    .catch((err) => alert("Lỗi khi cập nhật: " + err));
-};
-
-window.openUpdateMovie = function (id) {
-  const movie = window.moviesList.find((item) => item.movieId === id);
-
-  if (!movie) {
-    console.error("Không tìm thấy dữ liệu cho phim ID:", id);
-    return;
-  }
-
-  document.getElementById("upd-movie-id").value = movie.movieId;
-  document.getElementById("upd-title").value = movie.title || "";
-  document.getElementById("upd-genre").value = movie.genre || "";
-  document.getElementById("upd-duration").value =
-    movie.durationMinutes || movie.duration || "";
-  document.getElementById("upd-release").value = movie.releaseDate || "";
-  document.getElementById("upd-country").value = movie.country || "";
-  document.getElementById("upd-director").value = movie.director || "";
-  document.getElementById("upd-performer").value = movie.performer || "";
-  document.getElementById("upd-synopsis").value = movie.synopsis || "";
-  document.getElementById("upd-mainposter").value =
-    movie.mainposterUrl || movie.mainposter_url || "";
-  document.getElementById("upd-subposter").value =
-    movie.subposterUrl || movie.subposter_url || "";
-  document.getElementById("upd-age").value = movie.ageRating || "0";
-
-  const statusRadio = document.querySelector(
-    `input[name="upd_status"][value="${movie.status}"]`,
-  );
-  if (statusRadio) statusRadio.checked = true;
-
-  document.getElementById("mp-update-movie-modal").style.display = "flex";
-};
-
-window.closeUpdateMovie = function () {
-  document.getElementById("mp-update-movie-modal").style.display = "none";
-};
-
-window.submitUpdateMovie = function () {
-  const movieData = {
-    movieId: parseInt(document.getElementById("upd-movie-id").value),
-    title: document.getElementById("upd-title").value,
-    genre: document.getElementById("upd-genre").value,
-    duration: parseInt(document.getElementById("upd-duration").value) || 0,
-    director: document.getElementById("upd-director").value,
-    country: document.getElementById("upd-country").value,
-    performer: document.getElementById("upd-performer").value,
-    synopsis: document.getElementById("upd-synopsis").value,
-    mainposter_url: document.getElementById("upd-mainposter").value,
-    subposter_url: document.getElementById("upd-subposter").value,
-    releaseDate: document.getElementById("upd-release").value,
-    ageRating: parseInt(document.getElementById("upd-age").value) || 0,
-    status: document.querySelector('input[name="upd_status"]:checked').value,
-  };
-
-  API.updateMovie(movieData)
-    .then(() => {
-      alert("✅ Cập nhật phim thành công!");
-      closeUpdateMovie();
-      loadManagerMovies();
-    })
-    .catch((err) => alert("Lỗi khi cập nhật phim: " + err));
-};
-
-// ==========================================================================
-// --- LOGIC XỬ LÝ XÓA PHIM ĐỘNG ---
-// ==========================================================================
-window.openMpDeleteModal = function (id) {
-  const movie = window.moviesList.find((item) => item.movieId === id);
-  if (!movie) return;
-
-  document.getElementById("delete-movie-id").value = movie.movieId;
-  document.getElementById("delete-movie-title").innerText = `"${movie.title}"`;
-  document.getElementById("mp-delete-modal").style.display = "flex";
-};
-
-window.closeMpDeleteModal = function () {
-  document.getElementById("mp-delete-modal").style.display = "none";
-};
-
-window.submitDeleteMovie = function () {
-  const movieId = parseInt(document.getElementById("delete-movie-id").value);
-
-  API.deleteMovie(movieId)
-    .then(() => {
-      alert("✅ Hệ thống đã gỡ phim thành công!");
-      closeMpDeleteModal();
-      loadManagerMovies();
-    })
-    .catch((err) => alert("Lỗi khi thực hiện xóa phim: " + err));
-};
-
-// ==========================================================================
-// --- LOGIC XỬ LÝ XEM CHI TIẾT PHIM (CON MẮT 👁️) ---
-// ==========================================================================
-window.openViewMovie = function (id) {
-  const movie = window.moviesList.find((item) => item.movieId === id);
-  if (!movie) {
-    console.error("Không tìm thấy dữ liệu của phim mang ID:", id);
-    return;
-  }
-
-  document.getElementById("view-title").innerText =
-    movie.title || "Chưa cập nhật";
-  document.getElementById("view-genre").innerText =
-    movie.genre || "Chưa cập nhật";
-  document.getElementById("view-duration").innerText =
-    movie.durationMinutes || movie.duration || "0";
-  document.getElementById("view-director").innerText =
-    movie.director || "Chưa cập nhật";
-  document.getElementById("view-country").innerText =
-    movie.country || "Chưa cập nhật";
-  document.getElementById("view-performer").innerText =
-    movie.performer || "Chưa cập nhật";
-  document.getElementById("view-release").innerText =
-    movie.releaseDate || "Chưa cập nhật";
-  document.getElementById("view-synopsis").innerText =
-    movie.synopsis || "Bộ phim này hiện chưa có bài tóm tắt nội dung ngắn.";
-  document.getElementById("view-age").innerText =
-    movie.ageRating === 0 ? "P" : `T${movie.ageRating}`;
-
-  document.getElementById("view-status").innerText =
-    movie.status === "now_showing" ? "Đang chiếu" : "Sắp chiếu";
-  document.getElementById("view-status").style.color =
-    movie.status === "now_showing" ? "#2e7d32" : "#f57c00";
-
-  const imgUrl =
-    movie.mainposterUrl || movie.mainposter_url || "img/default-poster.jpg";
-  document.getElementById("view-poster").src = imgUrl;
-
-  document.getElementById("mp-view-movie-modal").style.display = "flex";
-};
-
-window.closeViewMovie = function () {
-  document.getElementById("mp-view-movie-modal").style.display = "none";
-};
-
-// --- 6. TÍNH TOÁN THỜI GIAN THỰC ---
-function displayCurrentDate() {
-  const today = new Date();
-  const day = String(today.getDate()).padStart(2, "0");
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const year = today.getFullYear();
-
-  const formattedDate = `${day}/${month}/${year}`;
-  const dateBadge = document.getElementById("mp-current-date");
-  if (dateBadge) {
-    dateBadge.innerText = formattedDate;
-  }
-}
-
-document.addEventListener("DOMContentLoaded", displayCurrentDate);
-
-// ==========================================================================
-// --- 7. BỘ CHỨC NĂNG QUẢN LÝ KHO F&B CHUYÊN NGHIỆP ---
-// ==========================================================================
-
-// Hàm tự động phân loại sản phẩm dựa theo từ khóa trong tên (dùng chung cho load + filter)
-function getFnbTypeMeta(itemName) {
-  const nameLower = (itemName || "").toLowerCase();
-  if (nameLower.includes("combo")) return { key: "combo", text: "Combo", icon: "🎁" };
-  if (nameLower.includes("nuoc") || nameLower.includes("coca")) return { key: "nuoc", text: "Nước ngọt", icon: "🥤" };
-  if (nameLower.includes("khoai") || nameLower.includes("chien")) return { key: "anvat", text: "Đồ ăn vặt", icon: "🍟" };
-  return { key: "bap", text: "Bắp rang", icon: "🍿" };
-}
-
-// Vẽ 1 dòng bảng F&B theo đúng format của bảng Quản lý Danh mục Phim
-// (cột STT, ảnh/thumbnail, badge phân loại, badge trạng thái tồn kho, action icon-only)
-function renderFnbRow(item, index) {
-  const type = getFnbTypeMeta(item.itemName);
-  const isLowStock = item.stockQuantity <= 30;
-  const rowClass = isLowStock ? 'class="mp-row-lowstock"' : "";
-  const stockStatusClass = isLowStock ? "lowstock" : "available";
-  const stockStatusText = isLowStock ? "Tồn thấp" : "Còn hàng";
-
-  return `
-    <tr ${rowClass}>
-        <td style="text-align: center; font-weight: bold;">${index + 1}</td>
-        <td style="text-align: center;"><div class="mp-fnb-thumb">${type.icon}</div></td>
-        <td><div class="mp-movie-title">${item.itemName}</div></td>
-        <td><span class="mp-fnb-type ${type.key}">${type.text}</span></td>
-        <td style="text-align: right; font-weight: bold; color: var(--text-light);">${item.price.toLocaleString("vi-VN")} đ</td>
-        <td style="text-align: center;">
-            <div style="font-weight: bold; color: var(--text-light); margin-bottom: 4px;">${item.stockQuantity}</div>
-            <span class="mp-status ${stockStatusClass}">${stockStatusText}</span>
-        </td>
-        <td>
-            <div class="mp-table-actions">
-                <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" title="Sửa thông tin">✏️</button>
-                <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" title="Xóa">🗑️</button>
-            </div>
-        </td>
-    </tr>
+  document.getElementById("history-detail-content").innerHTML = `
+      <div class="hist-inv">
+        <div class="hist-inv-head">
+          <div class="hist-inv-movie">${inv.movie}</div>
+          <span class="history-badge ${statusClass}">${inv.status}</span>
+        </div>
+        <div class="hist-inv-rows">
+          <div class="hist-inv-row"><span>Mã vé</span><span class="hist-inv-code">${inv.id}</span></div>
+          <div class="hist-inv-row"><span>Suất chiếu</span><span>${inv.time} • ${inv.date}</span></div>
+        </div>
+        <div class="hist-inv-label">Ghế đã đặt</div>
+        <div class="hist-inv-seats">${seatBadges || "—"}</div>
+        <div class="hist-inv-label">Bắp nước</div>
+        <ul class="hist-inv-fnb">${fnbHtml || "<li>Không có</li>"}</ul>
+        <div class="hist-inv-total">
+          <span>Thành tiền</span>
+          <span class="hist-inv-amt">${(inv.total || 0).toLocaleString("vi-VN")} đ</span>
+        </div>
+        <div class="hist-inv-actions">
+          <button class="hist-feedback-btn" onclick="openFeedbackModal('${inv.id}')">💬 Gửi Feedback</button>
+        </div>
+      </div>
   `;
+  document.getElementById("history-detail-modal").classList.add("open");
 }
 
-// Hàm tải danh sách F&B thực tế từ database lên giao diện
-window.loadManagerFnb = function() {
-  const tbody = document.getElementById("mp-fnb-tbody");
-  if (!tbody) return;
+function closeHistoryDetailModal() {
+  document.getElementById("history-detail-modal").classList.remove("open");
+}
 
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Đang quét dữ liệu kho hàng...</td></tr>';
+/* ---------- FEEDBACK ---------- */
+let _feedbackRating = 0;
+let _feedbackInvoiceId = null;
 
-  API.getFnbItems()
-    .then((items) => {
-      tbody.innerHTML = "";
-      window.fnbItemsList = items; // Lưu cache danh sách toàn cục để sửa
+function openFeedbackModal(invoiceId) {
+  _feedbackInvoiceId = invoiceId || null;
+  _feedbackRating = 0;
+  const inv = userPastInvoices.find((i) => i.id === invoiceId);
+  const refEl = document.getElementById("feedback-invoice-ref");
+  if (refEl)
+    refEl.innerText = inv
+      ? `Phim: ${inv.movie} • Mã vé: ${inv.id}`
+      : "Chia sẻ trải nghiệm của bạn";
+  const txt = document.getElementById("feedback-text");
+  if (txt) txt.value = "";
+  setFeedbackStars(0);
+  document.getElementById("feedback-modal").classList.add("open");
+}
 
-      if (!items || items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Kho trống! Chưa có sản phẩm bắp nước nào.</td></tr>';
-        return;
-      }
+function setFeedbackStars(n) {
+  _feedbackRating = n;
+  document.querySelectorAll("#feedback-stars .fb-star").forEach((el) => {
+    const v = Number(el.getAttribute("data-v"));
+    el.classList.toggle("active", v <= n);
+  });
+}
 
-      items.forEach((item, index) => {
-        tbody.innerHTML += renderFnbRow(item, index);
-      });
-    })
-    .catch((err) => {
-      console.error(err);
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Lỗi kết nối API kho F&B: ${err.message}</td></tr>`;
-    });
-};
-
-// Điều khiển mở đóng Modal Form điền dữ liệu
-window.openAddFnbModal = function() {
-  document.getElementById("fnb-item-id").value = "";
-  document.getElementById("fnb-name").value = "";
-  document.getElementById("fnb-price").value = "";
-  document.getElementById("fnb-stock").value = "";
-  document.getElementById("fnb-modal-title").innerText = "Thêm Sản Phẩm F&B Mới";
-  document.getElementById("mp-fnb-modal").style.display = "flex";
-};
-
-window.openEditFnbModal = function(id) {
-  const item = window.fnbItemsList.find(x => x.foodItemId === id);
-  if (!item) return;
-
-  document.getElementById("fnb-item-id").value = item.foodItemId;
-  document.getElementById("fnb-name").value = item.itemName;
-  document.getElementById("fnb-price").value = item.price;
-  document.getElementById("fnb-stock").value = item.stockQuantity;
-  document.getElementById("fnb-modal-title").innerText = "Cập Nhật Thông Tin Sản Phẩm";
-  document.getElementById("mp-fnb-modal").style.display = "flex";
-};
-
-window.closeFnbModal = function() {
-  document.getElementById("mp-fnb-modal").style.display = "none";
-};
-
-// Hàm xử lý chung gửi request Thêm hoặc Sửa lên Spring Boot
-window.submitFnbForm = function() {
-  const id = document.getElementById("fnb-item-id").value;
-  const name = document.getElementById("fnb-name").value.trim();
-  const price = parseFloat(document.getElementById("fnb-price").value) || 0;
-  const stock = parseInt(document.getElementById("fnb-stock").value) || 0;
-
-  if (!name) {
-    alert("Vui lòng điền tên sản phẩm bắp nước!");
+function submitFeedback() {
+  const txt = document.getElementById("feedback-text").value.trim();
+  if (_feedbackRating === 0) {
+    alert("Vui lòng chọn số sao đánh giá!");
     return;
   }
+  if (!txt) {
+    alert("Vui lòng nhập nội dung feedback!");
+    return;
+  }
+  const entry = {
+    invoiceId: _feedbackInvoiceId,
+    rating: _feedbackRating,
+    content: txt,
+    at: new Date().toISOString(),
+  };
+  try {
+    const list = JSON.parse(localStorage.getItem("las_feedbacks") || "[]");
+    list.unshift(entry);
+    localStorage.setItem("las_feedbacks", JSON.stringify(list));
+  } catch (e) {}
 
-  const fnbData = { itemName: name, price: price, stockQuantity: stock };
-
-  if (id) {
-    // Nếu có ID -> Gọi API cập nhật thông tin sản phẩm
-    API.updateFnbItem(id, fnbData)
-      .then(() => {
-        alert("✅ Đã cập nhật sản phẩm F&B thành công!");
-        closeFnbModal();
-        loadManagerFnb();
-      })
-      .catch(err => alert("Lỗi khi sửa bắp nước: " + err.message));
+  closeFeedbackModal();
+  const toast = document.getElementById("feedback-toast");
+  if (toast) {
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2600);
   } else {
-    // Nếu ID trống -> Gọi API thêm sản phẩm mới vào DB
-    API.addFnbItem(fnbData)
-      .then(() => {
-        alert("✅ Đã thêm sản phẩm mới vào kho thành công!");
-        closeFnbModal();
-        loadManagerFnb();
-      })
-      .catch(err => alert("Lỗi khi thêm bắp nước: " + err.message));
+    alert("Cảm ơn bạn đã gửi feedback! 🧡");
   }
-};
+}
 
-// Hàm xử lý kích hoạt xóa sản phẩm
-window.submitDeleteFnb = function(id) {
-  if (confirm("⚠️ Bạn có chắc chắn muốn gỡ sản phẩm bắp nước này ra khỏi kho hệ thống không?")) {
-    API.deleteFnbItem(id)
-      .then(() => {
-        alert("✅ Đã xóa sản phẩm khỏi kho thành công!");
-        loadManagerFnb();
-      })
-      .catch(err => alert("Thất bại! Sản phẩm này đang dính vào lịch sử hóa đơn đặt vé cũ nên không thể xóa vật lý."));
+function closeFeedbackModal() {
+  document.getElementById("feedback-modal").classList.remove("open");
+}
+window.openFeedbackModal = openFeedbackModal;
+window.setFeedbackStars = setFeedbackStars;
+window.submitFeedback = submitFeedback;
+window.closeFeedbackModal = closeFeedbackModal;
+
+function executeMovieRealTimeSearch() {
+  const inputField = document.getElementById("movie-search-input");
+  if (inputField) {
+    activeSearchKeyword = inputField.value.trim().toLowerCase();
+    window.renderCgvInterface();
   }
-};
+}
 
-// ==========================================================================
-// 🚀 BỘ CHỨC NĂNG TÌM KIẾM & LỌC F&B ĐỘNG CHO MANAGER
-// ==========================================================================
-function filterManagerFnb() {
-  const searchInput = document.getElementById("mp-fnb-search-input");
-  const typeSelect = document.getElementById("mp-fnb-filter-type");
-  const stockSelect = document.getElementById("mp-fnb-filter-stock");
+function selectCgvBookingDate(dateStr) {
+  selectedDateStr = dateStr;
+  generateCgvDateSlider();
+  selectedSeats = [];
+  window.renderCgvInterface();
+}
 
-  const keyword = searchInput ? searchInput.value.toLowerCase().trim() : "";
-  const typeFilter = typeSelect ? typeSelect.value : "all";
-  const stockFilter = stockSelect ? stockSelect.value : "all";
+function handleCgvLogout(e) {
+  e.stopPropagation();
+  document.getElementById("logout-confirm-modal").classList.add("open");
+}
+function closeLogoutConfirmModal() {
+  document.getElementById("logout-confirm-modal").classList.remove("open");
+}
+function confirmCgvLogoutAction() {
+  isUserLoggedInState = false;
+  closeLogoutConfirmModal();
+  // 🌟 DỌN SẠCH LOCALSTORAGE KHI THOÁT
+  localStorage.removeItem("las_logged_in_user");
+  localStorage.removeItem("las_user_invoices");
+  localStorage.removeItem("las_current_booking_cache");
+  const authLinkBox = document.getElementById("top-bar-auth-link");
+  authLinkBox.removeAttribute("style");
+  authLinkBox.onclick = openAuthModal;
+  authLinkBox.innerHTML = `<span class="sub-nav-icon"></span> ĐĂNG NHẬP/ ĐĂNG KÝ`;
+  document.getElementById("top-bar-ticket-link").innerHTML =
+    `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
+  switchCgvTab("panel-movies", "now_showing");
+}
 
-  // Bảo vệ hệ thống: Nếu mảng cache tổng từ database chưa kịp nạp thì dừng lại
-  if (!window.fnbItemsList) return;
+function handleTicketViewAccess() {
+  if (!isUserLoggedInState) {
+    alert("Vui lòng đăng nhập hệ thống!");
+    openAuthModal();
+  } else {
+    switchCgvTab("panel-profile");
+    switchProfileSubTab("lichsu");
+  }
+}
 
-  const filteredResult = window.fnbItemsList.filter((item) => {
-    // 1. Tìm kiếm theo tên sản phẩm thật bốc từ Database (itemName)
-    const matchesKeyword = item.itemName ? item.itemName.toLowerCase().includes(keyword) : false;
-    
-    // 2. Tự động nhận diện Phân loại dựa theo từ khóa chuỗi tên tương tự hàm load gốc
-    const currentType = getFnbTypeMeta(item.itemName).key;
+function handleProfileTabAccess() {
+  if (!isUserLoggedInState) {
+    openAuthModal();
+  } else {
+    switchCgvTab("panel-profile");
+  }
+}
 
-    const matchesType = typeFilter === "all" || currentType === typeFilter;
+function submitCgvLogin() {
+  const user = document.getElementById("auth-username").value.trim();
+  const pass = document.getElementById("auth-password").value;
+  const captchaInput = document.getElementById("login-captcha").value.trim();
+  const currentLoginCaptcha =
+    document.getElementById("login-captcha-text").innerText;
+  if (!user || !pass)
+    return alert("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
+  if (captchaInput.toUpperCase() !== currentLoginCaptcha.toUpperCase()) {
+    return alert("Mã bảo vệ Captcha không chính xác!");
+  }
 
-    // 3. Lọc theo trạng thái số lượng tồn kho (stockQuantity)
-    let matchesStock = true;
-    if (stockFilter === "low") {
-      matchesStock = item.stockQuantity <= 30;
-    } else if (stockFilter === "available") {
-      matchesStock = item.stockQuantity > 30;
+  fetch("http://localhost:8080/api/login/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ identifier: user, password: pass }),
+  })
+    .then((res) => {
+      if (!res.ok) {
+        return res.json().then((err) => {
+          throw new Error(err.message || "Thất bại!");
+        });
+      }
+      return res.json();
+    })
+    .then((resData) => {
+      if (resData.status === "success") {
+        isUserLoggedInState = true;
+        let uData = resData.data;
+localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
+        sessionStorage.setItem("roleId", uData.roleId);
+
+        // 🌟 ĐIỀU HƯỚNG: Tất cả vai trò đều vào HOME sau đăng nhập.
+        // Manager(1) & Admin(4) truy cập Dashboard chủ động qua tab "TRUY CẬP DASHBOARD".
+        alert(`Chào mừng ${uData.fullName} đăng nhập thành công!`);
+        closeAuthModal();
+
+        const authLinkBox = document.getElementById("top-bar-auth-link");
+        authLinkBox.onclick = () => switchCgvTab("panel-profile");
+        authLinkBox.style.cursor = "pointer";
+        authLinkBox.innerHTML = `
+            <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
+              <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+          `;
+        document.getElementById("top-bar-ticket-link").innerHTML =
+          `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
+
+        let roleString = "Khách hàng thành viên";
+        if (uData.roleId === 1) roleString = "Quản lý (MANAGER)";
+        if (uData.roleId === 2) roleString = "Nhân viên cụm rạp (STAFF)";
+        if (uData.roleId === 4) roleString = "Quản trị viên (ADMIN)";
+
+        if (document.getElementById("profile-summary-avatar")) {
+          document.getElementById("profile-summary-avatar").innerText =
+            getNameAvatarInitial(uData.fullName);
+        }
+
+        const welcomeNameBox = document.getElementById("profile-welcome-name");
+        if (welcomeNameBox)
+          welcomeNameBox.innerText = uData.fullName;
+
+        const starRoleBox = document.getElementById("profile-star-role");
+        if (starRoleBox)
+          starRoleBox.innerText =
+            uData.roleId === 1 ? "MANAGER / ADMIN" : "MEMBER";
+
+        document.getElementById("profile-field-name").value = uData.fullName;
+        document.getElementById("profile-field-phone").value =
+          uData.phoneNumber;
+        document.getElementById("profile-field-email").value = uData.email;
+        if (document.getElementById("profile-field-role")) {
+          document.getElementById("profile-field-role").value = roleString;
+        }
+
+        if (window.refreshDashboardTab) window.refreshDashboardTab();
+        switchCgvTab("panel-profile");
+        // 🌟 GHIM LẠI LÊN Ổ CỨNG TRÌNH DUYỆT:
+        localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
+        localStorage.setItem(
+          "las_user_invoices",
+          JSON.stringify(userPastInvoices),
+        );
+      }
+    })
+    .catch((err) => alert("🚨 Lỗi đăng nhập: " + err.message));
+}
+
+function submitCgvRegister() {
+  const name = document.getElementById("reg-name").value.trim();
+  const phone = document.getElementById("reg-phone").value.trim();
+  const email = document.getElementById("reg-email").value.trim();
+  const password = document.getElementById("reg-password").value;
+  const captchaInput = document.getElementById("reg-captcha").value.trim();
+  const currentRegCaptcha =
+    document.getElementById("reg-captcha-text").innerText;
+  const birthDay = document.getElementById("reg-birth-day").value;
+  const birthMonth = document.getElementById("reg-birth-month").value;
+  const birthYear = document.getElementById("reg-birth-year").value;
+
+  if (
+    !name ||
+    !phone ||
+    !email ||
+    !password ||
+    !birthDay ||
+    !birthMonth ||
+    !birthYear
+  ) {
+    return alert("Vui lòng điền đầy đủ thông tin và chọn ngày sinh!");
+  }
+  if (captchaInput.toUpperCase() !== currentRegCaptcha.toUpperCase()) {
+    return alert("Mã xác thực Captcha đăng ký không khớp!");
+  }
+
+  fetch("http://localhost:8080/api/register/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: name,
+      phone: phone,
+      email: email,
+      password: password,
+      birthDay: birthDay,
+      birthMonth: birthMonth,
+      birthYear: birthYear,
+    }),
+  })
+    .then((res) => {
+      if (!res.ok) {
+        return res.json().then((err) => {
+          throw new Error(err.message || "Đăng ký thất bại!");
+        });
+      }
+      return res.json();
+    })
+    .then((resData) => {
+      if (resData.status === "success") {
+        alert(
+          resData.message +
+            "\nHãy kiểm tra màn hình Console của Spring Boot để lấy mã OTP nhé!",
+        );
+        temporaryRegisterEmail = resData.email;
+        closeAuthModal();
+        openOtpModal();
+      }
+    })
+    .catch((err) => alert("🚨 Lỗi đăng ký: " + err.message));
+}
+
+function switchMovieFilterTab(filter) {
+  const mainTitle = document.getElementById("tab-title-now");
+  const subTitle = document.getElementById("tab-title-coming");
+  currentMovieFilter = filter;
+  const bcCurrentTextEl = document.getElementById("bc-current-text");
+
+  if (filter === "now_showing") {
+    if (mainTitle) mainTitle.className = "tab-title-main";
+    if (subTitle) subTitle.className = "tab-title-sub";
+    if (bcCurrentTextEl) bcCurrentTextEl.innerText = "Phim Đang Chiếu";
+  } else {
+    if (mainTitle) mainTitle.className = "tab-title-sub";
+    if (subTitle) subTitle.className = "tab-title-main";
+    if (bcCurrentTextEl) bcCurrentTextEl.innerText = "Phim Sắp Chiếu";
+  }
+  window.renderCgvInterface();
+}
+
+function quickBookMovie(movieTitle) {
+  switchCgvTab("panel-booking");
+  const selectCombo = document.getElementById("cgv-combo-movie");
+  if (selectCombo) {
+    selectCombo.value = movieTitle;
+    onMovieOrTimeChange();
+  }
+}
+
+function selectTime(t) {
+  if (isHoldingState) return alert("Hóa đơn đã khóa thanh toán!");
+  selectedShowtime = t;
+  selectedSeats = [];
+  calculateCgvCart();
+  window.renderCgvInterface();
+}
+
+function onMovieOrTimeChange() {
+  resetHoldState();
+  selectedSeats = [];
+  calculateCgvCart();
+
+  // ❌ KHÔNG render lại toàn bộ UI nữa
+  // window.renderCgvInterface();
+}
+
+function switchCgvTab(panelId, filterType = "now_showing") {
+  if (cgvNavigationHistory[cgvNavigationHistory.length - 1] !== panelId) {
+    cgvNavigationHistory.push(panelId);
+  }
+
+  const bcBackBtnEl = document.getElementById("bc-back-btn");
+  if (bcBackBtnEl) {
+    bcBackBtnEl.style.display =
+      cgvNavigationHistory.length > 1 ? "inline-block" : "none";
+  }
+
+  document
+    .querySelectorAll(".cgv-panel")
+    .forEach((p) => p.classList.remove("active"));
+
+  const targetPanel = document.getElementById(panelId);
+  if (targetPanel) {
+    targetPanel.classList.add("active");
+  }
+
+  const parentBc = document.getElementById("bc-parent-text");
+  const currentBc = document.getElementById("bc-current-text");
+
+  if (panelId === "panel-movies") {
+    const lnkMoviesEl = document.getElementById("lnk-movies");
+    if (lnkMoviesEl) lnkMoviesEl.classList.add("active");
+    switchMovieFilterTab(filterType);
+    if (document.getElementById("payment-sticky-bar"))
+      document.getElementById("payment-sticky-bar").style.display = "none";
+  }
+
+  if (panelId === "panel-booking") {
+    // 🌟 PHÒNG THỦ: Ép quy trình đặt vé luôn luôn hiển thị Bước 1 (Chọn ghế) khi truy cập tab Đặt Vé
+    if (
+      !window.isVnpayReturn &&
+      typeof window.resetBookingWizard === "function"
+    ) {
+      window.resetBookingWizard();
     }
 
-    return matchesKeyword && matchesType && matchesStock;
-  });
+    if (parentBc) parentBc.innerText = "Đặt Vé Trực Tuyến";
+    if (currentBc) currentBc.innerText = "Chọn Suất Chiếu & Ghế Ngồi";
+    if (document.getElementById("payment-sticky-bar"))
+      document.getElementById("payment-sticky-bar").style.display = "block";
 
-  // Vẽ lại bảng F&B dựa trên danh sách đã được lọc sạch
-  renderFilteredFnbTable(filteredResult);
-}
-// Phơi hàm ra phạm vi toàn cục window để các thẻ select/input HTML kích hoạt được
-window.filterManagerFnb = filterManagerFnb;
-
-// Hàm tái render bảng dữ liệu sau khi lọc (giữ đồng bộ format với renderFnbRow dùng chung)
-function renderFilteredFnbTable(items) {
-  const tbody = document.getElementById("mp-fnb-tbody");
-  if (!tbody) return;
-
-  tbody.innerHTML = "";
-
-  if (!items || items.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Không tìm thấy sản phẩm bắp nước nào khớp với bộ lọc!</td></tr>';
-    return;
+    generateCgvDateSlider();
+  } else if (panelId !== "panel-booking") {
+    if (document.getElementById("payment-sticky-bar"))
+      document.getElementById("payment-sticky-bar").style.display = "none";
   }
 
-  items.forEach((item, index) => {
-    tbody.innerHTML += renderFnbRow(item, index);
-  });
+  if (panelId === "panel-profile") {
+    if (parentBc) parentBc.innerText = "Thành Viên";
+    if (currentBc) currentBc.innerText = "Tài Khoản LAS";
+    switchProfileSubTab("chung");
+  }
+  window.renderCgvInterface();
 }
 
-// ==========================================================================
-// 🚀 LOGIC XỬ LÝ NHẬP HÀNG & TÁI CUNG ỨNG CHO KHO F&B
-// ==========================================================================
+function handleBreadcrumbBack() {
+  if (cgvNavigationHistory.length <= 1) return;
+  cgvNavigationHistory.pop();
+  const prevPage = cgvNavigationHistory[cgvNavigationHistory.length - 1];
+  switchCgvTab(prevPage);
+  cgvNavigationHistory.pop();
+}
 
-// --- CHỨC NĂNG 1: TÁI CUNG ỨNG TỰ ĐỘNG (AUTO-REPLENISH) ---
-window.handleAutoReplenish = function() {
-  if (!window.fnbItemsList || window.fnbItemsList.length === 0) {
-    alert("Không có dữ liệu sản phẩm để tái cung ứng!");
-    return;
-  }
+// 🌟 ĐĂNG KÝ PHẠM VI WINDOW TOÀN CỤC CHO HÀM VẼ GIAO DIỆN CHÍNH
+window.renderCgvInterface = function () {
+  const movieZone = document.getElementById("cgv-movie-list");
+  const selectCombo = document.getElementById("cgv-combo-movie");
 
-  // Lọc ra các sản phẩm có tồn kho thấp (<= 30)
-  const lowStockItems = window.fnbItemsList.filter(item => item.stockQuantity <= 30);
+  let activeMovieTitle = selectCombo
+    ? selectCombo.value ||
+      (selectCombo.options[0] ? selectCombo.options[0].value : "")
+    : "";
+  const safeMovies = (serverData && serverData.movies) || [];
+  const targetMovieObj = safeMovies.find((m) => m.title === activeMovieTitle);
 
-  if (lowStockItems.length === 0) {
-    alert("✨ Tất cả sản phẩm trong kho đều đang ở mức an toàn (>30 ly). Không cần tái cung ứng!");
-    return;
-  }
-
-  if (confirm(`Hệ thống tìm thấy ${lowStockItems.length} sản phẩm đang sắp hết hàng (tồn thấp).\nBạn có muốn tự động bù hàng lên mức an toàn (100 ly) không?`)) {
-    
-    // Tạo danh sách các Promise để cập nhật đồng thời lên Server Spring Boot
-    const updatePromises = lowStockItems.map(item => {
-      const updatedData = {
-        itemName: item.itemName,
-        price: item.price,
-        stockQuantity: 100 // Tự động đưa lên mức an toàn 100 đơn vị
-      };
-      return API.updateFnbItem(item.foodItemId, updatedData);
+  // 1. Tự động bóc tách lịch chiếu thực tế từ Database Spring Boot sang mảng giờ
+  if (
+    targetMovieObj &&
+    targetMovieObj.showtimes &&
+    targetMovieObj.showtimes.length > 0
+  ) {
+    serverData.showtimes = targetMovieObj.showtimes.map((st) => {
+      const fullTimeStr = st.startTime || st.start_time || "";
+      // Nếu chuỗi datetime có khoảng trắng (2026-06-24 11:00:00) thì cắt lấy "11:00"
+      return fullTimeStr.includes(" ")
+        ? fullTimeStr.split(" ")[1].substring(0, 5)
+        : fullTimeStr.substring(0, 5);
     });
+  } else {
+    // Dự phòng mảng giờ mặc định nếu bộ phim đó chưa được cài đặt lịch chiếu trong DB
+    serverData.showtimes = [
+      "09:30",
+      "12:15",
+      "15:00",
+      "17:45",
+      "20:30",
+      "23:15",
+    ];
+  }
 
-    // Chờ tất cả API cập nhật xong xuôi
-    Promise.all(updatePromises)
-      .then(() => {
-        alert("✅ Chiến dịch tái cung ứng hoàn tất! Toàn bộ sản phẩm tồn thấp đã được đưa về mức an toàn.");
-        loadManagerFnb(); // Tải lại bảng để cập nhật số lượng mới
-      })
-      .catch(err => {
-        console.error("Lỗi tái cung ứng:", err);
-        alert("🚨 Có lỗi xảy ra trong quá trình cập nhật kho hàng: " + err.message);
+  if (
+    !selectedShowtime &&
+    serverData.showtimes.length > 0 &&
+    !window.currentSelectedShowtimeId
+  ) {
+    selectedShowtime = serverData.showtimes[0];
+  }
+
+  // 2. Tự động kích hoạt ma trận 40 ghế rạp trống (A1 -> D10) nếu dữ liệu ghế rạp đang trống rỗng
+  if (!serverData.masterSeatStore) serverData.masterSeatStore = {};
+  const seatKey = window.currentSelectedShowtimeId || selectedShowtime;
+
+  if (activeMovieTitle && seatKey) {
+    if (!serverData.masterSeatStore[activeMovieTitle])
+      serverData.masterSeatStore[activeMovieTitle] = {};
+    if (
+      !serverData.masterSeatStore[activeMovieTitle][seatKey] ||
+      Object.keys(serverData.masterSeatStore[activeMovieTitle][seatKey])
+        .length === 0
+    ) {
+      let activeSeatMap = {};
+      ["A", "B", "C", "D"].forEach((row) => {
+        for (let i = 1; i <= 10; i++) {
+          activeSeatMap[`${row}${i}`] = { status: "available" };
+        }
       });
+      serverData.masterSeatStore[activeMovieTitle][seatKey] = activeSeatMap;
+    }
+  }
+  // ========================================================================
+
+  // Khối 1: Vẽ danh sách phim lên trang chủ
+  if (movieZone) {
+    movieZone.innerHTML = "";
+    let rankCounter = 1;
+    const safeMovies = (serverData && serverData.movies) || [];
+
+    safeMovies.forEach((m) => {
+      const movieStatus = (m.status || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+      const filterStatus = (currentMovieFilter || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+
+      if (
+        movieStatus === filterStatus ||
+        movieStatus.includes(filterStatus) ||
+        filterStatus.includes(movieStatus)
+      ) {
+        const titleStr = m.title || "Chưa có tên";
+        const genreStr = m.genre || "Hành động";
+
+        const matchesKeyword =
+          titleStr.toLowerCase().includes(activeSearchKeyword) ||
+          genreStr.toLowerCase().includes(activeSearchKeyword);
+
+        if (activeSearchKeyword === "" || matchesKeyword) {
+          let ribbonColor = "ribbon-blue";
+          if (rankCounter === 1) ribbonColor = "ribbon-red";
+          if (rankCounter === 2) ribbonColor = "ribbon-orange";
+
+          let isNowShowing =
+            movieStatus.includes("now") || movieStatus.includes("chieu");
+          let actionBtnHTML = isNowShowing
+            ? `<button class="btn-cgv-buy-ticket-spec" onclick="quickBookMovie('${titleStr}')">🎟️ MUA VÉ</button>`
+            : `<button class="btn-cgv-buy-ticket-spec" style="background-color:#555; cursor:not-allowed;" disabled>📋 SẮP CHIẾU</button>`;
+
+          let cleanImgUrl =
+            m.mainposter_url ||
+            m.mainposterUrl ||
+            m.mainposterurl ||
+            m.img ||
+            "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
+          let displayAge =
+            m.age_rating === 0 ||
+            m.ageRating === 0 ||
+            m.age_rating === "0" ||
+            m.ageRating === "0"
+              ? "P"
+              : `T${m.age_rating || m.ageRating || "16"}`;
+
+          movieZone.innerHTML += `
+                    <div class="movie-spec-card">
+                        <div class="poster-wrapper-box">
+                            <span class="age-label-badge">${displayAge}</span>
+                            <span class="status-pill-badge ${isNowShowing ? "status-pill-showing" : "status-pill-soon"}">${isNowShowing ? "Đang chiếu" : "Sắp chiếu"}</span>
+                            <div class="rank-ribbon ${ribbonColor}">${rankCounter}</div>
+                            <div class="poster-main-body-img" onclick="viewMovieDetailText('${titleStr}', '${genreStr}')" style="background: #111; width: 100%; height: 100%;">
+                                <img src="${cleanImgUrl}" alt="${titleStr}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                            </div>
+                        </div>
+                        <div class="movie-spec-info-text">
+                            <h3 class="movie-spec-title" onclick="viewMovieDetailText('${titleStr}', '${genreStr}')">${titleStr}</h3>
+                            <p>Thể loại: <b>${genreStr}</b></p>
+                            ${m.duration ? `<p class="movie-spec-duration">⏱ ${m.duration} phút</p>` : ""}
+                        </div>
+                        <div class="movie-spec-action-zone">${actionBtnHTML}</div>
+                    </div>
+          `;
+          rankCounter++;
+        }
+      }
+    });
+    console.log(
+      "👉 Đã vẽ thành công " +
+        (rankCounter - 1) +
+        " bộ phim lên màn hình giao diện trang chủ!",
+    );
+  }
+
+  // Khối 2: Đổ dữ liệu vào ô select đặt vé nhanh
+  if (selectCombo) {
+    const currentMovie =
+      selectCombo.value ||
+      (selectCombo.options[0] ? selectCombo.options[0].value : "");
+    const sumMovieTitleEl = document.getElementById("sum-movie-title");
+    if (sumMovieTitleEl) sumMovieTitleEl.innerText = currentMovie || "-";
+  }
+
+  // Khối 3: Vẽ lưới suất chiếu
+  const timeGrid = document.getElementById("cgv-showtime-grid");
+  if (timeGrid && serverData && serverData.showtimes) {
+    timeGrid.innerHTML = "";
+    serverData.showtimes.forEach((t) => {
+      const activeClass = t === selectedShowtime ? "active" : "";
+      timeGrid.innerHTML += `<div class="showtime-btn ${activeClass}" onclick="selectTime('${t}')">${t}</div>`;
+    });
+  }
+  const sumShowtimeEl = document.getElementById("sum-showtime");
+  if (sumShowtimeEl) sumShowtimeEl.innerText = selectedShowtime || "-";
+
+  // Khối 4: Sơ đồ ghế ngồi đặt vé
+  const seatGrid = document.getElementById("cgv-seat-grid");
+  if (seatGrid && selectCombo) {
+    seatGrid.innerHTML = "";
+    const currentMovie =
+      selectCombo.value ||
+      (selectCombo.options[0] ? selectCombo.options[0].value : "");
+    const seatKey = window.currentSelectedShowtimeId || selectedShowtime;
+
+    const activeSeatMap =
+      serverData.masterSeatStore[currentMovie]?.[seatKey] || {};
+
+    Object.keys(activeSeatMap).forEach((id) => {
+      const s = activeSeatMap[id];
+      let seatType = "Standard";
+      if (id.startsWith("C")) seatType = "VIP";
+      if (id.startsWith("D")) seatType = "Sweetbox";
+
+      const div = document.createElement("div");
+      div.className = `cgv-seat ${seatType} ${s.status}`;
+      div.innerText = id;
+
+      if (selectedSeats.includes(id)) div.classList.add("selected");
+
+      if (!isHoldingState && s.status === "available") {
+        div.onclick = () => {
+          if (selectedSeats.includes(id))
+            selectedSeats = selectedSeats.filter((x) => x !== id);
+          else selectedSeats.push(id);
+          calculateCgvCart();
+          window.renderCgvInterface();
+        };
+      }
+      seatGrid.appendChild(div);
+    });
   }
 };
 
-// --- CHỨC NĂNG 2: NHẬP HÀNG NHANH (QUICK RESTOCK) ---
-window.openQuickRestockModal = function() {
-  if (!window.fnbItemsList || window.fnbItemsList.length === 0) {
-    alert("Kho hàng trống, vui lòng thêm sản phẩm mới trước!");
-    return;
+window.calculateCgvCart = function () {
+  const sumSeatsEl = document.getElementById("sum-seats");
+  if (sumSeatsEl)
+    sumSeatsEl.innerText = selectedSeats.join(", ") || "Chưa chọn";
+
+  let total = 0;
+  let totalFnbItems = 0;
+
+  selectedSeats.forEach((id) => {
+    if (id.startsWith("C"))
+      total += 110000; // Giá VIP
+    else if (id.startsWith("D"))
+      total += 250000; // Giá Sweetbox
+    else total += 90000; // Giá Thường
+  });
+
+  if (typeof fnbMenu !== "undefined") {
+    fnbMenu.forEach((item) => {
+      total += item.qty * item.price;
+      totalFnbItems += item.qty;
+    });
   }
 
-  // Tận dụng Modal Form điền dữ liệu có sẵn của Khoa để làm form nhập nhanh
-  // Tìm một sản phẩm bất kỳ hoặc mở modal chỉnh số lượng tồn kho
-  const itemId = prompt("Nhập mã ID sản phẩm F&B bạn muốn nhập thêm hàng vào kho:", "");
-  if (!itemId) return;
+  const sumFnbEl = document.getElementById("sum-fnb");
+  if (sumFnbEl) sumFnbEl.innerText = totalFnbItems + " Combo";
 
-  const item = window.fnbItemsList.find(x => String(x.foodItemId) === String(itemId).trim());
-  if (!item) {
-    alert("❌ Không tìm thấy sản phẩm nào mang ID #" + itemId);
-    return;
+  currentPriceTotal = total;
+  let finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
+
+  const sumTotalEl = document.getElementById("sum-total");
+  if (sumTotalEl)
+    sumTotalEl.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
+};
+
+// --- 5. ĐIỀU HƯỚNG ĐA BƯỚC ĐẶT VÉ (STEP FLOW CONTROLLER) ---
+window.goToBookingStep = function (step) {
+  document
+    .querySelectorAll(".booking-step")
+    .forEach((el) => el.classList.remove("active"));
+  const currentStepEl = document.getElementById("booking-step-" + step);
+  if (currentStepEl) currentStepEl.classList.add("active");
+
+  const mainBtn = document.getElementById("btn-main-action");
+  const backBtn = document.querySelector(".btn-flow-back");
+  const rightColumn = document.querySelector(".right-invoice-sticky-column");
+
+  if (step === 1) {
+    if (rightColumn) rightColumn.style.display = "block";
+    if (mainBtn) {
+      mainBtn.innerText = "Tiếp Tục";
+      mainBtn.style.background = "#ff6b35";
+    }
+    if (backBtn) {
+      backBtn.innerText = "←";
+      backBtn.setAttribute("onclick", "window.goHomeFromBc()");
+    }
+  } else if (step === 2) {
+    if (mainBtn) {
+      mainBtn.innerText = "Đến Thanh Toán";
+      mainBtn.style.background = "#ff6b35";
+    }
+    if (backBtn) {
+      backBtn.innerText = "←";
+      backBtn.setAttribute("onclick", "window.goToBookingStep(1)");
+    }
+  } else if (step === 3) {
+    if (mainBtn) {
+      mainBtn.innerText = "Thanh Toán Ngay";
+      mainBtn.style.background = "#10B981";
+    }
+    if (backBtn) {
+      backBtn.innerText = "←";
+      backBtn.setAttribute("onclick", "window.goToBookingStep(2)");
+    }
+
+    const currentMovie = document.getElementById("cgv-combo-movie")
+      ? document.getElementById("cgv-combo-movie").value
+      : "";
+    let fnbHtml = fnbMenu
+      .filter((i) => i.qty > 0)
+      .map(
+        (i) =>
+          `<p>+ ${i.name} (x${i.qty}): ${(i.price * i.qty).toLocaleString("vi-VN")} đ</p>`,
+      )
+      .join("");
+
+    const reviewInvoiceContentEl = document.getElementById(
+      "review-invoice-content",
+    );
+    if (reviewInvoiceContentEl) {
+      const _fnbItems = fnbMenu.filter((i) => i.qty > 0);
+      const _fnbRows = _fnbItems
+        .map(
+          (i) =>
+            `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
+        )
+        .join("");
+      reviewInvoiceContentEl.innerHTML = `
+            <div class="inv-review">
+              <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
+              <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
+              <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
+              <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${_fnbItems.length ? "" : "Không có"}</span></div>
+              ${_fnbRows}
+              <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
+            </div>
+        `;
+    }
+  } else if (step === 4) {
+    if (rightColumn) rightColumn.style.display = "none";
   }
+  window.currentBookingStep = step;
+  const bookingPanel = document.getElementById("panel-booking");
+  if (bookingPanel)
+    bookingPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+};
 
-  const addQtyStr = prompt(`Sản phẩm: ${item.itemName}\nTồn kho hiện tại: ${item.stockQuantity} ly\n\nNhập số lượng bạn muốn CỘNG THÊM vào kho:`, "50");
-  if (!addQtyStr) return;
+window.handleMainAction = function () {
+  if (window.currentBookingStep === 1) {
+    if (selectedSeats.length === 0) {
+      alert("Vui lòng chọn ít nhất một ghế ngồi trước khi tiếp tục!");
+      return;
+    }
 
-  const addQty = parseInt(addQtyStr) || 0;
-  if (addQty <= 0) {
-    alert("Số lượng nhập kho phải lớn hơn 0!");
-    return;
+    // 🌟 ÉP BUỘC ĐĂNG NHẬP: Nếu chưa đăng nhập thì chặn đứng tiến trình và mở bảng Login lập tức
+    if (!isUserLoggedInState) {
+      alert(
+        "Vui lòng đăng nhập tài khoản thành viên LAS Cinemas trước khi tiến hành chọn bắp nước và đặt vé!",
+      );
+      if (typeof window.handleAuthModalAccess === "function") {
+        window.handleAuthModalAccess(); // Mở bảng đăng nhập/đăng ký
+      }
+      return;
+    }
+
+    window.goToBookingStep(2);
+  } else if (window.currentBookingStep === 2) {
+    window.goToBookingStep(3);
+  } else if (window.currentBookingStep === 3) {
+    if (typeof window.processToPaymentGateway === "function") {
+      window.processToPaymentGateway();
+    }
   }
+};
 
-  const fnbData = {
-    itemName: item.itemName,
-    price: item.price,
-    stockQuantity: item.stockQuantity + addQty // Cộng dồn số lượng mới vào số lượng cũ
-  };
+// --- 6. LIÊN KẾT CÁC HÀM SỰ KIỆN TƯƠNG TÁC GIAO DIỆN ---
+window.selectTime = function (t) {
+  if (isHoldingState)
+    return alert("Hóa đơn đã được khóa giữ để thực hiện cổng thanh toán!");
+  selectedShowtime = t;
+  selectedSeats = [];
+  window.calculateCgvCart();
+  window.renderCgvInterface();
+};
 
-  // Gửi request cập nhật lên Spring Boot
-  API.updateFnbItem(item.foodItemId, fnbData)
-    .then(() => {
-      alert(`✅ Nhập hàng thành công! Đã cộng thêm ${addQty} đơn vị vào sản phẩm ${item.itemName}.`);
-      loadManagerFnb();
-    })
-    .catch(err => alert("Lỗi khi nhập hàng: " + err.message));
+window.onMovieOrTimeChange = function () {
+  window.resetHoldState();
+  selectedSeats = [];
+  window.calculateCgvCart();
+  window.renderCgvInterface();
+};
+
+window.quickBookMovie = function (movieTitle) {
+  // 🌟 FIX HOÀN TIỀN/BĂNG HÌNH: Giải phóng giỏ hàng cũ và ép giao diện đặt vé quay ngược về Bước 1 (Chọn ghế)
+  selectedSeats = [];
+  currentPriceTotal = 0;
+  appliedVoucherDiscount = 0;
+  window.calculateCgvCart();
+  window.goToBookingStep(1);
+
+  window.switchCgvTab("panel-booking");
+  const selectCombo = document.getElementById("cgv-combo-movie");
+  if (selectCombo) {
+    selectCombo.value = movieTitle;
+    window.onMovieOrTimeChange();
+  }
 };
 
 // ==========================================================================
-// 🚀 ENGINE XỬ LÝ MA TRẬN LỊCH CHIẾU ĐỘNG & CHECK CONFLICT TỰ ĐỘNG
+// 🌟 XỬ LÝ SỰ KIỆN TÍCH CHỌN PHƯƠNG THỨC THANH TOÁN ONLINE
+// ==========================================================================
+window.selectPaymentGatewayType = function (type, element) {
+  window.selectedPaymentGateway = type;
+  console.log("💳 Người dùng chọn phương thức:", type);
+
+  const allRows = document.querySelectorAll(".payment-option-row");
+  allRows.forEach((row) => {
+    row.classList.remove("active");
+    const circle = row.querySelector(".option-check-circle");
+    if (circle) {
+      circle.style.borderColor = "#ccc";
+      circle.style.color = "transparent";
+    }
+  });
+
+  if (element) {
+    element.classList.add("active");
+    const circle = element.querySelector(".option-check-circle");
+    if (circle) {
+      circle.style.borderColor = "#ff6b35";
+      circle.style.color = "#ff6b35";
+    }
+  }
+};
+
+window.applyVoucher = function () {
+  const code = document
+    .getElementById("voucher-input")
+    .value.trim()
+    .toUpperCase();
+  if (code === "LAS20") {
+    appliedVoucherDiscount = 0.2;
+    alert("Áp dụng thành công Voucher giảm giá 20% tổng hóa đơn vé!");
+  } else {
+    appliedVoucherDiscount = 0;
+    alert("Mã Voucher không chính xác hoặc đã hết thời gian áp dụng!");
+  }
+  window.calculateCgvCart();
+  window.goToBookingStep(3); // Cập nhật hiển thị số tiền mới ngoài hóa đơn
+};
+
+// --- 7. TÍCH HỢP CỔNG THANH TOÁN VIETQR VÀ XUẤT VÉ ĐIỆN TỬ ---
+// ==========================================================================
+// 🌟 HÀM RẼ NHÁNH THANH TOÁN TOÀN DIỆN (SỬA LỖI ĐÈ HÀM & HIỂN THỊ VNPAY)
 // ==========================================================================
 
-// Vẽ bảng "Danh Sách Phim" tham khảo bên dưới Ma trận Lịch chiếu
-// (Movie | Genre | Duration | Rating | Status | Release Date | Actions)
-function renderMatrixMovieList(movies) {
-  const tbody = document.getElementById("mp-matrix-movies-tbody");
-  if (!tbody) return;
+/*window.processToPaymentGateway = function () {
+  if (!window.selectedPaymentGateway) window.selectedPaymentGateway = "qr";
 
-  if (!movies || movies.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px; color: #888;">Chưa có dữ liệu phim.</td></tr>`;
-    return;
+  const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
+
+  // 🚀 TRƯỜNG HỢP 1: THANH TOÁN QUA VNPAY (QR HOẶC ATM) -> CHUYỂN HƯỚNG TRÌNH DUYỆT
+  if (
+    window.selectedPaymentGateway === "vnpay_qr" ||
+    window.selectedPaymentGateway === "vnpay_atm"
+  ) {
+    let bankCodeParam = "ALL";
+    if (window.selectedPaymentGateway === "vnpay_qr") bankCodeParam = "VNPAYQR";
+    if (window.selectedPaymentGateway === "vnpay_atm") bankCodeParam = "VNBANK";
+
+    console.log(
+      "✈️ Gọi API Spring Boot sinh Link VNPAY Sandbox, số tiền:",
+      finalTotal,
+    );
+
+    fetch(
+      `http://localhost:8080/api/payment/create-vnpay-url?amount=${finalTotal}&bankCode=${bankCodeParam}`,
+    )
+      .then((res) => {
+        if (!res.ok)
+          throw new Error("Không thể kết nối cổng API tạo hóa đơn VNPAY!");
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.paymentUrl) {
+          alert(
+            "Hệ thống chuyển hướng an toàn sang cổng bảo mật VNPAY Sandbox...",
+          );
+          const bookingCache = {
+            movie: document.getElementById("cgv-combo-movie").value,
+            showtime: selectedShowtime,
+            seats: [...selectedSeats],
+            date: selectedDateStr,
+            fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
+            total: currentPriceTotal * (1 - appliedVoucherDiscount),
+          };
+          localStorage.setItem(
+            "las_current_booking_cache",
+            JSON.stringify(bookingCache),
+          );
+
+          window.location.href = data.paymentUrl; // 🚀 CHUYỂN HƯỚNG BÌNH THƯỜNG
+        }
+      })
+      .catch((err) => alert("Lỗi kết nối cổng VNPAY: " + err.message));
+
+    // 🚀 TRƯỜNG HỢP 2: THANH TOÁN CHUYỂN KHOẢN TIÊU CHUẨN (VIETQR) -> BUNG MODAL POPUP
+  } else if (window.selectedPaymentGateway === "qr") {
+    const modalTitle = document.querySelector("#payment-redirect-modal h2");
+    if (modalTitle) modalTitle.innerHTML = "Thanh Toán Chuyển Khoản VietQR";
+
+    const qrPriceText = document.getElementById("qr-total-price");
+    if (qrPriceText)
+      qrPriceText.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
+
+    const bankId = "NCB";
+    const accountNo = "9704198526191432198";
+    const accountName = "NGUYEN VAN A";
+    const qrData = `LAS CINEMAS THANH TOAN VE`;
+
+    const qrImg = document.getElementById("bank-qr-img");
+    if (qrImg) {
+      qrImg.src = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(qrData)}&accountName=${encodeURIComponent(accountName)}`;
+    }
+    document.getElementById("payment-redirect-modal").classList.add("open");
+  }
+};*/
+
+window.executeFinalCheckout = function () {
+  const cachedBooking = localStorage.getItem("las_current_booking_cache");
+  const pending = JSON.parse(localStorage.getItem("pending_booking"));
+
+  let currentMovie = pending
+    ? pending.movie
+    : document.getElementById("cgv-combo-movie").value;
+  let ticketSeats = pending ? [...pending.seats] : [...selectedSeats];
+
+  let ticketShowtime = pending ? pending.showtime : selectedShowtime;
+  let ticketDate = selectedDateStr;
+  let ticketFnb = fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i }));
+  let ticketTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
+
+  if (cachedBooking) {
+    const bData = JSON.parse(cachedBooking);
+    currentMovie = bData.movie;
+    ticketSeats = bData.seats;
+    ticketShowtime = bData.showtime;
+    ticketDate = bData.date;
+    ticketFnb = bData.fnb;
+    ticketTotal = bData.total;
   }
 
-  tbody.innerHTML = "";
-  movies.forEach((m) => {
-    const posterUrl = m.mainposter_url ? m.mainposter_url : "img/default-poster.jpg";
-    const statusClass = m.status === "now_showing" ? "active" : m.status === "coming_soon" ? "coming" : "inactive";
-    const statusText = m.status === "now_showing" ? "Now Showing" : m.status === "coming_soon" ? "Coming Soon" : "Ngừng chiếu";
-    const ratingValue = typeof m.rating === "number" ? m.rating.toFixed(1) : "N/A";
-    const genres = (m.genre || "Chưa cập nhật")
-      .split(/[,/|]/)
-      .map((g) => g.trim())
-      .filter(Boolean);
+  // 🌟 TUYỆT CHIÊU BẢO VỆ: Lấy email trực tiếp từ ổ cứng lưu trữ chứ không lấy từ ô Input giao diện nữa
+  let currentEmail = "VienNguyen2026@gmail.com";
+  const cachedUser = localStorage.getItem("las_logged_in_user");
+  if (cachedUser) {
+    currentEmail = JSON.parse(cachedUser).email;
+  }
 
-    tbody.innerHTML += `
-      <tr>
-        <td>
-          <div class="mp-movie-info">
-            <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
-            <div>
-              <div class="mp-movie-title">${m.title}</div>
-              <div style="font-size:11px;color:var(--muted,#9a9aa3);">Dir. ${m.director || "Chưa cập nhật"}</div>
+  console.log(
+    "📥 Đang gửi lệnh lưu hóa đơn vé xuống Database SQL Server cho Email:",
+    currentEmail,
+  );
+
+  fetch("http://localhost:8080/api/seats/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      movie: currentMovie,
+      showtime: ticketShowtime,
+      seats: ticketSeats,
+      email: currentEmail,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      // Sinh mã hóa đơn hiển thị rạp phim ngẫu nhiên
+      const lasTicketId = "LAS-" + Math.floor(100000 + Math.random() * 900000);
+      console.log("currentPriceTotal =", currentPriceTotal);
+      console.log("appliedVoucherDiscount =", appliedVoucherDiscount);
+      const invoiceObj = {
+        id: lasTicketId,
+        movie: currentMovie,
+        date: ticketDate,
+        time: ticketShowtime,
+        seats: [...ticketSeats],
+        fnb: ticketFnb,
+        total: ticketTotal,
+        status: "Đã thanh toán (VNPAY)",
+      };
+
+      userPastInvoices.unshift(invoiceObj);
+      localStorage.setItem(
+        "las_user_invoices",
+        JSON.stringify(userPastInvoices),
+      );
+
+      let fnbTicketHtml = invoiceObj.fnb
+        .map((i) => `<li>${i.name} × ${i.qty}</li>`)
+        .join("");
+      const seatBadgesH = invoiceObj.seats
+        .map((s) => `<span class="bc-seat-badge">${s}</span>`)
+        .join("");
+
+      const beautifulTicketHTML = `
+          <div class="bc-confirm">
+            <div class="bc-hero">
+              <div class="bc-check">✓</div>
+              <h2 class="bc-title">Đặt Vé Thành Công!</h2>
+              <p class="bc-subtitle">Vé xem phim của bạn đã được đặt thành công.</p>
+              <div class="bc-id-pill">Mã vé: ${invoiceObj.id}</div>
+            </div>
+            <div class="bc-card">
+              <div class="bc-card-head">🎫 Thông tin vé</div>
+              <div class="bc-movie">${invoiceObj.movie}</div>
+              <div class="bc-meta">
+                <span>📅 ${invoiceObj.date}</span>
+                <span>🕐 ${invoiceObj.time}</span>
+                <span>💺 ${invoiceObj.seats.length} ghế</span>
+              </div>
+              <div class="bc-section-label">Ghế đã chọn</div>
+              <div class="bc-seats">${seatBadgesH}</div>
+              <div class="bc-section-label">Bắp nước</div>
+              <ul class="bc-fnb">${fnbTicketHtml || "<li>Không có</li>"}</ul>
+              <div class="bc-qr-row">
+                <img class="bc-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(invoiceObj.id)}" alt="QR vé">
+                <div class="bc-qr-note">Xuất trình mã QR này tại quầy soát vé.<br>Bản sao đã được gửi vào Email của bạn.</div>
+              </div>
+              <div class="bc-total-row">
+                <span>Đã thanh toán</span>
+                <span class="bc-total-amt">${invoiceObj.total.toLocaleString("vi-VN")} đ</span>
+              </div>
+            </div>
+            <div class="bc-info-box">
+              <div class="bc-info-title">ℹ️ Thông tin quan trọng</div>
+              <ul>
+                <li>Vui lòng đến rạp trước giờ chiếu ít nhất 15 phút.</li>
+                <li>Mang theo giấy tờ tùy thân (CCCD) nếu phim giới hạn độ tuổi.</li>
+                <li>Không mang đồ ăn, thức uống bên ngoài vào rạp.</li>
+                <li>Vé không hoàn/đổi trong vòng 2 giờ trước suất chiếu.</li>
+              </ul>
+            </div>
+            <div class="bc-actions">
+              <button class="bc-btn bc-btn-primary" onclick="window.print()">⬇ Tải / In vé</button>
+              <button class="bc-btn bc-btn-ghost" onclick="window.goHomeFromBc()">Về trang chủ</button>
             </div>
           </div>
-        </td>
-        <td>
-          <div class="mp-genre-pill-group">
-            ${genres.map((g) => `<span class="mp-genre-pill">${g}</span>`).join("")}
-          </div>
-        </td>
-        <td><span class="mp-duration-chip">⏱ ${m.duration} min</span></td>
-        <td><span class="mp-rating-chip">★ ${ratingValue}</span></td>
-        <td><span class="mp-status ${statusClass}">${statusText}</span></td>
-        <td>${m.releaseDate || "N/A"}</td>
-        <td>
-          <div class="mp-table-actions">
-            <button class="mp-action-btn" onclick="openMatrixViewMovie(${m.movieId})" title="Xem chi tiết suất chiếu">👁️</button>
-            <button class="mp-action-btn" onclick="openMatrixEditMovie(${m.movieId})" title="Sửa">✏️</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  });
-}
-window.renderMatrixMovieList = renderMatrixMovieList;
+      `;
 
-window.loadManagerMatrix = function() {
-  const dateInput = document.getElementById("mp-matrix-date-input");
-  const trackRoom1 = document.getElementById("matrix-track-room-1");
-  const trackRoom2 = document.getElementById("matrix-track-room-2");
-
-  if (!trackRoom1 || !trackRoom2) return;
-
-  // 1. Tự động mồi ngày hôm nay nếu Manager chưa chọn ngày cụ thể
-  if (dateInput && !dateInput.value) {
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, "0");
-    const d = String(today.getDate()).padStart(2, "0");
-    dateInput.value = `${y}-${m}-${d}`;
-  }
-
-  const selectedDate = dateInput.value;
-  window.matrixSelectedDate = selectedDate;
-  trackRoom1.innerHTML = '<p style="color:#777;font-size:12px;padding:15px;">Đang quét phòng 1...</p>';
-  trackRoom2.innerHTML = '<p style="color:#777;font-size:12px;padding:15px;">Đang quét phòng 2...</p>';
-
-  // 2. Chặn lỗi: Nếu danh sách phim trống, gọi nạp phim trước rồi chạy lại
-  if (!window.moviesList || window.moviesList.length === 0) {
-    API.getMovies()
-      .then((movies) => {
-        window.moviesList = movies;
-        window.loadManagerMatrix();
-      })
-      .catch((err) => {
-        trackRoom1.innerHTML = trackRoom2.innerHTML = `<span style="color:red;">Lỗi tải phim: ${err.message}</span>`;
-      });
-    return;
-  }
-
-  // 3. THUẬT TOÁN QUÉT ĐA LUỒNG PROMISE: Gom suất chiếu của TẤT CẢ các phim trong ngày
-  const fetchPromises = window.moviesList.map((movie) => {
-    return API.getShowtimes(movie.movieId, selectedDate)
-      .then((resData) => {
-        const rawShowtimes = resData.showtimes || [];
-        // Đính kèm tên phim vào từng suất chiếu để UI hiển thị được tiêu đề
-        return rawShowtimes.map(st => ({
-          ...st,
-          movieTitle: movie.title
-        }));
-      })
-      .catch(() => []); // Bọc lỗi phòng trường hợp có phim chưa được xếp lịch
-  });
-
-  Promise.all(fetchPromises)
-    .then((allResults) => {
-      // Gộp tất cả các mảng suất chiếu riêng lẻ thành 1 mảng tổng duy nhất
-      let globalShowtimes = allResults.flat();
-
-      // 4. THUẬT TOÁN TỰ ĐỘNG KIỂM TRA XUNG ĐỘT (CONFLICT DETECTOR)
-      // Hàm chuyển đổi chuỗi "HH:mm" ra số phút tuyệt đối trong ngày để so sánh toán học
-      const timeToMinutes = (timeStr) => {
-        const [h, m] = timeStr.split(":").map(Number);
-        return h * 60 + m;
-      };
-
-      globalShowtimes.forEach((currentSt) => {
-        currentSt.isConflict = false; // Mặc định ban đầu là không trùng
-        
-        const currentStart = timeToMinutes(currentSt.startTime);
-        const currentEnd = timeToMinutes(currentSt.endTime);
-
-        globalShowtimes.forEach((otherSt) => {
-          // Chỉ check nếu trùng phòng chiếu công vật lý và không phải là chính nó
-          if (currentSt.showtimeId !== otherSt.showtimeId && currentSt.roomId === otherSt.roomId) {
-            const otherStart = timeToMinutes(otherSt.startTime);
-            const otherEnd = timeToMinutes(otherSt.endTime);
-
-            // Công thức kiểm tra khoảng thời gian giao nhau đè lên nhau
-            if (currentStart < otherEnd && currentEnd > otherStart) {
-              currentSt.isConflict = true;
-            }
-          }
-        });
-      });
-
-      // 5. TIẾN HÀNH VẼ GIAO DIỆN (RENDER TRACK BLOCKS)
-      trackRoom1.innerHTML = "";
-      trackRoom2.innerHTML = "";
-
-      // 5b. Vẽ luôn bảng "Danh Sách Phim" tham khảo bên dưới ma trận
-      renderMatrixMovieList(window.moviesList);
-
-      if (globalShowtimes.length === 0) {
-        trackRoom1.innerHTML = trackRoom2.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#999;font-size:12px;text-align:center;">Trống lịch. Chưa xếp suất chiếu nào trong ngày này!</div>';
-        return;
+      const finalResultDiv = document.getElementById("final-ticket-result");
+      if (finalResultDiv) {
+        finalResultDiv.innerHTML = beautifulTicketHTML;
       }
 
-      // Tổng số phút từ 08:00 đến 23:00 là 15 tiếng = 900 phút (Mốc 100% chiều rộng)
-      const TIMELINE_START_MINUTES = 8 * 60; // 480 phút
-      const TIMELINE_TOTAL_MINUTES = 15 * 60; // 900 phút
+      // 🚀 CHUYỂN TAB VÀ NHẢY BƯỚC 4 MƯỢT MÀ KHÔNG BỊ CHẶN LẠI NỮA
+      window.switchCgvTab("panel-booking");
+      window.goToBookingStep(4);
 
-      globalShowtimes.forEach((st) => {
-        const startMin = timeToMinutes(st.startTime);
-        const endMin = timeToMinutes(st.endTime);
-        const durationMin = endMin - startMin;
+      // Giải phóng giỏ hàng tạm sau khi đã xuất vé điện tử thành công
+      localStorage.removeItem("las_current_booking_cache");
+      localStorage.removeItem("pending_booking");
+      selectedSeats = [];
+      fnbMenu.forEach((i) => (i.qty = 0));
+      window.renderFnbMenu();
+      window.calculateCgvCart();
+      window.renderCgvInterface();
+      window.renderTransactionHistory();
+    })
+    .catch((err) => {
+      console.error("🚨 Lỗi lưu Database hóa đơn:", err);
+      alert(
+        "Hệ thống đã nhận tiền thanh toán VNPAY, tuy nhiên Server CSDL SQL Server gặp lỗi rò rỉ đồng bộ. Vui lòng liên hệ Admin!",
+      );
+    });
+};
 
-        // Tính tọa độ vị trí bắt đầu (Left) và độ dài khối phim (Width) theo tỉ lệ %
-        let leftPercent = ((startMin - TIMELINE_START_MINUTES) / TIMELINE_TOTAL_MINUTES) * 100;
-        let widthPercent = (durationMin / TIMELINE_TOTAL_MINUTES) * 100;
+window.cancelCurrentTransaction = function () {
+  if (
+    confirm(
+      "Bạn có chắc chắn muốn hủy bỏ tiến trình giao dịch và giải phóng các ghế đang giữ này không?",
+    )
+  ) {
+    window.resetHoldState();
+    selectedSeats = [];
+    fnbMenu.forEach((i) => (i.qty = 0));
+    window.renderFnbMenu();
+    window.calculateCgvCart();
+    window.renderCgvInterface();
+    alert("Đã hủy bỏ giao dịch thành công. Vị trí ghế rạp đã được giải phóng!");
+  }
+};
 
-        // Bọc lót an toàn nếu suất chiếu nằm ngoài khung 08:00 - 23:00
-        if (leftPercent < 0) leftPercent = 0;
-        if (leftPercent + widthPercent > 100) widthPercent = 100 - leftPercent;
+// --- 8. BỘ ĐẾM NGƯỢC THỜI GIAN VÀ KHỞI TẠO NỀN TẢNG ---
+window.startCountdown = function (expiresAt) {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const remain = expiresAt - Date.now();
+    if (remain <= 0) {
+      clearInterval(timerInterval);
+      alert(
+        "Đã hết thời gian giữ ghế quy định (5 phút)! Hệ thống tự động giải phóng vị trí phòng rạp.",
+      );
+      window.resetHoldState();
+      selectedSeats = [];
+      window.calculateCgvCart();
+      window.renderCgvInterface();
+      window.goToBookingStep(1);
+    } else {
+      const minutes = Math.floor(remain / 60000);
+      const seconds = Math.floor((remain % 60000) / 1000);
+      const timerStr = document.getElementById("timer-string");
+      if (timerStr)
+        timerStr.innerText = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    }
+  }, 1000);
+};
 
-        // Xác định màu sắc: Nếu conflict -> đỏ lòm, phòng 2 IMAX -> vàng, phòng 1 Standard -> xanh dương
-        let blockClass = st.roomId === 2 ? "mp-bg-yellow" : "mp-bg-blue";
-        let conflictHTML = "";
+window.resetHoldState = function () {
+  clearInterval(timerInterval);
+  isHoldingState = false;
+  const holdTimerEl = document.getElementById("hold-timer");
+  if (holdTimerEl) holdTimerEl.style.display = "none";
+  const mainBtn = document.getElementById("btn-main-action");
+  if (mainBtn) {
+    mainBtn.innerText = "Tiếp tục";
+    mainBtn.style.background = "#ff6b35";
+  }
+  window.currentBookingStep = 1;
+};
+// ==========================================================================
+// 🌟 HÀM RESET TOÀN BỘ QUY TRÌNH ĐẶT VÉ VỀ TRẠNG THÁI BAN ĐẦU
+// ==========================================================================
+window.resetBookingWizard = function () {
+  console.log(
+    "🔄 Đang dọn dẹp trạng thái hóa đơn cũ để chuẩn bị mua vé mới...",
+  );
 
-        if (st.isConflict) {
-          blockClass = "mp-bg-red mp-conflict-box";
-          conflictHTML = `
-            <div class="mp-conflict-tooltip">
-                <div class="mp-icon-error">!</div>
-                <div>
-                  <strong>Xung đột lịch chiếu!</strong><br />
-                  <span style="font-weight: normal; color: #ffcdd2">Trùng giờ với suất khác trong phòng!</span>
-                </div>
-            </div>
-          `;
-        }
+  // 1. Reset các biến lưu trữ đặt vé toàn cục về trạng thái trống
+  selectedSeats = [];
+  currentPriceTotal = 0;
+  appliedVoucherDiscount = 0;
+  selectedShowtime = "";
+  fnbQty = 0;
+  window.selectedPaymentGateway = "qr"; // Trả về cổng VietQR mặc định ban đầu
 
-        const blockHTML = `
-          <div class="mp-track-block ${blockClass}" style="left: ${leftPercent}%; width: ${widthPercent}%; min-width: 50px;" title="${st.movieTitle} (${st.startTime} - ${st.endTime})">
-              ${conflictHTML}
-              <strong>${st.movieTitle}</strong><br />
-              <span style="font-size:11px; opacity:0.92;">${st.startTime} - ${st.endTime}</span>
+  // 2. Quét sạch class "active" để ép giao diện các bước đặt vé (Booking Steps) quay lại Bước 1
+  const allSteps = document.querySelectorAll(".booking-step");
+  allSteps.forEach((step, index) => {
+    if (index === 0) {
+      step.classList.add("active"); // Hiện lại phân vùng chọn ghế ngồi
+    } else {
+      step.classList.remove("active"); // Ẩn hoàn toàn các bước Combo, Thanh toán và Hóa Đơn Thành Công
+    }
+  });
+
+  // 3. Đưa biến kiểm soát bước hiện tại của rạp phim về lại Step 1
+  window.currentBookingStep = 1;
+
+  // 4. Xóa chữ trong ô nhập mã giảm giá Voucher
+  const voucherInput = document.getElementById("voucher-input");
+  if (voucherInput) voucherInput.value = "";
+
+  // 5. Tắt bộ đếm ngược khóa giữ ghế rạp 5 phút tránh bị thông báo hết giờ liên tục
+  window.resetHoldState();
+};
+
+// ==========================================================================
+// MẢNG DỮ LIỆU TIN TỨC & ƯU ĐÃI ĐỘNG (CÓ THỂ LẤY TỪ BACKEND HOẶC MOCK TẠM)
+// ==========================================================================
+window.lasPromoList = [
+  {
+    id: "promo1",
+    title: "Đeo Phone Chắc Tay - Nhận Quà Khủng Liền Tay",
+    date: "05/06/2026 - 10/06/2026",
+    image:
+      "https://www.cgv.vn/media/catalog/product/cache/1/image/1800x/71252117777b696995f019344547b749/p/h/phong_ve_uu_dai_240x350_1_.jpg",
+    content:
+      "Chào mừng quý khách đến với ngày hội phụ kiện tại LAS Cinemas! Chỉ cần mang theo điện thoại có ốp lưng độc lạ khi mua vé xem phim, bạn sẽ có cơ hội bốc thăm trúng thưởng các phần quà công nghệ cực khủng như tai nghe không dây, sạc dự phòng thông minh và hàng ngàn voucher bắp nước miễn phí.<br><br><b>Điều kiện áp dụng:</b> Áp dụng cho mọi hội viên LAS đặt vé trực tuyến hoặc trực tiếp tại quầy trong khung thời gian diễn ra sự kiện.",
+  },
+  {
+    id: "promo2",
+    title: "Xem Phim Doraemon Nhận Ngay Móc Khóa Xinh Xắn",
+    date: "06/06/2026 - 12/06/2026",
+    image: "DORAEMON KEYCHAIN", // Sử dụng text nếu không có ảnh gốc
+    content:
+      "Siêu phẩm hoạt hình Doraemon đã chính thức đổ bộ! Khi mua combo bắp nước bất kỳ kèm theo 02 vé xem phim Doraemon phiên bản điện ảnh mới nhất, quý khách sẽ được tặng ngay 01 chiếc móc khóa Doraemon giới hạn độc quyền từ nhà phát hành.<br><br><b>Lưu ý:</b> Số lượng quà tặng có hạn, chương trình có thể kết thúc sớm hơn dự kiến nếu hết quà tại quầy.",
+  },
+  {
+    id: "promo3",
+    title: "Đổi Điểm LAS Rewards Nhận Voucher Giảm 25% Vexere",
+    date: "05/06/2026 - 22/07/2026",
+    image: "VEXERE VOUCHER 25%",
+    content:
+      "Sự kết hợp bùng nổ giữa LAS Cinemas và Vexere! Chỉ với 50 điểm thưởng tích lũy trên hệ thống LAS Rewards, bạn có thể đổi lấy ngay mã giảm giá giảm 25% (tối đa 50.000đ) khi đặt vé xe khách trực tuyến trên nền tảng Vexere.<br><br><b>Cách thức nhận mã:</b> Vào mục Đổi quà trên ứng dụng, chọn Voucher Vexere và bấm Xác nhận.",
+  },
+];
+
+// Hàm tự động vẽ danh sách ưu đãi động ra ngoài trang chủ
+window.renderLasPromoGrid = function () {
+  const promoNewsContainer = document.getElementById("cgv-event-grid-news");
+  // 🚀 Cào dữ liệu động trực tiếp từ Database SQL Server qua Spring Boot
+  fetch("http://localhost:8080/api/promos")
+    .then((res) => {
+      if (!res.ok) throw new Error("Không thể kết nối API ưu đãi");
+      return res.json();
+    })
+    .then((promosList) => {
+      console.log("🎁 Đã nhận danh sách ưu đãi động từ Database:", promosList);
+      window.lasPromoList = promosList;
+      // Xóa rỗng phân vùng chứa của Tab Tin tức trước khi vẽ động
+      if (promoNewsContainer) promoNewsContainer.innerHTML = "";
+      window.lasPromoList.forEach((item) => {
+        // Quét sạch các trường hợp đặt tên cột từ Spring Boot đẩy lên Frontend
+        let validImg =
+          item.imageUrl || item.image_url || item.image || item.img || "";
+        validImg = validImg.trim();
+        // Định dạng chuỗi hiển thị khoảng thời gian diễn ra sự kiện
+        let dateString = `${item.startDate || item.start_date || "05/06/2026"} - ${item.endDate || item.end_date || "12/06/2026"}`;
+        // 🚀 THẦN CHÚ BẮN THẺ <IMG> TRỰC TIẾP: Triệt tiêu hoàn toàn lỗi sập co rúm khung hình của thẻ div cũ
+        let imgHTML =
+          validImg.startsWith("http") ||
+          validImg.includes("/") ||
+          validImg.includes(".")
+            ? `<img src="${validImg}" class="news-card-img-holder" style="width: 100%; height: 200px; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png';">`
+            : `<div class="news-card-img-holder" style="background: #a1dbf1; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0c6291; font-size: 14px; height: 200px; width: 100%; text-align: center; padding: 0 10px; box-sizing: border-box;">${validImg || "LAS CINEMA"}</div>`;
+        // Tạo cấu trúc thẻ card chuẩn chỉ ăn khớp layout hai phân vùng
+        let cardHTML = `
+          <div class="news-promo-card" onclick="window.viewPromoDetailText('${item.id}')" style="cursor: pointer; background: #17171b; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; overflow: hidden; transition: transform 0.2s; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+              ${imgHTML}
+              <div style="padding: 15px; text-align: left;">
+                  <div class="news-card-date" style="color: #a8a8b3; font-size: 12px; margin-bottom: 5px;">📅 ${dateString}</div>
+                  <div class="news-card-title-text" style="font-weight: bold; font-size: 14px; color: #f4f4f5; line-height: 1.4;">${item.title || "Chương trình ưu đãi"}</div>
+              </div>
           </div>
         `;
 
-        // Phân phối khối HTML về đúng hàng phòng chiếu
-        if (st.roomId === 2) {
-          trackRoom2.innerHTML += blockHTML;
+        if (promoNewsContainer) promoNewsContainer.innerHTML += cardHTML;
+      });
+    })
+    .catch((err) =>
+      console.error("🚨 Lỗi khi kéo dữ liệu ưu đãi từ SQL Server: ", err),
+    );
+};
+
+// Hàm kích hoạt nhảy sang tab chi tiết ưu đãi và đổ dữ liệu
+window.viewPromoDetailText = function (promoId) {
+  // Đồng bộ ép kiểu dữ liệu về chuỗi hoặc số để so sánh khớp với ID dưới DB gửi lên
+  const targetPromo = window.lasPromoList.find(
+    (p) => String(p.id) === String(promoId),
+  );
+  if (!targetPromo) return;
+
+  document.getElementById("detail-promo-title").innerText = targetPromo.title;
+  document.getElementById("detail-promo-date").innerText =
+    "Thời gian áp dụng: " +
+    (targetPromo.startDate || targetPromo.start_date) +
+    " đến " +
+    (targetPromo.endDate || targetPromo.end_date);
+  document.getElementById("detail-promo-content").innerHTML =
+    targetPromo.content;
+
+  const imgBoxEl = document.getElementById("detail-promo-img-box");
+  if (imgBoxEl) {
+    let validImg =
+      targetPromo.imageUrl ||
+      targetPromo.image_url ||
+      targetPromo.image ||
+      targetPromo.img ||
+      "";
+    validImg = validImg.trim();
+
+    if (
+      validImg.startsWith("http") ||
+      validImg.includes("/") ||
+      validImg.includes(".")
+    ) {
+      // 🚀 THẦN CHÚ ÉP STYLE: Giải phóng hoàn toàn chiều cao cố định, cố định độ rộng bài viết đứng
+      imgBoxEl.style.width = "340px"; // Độ rộng lý tưởng cho poster đứng trên giao diện máy tính
+      imgBoxEl.style.height = "auto"; // Cho phép chiều cao tự bung theo tỉ lệ 9:16 nguyên bản
+      imgBoxEl.style.flexShrink = "0"; // Không cho phép cột chữ bên phải ép bẹp ảnh
+      imgBoxEl.style.background = "none";
+      imgBoxEl.style.backgroundImage = "none";
+      imgBoxEl.style.overflow = "visible"; // Cho phép hiển thị tràn mà không bị cắt rìa
+
+      // Nạp thẻ img thật với chiều cao tự động tính toán theo ảnh gốc 1080x1920
+      imgBoxEl.innerHTML = `<img src="${validImg}" style="width: 100%; height: auto; display: block; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">`;
+    } else {
+      // Hiển thị khung màu đại diện nếu dữ liệu dưới SQL Server chỉ là chuỗi ký tự text
+      imgBoxEl.style.background = "#a1dbf1";
+      imgBoxEl.style.width = "340px";
+      imgBoxEl.style.height = "500px"; // Giả lập chiều cao đứng chuẩn poster
+      imgBoxEl.style.display = "flex";
+      imgBoxEl.style.alignItems = "center";
+      imgBoxEl.style.justifyContent = "center";
+      imgBoxEl.style.color = "#0c6291";
+      imgBoxEl.style.fontWeight = "bold";
+      imgBoxEl.innerHTML = `<b>${validImg || "LAS CINEMA"}</b>`;
+    }
+  }
+  // Kích hoạt điều hướng nhảy chuyển phân vùng hiển thị Tab Panel
+  window.switchCgvTab("panel-news-detail");
+};
+
+// Tìm đến sự kiện tải trang sẵn có (DOMContentLoaded) ở cuối file home.js của em, thêm dòng này vào:
+window.addEventListener("DOMContentLoaded", () => {
+  // ... các hàm có sẵn của em (generateCgvDateSlider, fetchSyncData...)
+  window.renderLasPromoGrid(); // 🌟 Gọi hàm vẽ tin tức ưu đãi lên trang chủ
+});
+
+// ==========================================================================
+// 🌟 HÀM RẼ NHÁNH THANH TOÁN TOÀN DIỆN (SỬA LỖI ĐÈ HÀM & HIỂN THỊ 0 Đ)
+// ==========================================================================
+// ==========================================================================
+// 🌟 HÀM RẼ NHÁNH THANH TOÁN (SỬA LỖI NGÂN HÀNG KHÔNG HỖ TRỢ TRÊN SANDBOX)
+// ==========================================================================
+window.processToPaymentGateway = function () {
+  if (!window.selectedPaymentGateway) window.selectedPaymentGateway = "qr";
+  const finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
+
+  // 🚀 TRƯỜNG HỢP 1: THANH TOÁN QUA CỔNG VNPAY (QR HOẶC ATM)
+  if (
+    window.selectedPaymentGateway === "vnpay_qr" ||
+    window.selectedPaymentGateway === "vnpay_atm"
+  ) {
+    console.log(
+      "✈️ Gọi API Spring Boot sinh Link VNPAY tổng quan, số tiền:",
+      finalTotal,
+    );
+
+    // 🌟 THẦN CHÚ SỬA LỖI: Bỏ hoàn toàn tham số &bankCodeParam để VNPAY tự mở trang chọn lựa tổng quan
+    fetch(
+      `http://localhost:8080/api/payment/create-vnpay-url?amount=${finalTotal}`,
+    )
+      .then((res) => {
+        if (!res.ok)
+          throw new Error("Không thể kết nối cổng API tạo hóa đơn VNPAY!");
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.paymentUrl) {
+          alert(
+            "Hệ thống chuyển hướng an toàn sang cổng bảo mật VNPAY Sandbox...",
+          );
+          const bookingCache = {
+            movie: document.getElementById("cgv-combo-movie").value,
+            showtime: selectedShowtime,
+            seats: [...selectedSeats],
+            date: selectedDateStr,
+            fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
+            total: currentPriceTotal * (1 - appliedVoucherDiscount),
+          };
+          localStorage.setItem(
+            "pending_booking",
+            JSON.stringify({
+              movie: document.getElementById("cgv-combo-movie").value,
+              showtime: selectedShowtime,
+              seats: [...selectedSeats],
+              date: selectedDateStr,
+              fnb: fnbMenu.filter((i) => i.qty > 0),
+              total: currentPriceTotal * (1 - appliedVoucherDiscount),
+            }),
+          );
+          window.location.href = data.paymentUrl; // Điều hướng sang trang chọn của VNPAY thành công
         } else {
-          trackRoom1.innerHTML += blockHTML;
+          alert("Lỗi dữ liệu hệ thống trả về từ VNPAY Gateway!");
         }
+      })
+      .catch((err) => {
+        console.error("🚨 Lỗi tạo link VNPAY:", err);
+        alert(
+          "Không thể kết nối Server để kích hoạt cổng VNPAY: " + err.message,
+        );
       });
 
-      // Nếu có hàng nào trống sau khi phân phối thì ghi chữ trống lịch cho đẹp
-      if (trackRoom1.innerHTML === "") trackRoom1.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#bbb;">Trống lịch phòng 1</div>';
-      if (trackRoom2.innerHTML === "") trackRoom2.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#bbb;">Trống lịch phòng 2</div>';
-    })
-    .catch((err) => {
-      console.error("🚨 Lỗi vẽ ma trận lịch chiếu:", err);
-      trackRoom1.innerHTML = trackRoom2.innerHTML = `<span style="color:red;padding:10px;display:block;">Lỗi đồng bộ lịch chiếu: ${err.message}</span>`;
-    });
+    // 🚀 TRƯỜNG HỢP 2: THANH TOÁN CHUYỂN KHOẢN TIÊU CHUẨN (VIETQR) -> GIỮ NGUYÊN
+  } else if (window.selectedPaymentGateway === "qr") {
+    const modalTitle = document.querySelector("#payment-redirect-modal h2");
+    if (modalTitle) {
+      modalTitle.innerHTML = "Thanh Toán Chuyển Khoản VietQR";
+    }
+
+    const qrPriceText = document.getElementById("qr-total-price");
+    if (qrPriceText) {
+      qrPriceText.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
+    }
+
+    const bankId = "ICB";
+    const accountNo = "101879388698";
+    const accountName = "NGUYEN BAO HOANG";
+    const qrData = `LAS CINEMAS THANH TOAN VE`;
+
+    const qrImg = document.getElementById("bank-qr-img");
+    if (qrImg) {
+      qrImg.src = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(qrData)}&accountName=${encodeURIComponent(accountName)}`;
+    }
+    document.getElementById("payment-redirect-modal").classList.add("open");
+  }
 };
 
-// ==========================================================================
-// 🚀 LOGIC ĐIỀU KHIỂN FORM TẠO MỚI SUẤT CHIẾU ĐỘNG
-// ==========================================================================
+function generateCgvDateSlider() {
+  const container = document.getElementById("cgv-dynamic-date-slider");
+  if (!container) return;
+  container.innerHTML = "";
 
-// Hàm mở Modal và tự động cào danh sách phim thật từ DB đổ vào ô Dropdown chọn phim
-window.openAddShowtimeModal = function() {
-  const movieSelect = document.getElementById("st-movie-select");
-  if (!movieSelect) return;
+  container.style.display = "flex";
+  container.style.gap = "10px";
+  container.style.overflowX = "auto";
+  container.style.paddingBottom = "10px";
+  const daysOfWeek = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+  const now = new Date(2026, 5, 8);
+  for (let i = 0; i < 30; i++) {
+    const targetDate = new Date(2026, 5, 8);
+    targetDate.setDate(now.getDate() + i);
 
-  movieSelect.innerHTML = "";
-  
-  // Kiểm tra mảng phim toàn cục đã lưu từ database
-  if (!window.moviesList || window.moviesList.length === 0) {
-    alert("Không tìm thấy danh sách phim trong bộ nhớ! Đang tải lại...");
-    return;
+    const month = (targetDate.getMonth() + 1).toString().padStart(2, "0");
+    const dateNum = targetDate.getDate().toString().padStart(2, "0");
+    const dayName = daysOfWeek[targetDate.getDay()];
+    const fullDateId = `2026-${month}-${dateNum}`;
+
+    if (i === 0 && !selectedDateStr) {
+      selectedDateStr = fullDateId;
+    }
+    const bg = selectedDateStr === fullDateId ? "#111" : "#fff";
+    const color = selectedDateStr === fullDateId ? "#fff" : "#555";
+    const border = selectedDateStr === fullDateId ? "#111" : "#ccc";
+    container.innerHTML += `
+          <div class="date-slider-item" style="flex: 0 0 auto; min-width: 60px; background:${bg}; color:${color}; border:2px solid ${border}; border-radius:6px; cursor:pointer; text-align:center; padding: 10px 5px; box-sizing: border-box; transition: all 0.2s;"
+          onclick="selectCgvBookingDate('${fullDateId}')">
+              <div style="font-size:11px; margin-bottom: 2px;">${dayName}</div>
+              <div style="font-size:22px; font-weight:bold; line-height: 1;">${dateNum}</div>
+              <div style="font-size:11px; margin-top: 3px;">Th ${month}</div>
+          </div>
+      `;
   }
+}
 
-  // Duyệt qua danh sách phim động để nạp vào Form
-  window.moviesList.forEach(m => {
-    movieSelect.innerHTML += `<option value="${m.movieId}">${m.title} (${m.duration || m.durationMinutes || 0} phút)</option>`;
+function startCountdown(expiresAt) {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const remain = expiresAt - Date.now();
+    if (remain <= 0) {
+      clearInterval(timerInterval);
+      alert("Hết thời gian giữ ghế 5 phút!");
+      resetHoldState();
+      selectedSeats = [];
+      calculateCgvCart();
+    } else {
+      const minutes = Math.floor(remain / 60000);
+      const seconds = Math.floor((remain % 60000) / 1000);
+      document.getElementById("timer-string").innerText =
+        `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    }
+  }, 1000);
+}
+
+function resetHoldState() {
+  clearInterval(timerInterval);
+  isHoldingState = false;
+  document.getElementById("hold-timer").style.display = "none";
+  document.getElementById("btn-main-action").innerText =
+    "Giữ Ghế Tạm Temporarily";
+  document.getElementById("btn-main-action").style.background = "#ff6b35";
+}
+
+function switchProfileSubTab(sub) {
+  document
+    .querySelectorAll(".arrow-btn")
+    .forEach((b) => b.classList.remove("active"));
+  ["chung", "lichsu"].forEach((p) => {
+    const panel = document.getElementById("pro-panel-" + p);
+    if (panel) panel.classList.remove("active");
   });
+  const currentBtn = document.getElementById("pro-subtab-btn-" + sub);
+  const currentPanel = document.getElementById("pro-panel-" + sub);
+  if (currentBtn) currentBtn.classList.add("active");
+  if (currentPanel) currentPanel.classList.add("active");
+}
 
-  // Reset các ô nhập liệu về trạng thái trống sạch sẽ
-  document.getElementById("st-start-time").value = "";
-  document.getElementById("st-ticket-price").value = "90000";
-
-  document.getElementById("mp-add-showtime-modal").style.display = "flex";
-};
-
-window.closeAddShowtimeModal = function() {
-  document.getElementById("mp-add-showtime-modal").style.display = "none";
-};
-
-// Hàm đóng gói dữ liệu và đẩy xuống SQL Server thông qua Spring Boot
-window.submitAddShowtimeForm = function() {
-  const movieId = document.getElementById("st-movie-select").value;
-  const roomId = parseInt(document.getElementById("st-room-select").value) || 1;
-  const startTimeRaw = document.getElementById("st-start-time").value; // Định dạng "HH:mm"
-  const ticketPrice = parseFloat(document.getElementById("st-ticket-price").value) || 0;
-  
-  // Bốc lấy ngày mà Manager đang xem ở ô input date ngoài ma trận lịch chiếu
-  const selectedDate = document.getElementById("mp-matrix-date-input").value;
-
-  if (!startTimeRaw) {
-    alert("Vui lòng chọn Giờ bắt đầu chiếu phim!");
-    return;
-  }
-  if (ticketPrice <= 0) {
-    alert("Giá vé cơ bản phải lớn hơn 0 đ!");
-    return;
-  }
-
-  // Định dạng lại mốc thời gian ISO chuẩn LocalDateTime gửi cho Java nhận diện: "YYYY-MM-DDTHH:mm:00"
-  const formattedStartTime = `${selectedDate}T${startTimeRaw}:00`;
-
-  // Tìm phim tương ứng để lấy thời lượng tự động tính toán giờ kết thúc (endTime) cho Java
-  const targetMovie = window.moviesList.find(m => String(m.movieId) === String(movieId));
-  const duration = targetMovie ? (targetMovie.duration || targetMovie.durationMinutes || 120) : 120;
-  
-  // Tính toán thời điểm kết thúc dựa trên giờ bắt đầu và thời lượng phim bằng Javascript
-  const startDateTime = new Date(`${selectedDate} ${startTimeRaw}`);
-  const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
-  
-  const endH = String(endDateTime.getHours()).padStart(2, "0");
-  const endM = String(endDateTime.getMinutes()).padStart(2, "0");
-  const formattedEndTime = `${selectedDate}T${endH}:${endM}:00`;
-
-  // Đóng gói Dữ liệu JSON khớp chuẩn 100% với Entity Showtime.java của nhóm em
-  const payload = {
-    movie: { movieId: parseInt(movieId) }, // Khớp cấu trúc @ManyToOne Private Movie movie
-    roomId: roomId,
-    startTime: formattedStartTime, // "2026-06-20T19:00:00"
-    endTime: formattedEndTime,     // "2026-06-20T21:00:00"
-    ticketPrice: ticketPrice,
-    createdBy: 1
-  };
-
-  console.log("🚀 Payload gửi lên Spring Boot tạo suất chiếu:", payload);
-
-  // ==========================================================================
-  // 🚨 POPUP CHẶN TRÙNG LỊCH (BẰNG DATA ĐỘNG - KHÔNG XÀI DOM - GIỮ NGUYÊN CẤU TRÚC CỦA KHOA)
-  // ==========================================================================
-  const timeToMinutes = (timeStr) => {
-    const [h, m] = timeStr.split(":").map(Number);
-    return h * 60 + m;
-  };
-
-  const newStartMin = timeToMinutes(startTimeRaw);
-  const newEndMin = newStartMin + duration;
-
-  // Gọi nhanh API gom lại danh sách để so sánh chéo, đảm bảo không lệch một phút nào với DB
-  const checkPromises = window.moviesList.map((movie) => {
-    return API.getShowtimes(movie.movieId, selectedDate)
-      .then((resData) => (resData.showtimes || []).map(st => ({ ...st, movieTitle: movie.title })))
-      .catch(() => []);
+function activateEditableFormFields() {
+  document.querySelectorAll(".profile-readonly-input").forEach((input) => {
+    input.removeAttribute("readonly");
+    input.removeAttribute("disabled");
+    input.style.border = "1px solid #ff6b35";
+    input.style.background = "#0b0b0e";
   });
+  document.getElementById("btn-save-profile").style.display = "block";
+}
 
-  Promise.all(checkPromises)
-    .then((allResults) => {
-      const currentShowtimesInDay = allResults.flat();
-      let isTimeConflict = false;
-      let conflictMovieTitle = "";
+function openOtpModal() {
+  document.getElementById("otp-modal").classList.add("open");
+}
+function closeOtpModal() {
+  document.getElementById("otp-modal").classList.remove("open");
+}
 
-      for (let st of currentShowtimesInDay) {
-        // Chỉ check nếu trùng phòng chiếu
-        if (st.roomId === roomId) {
-          const existStart = timeToMinutes(st.startTime);
-          const existEnd = timeToMinutes(st.endTime);
-
-          // Công thức giao thoa: Start1 < End2 AND End1 > Start2
-          if (newStartMin < existEnd && newEndMin > existStart) {
-            isTimeConflict = true;
-            conflictMovieTitle = st.movieTitle;
-            break;
-          }
-        }
-      }
-
-      if (isTimeConflict) {
-        alert(`❌ KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`);
-        return; // Chặn đứng tại đây, không cho gọi API add
-      }
-
-      // Nếu an toàn, thực hiện gọi API lưu xuống database y như cũ của em
-      API.addShowtime(payload)
-        .then(() => {
-          alert("✅ Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.");
-          closeAddShowtimeModal();
-          loadManagerMatrix();
-        })
-        .catch((err) => {
-          console.error(err);
-          alert("🚨 Thêm suất chiếu thất bại: " + err.message);
+function submitOtpVerification() {
+  const otpInput = document.getElementById("otp-input-field").value.trim();
+  if (!otpInput) return alert("Vui lòng nhập mã OTP gồm 6 chữ số!");
+  if (!temporaryRegisterEmail)
+    return alert("Hệ thống không tìm thấy email đăng ký hợp lệ!");
+  fetch("http://localhost:8080/api/register/verify-otp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: temporaryRegisterEmail, otp: otpInput }),
+  })
+    .then((res) => {
+      if (!res.ok) {
+        return res.json().then((err) => {
+          throw new Error(err.message || "Xác thực thất bại!");
         });
+      }
+      return res.json();
     })
-    .catch((err) => {
-      console.error("Lỗi khi kiểm tra trùng lịch:", err);
-      alert("🚨 Không thể xác thực trùng lịch do lỗi kết nối!");
+    .then((resData) => {
+      if (resData.status === "success") {
+        alert(resData.message);
+        closeOtpModal();
+        openAuthModal();
+        toggleAuthTab("login");
+      }
+    })
+    .catch((err) => alert("❌ Lỗi OTP: " + err.message));
+}
+
+function saveUpdatedProfileInformationData() {
+  document.querySelectorAll(".profile-readonly-input").forEach((input) => {
+    input.setAttribute("readonly", true);
+    if (input.tagName === "SELECT") input.setAttribute("disabled", true);
+    input.style.border = "1px solid rgba(255,255,255,0.15)";
+    input.style.background = "#1c1c21";
+  });
+  document.getElementById("btn-save-profile").style.display = "none";
+  alert("Cập nhật thông tin tài khoản mới thành công!");
+}
+
+let currentForgotIdentifier = "";
+
+function openForgotModal() {
+  document.getElementById("forgot-modal").classList.add("open");
+  document.getElementById("forgot-step-1").style.display = "block";
+  document.getElementById("forgot-step-2").style.display = "none";
+  document.getElementById("forgot-identifier").value = "";
+  document.getElementById("forgot-otp-input").value = "";
+  document.getElementById("forgot-new-password").value = "";
+}
+
+function closeForgotModal() {
+  document.getElementById("forgot-modal").classList.remove("open");
+}
+
+// Gọi API gửi OTP
+function requestForgotOtp() {
+  const identifier = document.getElementById("forgot-identifier").value.trim();
+  if (!identifier) return alert("Vui lòng nhập Email hoặc Số điện thoại!");
+
+  fetch("http://localhost:8080/api/forgot-password/request", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ identifier: identifier }),
+  })
+    .then((res) =>
+      res.json().then((data) => ({ status: res.status, body: data })),
+    )
+    .then((res) => {
+      if (res.status === 200) {
+        alert(res.body.message + "\n(Hãy kiểm tra Console của Spring Boot)");
+        currentForgotIdentifier = identifier;
+        // Chuyển sang Bước 2
+        document.getElementById("forgot-step-1").style.display = "none";
+        document.getElementById("forgot-step-2").style.display = "block";
+      } else {
+        alert("Lỗi: " + res.body.message);
+      }
+    })
+    .catch((err) => alert("Lỗi kết nối Server!"));
+}
+
+// Gọi API Đổi mật khẩu
+function submitNewPassword() {
+  const otp = document.getElementById("forgot-otp-input").value.trim();
+  const newPassword = document.getElementById("forgot-new-password").value;
+
+  if (!otp || !newPassword)
+    return alert("Vui lòng điền đầy đủ OTP và Mật khẩu mới!");
+
+  fetch("http://localhost:8080/api/forgot-password/reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      identifier: currentForgotIdentifier,
+      otp: otp,
+      newPassword: newPassword,
+    }),
+  })
+    .then((res) =>
+      res.json().then((data) => ({ status: res.status, body: data })),
+    )
+    .then((res) => {
+      if (res.status === 200) {
+        alert(res.body.message);
+        closeForgotModal();
+        openAuthModal(); // Mở lại bảng đăng nhập cho khách login
+        toggleAuthTab("login");
+      } else {
+        alert("Lỗi: " + res.body.message);
+      }
+    })
+    .catch((err) => alert("Lỗi kết nối Server!"));
+}
+
+window.switchCgvTab = switchCgvTab;
+window.handleBreadcrumbBack = handleBreadcrumbBack;
+window.quickBookMovie = quickBookMovie;
+window.viewMovieDetailText = viewMovieDetailText;
+window.selectTime = selectTime;
+window.executeMovieRealTimeSearch = executeMovieRealTimeSearch;
+window.selectCgvBookingDate = selectCgvBookingDate;
+window.switchMovieFilterTab = switchMovieFilterTab;
+window.handleAuthModalAccess = openAuthModal;
+window.closeAuthModal = closeAuthModal;
+window.toggleAuthTab = toggleAuthTab;
+window.submitCgvLogin = submitCgvLogin;
+window.submitCgvRegister = submitCgvRegister;
+window.toggleRegPasswordState = toggleRegPasswordState;
+window.generateNewLoginCaptcha = generateNewLoginCaptcha;
+window.generateNewRegisterCaptcha = generateNewRegisterCaptcha;
+window.openOtpModal = openOtpModal;
+window.closeOtpModal = closeOtpModal;
+window.submitOtpVerification = submitOtpVerification;
+window.handleProfileTabAccess = handleProfileTabAccess;
+window.handleTicketViewAccess = handleTicketViewAccess;
+window.switchProfileSubTab = switchProfileSubTab;
+window.activateEditableFormFields = activateEditableFormFields;
+window.saveUpdatedProfileInformationData = saveUpdatedProfileInformationData;
+window.handleCgvLogout = handleCgvLogout;
+window.closeLogoutConfirmModal = closeLogoutConfirmModal;
+window.confirmCgvLogoutAction = confirmCgvLogoutAction;
+window.openCheckoutReview = openCheckoutReview;
+window.closeCheckoutReview = closeCheckoutReview;
+window.applyVoucher = applyVoucher;
+window.closePaymentModal = closePaymentModal;
+window.executeFinalCheckout = executeFinalCheckout;
+window.cancelCurrentTransaction = cancelCurrentTransaction;
+window.viewHistoryDetail = viewHistoryDetail;
+window.closeHistoryDetailModal = closeHistoryDetailModal;
+window.updateComboQty = updateComboQty;
+window.moveBannerLeft = moveBannerLeft;
+window.moveBannerRight = moveBannerRight;
+
+function goHomeFromBc() {
+  switchCgvTab("panel-movies");
+
+  selectedSeats = [];
+  selectedShowtime = "";
+  window.currentSelectedShowtimeId = null;
+
+  currentPriceTotal = 0;
+  appliedVoucherDiscount = 0;
+
+  fnbMenu.forEach((i) => (i.qty = 0));
+
+  const ticket = document.getElementById("final-ticket-result");
+  if (ticket) {
+    ticket.innerHTML = "";
+  }
+
+  goToBookingStep(1);
+
+  renderFnbMenu();
+  calculateCgvCart();
+  renderCgvInterface();
+}
+window.goHomeFromBc = goHomeFromBc;
+
+// 🤖 ĐOẠN CHÈN THÊM CHUẨN ĐÉT: Hàm xử lý ẩn/hiện cửa sổ Chatbot thông minh
+function toggleLasChatbox() {
+  const chatWindow = document.getElementById("las-chatbox-window");
+  if (chatWindow) {
+    if (
+      chatWindow.style.display === "none" ||
+      chatWindow.style.display === ""
+    ) {
+      chatWindow.style.display = "flex";
+    } else {
+      chatWindow.style.display = "none";
+    }
+  }
+}
+// Xuất hàm ra window toàn cục để thuộc tính onclick ngoài index.html gọi được
+window.toggleLasChatbox = toggleLasChatbox;
+
+// ==========================================================================
+// 🤖 TÍCH HỢP TÍNH NĂNG GỬI/NHẬN TIN NHẮN TƯƠNG TÁC CHO CHATBOX LAS CINEMAS
+// ==========================================================================
+async function fetchAllRealShowtimesContext(targetDateStr) {
+  if (!serverData || !serverData.movies || serverData.movies.length === 0) {
+    return "Hiện tại hệ thống rạp đang cập nhật danh mục phim từ server.";
+  }
+
+  let dateStr = targetDateStr;
+  let fullContext = `DỮ LIỆU LỊCH CHIẾU VÀ PHÒNG CHIẾU THỰC TẾ TRONG SQL SERVER NGÀY ${dateStr} (CHỈ DÙNG ĐỂ TƯ VẤN):\n`;
+
+  for (const movie of serverData.movies) {
+    const movieId = movie.movieId || movie.movie_id;
+    try {
+      // Gọi API chọc vào Spring Boot Controller của em
+      const response = await fetch(
+        `http://localhost:8080/api/showtimes/matrix?movieId=${movieId}&date=${dateStr}`,
+      );
+
+      // Nếu Backend Spring Boot phản hồi lỗi mạng (Mã 404, 500...)
+      if (!response.ok) {
+        fullContext += `- Phim: ${movie.title} | Phân hệ lịch chiếu của phim này đang gặp sự cố kết nối.\n`;
+        continue;
+      }
+
+      const resData = await response.json();
+      fullContext += `- Phim: ${movie.title} | Thể loại: ${movie.genre || "Hành động"} | Trạng thái: ${movie.status === "now_showing" ? "Đang chiếu" : "Sắp chiếu"}\n`;
+
+      if (resData.showtimes && resData.showtimes.length > 0) {
+        const timeStrings = resData.showtimes
+          .map((st) => {
+            let roomName =
+              st.roomId === 1
+                ? "Phòng 1 (IMAX)"
+                : st.roomId === 2
+                  ? "Phòng 2 (2D)"
+                  : "Phòng 3 (3D)";
+            return `${st.startTime} (${roomName})`;
+          })
+          .join(", ");
+        fullContext += `  ↳ Các suất chiếu thực tế ngày ${dateStr}: ${timeStrings}\n`;
+      } else {
+        fullContext += `  ↳ Lịch chiếu: Ngày ${dateStr} phim này rạp không có suất chiếu.\n`;
+      }
+    } catch (e) {
+      // ✅ BẢO VỆ CỐ LẬP: Nếu sập cổng localhost:8080, ghi nhận lỗi cục bộ chứ KHÔNG quăng lỗi ra ngoài làm sập Bot
+      console.error(
+        `🚨 Lỗi kết nối API gạch nối SQL Server của phim ID ${movieId}:`,
+        e,
+      );
+      fullContext += `- Phim: ${movie.title} | Không thể kết nối đến dữ liệu server lịch chiếu localhost:8080.\n`;
+    }
+  }
+  return fullContext;
+}
+
+async function sendChatMessageToServer() {
+  const inputField = document.getElementById("las-chat-user-input");
+  const msgZone = document.getElementById("las-chat-messages-zone");
+  if (!inputField || !msgZone) return;
+
+  const userText = inputField.value.trim();
+  if (!userText) return;
+
+  // 1. Hiển thị ngay lập tức tin nhắn của Khách hàng lên khung chat
+  msgZone.innerHTML += `
+    <div style="align-self: flex-end; background-color: #ff6b35; color: white; padding: 10px 14px; border-radius: 8px; max-width: 85%; font-size: 13.5px; line-height: 1.4; font-weight: bold; box-shadow: 0 2px 5px rgba(255,107,53,0.15); word-break: break-word;">
+      ${userText}
+    </div>
+  `;
+
+  // 🌟 BƯỚC 1: SÀNG LỌC Ý ĐỊNH - Kiểm tra xem khách có thực sự hỏi lịch chiếu/phim ảnh không
+  const isQueryingSchedule =
+    /lịch|lich|chiếu|chieu|suất|suat|phim|phong|ghế|ghe|ngày|ngay|hôm nay|hom nay|ngày mai|ngay mai/i.test(
+      userText.toLowerCase(),
+    );
+
+  let chatDateStr = "";
+  let dbContext =
+    "Khách hàng đang trò chuyện tự do, không yêu cầu tra cứu lịch chiếu phim.";
+  const todayObj = new Date();
+
+  // Chỉ phân tích ngày tháng chi tiết nếu khách hỏi về lịch chiếu rạp
+  if (isQueryingSchedule) {
+    chatDateStr = todayObj.toISOString().split("T")[0]; // Mặc định lấy ngày hôm nay
+    if (
+      userText.toLowerCase().includes("ngày mai") ||
+      userText.toLowerCase().includes("ngay mai")
+    ) {
+      const tomorrow = new Date(todayObj);
+      tomorrow.setDate(todayObj.getDate() + 1);
+      chatDateStr = tomorrow.toISOString().split("T")[0];
+    } else {
+      const dateMatch = userText.match(/ngày\s*(\d{1,2})/i);
+      if (dateMatch) {
+        const target = new Date(2026, 5, parseInt(dateMatch[1]));
+        chatDateStr = target.toISOString().split("T")[0];
+      }
+    }
+  }
+
+  // Xóa rỗng ô nhập liệu và cuộn khung chat xuống dưới
+  inputField.value = "";
+  msgZone.scrollTop = msgZone.scrollHeight;
+
+  // 2. Hiển thị bong bóng chờ trạng thái thông minh (Tránh tạo cảm giác khô cứng)
+  const loadingId = "typing-loading-" + Date.now();
+  const loadingText = isQueryingSchedule
+    ? `🤖 LAS Bot đang tra cứu dữ liệu lịch chiếu ngày ${chatDateStr}...`
+    : `🤖 LAS Bot đang suy nghĩ câu trả lời...`;
+
+  msgZone.innerHTML += `
+    <div id="${loadingId}" style="align-self: flex-start; background-color: #0b0b0e; color: #9a9aa3; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-style: italic;">
+      ${loadingText}
+    </div>
+  `;
+  msgZone.scrollTop = msgZone.scrollHeight;
+
+  // 🌟 BƯỚC 2: CHỈ CÀO DATABASE KHI KHÁCH YÊU CẦU LỊCH CHIẾU
+  if (isQueryingSchedule) {
+    try {
+      dbContext = await fetchAllRealShowtimesContext(chatDateStr);
+    } catch (dbErr) {
+      console.error("🚨 Lỗi kết nối CSDL rạp phim:", dbErr);
+      dbContext =
+        "Hệ thống SQL Server lịch chiếu đang bảo trì, vui lòng thử lại sau.";
+    }
+  }
+
+  // 3. Kết nối cổng gọi AI Gemini xử lý hội thoại đa năng
+  try {
+    const aiModule = await import("https://esm.run/@google/genai");
+    const GoogleGenAI = aiModule.GoogleGenAI;
+
+    // Dán mã API Key cá nhân hợp lệ của em ở đây nha
+    const aiKey = "";
+    const ai = new GoogleGenAI({ apiKey: aiKey });
+
+    // 🌟 BƯỚC 3: CẢI TIẾN HỆ THỐNG LUẬT - Cho phép giao tiếp tự do nhưng thắt chặt khi hỏi lịch
+    const systemRule = `Bạn là trợ lý ảo hội thoại thông minh mã nguồn LumiAI System của cụm rạp phim LAS Cinemas.
+    Nhiệm vụ của bạn là tiếp đón khách hàng thành viên, chào hỏi lịch sự, trò chuyện tự do và tương tác một cách tự nhiên, hóm hỉnh, thân thiện nhất.
+    
+    Luật absolute số 1 (Tư vấn lịch phim): Nếu khách hàng hỏi về lịch chiếu, danh sách bộ phim, hoặc suất chiếu, bạn PHẢI dựa vào thông tin thật ở mục 'DỮ LIỆU ĐỘNG TỪ DATABASE SQL SERVER' dưới đây để trả lời. Tuyệt đối không tự bịa giờ chiếu ảo hoặc phòng chiếu không tồn tại. Nếu mục này báo không có suất chiếu, hãy thông báo tiếc nuối một cách lịch sự.
+    Luật absolute số 2 (Tương tác tự do): Nếu khách hàng chỉ chào hỏi xã giao, tâm sự hoặc hỏi thông tin rạp chung chung, hãy thoải mái trò chuyện như một người bạn thân thiết, không cần ép buộc đọc lịch chiếu.
+    Luật absolute số 3 (Điều hướng đặt vé): Khi thấy khách hàng có nhu cầu muốn book vé, mua vé, hoặc chọn suất của một bộ phim cụ thể, bạn PHẢI kẹp cú pháp điều hướng [BOOK: Tên Bộ Phim Chính Xác] vào cuối câu trả lời của mình.
+    
+    DỮ LIỆU ĐỘNG TỪ DATABASE SQL SERVER (Bối cảnh thực tế hệ thống):
+    Ngày khách hàng đang hướng tới: ${chatDateStr || "Trò chuyện tự do"}
+    Nội dung dữ liệu: \n${dbContext}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `Câu hỏi của khách hàng: ${userText}`,
+      config: { systemInstruction: systemRule },
     });
-};
+
+    // Xóa bỏ bong bóng chờ sau khi AI phản hồi thành công
+    const loadingEl = document.getElementById(loadingId);
+    if (loadingEl) loadingEl.remove();
+
+    let aiResponseText = response.text;
+
+    // Xử lý cú pháp tự động chuyển tab đặt vé nhanh khi khách muốn book phim [BOOK: ...]
+    if (aiResponseText.includes("[BOOK:")) {
+      const match = aiResponseText.match(/\[BOOK:\s*(.*?)\s*\]/);
+      if (match && match[1]) {
+        const targetMovieName = match[1].trim();
+        aiResponseText = aiResponseText.replace(/\[BOOK:.*?\]/g, "");
+
+        setTimeout(() => {
+          quickBookMovie(targetMovieName);
+          toggleLasChatbox();
+        }, 1200);
+      }
+    }
+
+    if (typeof formatGeminiResponseToHtml === "function") {
+      aiResponseText = formatGeminiResponseToHtml(aiResponseText);
+    }
+
+    // Hiển thị câu trả lời thông minh của Trợ lý ảo lên màn hình
+    msgZone.innerHTML += `
+      <div style="align-self: flex-start; background-color: #0b0b0e; color: #e4e4e7; padding: 10px 14px; border-radius: 8px; max-width: 85%; font-size: 13.5px; line-height: 1.4; border-left: 3px solid #ff6b35; word-break: break-word;">
+        ${aiResponseText}
+      </div>
+    `;
+    msgZone.scrollTop = msgZone.scrollHeight;
+  } catch (err) {
+    console.error("🚨 Lỗi Google AI:", err);
+    const loadingEl = document.getElementById(loadingId);
+    if (loadingEl) loadingEl.remove();
+
+    // Vá chí mạng đề phòng hết quota lượt gọi API Key miễn phí
+    if (
+      err.message &&
+      (err.message.includes("429") ||
+        err.message.includes("RESOURCE_EXHAUSTED"))
+    ) {
+      msgZone.innerHTML += `
+            <div style="background: rgba(229,169,59,0.12); padding: 10px; border-radius: 8px; border-left: 3px solid #ffc107; align-self: flex-start; max-width: 85%;">
+                <b>🤖 Bot:</b> Dạ hiện tại hệ thống AI đang quá tải, mình xem lịch chiếu trực tiếp ở dưới đây nhé:<br>
+                <i style="font-size: 12px;">${dbContext.replace(/\n/g, "<br>")}</i>
+            </div>`;
+    } else {
+      msgZone.innerHTML += `<div style="color:red; font-weight:bold; align-self: flex-start; padding: 5px 10px;">❌ Lỗi kết nối trợ lý: ${err.message}</div>`;
+    }
+    msgZone.scrollTop = msgZone.scrollHeight;
+  }
+}
+
+// Hàm bắt sự kiện khi người dùng gõ phím Enter trong ô nhập liệu
+function toggleLasChatbox() {
+  const chatWindow = document.getElementById("las-chatbox-window");
+  const bubble = document.getElementById("las-chatbot-bubble");
+  if (chatWindow.style.display === "none" || chatWindow.style.display === "") {
+    chatWindow.style.display = "flex";
+    bubble.style.transform = "scale(0.9)";
+    bubble.innerText = "✖";
+    const msgZone = document.getElementById("las-chat-messages-zone");
+    msgZone.scrollTop = msgZone.scrollHeight;
+  } else {
+    chatWindow.style.display = "none";
+    bubble.style.transform = "scale(1)";
+    bubble.innerText = "💬";
+  }
+}
+
+function checkChatSendMessageKey(event) {
+  if (event.key === "Enter") {
+    sendChatMessageToServer();
+  }
+}
+
+// Hàm bổ trợ: Dọn sạch định dạng văn bản Markdown từ Gemini sang HTML chuẩn
+function formatGeminiResponseToHtml(rawText) {
+  let formatted = rawText;
+  // 1. Chuyển đổi **chữ đậm** thành <b>chữ đậm</b>
+  formatted = formatted.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+  // 2. Chuyển đổi dấu gạch đầu dòng * thành chấm tròn danh sách
+  formatted = formatted.replace(/^[*\-]\s+(.*)$/gm, "• $1");
+  // 3. Chuyển đổi xuống dòng \n thành thẻ <br> để xuống dòng hiển thị mượt mà
+  formatted = formatted.replace(/\n/g, "<br>");
+  return formatted;
+}
+
+// 🌟 XUẤT HÀM LÊN WINDOW TOÀN CỤC ĐỂ FILE INDEX.HTML CÓ THỂ ĐỌC ĐƯỢC
+window.sendChatMessageToServer = sendChatMessageToServer;
+window.toggleLasChatbox = toggleLasChatbox;
+window.checkChatSendMessageKey = checkChatSendMessageKey;
+window.formatGeminiResponseToHtml = formatGeminiResponseToHtml;
