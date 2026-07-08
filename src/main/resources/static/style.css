@@ -20,6 +20,14 @@
   --surface-2: #1c1c21;
   --muted: #9a9aa3;
   --success: #22c55e;
+  --success-text: #4ade80;
+  --success-bg: rgba(34, 197, 94, 0.15);
+  --warning: #f59e0b;
+  --warning-text: #fbbf24;
+  --warning-bg: rgba(245, 158, 11, 0.15);
+  --danger: #e53935;
+  --danger-text: #f87171;
+  --danger-bg: rgba(239, 68, 68, 0.15);
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
@@ -2518,15 +2526,16 @@ select.profile-readonly-input:not([disabled]) {
 }
 .cgv-input-text {
   width: 100%;
-  padding: 8px 10px;
+  padding: 11px 16px;
   border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 4px;
-  font-size: 13px;
+  border-radius: 10px;
+  font-size: 13.5px;
   box-sizing: border-box;
-  background: #17171b;
+  background: #1c1c21;
   color: var(--text-light);
   outline: none;
   margin-bottom: 0;
+  transition: border-color 0.2s;
 }
 .cgv-input-text::placeholder { color: var(--muted); }
 .cgv-input-text:focus {
@@ -2571,18 +2580,37 @@ select.profile-readonly-input:not([disabled]) {
   background-color: #ff6b35;
   color: white;
   font-weight: bold;
-  font-size: 15px;
+  font-size: 14.5px;
   width: 100%;
   padding: 12px;
   border: none;
   cursor: pointer;
   margin-top: 10px;
-  border-radius: 2px;
+  border-radius: 10px;
   text-transform: uppercase;
-  transition: background 0.2s;
+  letter-spacing: 0.3px;
+  transition: background 0.2s, transform 0.15s;
 }
 .btn-cgv-submit:hover {
   background-color: #e0551f;
+  transform: translateY(-1px);
+}
+.btn-cgv-cancel {
+  background-color: #26262c;
+  color: var(--text-light, #f4f4f5);
+  font-weight: bold;
+  font-size: 14.5px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-cgv-cancel:hover {
+  background-color: #333338;
+  transform: translateY(-1px);
 }
 .cgv-auth-footer {
   text-align: center;
@@ -3169,11 +3197,11 @@ select.profile-readonly-input:not([disabled]) {
   gap: 20px;
 }
 .metric-card {
-  background: white;
+  background: var(--surface, #141417);
   padding: 20px;
-  border-radius: 6px;
+  border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.12);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-card, 0 4px 18px rgba(0, 0, 0, 0.35));
 }
 .metric-title {
   font-size: 13px;
@@ -3738,10 +3766,10 @@ select.profile-readonly-input:not([disabled]) {
 .mp-table td {
   padding: 15px 10px;
   color: #c4c4cc;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 .mp-table tr:hover td {
-  background: #fafafa;
+  background: rgba(255,255,255,0.03);
 }
 
 /* ==========================================================================
@@ -3762,18 +3790,18 @@ select.profile-readonly-input:not([disabled]) {
 }
 
 .mp-btn-add {
-  background: #e53935;
+  background: var(--cgv-red);
   color: #fff;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 10px 22px;
+  border-radius: var(--radius-pill);
   font-weight: bold;
   font-size: 14px;
   cursor: pointer;
   transition: background 0.2s;
 }
 .mp-btn-add:hover {
-  background: #c62828;
+  background: var(--cgv-red-hover);
 }
 
 .mp-filters {
@@ -3800,23 +3828,28 @@ select.profile-readonly-input:not([disabled]) {
   outline: none;
   font-size: 13px;
   width: 200px;
+  background: var(--surface-2);
+  color: var(--text-dark);
   transition: border 0.2s;
 }
+.mp-search-box input::placeholder {
+  color: var(--muted);
+}
 .mp-search-box input:focus {
-  border-color: #e53935;
+  border-color: var(--cgv-red);
 }
 
 .mp-filter-select {
   padding: 9px 30px 9px 15px;
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 6px;
-  background-color: white;
-  color: #c4c4cc;
+  background-color: var(--surface-2);
+  color: var(--text-dark);
   font-size: 13px;
   outline: none;
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23777%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239a9aa3%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E");
   background-repeat: no-repeat;
   background-position: right 10px top 50%;
   background-size: 10px auto;
@@ -3824,8 +3857,10 @@ select.profile-readonly-input:not([disabled]) {
 
 /* Bảng Danh mục Phim */
 .mp-movie-table th {
-  color: #c4c4cc;
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   border-bottom: 2px solid rgba(255,255,255,0.12);
 }
 .mp-movie-table td {
@@ -3844,15 +3879,20 @@ select.profile-readonly-input:not([disabled]) {
   border-radius: 4px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
+.mp-movie-title {
+  font-weight: bold;
+  color: var(--text-light);
+  font-size: 13.5px;
+}
 .mp-movie-title-vn {
   font-weight: bold;
-  color: #222;
+  color: var(--text-light);
   font-size: 13px;
   margin-bottom: 4px;
 }
 .mp-movie-title-en {
   font-size: 11px;
-  color: #9a9aa3;
+  color: var(--muted);
 }
 
 /* Badges */
@@ -3862,35 +3902,39 @@ select.profile-readonly-input:not([disabled]) {
   align-items: center;
 }
 .mp-badge {
-  padding: 2px 5px;
-  border-radius: 3px;
+  padding: 2px 7px;
+  border-radius: 6px;
   font-size: 10px;
   font-weight: bold;
   color: white;
 }
 .mp-badge.c18 {
-  background-color: #d32f2f;
+  background-color: var(--danger);
 }
 .mp-badge.c13 {
-  background-color: #4caf50;
+  background-color: var(--success);
 }
 .mp-badge.p {
-  background-color: #8bc34a;
+  background-color: var(--success);
 }
 
 .mp-status {
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: var(--radius-pill);
   font-size: 11px;
   font-weight: bold;
 }
 .mp-status.active {
-  background: #e0f2f1;
-  color: #00897b;
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+.mp-status.coming {
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 .mp-status.inactive {
-  background: #1c1c21;
-  color: #757575;
+  background: rgba(255,255,255,0.06);
+  color: var(--muted);
 }
 
 /* Các nút hành động Icon */
@@ -3911,25 +3955,57 @@ select.profile-readonly-input:not([disabled]) {
   padding: 0;
 }
 .mp-action-btn:hover {
-  color: #e53935;
+  color: var(--cgv-red);
   transform: scale(1.1);
 }
 .mp-row-inactive {
-  background-color: #fbe9e7 !important;
+  background-color: transparent !important;
+}
+
+/* Genre pill + Rating chip (dùng cho bảng danh sách phim bên dưới Ma trận Lịch chiếu) */
+.mp-genre-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mp-genre-pill {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill, 20px);
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  color: #c4c4cc;
+  white-space: nowrap;
+}
+.mp-rating-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: bold;
+  font-size: 13px;
+  color: #f4b942;
+}
+.mp-duration-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #c4c4cc;
+  font-size: 13px;
 }
 
 /* Modal Xóa Phim */
 .mp-delete-popup {
   width: 400px;
-  background: white;
-  border-radius: 8px;
+  background: var(--surface, #141417);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
   text-align: center;
   animation: fadeIn 0.2s ease-in-out;
 }
 .mp-delete-header {
-  background: #c62828;
+  background: var(--cgv-red, #ff6b35);
   color: white;
   padding: 15px;
   font-size: 16px;
@@ -4126,7 +4202,7 @@ select.profile-readonly-input:not([disabled]) {
 
 .mp-matrix-row {
   display: flex;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
   height: 90px;
 }
 
@@ -4138,8 +4214,8 @@ select.profile-readonly-input:not([disabled]) {
     to right,
     transparent,
     transparent calc(6.66% - 1px),
-    #f9f9f9 calc(6.66% - 1px),
-    #f9f9f9 6.66%
+    rgba(255,255,255,0.06) calc(6.66% - 1px),
+    rgba(255,255,255,0.06) 6.66%
   );
 }
 
@@ -4151,14 +4227,16 @@ select.profile-readonly-input:not([disabled]) {
   border-radius: 6px;
   padding: 8px;
   color: #fff;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition:
     transform 0.2s,
     z-index 0.2s;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 .mp-track-block:hover {
   transform: scale(1.02);
@@ -4168,7 +4246,8 @@ select.profile-readonly-input:not([disabled]) {
 /* Bảng màu khối phim */
 .mp-bg-yellow {
   background: #fdc02f;
-  color: #e4e4e7;
+  color: #241a00;
+  text-shadow: none;
 }
 .mp-bg-blue {
   background: #2b78c9;
@@ -4277,17 +4356,20 @@ select.profile-readonly-input:not([disabled]) {
 }
 
 .mp-modal-box {
-  background: white;
+  background: var(--surface, #141417);
   width: 450px;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  padding: 28px;
+  border-radius: 16px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
   position: relative;
+  color: var(--text-light, #f4f4f5);
 }
 .mp-modal-header {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 19px;
+  font-weight: 800;
   margin-bottom: 5px;
+  color: var(--text-light, #f4f4f5);
 }
 .mp-modal-sub {
   font-size: 13px;
@@ -4296,22 +4378,28 @@ select.profile-readonly-input:not([disabled]) {
 }
 .mp-modal-close {
   position: absolute;
-  top: 15px;
-  right: 15px;
+  top: 18px;
+  right: 18px;
   cursor: pointer;
   font-size: 20px;
   color: #8a8a94;
+  transition: color 0.2s;
+}
+.mp-modal-close:hover {
+  color: var(--cgv-red, #e71a0f);
 }
 
-/* Form Add Movie (Ảnh 4) */
+/* Form Add Movie */
 .mp-form-group {
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 .mp-form-group label {
   display: block;
-  font-weight: bold;
-  font-size: 13px;
-  margin-bottom: 5px;
+  font-weight: 600;
+  font-size: 12.5px;
+  margin-bottom: 6px;
+  color: #b8b3ff;
+  letter-spacing: 0.2px;
 }
 .mp-upload-zone {
   border: 2px dashed rgba(255,255,255,0.12);
@@ -4337,15 +4425,7 @@ select.profile-readonly-input:not([disabled]) {
   display: flex;
 }
 
-/* Bọc form trong modal */
-.mp-modal-box {
-  background: white;
-  width: 500px;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  position: relative;
-}
+/* Bọc form trong modal (dùng chung .mp-modal-box đã định nghĩa ở trên, width tuỳ modal override qua inline style) */
 /* ==========================================================================
    CINEMA MANAGER PRO - QUẢN LÝ KHO F&B
    ========================================================================== */
@@ -4487,33 +4567,7 @@ select.profile-readonly-input:not([disabled]) {
   border-bottom: 1px solid #ffebee;
 }
 
-/* Modal Tạo Khuyến Mãi */
-.mp-modal-box {
-  background: white;
-  width: 450px;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  position: relative;
-}
-.mp-modal-header {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-.mp-modal-sub {
-  font-size: 13px;
-  color: #a8a8b3;
-  margin-bottom: 20px;
-}
-.mp-modal-close {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  cursor: pointer;
-  font-size: 20px;
-  color: #8a8a94;
-}
+/* Modal Tạo Khuyến Mãi (dùng chung .mp-modal-box / .mp-modal-header / .mp-modal-close đã định nghĩa ở trên) */
 .mp-input-group {
   margin-bottom: 15px;
 }

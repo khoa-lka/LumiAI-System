@@ -83,6 +83,15 @@ window.openDashboardConfirm = openDashboardConfirm;
 window.closeDashboardConfirm = closeDashboardConfirm;
 window.confirmGoDashboard = confirmGoDashboard;
 
+// 🌟 HÀM DÙNG CHUNG: Lấy chữ cái đại diện Avatar = chữ cái ĐẦU TIÊN của tên
+function getNameAvatarInitial(fullName) {
+  if (!fullName) return "?";
+  const trimmed = fullName.trim();
+  if (!trimmed) return "?";
+  return trimmed.charAt(0).toUpperCase();
+}
+window.getNameAvatarInitial = getNameAvatarInitial;
+
 window.syncUserLoginSession = function () {
   const cachedUser = localStorage.getItem("las_logged_in_user");
   if (cachedUser) {
@@ -103,6 +112,30 @@ window.syncUserLoginSession = function () {
       document.getElementById("top-bar-ticket-link").innerHTML =
         `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
     }
+
+    // 🌟 Đồng bộ lại Avatar / Tên / Vai trò trên tab "Tài Khoản LAS"
+    // (bắt buộc phải làm lại ở đây vì khi RELOAD trang, hàm xử lý đăng nhập
+    //  gốc không chạy lại, nếu không phần này sẽ đứng yên ở giá trị mặc định)
+    if (document.getElementById("profile-summary-avatar")) {
+      document.getElementById("profile-summary-avatar").innerText =
+        getNameAvatarInitial(uData.fullName);
+    }
+    const welcomeNameBoxSync = document.getElementById("profile-welcome-name");
+    if (welcomeNameBoxSync) welcomeNameBoxSync.innerText = uData.fullName;
+
+    let syncRoleString = "Khách hàng thành viên";
+    if (uData.roleId === 1) syncRoleString = "Quản lý (MANAGER)";
+    if (uData.roleId === 2) syncRoleString = "Nhân viên cụm rạp (STAFF)";
+    if (uData.roleId === 4) syncRoleString = "Quản trị viên (ADMIN)";
+
+    if (document.getElementById("profile-field-name"))
+      document.getElementById("profile-field-name").value = uData.fullName;
+    if (document.getElementById("profile-field-phone"))
+      document.getElementById("profile-field-phone").value = uData.phoneNumber;
+    if (document.getElementById("profile-field-email"))
+      document.getElementById("profile-field-email").value = uData.email;
+    if (document.getElementById("profile-field-role"))
+      document.getElementById("profile-field-role").value = syncRoleString;
 
     // 🌟 Khôi phục hiển thị tab "TRUY CẬP DASHBOARD" theo vai trò đã lưu
     window.refreshDashboardTab(uData.roleId);
@@ -787,7 +820,7 @@ localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
 
         if (document.getElementById("profile-summary-avatar")) {
           document.getElementById("profile-summary-avatar").innerText =
-            uData.fullName.split(" ").pop().substring(0, 2).toUpperCase();
+            getNameAvatarInitial(uData.fullName);
         }
 
         const welcomeNameBox = document.getElementById("profile-welcome-name");

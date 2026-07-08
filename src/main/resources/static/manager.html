@@ -4,13 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LAS Cinemas - Manager Portal</title>
-    <link rel="stylesheet" href="style.css?v=15" />
+    <link rel="stylesheet" href="style.css?v=19" />
   </head>
   <body>
     <div class="manager-pro-layout">
       <div class="mp-sidebar">
         <div class="mp-logo-zone">
-          <div class="mp-logo-icon">🎬</div>
           CinemaManager Pro
         </div>
         <ul class="mp-nav-list">
@@ -19,7 +18,6 @@
             id="mp-nav-dashboard"
             onclick="switchMpTab('dashboard')"
           >
-            <span class="mp-nav-icon">📊</span>
             <div class="mp-nav-text">
               <strong>Dashboard</strong
               ><span class="mp-nav-subtext">Tổng quan</span>
@@ -212,7 +210,6 @@
 
             <div class="mp-filters">
               <div class="mp-search-box">
-                <span class="mp-search-icon">🔍</span>
                 <input
                   type="text"
                   id="mp-search-input"
@@ -250,7 +247,7 @@
 
           <div class="mp-box" style="padding: 0; overflow: hidden">
             <table class="mp-table mp-movie-table">
-              <thead style="background: #0b0b0e">
+              <thead style="background: var(--cgv-black)">
                 <tr>
                   <th style="width: 50px; text-align: center">ID</th>
                   <th>Movie Title (VN/EN)</th>
@@ -274,7 +271,7 @@
         <div id="mp-tab-matrix" class="mp-tab-section">
           <div class="mp-action-bar">
             <div style="font-weight: bold; color: #e4e4e7; cursor: pointer">
-              Lịch chiếu ∨
+              Lịch chiếu
             </div>
             <div class="mp-filters">
               <!-- Thay thế date picker tĩnh bằng ô input date động -->
@@ -299,7 +296,7 @@
             <div class="mp-matrix-row">
               <div class="mp-matrix-room-col">
                 <span class="mp-matrix-room-name">Screen 1</span>
-                <span style="font-size:10px;color:#666;display:block;">Standard</span>
+                <span style="font-size:10px;color:var(--muted, #9a9aa3);display:block;">Standard</span>
               </div>
               <div class="mp-matrix-tracks" id="matrix-track-room-1">
                 <!-- Suất chiếu động của phòng 1 tự đổ vào đây -->
@@ -310,11 +307,42 @@
             <div class="mp-matrix-row">
               <div class="mp-matrix-room-col">
                 <span class="mp-matrix-room-name">Screen 2</span>
-                <span style="font-size:10px;color:#d32f2f;display:block;">IMAX</span>
+                <span style="font-size:10px;color:var(--cgv-red, #ff6b35);display:block;">IMAX</span>
               </div>
               <div class="mp-matrix-tracks" id="matrix-track-room-2">
                 <!-- Suất chiếu động của phòng 2 tự đổ vào đây -->
               </div>
+            </div>
+          </div>
+
+          <!-- ========================================== -->
+          <!-- 🎬 BẢNG DANH SÁCH PHIM (THAM KHẢO) BÊN DƯỚI MA TRẬN -->
+          <!-- ========================================== -->
+          <div style="margin-top: 24px">
+            <div style="font-weight: bold; color: #e4e4e7; margin-bottom: 12px">
+              Danh Sách Phim
+            </div>
+            <div class="mp-box" style="padding: 0; overflow: hidden">
+              <table class="mp-table mp-movie-table">
+                <thead style="background: var(--cgv-black)">
+                  <tr>
+                    <th>Movie</th>
+                    <th>Genre</th>
+                    <th>Duration</th>
+                    <th>Rating</th>
+                    <th>Status</th>
+                    <th>Release Date</th>
+                    <th style="text-align: center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="mp-matrix-movies-tbody">
+                  <tr>
+                    <td colspan="7" style="text-align: center; padding: 20px; color: #888">
+                      Đang tải danh sách phim...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -327,8 +355,8 @@
               </h3>
               <div class="mp-fnb-actions">
                 <button class="mp-btn-add" onclick="openAddFnbModal()">Thêm sản phẩm mới</button>
-                <button class="mp-btn-add" style="background: #d32f2f" onclick="openQuickRestockModal()">Nhập hàng</button>
-                <button class="mp-btn-add" style="background: #c62828" onclick="handleAutoReplenish()">Tái cung ứng</button>
+                <button class="mp-btn-add" style="background: var(--cgv-red, #ff6b35)" onclick="openQuickRestockModal()">Nhập hàng</button>
+                <button class="mp-btn-add" style="background: var(--cgv-red, #ff6b35)" onclick="handleAutoReplenish()">Tái cung ứng</button>
               </div>
             </div>
             <div class="mp-fnb-bottom-row">
@@ -537,10 +565,9 @@
       <div
         class="mp-modal-box"
         style="
-          background: white;
           width: 750px;
-          padding: 25px;
-          border-radius: 8px;
+          padding: 28px;
+          border-radius: 16px;
           max-height: 90vh;
           overflow-y: auto;
         "
@@ -554,12 +581,12 @@
         </div>
         <div
           class="mp-modal-header"
-          style="font-weight: bold; font-size: 18px; margin-bottom: 20px"
+          style="margin-bottom: 20px"
         >
           Thêm Phim Mới
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px">
           <div class="mp-form-group">
             <label>Tên phim (Tiếng Việt)</label
             ><input type="text" id="add-title" class="cgv-input-text" />
@@ -615,17 +642,18 @@
           </div>
         </div>
 
-        <div class="mp-form-group" style="margin-top: 15px">
-          <label>Trạng thái</label><br />
-          <input type="radio" name="add_status" value="now_showing" checked />
-          Đang chiếu
-          <input
-            type="radio"
-            name="add_status"
-            value="coming_soon"
-            style="margin-left: 15px"
-          />
-          Sắp chiếu
+        <div class="mp-form-group" style="margin-top: 6px">
+          <label>Trạng thái</label>
+          <div style="display: flex; gap: 20px; align-items: center;">
+            <label style="display:flex; align-items:center; gap:6px; font-weight:normal; color: var(--text-light); margin:0;">
+              <input type="radio" name="add_status" value="now_showing" checked />
+              Đang chiếu
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; font-weight:normal; color: var(--text-light); margin:0;">
+              <input type="radio" name="add_status" value="coming_soon" />
+              Sắp chiếu
+            </label>
+          </div>
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 20px">
@@ -666,138 +694,6 @@
       <div
         class="mp-modal-box"
         style="
-          background: white;
-          width: 750px;
-          padding: 25px;
-          border-radius: 8px;
-          max-height: 90vh;
-          overflow-y: auto;
-        "
-      >
-        <input type="hidden" id="upd-movie-id" />
-
-        <div
-          class="mp-modal-close"
-          onclick="closeUpdateMovie()"
-          style="cursor: pointer; float: right; font-weight: bold"
-        >
-          ✕
-        </div>
-        <div
-          class="mp-modal-header"
-          style="font-weight: bold; font-size: 18px; margin-bottom: 20px"
-        >
-          Thêm Phim Mới
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px">
-          <div class="mp-form-group">
-            <label>Tên phim (Tiếng Việt)</label
-            ><input type="text" id="add-title" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group">
-            <label>Thể loại</label
-            ><input type="text" id="add-genre" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group">
-            <label>Thời lượng (phút)</label
-            ><input type="number" id="add-duration" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group">
-            <label>Đạo diễn</label
-            ><input type="text" id="add-director" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group">
-            <label>Quốc gia</label
-            ><input type="text" id="add-country" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group" style="grid-column: span 2">
-            <label>Diễn viên</label
-            ><input type="text" id="add-performer" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group" style="grid-column: span 2">
-            <label>Tóm tắt (Synopsis)</label
-            ><textarea
-              id="add-synopsis"
-              class="cgv-input-text"
-              rows="2"
-            ></textarea>
-          </div>
-          <div class="mp-form-group">
-            <label>Poster chính (URL)</label
-            ><input type="text" id="add-mainposter" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group">
-            <label>Poster phụ (URL)</label
-            ><input type="text" id="add-subposter" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group">
-            <label>Ngày phát hành</label
-            ><input type="date" id="add-release" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group">
-            <label>Độ tuổi</label>
-            <select id="add-age" class="cgv-input-text">
-              <option value="0">P</option>
-              <option value="13">T13</option>
-              <option value="16">T16</option>
-              <option value="18">T18</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="mp-form-group" style="margin-top: 15px">
-          <label>Trạng thái</label><br />
-          <input type="radio" name="add_status" value="now_showing" checked />
-          Đang chiếu
-          <input
-            type="radio"
-            name="add_status"
-            value="coming_soon"
-            style="margin-left: 15px"
-          />
-          Sắp chiếu
-        </div>
-
-        <div style="display: flex; gap: 10px; margin-top: 20px">
-          <button
-            class="btn-cgv-cancel"
-            onclick="closeAddMovie()"
-            style="flex: 1; cursor: pointer"
-          >
-            Hủy
-          </button>
-          <button
-            class="btn-cgv-submit"
-            onclick="submitAddMovie()"
-            style="flex: 1; cursor: pointer"
-          >
-            LƯU
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div
-      class="mp-modal-overlay"
-      id="mp-update-movie-modal"
-      style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 9999;
-        align-items: center;
-        justify-content: center;
-      "
-    >
-      <div
-        class="mp-modal-box"
-        style="
-          background: white;
           width: 750px;
           padding: 25px;
           border-radius: 8px;
@@ -821,7 +717,7 @@
           Cập Nhật Phim
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px">
           <div class="mp-form-group">
             <label>Tên phim (Tiếng Việt)</label
             ><input type="text" id="upd-title" class="cgv-input-text" />
@@ -934,7 +830,6 @@
       <div
         class="mp-delete-popup"
         style="
-          background: white;
           padding: 25px;
           border-radius: 8px;
           width: 450px;
@@ -984,7 +879,7 @@
             style="
               padding: 8px 15px;
               cursor: pointer;
-              background: #d32f2f;
+              background: var(--cgv-red, #ff6b35);
               color: white;
               border: none;
               border-radius: 4px;
@@ -1015,7 +910,6 @@
       <div
         class="mp-modal-box"
         style="
-          background: white;
           width: 700px;
           padding: 25px;
           border-radius: 8px;
@@ -1144,11 +1038,284 @@
       </div>
     </div>
 
-    <script src="js/state.js?v=15"></script>
-    <script src="js/api.js?v=15"></script>
-    <script src="js/manager.js?v=15"></script>
-    <script src="js/manager-dashboard.js?v=15"></script>
-    <script src="js/admin.js?v=15"></script>
+    <!-- ========================================== -->
+    <!-- 📅 MODAL "XEM" DÀNH RIÊNG CHO TAB MA TRẬN LỊCH CHIẾU -->
+    <!-- (Thông tin cơ bản + thời lượng + danh sách suất chiếu: ngày/giờ/phòng) -->
+    <!-- ========================================== -->
+    <div
+      class="mp-modal-overlay"
+      id="mp-matrix-view-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        class="mp-modal-box"
+        style="
+          width: 700px;
+          padding: 25px;
+          border-radius: 8px;
+          max-height: 90vh;
+          overflow-y: auto;
+        "
+      >
+        <input type="hidden" id="mxview-movie-id" />
+
+        <div
+          class="mp-modal-close"
+          onclick="closeMatrixViewMovie()"
+          style="cursor: pointer; float: right; font-weight: bold"
+        >
+          ✕
+        </div>
+        <div
+          class="mp-modal-header"
+          style="
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #e4e4e7;
+            border-bottom: 2px solid #fdfcf7;
+            padding-bottom: 10px;
+          "
+        >
+          Chi Tiết Suất Chiếu
+        </div>
+
+        <div style="display: flex; gap: 25px">
+          <div style="flex: 1; text-align: center">
+            <img
+              id="mxview-poster"
+              src=""
+              alt="Poster Phim"
+              style="
+                width: 100%;
+                max-width: 170px;
+                border-radius: 6px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+              "
+            />
+          </div>
+
+          <div
+            style="
+              flex: 2;
+              display: grid;
+              grid-template-columns: 1fr;
+              gap: 10px;
+              font-size: 14px;
+              color: #d4d4d8;
+            "
+          >
+            <div>
+              <strong>Tên phim:</strong>
+              <span
+                id="mxview-title"
+                style="font-size: 16px; color: #e71a0f; font-weight: bold"
+              ></span>
+            </div>
+            <div><strong>Thể loại:</strong> <span id="mxview-genre"></span></div>
+            <div>
+              <strong>Thời lượng:</strong> <span id="mxview-duration"></span> phút
+            </div>
+            <div><strong>Đạo diễn:</strong> <span id="mxview-director"></span></div>
+            <div><strong>Quốc gia:</strong> <span id="mxview-country"></span></div>
+            <div>
+              <strong>Trạng thái hệ thống:</strong>
+              <span id="mxview-status" style="font-weight: bold"></span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style="
+            margin-top: 22px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.12);
+            padding-top: 15px;
+          "
+        >
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 10px;
+            "
+          >
+            <strong style="color: #f4f4f5">Suất chiếu đã thêm</strong>
+            <input
+              type="date"
+              id="mxview-date-input"
+              class="cgv-input-text"
+              style="padding: 4px 8px; font-size: 12px; width: 150px"
+              onchange="reloadMatrixViewSchedule()"
+            />
+          </div>
+          <div id="mxview-schedule-list" style="max-height: 220px; overflow-y: auto"></div>
+        </div>
+
+        <div style="margin-top: 20px; text-align: right">
+          <button
+            class="btn-cgv-cancel"
+            onclick="closeMatrixViewMovie()"
+            style="padding: 8px 25px; cursor: pointer"
+          >
+            Đóng lại
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ✏️ MODAL "SỬA" GỌN NHẸ DÀNH RIÊNG CHO TAB MA TRẬN LỊCH CHIẾU -->
+    <!-- (Chỉ sửa Thời lượng + Trạng thái - phục vụ xếp lịch, KHÔNG lặp -->
+    <!--  lại toàn bộ thông tin chi tiết phim vốn đã có ở tab "Phim") -->
+    <!-- ========================================== -->
+    <div
+      class="mp-modal-overlay"
+      id="mp-matrix-edit-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        class="mp-modal-box"
+        style="
+          width: 620px;
+          padding: 25px;
+          border-radius: 8px;
+          max-height: 90vh;
+          overflow-y: auto;
+        "
+      >
+        <input type="hidden" id="mxedit-movie-id" />
+
+        <div
+          class="mp-modal-close"
+          onclick="closeMatrixEditMovie()"
+          style="cursor: pointer; float: right; font-weight: bold"
+        >
+          ✕
+        </div>
+        <div
+          class="mp-modal-header"
+          style="font-weight: bold; font-size: 18px; margin-bottom: 6px"
+        >
+          Sửa Thông Tin Suất Chiếu
+        </div>
+        <div style="font-size: 12px; color: #8a8a94; margin-bottom: 18px">
+          Chỉ sửa thời lượng/trạng thái phục vụ xếp lịch. Muốn sửa đầy đủ thông
+          tin phim (thể loại, đạo diễn, poster...), vào tab "Phim".
+        </div>
+
+        <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 18px">
+          <img
+            id="mxedit-poster"
+            src=""
+            alt="Poster Phim"
+            style="width: 55px; height: 80px; object-fit: cover; border-radius: 4px"
+          />
+          <div>
+            <div id="mxedit-title" style="font-weight: bold; color: #e4e4e7; font-size: 15px"></div>
+            <div id="mxedit-meta" style="font-size: 12px; color: #9a9aa3; margin-top: 3px"></div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px">
+          <div class="mp-form-group">
+            <label>Thời lượng (phút)</label
+            ><input type="number" id="mxedit-duration" class="cgv-input-text" />
+          </div>
+          <div class="mp-form-group">
+            <label>Trạng thái</label><br />
+            <input type="radio" name="mxedit_status" value="now_showing" /> Đang
+            chiếu
+            <input
+              type="radio"
+              name="mxedit_status"
+              value="coming_soon"
+              style="margin-left: 15px"
+            />
+            Sắp chiếu
+          </div>
+        </div>
+
+        <div
+          style="
+            margin-top: 20px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.12);
+            padding-top: 15px;
+          "
+        >
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 10px;
+            "
+          >
+            <strong style="color: #f4f4f5">Suất chiếu đã thêm</strong>
+            <input
+              type="date"
+              id="mxedit-date-input"
+              class="cgv-input-text"
+              style="padding: 4px 8px; font-size: 12px; width: 150px"
+              onchange="reloadMatrixEditSchedule()"
+            />
+          </div>
+          <div id="mxedit-schedule-list" style="max-height: 180px; overflow-y: auto"></div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px">
+          <button
+            class="btn-cgv-cancel"
+            onclick="closeMatrixEditMovie()"
+            style="flex: 1; cursor: pointer"
+          >
+            Hủy
+          </button>
+          <button
+            class="btn-cgv-submit"
+            onclick="submitMatrixEditMovie()"
+            style="
+              flex: 1;
+              cursor: pointer;
+              background: #e71a0f;
+              color: white;
+              border: none;
+              padding: 10px;
+            "
+          >
+            LƯU
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/state.js?v=19"></script>
+    <script src="js/api.js?v=19"></script>
+    <script src="js/manager.js?v=19"></script>
+    <script src="js/manager-dashboard.js?v=19"></script>
+    <script src="js/admin.js?v=19"></script>
 
     <script>
       // HÀM CHUYỂN TAB MẠNH MẼ (KHÔNG BỊ LỖI CHẶN)
@@ -1188,6 +1355,14 @@
         const titleEl = document.getElementById("mp-dynamic-title");
         if (titleEl) titleEl.innerText = titles[tabId] || "Manager Portal";
 
+        // 0. Vẽ lại Dashboard (dữ liệu tĩnh) mỗi khi quay lại Tab Dashboard
+        if (tabId === "dashboard" && typeof renderManagerDashboard === "function") {
+          try {
+            renderManagerDashboard();
+          } catch (err) {
+            console.error("Lỗi khi render Dashboard:", err);
+          }
+        }
         // 1. Gọi API nạp dữ liệu phim khi qua Tab Movies
         if (tabId === "movies" && typeof loadManagerMovies === "function") {
           try {
@@ -1224,7 +1399,7 @@
     </script>
 
     <div class="mp-modal-overlay" id="mp-fnb-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-      <div class="mp-modal-box" style="background: white; width: 450px; padding: 25px; border-radius: 8px;">
+      <div class="mp-modal-box" style="width: 450px; padding: 26px; border-radius: 16px;">
         <div class="mp-modal-close" onclick="closeFnbModal()" style="cursor: pointer; float: right; font-weight: bold;">✕</div>
         <div class="mp-modal-header" id="fnb-modal-title" style="font-weight: bold; font-size: 18px; margin-bottom: 20px;">Thêm Sản Phẩm F&B Mới</div>
         <input type="hidden" id="fnb-item-id" />
@@ -1247,9 +1422,9 @@
       </div>
     </div>
     <div class="mp-modal-overlay" id="mp-add-showtime-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-      <div class="mp-modal-box" style="background: white; width: 450px; padding: 25px; border-radius: 8px; box-sizing: border-box;">
+      <div class="mp-modal-box" style="width: 450px; padding: 26px; border-radius: 16px; box-sizing: border-box;">
         <div class="mp-modal-close" onclick="closeAddShowtimeModal()" style="cursor: pointer; float: right; font-weight: bold;">✕</div>
-        <div class="mp-modal-header" style="font-weight: bold; font-size: 18px; margin-bottom: 20px; color:#111;">Tạo Suất Chiếu Mới</div>
+        <div class="mp-modal-header" style="margin-bottom: 20px;">Tạo Suất Chiếu Mới</div>
         
         <div class="mp-form-group" style="margin-bottom: 15px;">
           <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Chọn bộ phim</label>
@@ -1275,7 +1450,7 @@
         </div>
         
         <div style="display: flex; gap: 10px;">
-          <button class="btn-cgv-cancel" onclick="closeAddShowtimeModal()" style="flex: 1; cursor: pointer; padding:10px; border-radius:4px; border:1px solid #ccc; background:#fff;">Hủy bỏ</button>
+          <button class="btn-cgv-cancel" onclick="closeAddShowtimeModal()" style="flex: 1; cursor: pointer;">Hủy bỏ</button>
           <button class="btn-cgv-submit" onclick="submitAddShowtimeForm()" style="flex: 1; cursor: pointer; background:#e71a0f; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold;">XẾP LỊCH NGAY</button>
         </div>
       </div>
