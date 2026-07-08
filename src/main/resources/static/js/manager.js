@@ -37,10 +37,12 @@ window.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // Nếu hợp lệ, tự động load danh sách phim
+  // Nếu hợp lệ, tự động load danh sách phim + dashboard analytics
   const titleEl = document.getElementById("mp-dynamic-title");
   if (titleEl) titleEl.innerText = `Xin chào Manager: ${info.fullName}`;
   loadManagerMovies();
+  if (typeof window.loadManagerDashboard === "function")
+    window.loadManagerDashboard();
 });
 
 // --- THOÁT VAI TRÒ MANAGER, QUAY VỀ GIAO DIỆN CUSTOMER (index.html) ---
@@ -75,6 +77,9 @@ function switchMpTab(tabId) {
     targetTab.classList.add("active");
   }
   if (targetNav) targetNav.classList.add("active");
+
+  if (tabId === "dashboard" && typeof window.loadManagerDashboard === "function")
+    window.loadManagerDashboard();
 
   // Cập nhật tiêu đề trang
   const titleElement = document.getElementById("mp-dynamic-title");

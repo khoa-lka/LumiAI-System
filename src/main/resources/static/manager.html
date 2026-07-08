@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LAS Cinemas - Manager Portal</title>
-    <link rel="stylesheet" href="style.css?v=12" />
+    <link rel="stylesheet" href="style.css?v=15" />
   </head>
   <body>
     <div class="manager-pro-layout">
@@ -133,160 +133,75 @@
         </div>
 
         <div id="mp-tab-dashboard" class="mp-tab-section active">
-          <div class="mp-metrics-grid">
-            <div class="mp-card">
-              <div class="mp-card-icon">💰</div>
-              <div class="mp-card-info">
-                <div class="mp-card-title">Doanh thu hôm nay</div>
-                <div class="mp-card-value">
-                  125,000,000
-                  <span style="font-size: 12px; font-weight: normal">VND</span>
+          <div class="md-head">
+            <h1 class="md-head-title">Tổng Quan Phân Tích</h1>
+            <p class="md-head-sub">Chào mừng trở lại. Đây là hoạt động của rạp hôm nay.</p>
+          </div>
+
+          <div class="md-metrics" id="md-metrics"></div>
+
+          <div class="md-row-2">
+            <div class="md-box">
+              <div class="md-box-head">
+                <div>
+                  <h3 class="md-box-title">Doanh Thu &amp; Vé (Xu hướng)</h3>
+                  <span class="md-box-sub">6 tháng gần nhất</span>
                 </div>
-                <div class="mp-trend-up">↗ +15% vs hôm qua</div>
-              </div>
-            </div>
-            <div class="mp-card">
-              <div class="mp-card-icon">🎟️</div>
-              <div class="mp-card-info">
-                <div class="mp-card-title">Vé đã xuất</div>
-                <div class="mp-card-value">
-                  1,240
-                  <span style="font-size: 14px; font-weight: normal">vé</span>
-                </div>
-              </div>
-            </div>
-            <div class="mp-card">
-              <div class="mp-card-icon">💺</div>
-              <div class="mp-card-info">
-                <div class="mp-card-title">Tỷ lệ lấp đầy ghế</div>
-                <div class="mp-card-value">78%</div>
-                <div class="mp-progress-bar">
-                  <div class="mp-progress-fill"></div>
+                <div class="md-seg">
+                  <button class="md-seg-btn active" onclick="mdSwitchTrend('6M', this)">6T</button>
+                  <button class="md-seg-btn" onclick="mdSwitchTrend('3M', this)">3T</button>
+                  <button class="md-seg-btn" onclick="mdSwitchTrend('1M', this)">1T</button>
                 </div>
               </div>
+              <div class="md-chart-host" id="md-trend-chart"></div>
             </div>
-            <div class="mp-card">
-              <div class="mp-card-icon">🍿</div>
-              <div class="mp-card-info">
-                <div class="mp-card-title">Combo F&B bán ra</div>
-                <div class="mp-card-value">
-                  450
-                  <span style="font-size: 14px; font-weight: normal"
-                    >combo</span
-                  >
+
+            <div class="md-box">
+              <div class="md-box-head">
+                <div>
+                  <h3 class="md-box-title">Phân Bố Thể Loại</h3>
+                  <span class="md-box-sub">Tỷ trọng theo thể loại phim</span>
                 </div>
+              </div>
+              <div class="md-genre-wrap">
+                <div class="md-donut-host" id="md-genre-chart"></div>
+                <div class="md-genre-legend" id="md-genre-legend"></div>
               </div>
             </div>
           </div>
 
-          <div class="mp-charts-zone">
-            <div class="mp-box">
-              <h3 class="mp-box-title">Biến động doanh thu 7 ngày gần nhất</h3>
-              <div class="mp-bar-chart">
-                <div class="mp-y-axis">
-                  <span>100M</span><span>75M</span><span>50M</span
-                  ><span>25M</span><span>0</span>
-                </div>
-                <div class="mp-bar" style="height: 25%; background: #ef5350">
-                  <span class="mp-bar-label">14/06</span>
-                </div>
-                <div class="mp-bar" style="height: 55%; background: #ff9800">
-                  <span class="mp-bar-label">15/06</span>
-                </div>
-                <div class="mp-bar" style="height: 40%; background: #ffca28">
-                  <span class="mp-bar-label">16/06</span>
-                </div>
-                <div class="mp-bar" style="height: 65%; background: #26a69a">
-                  <span class="mp-bar-label">17/06</span>
-                </div>
-                <div class="mp-bar" style="height: 90%; background: #42a5f5">
-                  <span class="mp-bar-label">18/06</span>
-                </div>
-                <div class="mp-bar" style="height: 80%; background: #ab47bc">
-                  <span class="mp-bar-label">19/06</span>
-                </div>
-                <div class="mp-bar" style="height: 60%; background: #26a69a">
-                  <span class="mp-bar-label">20/06</span>
+          <div class="md-row-2">
+            <div class="md-box">
+              <div class="md-box-head">
+                <div>
+                  <h3 class="md-box-title">Vé Bán Theo Tháng</h3>
+                  <span class="md-box-sub">Số vé bán mỗi tháng</span>
                 </div>
               </div>
+              <div class="md-chart-host" id="md-bar-chart"></div>
             </div>
-            <div class="mp-box">
-              <h3 class="mp-box-title">Cơ cấu doanh thu</h3>
-              <div class="mp-donut-chart">
-                <div class="mp-donut-circle">
-                  <div class="mp-donut-hole"></div>
-                  <div class="mp-donut-labels">
-                    <span class="mp-label-30">30%</span
-                    ><span class="mp-label-70">70%</span>
-                  </div>
+
+            <div class="md-box">
+              <div class="md-box-head">
+                <div>
+                  <h3 class="md-box-title">Top Phim Tuần Này</h3>
+                  <span class="md-box-sub">Theo đánh giá &amp; lượt đặt</span>
                 </div>
               </div>
-              <div class="mp-legend">
-                <div class="mp-legend-item">
-                  <div class="mp-dot" style="background: #1976d2"></div>
-                  Vé xem phim
-                </div>
-                <div class="mp-legend-item">
-                  <div class="mp-dot" style="background: #f57c00"></div>
-                  Bắp nước
-                </div>
-              </div>
+              <div class="md-top-list" id="md-top-movies"></div>
             </div>
           </div>
 
-          <div class="mp-box" style="padding: 0">
-            <h3 class="mp-box-title" style="padding: 25px 25px 0 25px">
-              Top 5 phim thịnh hành nhất
-            </h3>
-            <table class="mp-table">
-              <thead>
-                <tr>
-                  <th>Tên phim</th>
-                  <th>Phân loại tuổi</th>
-                  <th style="text-align: center">Tổng số suất chiếu</th>
-                  <th style="text-align: center">Lượng vé bán ra</th>
-                  <th style="text-align: right">Tổng doanh thu</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>Mắt Biếc</strong></td>
-                  <td>T16</td>
-                  <td style="text-align: center">58</td>
-                  <td style="text-align: center">272</td>
-                  <td style="text-align: right">125,000 VND</td>
-                </tr>
-                <tr>
-                  <td><strong>Lật Mặt 7</strong></td>
-                  <td>T13</td>
-                  <td style="text-align: center">29</td>
-                  <td style="text-align: center">331</td>
-                  <td style="text-align: right">115,000 VND</td>
-                </tr>
-                <tr>
-                  <td><strong>Mai</strong></td>
-                  <td>T18</td>
-                  <td style="text-align: center">30</td>
-                  <td style="text-align: center">250</td>
-                  <td style="text-align: right">87,000 VND</td>
-                </tr>
-                <tr>
-                  <td><strong>Doraemon 2026</strong></td>
-                  <td>P</td>
-                  <td style="text-align: center">20</td>
-                  <td style="text-align: center">350</td>
-                  <td style="text-align: right">50,000 VND</td>
-                </tr>
-                <tr>
-                  <td><strong>Bố Già</strong></td>
-                  <td>T13</td>
-                  <td style="text-align: center">19</td>
-                  <td style="text-align: center">300</td>
-                  <td style="text-align: right">20,000 VND</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="md-box" style="padding: 0">
+            <div class="md-box-head" style="padding: 20px 22px 0">
+              <h3 class="md-box-title">Giao Dịch Gần Đây</h3>
+            </div>
+            <div id="md-transactions"></div>
           </div>
+        </div>
+
+        <div id="mp-tab-dashboard-OLD" class="mp-tab-section" style="display:none">
+          <div class="mp-metrics-grid"></div>
         </div>
 
         <div id="mp-tab-movies" class="mp-tab-section">
@@ -1229,10 +1144,11 @@
       </div>
     </div>
 
-    <script src="js/state.js?v=12"></script>
-    <script src="js/api.js?v=12"></script>
-    <script src="js/manager.js?v=12"></script>
-    <script src="js/admin.js?v=12"></script>
+    <script src="js/state.js?v=15"></script>
+    <script src="js/api.js?v=15"></script>
+    <script src="js/manager.js?v=15"></script>
+    <script src="js/manager-dashboard.js?v=15"></script>
+    <script src="js/admin.js?v=15"></script>
 
     <script>
       // HÀM CHUYỂN TAB MẠNH MẼ (KHÔNG BỊ LỖI CHẶN)

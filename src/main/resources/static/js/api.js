@@ -117,6 +117,10 @@ const API = {
     fetch(`${BASE_URL}/voucher/${code}`).then(handleResponse),
 
   // 🍿 Kho F&B
+  // Manager Dashboard analytics (TỔNG HỢP) — backend cần trả về JSON theo spec.
+  getManagerDashboard: () =>
+    fetch(`${BASE_URL}/manager/dashboard`).then(handleResponse),
+
   getFnbItems: () => fetch(`${BASE_URL}/fnb`).then(handleResponse),
   addFnbItem: (data) => fetch(`${BASE_URL}/fnb`, {
     method: "POST",
