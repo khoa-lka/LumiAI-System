@@ -382,22 +382,15 @@
           </div>
 
           <div class="mp-box" style="padding: 0; position: relative">
-            <table class="mp-table mp-fnb-table">
-              <thead style="background: #0b0b0e">
+            <table class="mp-table mp-movie-table mp-fnb-table">
+              <thead style="background: var(--cgv-black)">
                 <tr>
-                  <th style="width: 40px; text-align: center">
-                    <input type="checkbox" />
-                  </th>
-                  <th style="width: 60px; text-align: center">Hình ảnh</th>
+                  <th style="width: 50px; text-align: center">STT</th>
+                  <th style="width: 70px">Hình ảnh</th>
                   <th>Tên sản phẩm</th>
                   <th>Loại</th>
                   <th style="text-align: right">Giá bán</th>
-                  <th style="text-align: center">
-                    Tồn kho<br /><span
-                      style="font-size: 10px; font-weight: normal"
-                      >(Hiện tại)</span
-                    >
-                  </th>
+                  <th style="text-align: center">Tồn kho</th>
                   <th style="text-align: center">Hành động</th>
                 </tr>
               </thead>
@@ -419,61 +412,40 @@
             </button>
             <div class="mp-filters">
               <div class="mp-search-box">
-                <span class="mp-search-icon">🔍</span
-                ><input type="text" placeholder="Tìm tên chiến dịch..." />
+                <input type="text" id="mp-promo-search-input" placeholder="Tìm tên chiến dịch..." oninput="filterManagerPromo()" />
               </div>
-              <select class="mp-filter-select">
-                <option>Type</option>
+              <select class="mp-filter-select" id="mp-promo-filter-type" onchange="filterManagerPromo()">
+                <option value="all">Type (Tất cả)</option>
+                <option value="fixed">Giảm giá cố định</option>
+                <option value="combo">Voucher Combo</option>
               </select>
-              <select class="mp-filter-select">
-                <option>Status</option>
+              <select class="mp-filter-select" id="mp-promo-filter-status" onchange="filterManagerPromo()">
+                <option value="all">Status (Tất cả)</option>
+                <option value="active">Active</option>
+                <option value="expired">Expired</option>
               </select>
             </div>
           </div>
           <div class="mp-box" style="padding: 0">
-            <table class="mp-table">
-              <thead style="background: #0b0b0e">
+            <table class="mp-table mp-movie-table">
+              <thead style="background: var(--cgv-black)">
                 <tr>
-                  <th style="width: 30px"><input type="checkbox" /></th>
-                  <th>Hình ảnh</th>
+                  <th style="width: 50px; text-align: center">STT</th>
+                  <th style="width: 70px">Hình ảnh</th>
                   <th>Tên chiến dịch / Mã Promo</th>
                   <th>Loại giảm giá</th>
                   <th>Giá trị</th>
                   <th>Thời gian áp dụng</th>
                   <th>Điều kiện</th>
-                  <th>Trạng thái</th>
+                  <th style="text-align: center">Trạng thái</th>
+                  <th style="text-align: center">Hành động</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td><input type="checkbox" /></td>
-                  <td>🎟️</td>
-                  <td><strong>Mừng AI 45K</strong><br />LUMIAI45K</td>
-                  <td>Giảm giá cố định</td>
-                  <td>45,000 VND</td>
-                  <td>01/06 - 31/07/2026</td>
-                  <td>Hóa đơn >= 150k</td>
-                  <td>
-                    <span class="mp-promo-status status-active">ACTIVE</span>
-                  </td>
-                </tr>
-                <tr class="mp-promo-expired">
-                  <td><input type="checkbox" /></td>
-                  <td>🍿</td>
-                  <td><strong>Combo Mùa Hè</strong><br />SUMMER2026</td>
-                  <td>Voucher Combo</td>
-                  <td>1 Combo</td>
-                  <td>01/05 - 20/06/2026</td>
-                  <td>Voucher vật lý</td>
-                  <td>
-                    <span class="mp-promo-status status-expired">EXPIRED</span>
-                  </td>
-                </tr>
-              </tbody>
+              <tbody id="mp-promo-tbody"></tbody>
             </table>
           </div>
           <div class="mp-fnb-tooltip" style="bottom: 20px; right: 20px">
-            <div style="color: #f57c00; font-size: 16px">⚠️</div>
+            <div style="color: var(--warning-text); font-size: 16px">⚠️</div>
             <div>
               <strong>Mã Voucher: SUMMER2026 - Đã hết hạn.</strong><br /><span
                 style="color: #a8a8b3"
@@ -1399,28 +1371,150 @@
     </script>
 
     <div class="mp-modal-overlay" id="mp-fnb-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-      <div class="mp-modal-box" style="width: 450px; padding: 26px; border-radius: 16px;">
-        <div class="mp-modal-close" onclick="closeFnbModal()" style="cursor: pointer; float: right; font-weight: bold;">✕</div>
-        <div class="mp-modal-header" id="fnb-modal-title" style="font-weight: bold; font-size: 18px; margin-bottom: 20px;">Thêm Sản Phẩm F&B Mới</div>
+      <div class="mp-modal-box">
+        <div class="mp-modal-close" onclick="closeFnbModal()">✕</div>
+        <div class="mp-modal-header" id="fnb-modal-title">Thêm Sản Phẩm F&B Mới</div>
         <input type="hidden" id="fnb-item-id" />
-        <div class="mp-form-group" style="margin-bottom: 15px;">
-          <label style="display:block; margin-bottom:5px;">Tên bắp nước / combo</label>
-          <input type="text" id="fnb-name" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        <div class="mp-form-group">
+          <label>Tên bắp nước / combo</label>
+          <input type="text" id="fnb-name" class="cgv-input-text" />
         </div>
-        <div class="mp-form-group" style="margin-bottom: 15px;">
-          <label style="display:block; margin-bottom:5px;">Giá bán (VND)</label>
-          <input type="number" id="fnb-price" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        <div class="mp-form-group">
+          <label>Giá bán (VND)</label>
+          <input type="number" id="fnb-price" class="cgv-input-text" />
         </div>
-        <div class="mp-form-group" style="margin-bottom: 20px;">
-          <label style="display:block; margin-bottom:5px;">Số lượng tồn kho</label>
-          <input type="number" id="fnb-stock" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        <div class="mp-form-group">
+          <label>Số lượng tồn kho</label>
+          <input type="number" id="fnb-stock" class="cgv-input-text" />
         </div>
-        <div style="display: flex; gap: 10px;">
-          <button class="btn-cgv-cancel" onclick="closeFnbModal()" style="flex: 1; cursor: pointer; padding:10px; border-radius:4px; border:1px solid #ccc;">Hủy</button>
-          <button class="btn-cgv-submit" onclick="submitFnbForm()" style="flex: 1; cursor: pointer; background:#e71a0f; color:white; border:none; padding:10px; border-radius:4px;">LƯU LẠI</button>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button class="btn-cgv-cancel" style="flex: 1;" onclick="closeFnbModal()">Hủy</button>
+          <button class="btn-cgv-submit" style="flex: 1; margin-top: 0;" onclick="submitFnbForm()">LƯU LẠI</button>
         </div>
       </div>
     </div>
+
+    <div class="mp-modal-overlay" id="mp-restock-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+      <div class="mp-modal-box">
+        <div class="mp-modal-close" onclick="closeRestockModal()">✕</div>
+        <div class="mp-modal-header">Nhập Hàng Vào Kho</div>
+
+        <div class="mp-form-group">
+          <label>Chọn sản phẩm</label>
+          <select id="restock-product-select" class="cgv-input-text" onchange="onRestockProductChange()"></select>
+        </div>
+
+        <div class="mp-form-group" style="background: var(--surface-2); border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color);">
+          <span style="color: var(--muted); font-size: 13px;">Tồn kho hiện tại</span>
+          <strong id="restock-current-stock" style="font-size: 16px; color: var(--text-light);">0</strong>
+        </div>
+
+        <div class="mp-form-group">
+          <label>Số lượng nhập thêm</label>
+          <input type="number" id="restock-add-qty" min="1" placeholder="VD: 50" class="cgv-input-text" />
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button class="btn-cgv-cancel" style="flex: 1;" onclick="closeRestockModal()">Hủy</button>
+          <button class="btn-cgv-submit" style="flex: 1; margin-top: 0;" onclick="submitRestockForm()">XÁC NHẬN NHẬP HÀNG</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mp-modal-overlay" id="mp-fnb-delete-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+      <div class="mp-modal-box" style="text-align: center;">
+        <div class="mp-modal-close" onclick="closeFnbDeleteModal()">✕</div>
+        <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+        <div class="mp-modal-header" style="margin-bottom: 10px;">Gỡ Sản Phẩm Khỏi Kho?</div>
+        <div class="mp-modal-sub" id="fnb-delete-item-name" style="margin-bottom: 20px;">
+          Bạn có chắc chắn muốn gỡ sản phẩm này ra khỏi kho hệ thống không?
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-cgv-cancel" style="flex: 1;" onclick="closeFnbDeleteModal()">Hủy</button>
+          <button class="btn-cgv-submit" style="flex: 1; margin-top: 0;" onclick="confirmDeleteFnb()">XÁC NHẬN XÓA</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mp-modal-overlay" id="mp-create-promo-modal">
+      <div class="mp-modal-box">
+        <div class="mp-modal-close" onclick="closeCreatePromoModal()">✕</div>
+        <div class="mp-modal-header" id="promo-modal-title">Tạo Chiến Dịch Khuyến Mãi</div>
+        <input type="hidden" id="promo-item-id" />
+
+        <div class="mp-form-group">
+          <label>Tên chiến dịch</label>
+          <input type="text" id="promo-name" class="cgv-input-text" placeholder="VD: Mừng AI 45K" />
+        </div>
+        <div class="mp-form-group">
+          <label>Mã Promo</label>
+          <input type="text" id="promo-code" class="cgv-input-text" placeholder="VD: LUMIAI45K" style="text-transform: uppercase;" />
+        </div>
+        <div class="mp-form-group">
+          <label>Biểu tượng hiển thị</label>
+          <select id="promo-icon" class="cgv-input-text">
+            <option value="🎟️">🎟️ Vé giảm giá</option>
+            <option value="🍿">🍿 Combo bắp nước</option>
+            <option value="🎁">🎁 Quà tặng</option>
+            <option value="💳">💳 Thanh toán / VNPay</option>
+            <option value="⭐">⭐ Thành viên / Rewards</option>
+          </select>
+        </div>
+        <div class="mp-form-group">
+          <label>Loại giảm giá</label>
+          <select id="promo-type" class="cgv-input-text">
+            <option value="fixed">Giảm giá cố định</option>
+            <option value="combo">Voucher Combo</option>
+          </select>
+        </div>
+        <div class="mp-form-group">
+          <label>Giá trị</label>
+          <input type="text" id="promo-value" class="cgv-input-text" placeholder="VD: 45,000 VND hoặc 1 Combo" />
+        </div>
+        <div class="mp-form-group" style="display: flex; gap: 10px;">
+          <div style="flex: 1;">
+            <label>Ngày bắt đầu</label>
+            <input type="date" id="promo-date-start" class="cgv-input-text" />
+          </div>
+          <div style="flex: 1;">
+            <label>Ngày kết thúc</label>
+            <input type="date" id="promo-date-end" class="cgv-input-text" />
+          </div>
+        </div>
+        <div class="mp-form-group">
+          <label>Điều kiện áp dụng</label>
+          <input type="text" id="promo-condition" class="cgv-input-text" placeholder="VD: Hóa đơn >= 150k" />
+        </div>
+        <div class="mp-form-group">
+          <label>Trạng thái</label>
+          <select id="promo-status" class="cgv-input-text">
+            <option value="active">Active</option>
+            <option value="expired">Expired</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button class="btn-cgv-cancel" style="flex: 1;" onclick="closeCreatePromoModal()">Hủy</button>
+          <button class="btn-cgv-submit" style="flex: 1; margin-top: 0;" onclick="submitPromoForm()">LƯU LẠI</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mp-modal-overlay" id="mp-promo-delete-modal">
+      <div class="mp-modal-box" style="text-align: center;">
+        <div class="mp-modal-close" onclick="closePromoDeleteModal()">✕</div>
+        <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+        <div class="mp-modal-header" style="margin-bottom: 10px;">Xóa Chiến Dịch Khuyến Mãi?</div>
+        <div class="mp-modal-sub" id="promo-delete-item-name" style="margin-bottom: 20px;">
+          Bạn có chắc chắn muốn xóa chiến dịch này không?
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-cgv-cancel" style="flex: 1;" onclick="closePromoDeleteModal()">Hủy</button>
+          <button class="btn-cgv-submit" style="flex: 1; margin-top: 0;" onclick="confirmDeletePromo()">XÁC NHẬN XÓA</button>
+        </div>
+      </div>
+    </div>
+
     <div class="mp-modal-overlay" id="mp-add-showtime-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
       <div class="mp-modal-box" style="width: 450px; padding: 26px; border-radius: 16px; box-sizing: border-box;">
         <div class="mp-modal-close" onclick="closeAddShowtimeModal()" style="cursor: pointer; float: right; font-weight: bold;">✕</div>
