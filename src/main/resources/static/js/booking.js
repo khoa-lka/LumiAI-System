@@ -1,5 +1,5 @@
 console.log("BOOKING JS LOADED");
-let selectedPaymentGateway = "qr";
+window.selectedPaymentGateway = "qr";
 
 // 🚀 THÊM MỚI: Khai báo mảng fnbMenu toàn cục ban đầu trống
 window.fnbMenu = [];
@@ -848,20 +848,38 @@ function executeFinalCheckout() {
     isUserLoggedInState,
     email: currentEmail,
   });
+  const currentAccountId = Number(sessionStorage.getItem("accountId"));
+
+  console.log("Account ID:", currentAccountId);
+
+  if (!currentAccountId) {
+    alert("Bạn chưa đăng nhập!");
+    return;
+  }
+
   const showtimeId = window.currentSelectedShowtimeId;
 
   if (!showtimeId) {
     alert("Bạn chưa chọn suất chiếu!");
     return;
   }
+
   const checkoutPayload = {
-    movie: currentMovie,
-    showtime: showtimeId,
+    accountId: currentAccountId,
+    movieName: currentMovie,
+    showtimeId: window.currentSelectedShowtimeId,
     seats: [...selectedSeats],
     email: currentEmail,
+    grossAmount: currentPriceTotal, // thêm
+    totalMoney: window.finalPriceTotal, // sau giảm
     voucherCode: document.getElementById("voucher-input")?.value.trim() || "",
-    total: window.finalPriceTotal,
-    fnb: window.fnbMenu.map((i) => ({ ...i })),
+    paymentMethod: window.selectedPaymentGateway,
+    fnb: window.fnbMenu
+      .filter((i) => i.qty > 0)
+      .map((i) => ({
+        foodItemId: i.id,
+        quantity: i.qty,
+      })),
   };
   console.log("Checkout payload:", checkoutPayload);
   console.log("Showtime:", window.currentSelectedShowtimeId);

@@ -1,6 +1,7 @@
 package com.cinema.backend.service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -15,20 +16,26 @@ public class VoucherServiceImpl implements VoucherService {
     private VoucherRepository voucherRepository;
 
     @Override
-    public Voucher checkVoucher(String code) {
-         Voucher voucher = voucherRepository.findByVoucherCode(code);
+public Voucher checkVoucher(String code) {
 
-        if(voucher==null)
-            return null;
+    Optional<Voucher> optionalVoucher = voucherRepository.findByVoucherCode(code);
 
-        if(voucher.getUsageLimit()<=0)
-            return null;
-
-        if(voucher.getExpiredDate().isBefore(LocalDateTime.now()))
-            return null;
-
-        return voucher;
+    if (optionalVoucher.isEmpty()) {
+        return null;
     }
+
+    Voucher voucher = optionalVoucher.get();
+
+    if (voucher.getUsageLimit() <= 0) {
+        return null;
+    }
+
+    if (voucher.getExpiredDate().isBefore(LocalDateTime.now())) {
+        return null;
+    }
+
+    return voucher;
+}
 
     @Override
     public boolean useVoucher(String code){

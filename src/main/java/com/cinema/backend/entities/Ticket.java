@@ -33,8 +33,9 @@ public class Ticket {
     @Column(name = "seat_id")
     private Integer seatId;
 
-    @Column(name = "booking_id")
-    private Integer bookingId;
+    @ManyToOne
+    @JoinColumn(name = "order_id")
+    private Order1 order;
 
     static {
     System.out.println("===== USING NEW TICKET ENTITY =====");
