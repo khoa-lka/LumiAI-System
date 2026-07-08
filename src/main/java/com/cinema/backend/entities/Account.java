@@ -7,6 +7,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "Account")
 @Getter
@@ -41,6 +43,7 @@ public class Account {
     @Column(name = "role_id")
     private Integer roleId;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "customer")
     private List<Order1> customerOrders;
 

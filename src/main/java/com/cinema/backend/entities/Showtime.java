@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "showtime")
 @Getter
@@ -42,6 +44,7 @@ public class Showtime {
     @Column(name = "updated_by")
     private Integer updatedBy;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "showtime")
     private List<Order1> orders;
 }

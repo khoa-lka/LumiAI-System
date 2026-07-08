@@ -451,30 +451,90 @@ function cancelCurrentTransaction() {
 
 function renderTransactionHistory() {
   const historyZone = document.getElementById("cgv-invoice-zone");
-  if (userPastInvoices.length === 0) {
-    historyZone.innerHTML =
-      '<p style="color:#9a9aa3; font-size: 13px;">Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.</p>';
+
+  const accountId = sessionStorage.getItem("accountId");
+
+  if (!accountId) {
+    historyZone.innerHTML = "Bạn chưa đăng nhập.";
     return;
   }
 
-  historyZone.innerHTML = "";
-  userPastInvoices.forEach((inv) => {
-    // 🌟 FIX LỖI TÀNG HÌNH: Ép màu đỏ thương hiệu thật (#ff6b35) thay vì dùng biến hệ thống cũ var(--cgv-red)
-    // Đồng thời thêm bộ lọc cứu cánh (inv.movie || "Vé xem phim LAS Cinemas") đề phòng chuỗi dữ liệu trống
-    historyZone.innerHTML += `
-          <div style="border: 1px solid rgba(255,255,255,0.15); padding: 15px; margin-bottom: 10px; background: #17171b; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-              <div style="text-align: left;">
-                  <h4 style="margin: 0 0 6px 0; color: #ff6b35; font-size: 15px; font-weight: bold; text-transform: uppercase;">
-                      ${inv.movie ? inv.movie : "Vé xem phim LAS Cinemas"}
-                  </h4>
-                  <p style="margin: 0; font-size: 13px; color: #c4c4cc;">
-                      Mã ĐH: <b>${inv.id}</b> | Ngày: ${inv.date} | Trạng thái: <span style="color: green; font-weight: bold;">${inv.status}</span>
-                  </p>
-              </div>
-              <button onclick="viewHistoryDetail('${inv.id}')" style="background: #ff9900; color: #fff; border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 12.5px;">Xem Chi Tiết</button>
-          </div>
-      `;
-  });
+  API.getOrderHistory(accountId)
+    .then((orders) => {
+      historyZone.innerHTML = "";
+
+      if (orders.length === 0) {
+        historyZone.innerHTML =
+          "Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.";
+        return;
+      }
+
+      orders.forEach((order) => {
+        historyZone.innerHTML += `
+                    <div style="
+                        border:1px solid rgba(255,255,255,.15);
+                        padding:15px;
+                        margin-bottom:10px;
+                        background:#17171b;
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        border-radius:6px;">
+
+                        <div>
+
+                            <h4 style="
+                                margin:0 0 6px 0;
+                                color:#ff6b35;">
+                                ${order.showtime.movie.title}
+                            </h4>
+
+                            <p style="margin:0;color:#c4c4cc;">
+
+                                Mã ĐH:
+                                <b>${order.orderCode}</b>
+
+                                |
+
+                                Ngày:
+                                ${new Date(order.createdDate).toLocaleString("vi-VN")}
+
+                                |
+
+                                Thanh toán:
+                                ${order.paymentMethod}
+
+                                |
+
+                                Tổng:
+                                <b>${Number(order.finalAmount).toLocaleString("vi-VN")} đ</b>
+
+                            </p>
+
+                        </div>
+
+                        <button
+                            onclick="viewHistoryDetail(${order.orderId})"
+                            style="
+                                background:#ff9900;
+                                color:white;
+                                border:none;
+                                padding:8px 15px;
+                                cursor:pointer;
+                                border-radius:4px;">
+
+                            Xem Chi Tiết
+
+                        </button>
+
+                    </div>
+                `;
+      });
+    })
+    .catch((err) => {
+      console.error(err);
+      historyZone.innerHTML = "Không tải được lịch sử giao dịch.";
+    });
 }
 
 function viewHistoryDetail(invoiceId) {
@@ -482,9 +542,9 @@ function viewHistoryDetail(invoiceId) {
   if (!inv) return;
   let fnbHtml = inv.fnb.map((i) => `<li>${i.name} x${i.qty}</li>`).join("");
   document.getElementById("history-detail-content").innerHTML = `
-      <p><strong>Mã vé:</strong> <span style="color:red;">${inv.id}</span></p>
-      <p><strong>Phim:</strong> ${inv.movie}</p>
-      <p><strong>Suất:</strong> ${inv.time} ngày ${inv.date}</p>
+      <p><strong>Mã vé:</strong> <span style="color:red;">${inv.orderCode}</span></p>
+      <p><strong>Phim:</strong> ${movieName}</p>
+      <p><strong>Suất:</strong> ${inv.time} ngày ${new Date(inv.createdDate).toLocaleString("vi-VN")}</p>
       <hr style="margin: 10px 0;">
       <p><strong>🎟️ Vé ghế ngồi:</strong> ${inv.seats.join(", ")}</p>
       <p><strong>🍿 Bắp nước:</strong></p>

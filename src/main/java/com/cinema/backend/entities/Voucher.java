@@ -49,8 +49,8 @@ private Integer updatedBy;
     @Column(name = "minimum_order")
     private BigDecimal minimumOrder;
 
-    @OneToMany(mappedBy = "voucher")
     @JsonIgnore
+    @OneToMany(mappedBy = "voucher")
     private List<Order1> orders;
 
 

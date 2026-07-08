@@ -94,7 +94,7 @@ const API = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(cancelData),
     }).then(handleResponse),
-    // 🚀 THÊM MỚI: Gọi API gửi yêu cầu tạo suất chiếu xuống Spring Boot
+  // 🚀 THÊM MỚI: Gọi API gửi yêu cầu tạo suất chiếu xuống Spring Boot
   addShowtime: (showtimeData) =>
     fetch(`${BASE_URL}/showtimes/add`, {
       method: "POST",
@@ -112,25 +112,29 @@ const API = {
     fetch(`${BASE_URL}/admin/users/ban/${userId}`, { method: "PUT" }).then(
       handleResponse,
     ),
+
+  getOrderHistory: (accountId) =>
+    fetch(`${BASE_URL}/orders/history/${accountId}`).then(handleResponse),
   // Voucher
   checkVoucher: (code) =>
     fetch(`${BASE_URL}/voucher/${code}`).then(handleResponse),
 
   // 🍿 Kho F&B
   getFnbItems: () => fetch(`${BASE_URL}/fnb`).then(handleResponse),
-  addFnbItem: (data) => fetch(`${BASE_URL}/fnb`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  }).then(handleResponse),
-  updateFnbItem: (id, data) => fetch(`${BASE_URL}/fnb/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  }).then(handleResponse),
-  deleteFnbItem: (id) => fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then(res => res.ok ? true : Promise.reject(res))
-
-  getOrderHistory: (accountId) =>
-    fetch(`${BASE_URL}/orders/history/${accountId}`)
-        .then(handleResponse),
+  addFnbItem: (data) =>
+    fetch(`${BASE_URL}/fnb`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then(handleResponse),
+  updateFnbItem: (id, data) =>
+    fetch(`${BASE_URL}/fnb/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then(handleResponse),
+  deleteFnbItem: (id) =>
+    fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then((res) =>
+      res.ok ? true : Promise.reject(res),
+    ),
 };
