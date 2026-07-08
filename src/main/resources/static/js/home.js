@@ -340,28 +340,6 @@ function generateForgotCaptcha() {
   document.getElementById("forgot-captcha-text").innerText =
     generateRandomCaptcha();
 }
-window.getNameAvatarInitial = getNameAvatarInitial;
-
-window.syncUserLoginSession = function () {
-  const cachedUser = localStorage.getItem("las_logged_in_user");
-  if (cachedUser) {
-    isUserLoggedInState = true;
-    const uData = JSON.parse(cachedUser);
-
-    // Điền thông tin giao diện thanh điều hướng (Giữ nguyên logic UI)
-    const authLinkBox = document.getElementById("top-bar-auth-link");
-    if (authLinkBox) {
-      authLinkBox.onclick = () => switchCgvTab("panel-profile");
-      authLinkBox.style.cursor = "pointer";
-      authLinkBox.innerHTML = `
-          <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
-          <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
-      `;
-    }
-    if (document.getElementById("top-bar-ticket-link")) {
-      document.getElementById("top-bar-ticket-link").innerHTML =
-        `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
-    }
 
 function toggleRegPasswordState() {
   const passInput = document.getElementById("reg-password");
@@ -380,6 +358,9 @@ function closeAuthModal() {
 }
 
 function renderFnbMenu() {
+  console.log("window.fnbMenu =", window.fnbMenu);
+  console.log("fnbMenu =", fnbMenu);
+  console.log("same =", window.fnbMenu === fnbMenu);
   const container = document.getElementById("cgv-fnb-menu");
   if (!container) return;
   container.innerHTML = "";
@@ -409,10 +390,10 @@ function renderFnbMenu() {
 }
 
 function updateComboQty(index, change) {
-  fnbMenu[index].qty += change;
-  if (fnbMenu[index].qty < 0) fnbMenu[index].qty = 0;
+  window.fnbMenu[index].qty += change;
+  if (window.fnbMenu[index].qty < 0) window.fnbMenu[index].qty = 0;
 
-  let totalFnbItems = fnbMenu.reduce((sum, item) => sum + item.qty, 0);
+  let totalFnbItems = window.fnbMenu.reduce((sum, item) => sum + item.qty, 0);
   document.getElementById("sum-fnb").innerText = totalFnbItems + " Combo";
 
   renderFnbMenu();
@@ -502,7 +483,7 @@ function viewMovieDetailText(title, genre) {
 
 function openCheckoutReview() {
   const currentMovie = document.getElementById("cgv-combo-movie").value;
-  const fnbItems = fnbMenu.filter((i) => i.qty > 0);
+  const fnbItems = window.fnbMenu.filter((i) => i.qty > 0);
   let fnbHtml = fnbItems
     .map(
       (i) =>
@@ -552,7 +533,7 @@ function cancelCurrentTransaction() {
     }).then(() => {
       resetHoldState();
       selectedSeats = [];
-      fnbMenu.forEach((i) => (i.qty = 0));
+      window.fnbMenu.forEach((i) => (i.qty = 0));
       renderFnbMenu();
       calculateCgvCart();
       window.renderCgvInterface();
@@ -576,49 +557,90 @@ function getPosterByMovieName(name) {
 
 function renderTransactionHistory() {
   const historyZone = document.getElementById("cgv-invoice-zone");
-  if (userPastInvoices.length === 0) {
-    historyZone.innerHTML =
-      '<p style="color:#9a9aa3; font-size: 13px;">Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.</p>';
+
+  const accountId = sessionStorage.getItem("accountId");
+
+  if (!accountId) {
+    historyZone.innerHTML = "Bạn chưa đăng nhập.";
     return;
   }
 
-  historyZone.innerHTML = "";
-  userPastInvoices.forEach((inv) => {
-    const movieName = inv.movie ? inv.movie : "Vé xem phim LAS Cinemas";
-    const isPaid = inv.status === "Đã thanh toán";
-    const statusClass = isPaid
-      ? "history-badge-success"
-      : "history-badge-pending";
-    const poster = getPosterByMovieName(inv.movie);
-    const thumb = poster
-      ? `<div class="history-poster"><img src="${poster}" alt="${movieName}"></div>`
-      : `<div class="history-poster history-poster-fallback">🎬</div>`;
+  API.getOrderHistory(accountId)
+    .then((orders) => {
+      historyZone.innerHTML = "";
 
-    historyZone.innerHTML += `
-          <div class="history-card-item">
-              ${thumb}
-              <div class="history-card-main">
-                  <div class="history-card-top-row">
-                      <h4 class="history-card-title">${movieName}</h4>
-                      <span class="history-badge ${statusClass}">${inv.status}</span>
-                  </div>
-                  <div class="history-card-meta">
-                      <span>🎫 ${inv.id}</span>
-                      <span>📅 ${inv.date}</span>
-                      ${inv.time ? `<span>🕐 ${inv.time}</span>` : ""}
-                      ${inv.seats && inv.seats.length ? `<span>💺 ${inv.seats.join(", ")}</span>` : ""}
-                  </div>
-                  <div class="history-card-actions">
-                      <button class="history-card-btn" onclick="viewHistoryDetail('${inv.id}')">Xem chi tiết</button>
-                      <button class="history-card-btn ghost" onclick="openFeedbackModal('${inv.id}')">💬 Gửi Feedback</button>
-                  </div>
-              </div>
-              <div class="history-card-side">
-                  <span class="history-price-badge">${(inv.total || 0).toLocaleString("vi-VN")} đ</span>
-              </div>
-          </div>
-      `;
-  });
+      if (orders.length === 0) {
+        historyZone.innerHTML =
+          "Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.";
+        return;
+      }
+
+      orders.forEach((order) => {
+        historyZone.innerHTML += `
+                    <div style="
+                        border:1px solid rgba(255,255,255,.15);
+                        padding:15px;
+                        margin-bottom:10px;
+                        background:#17171b;
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        border-radius:6px;">
+
+                        <div>
+
+                            <h4 style="
+                                margin:0 0 6px 0;
+                                color:#ff6b35;">
+                                ${order.showtime.movie.title}
+                            </h4>
+
+                            <p style="margin:0;color:#c4c4cc;">
+
+                                Mã ĐH:
+                                <b>${order.orderCode}</b>
+
+                                |
+
+                                Ngày:
+                                ${new Date(order.createdDate).toLocaleString("vi-VN")}
+
+                                |
+
+                                Thanh toán:
+                                ${order.paymentMethod}
+
+                                |
+
+                                Tổng:
+                                <b>${Number(order.finalAmount).toLocaleString("vi-VN")} đ</b>
+
+                            </p>
+
+                        </div>
+
+                        <button
+                            onclick="viewHistoryDetail(${order.orderId})"
+                            style="
+                                background:#ff9900;
+                                color:white;
+                                border:none;
+                                padding:8px 15px;
+                                cursor:pointer;
+                                border-radius:4px;">
+
+                            Xem Chi Tiết
+
+                        </button>
+
+                    </div>
+                `;
+      });
+    })
+    .catch((err) => {
+      console.error(err);
+      historyZone.innerHTML = "Không tải được lịch sử giao dịch.";
+    });
 }
 
 function viewHistoryDetail(invoiceId) {
@@ -636,27 +658,15 @@ function viewHistoryDetail(invoiceId) {
     .join("");
 
   document.getElementById("history-detail-content").innerHTML = `
-      <div class="hist-inv">
-        <div class="hist-inv-head">
-          <div class="hist-inv-movie">${inv.movie}</div>
-          <span class="history-badge ${statusClass}">${inv.status}</span>
-        </div>
-        <div class="hist-inv-rows">
-          <div class="hist-inv-row"><span>Mã vé</span><span class="hist-inv-code">${inv.id}</span></div>
-          <div class="hist-inv-row"><span>Suất chiếu</span><span>${inv.time} • ${inv.date}</span></div>
-        </div>
-        <div class="hist-inv-label">Ghế đã đặt</div>
-        <div class="hist-inv-seats">${seatBadges || "—"}</div>
-        <div class="hist-inv-label">Bắp nước</div>
-        <ul class="hist-inv-fnb">${fnbHtml || "<li>Không có</li>"}</ul>
-        <div class="hist-inv-total">
-          <span>Thành tiền</span>
-          <span class="hist-inv-amt">${(inv.total || 0).toLocaleString("vi-VN")} đ</span>
-        </div>
-        <div class="hist-inv-actions">
-          <button class="hist-feedback-btn" onclick="openFeedbackModal('${inv.id}')">💬 Gửi Feedback</button>
-        </div>
-      </div>
+      <p><strong>Mã vé:</strong> <span style="color:red;">${inv.orderCode}</span></p>
+      <p><strong>Phim:</strong> ${movieName}</p>
+      <p><strong>Suất:</strong> ${inv.time} ngày ${new Date(inv.createdDate).toLocaleString("vi-VN")}</p>
+      <hr style="margin: 10px 0;">
+      <p><strong>🎟️ Vé ghế ngồi:</strong> ${inv.seats.join(", ")}</p>
+      <p><strong>🍿 Bắp nước:</strong></p>
+      <ul>${fnbHtml || "<li>Không có</li>"}</ul>
+      <hr style="margin: 10px 0;">
+      <p style="font-size: 16px; text-align: right;"><strong>Thành tiền: <span style="color:red;">${inv.total.toLocaleString("vi-VN")} đ</span></strong></p>
   `;
   document.getElementById("history-detail-modal").classList.add("open");
 }
@@ -755,19 +765,7 @@ function closeLogoutConfirmModal() {
   document.getElementById("logout-confirm-modal").classList.remove("open");
 }
 function confirmCgvLogoutAction() {
-  isUserLoggedInState = false;
-  closeLogoutConfirmModal();
-  // 🌟 DỌN SẠCH LOCALSTORAGE KHI THOÁT
-  localStorage.removeItem("las_logged_in_user");
-  localStorage.removeItem("las_user_invoices");
-  localStorage.removeItem("las_current_booking_cache");
-  const authLinkBox = document.getElementById("top-bar-auth-link");
-  authLinkBox.removeAttribute("style");
-  authLinkBox.onclick = openAuthModal;
-  authLinkBox.innerHTML = `<span class="sub-nav-icon"></span> ĐĂNG NHẬP/ ĐĂNG KÝ`;
-  document.getElementById("top-bar-ticket-link").innerHTML =
-    `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
-  switchCgvTab("panel-movies", "now_showing");
+  confirmLogoutAction();
 }
 
 function handleTicketViewAccess() {
@@ -985,7 +983,6 @@ function switchCgvTab(panelId, filterType = "now_showing") {
   if (cgvNavigationHistory[cgvNavigationHistory.length - 1] !== panelId) {
     cgvNavigationHistory.push(panelId);
   }
-}
 
   const bcBackBtnEl = document.getElementById("bc-back-btn");
   if (bcBackBtnEl) {
@@ -1590,14 +1587,33 @@ window.executeFinalCheckout = function () {
     currentEmail,
   );
 
+  const user = JSON.parse(localStorage.getItem("las_logged_in_user"));
+
   fetch("http://localhost:8080/api/seats/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+
     body: JSON.stringify({
-      movie: currentMovie,
-      showtime: ticketShowtime,
+      accountId: user.accountId,
+
+      showtimeId: window.currentSelectedShowtimeId, // ID của suất chiếu
+
+      movieName: currentMovie,
+
       seats: ticketSeats,
+
       email: currentEmail,
+
+      totalMoney: ticketTotal,
+
+      paymentMethod: "VNPAY",
+
+      voucherCode: selectedVoucherCode,
+
+      fnb: ticketFnb.map((i) => ({
+        foodItemId: i.id,
+        quantity: i.qty,
+      })),
     }),
   })
     .then((res) => res.json())
@@ -1688,7 +1704,7 @@ window.executeFinalCheckout = function () {
       localStorage.removeItem("las_current_booking_cache");
       localStorage.removeItem("pending_booking");
       selectedSeats = [];
-      fnbMenu.forEach((i) => (i.qty = 0));
+      window.fnbMenu.forEach((i) => (i.qty = 0));
       window.renderFnbMenu();
       window.calculateCgvCart();
       window.renderCgvInterface();
@@ -1710,7 +1726,7 @@ window.cancelCurrentTransaction = function () {
   ) {
     window.resetHoldState();
     selectedSeats = [];
-    fnbMenu.forEach((i) => (i.qty = 0));
+    window.fnbMenu.forEach((i) => (i.qty = 0));
     window.renderFnbMenu();
     window.calculateCgvCart();
     window.renderCgvInterface();
@@ -1974,7 +1990,7 @@ window.processToPaymentGateway = function () {
             showtime: selectedShowtime,
             seats: [...selectedSeats],
             date: selectedDateStr,
-            fnb: fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
+            fnb: window.fnbMenu.filter((i) => i.qty > 0).map((i) => ({ ...i })),
             total: currentPriceTotal * (1 - appliedVoucherDiscount),
           };
           localStorage.setItem(
@@ -1984,7 +2000,7 @@ window.processToPaymentGateway = function () {
               showtime: selectedShowtime,
               seats: [...selectedSeats],
               date: selectedDateStr,
-              fnb: fnbMenu.filter((i) => i.qty > 0),
+              fnb: window.fnbMenu.filter((i) => i.qty > 0),
               total: currentPriceTotal * (1 - appliedVoucherDiscount),
             }),
           );
@@ -2285,7 +2301,7 @@ function goHomeFromBc() {
   currentPriceTotal = 0;
   appliedVoucherDiscount = 0;
 
-  fnbMenu.forEach((i) => (i.qty = 0));
+  window.fnbMenu.forEach((i) => (i.qty = 0));
 
   const ticket = document.getElementById("final-ticket-result");
   if (ticket) {
@@ -2445,15 +2461,6 @@ async function sendChatMessageToServer() {
         "Hệ thống SQL Server lịch chiếu đang bảo trì, vui lòng thử lại sau.";
     }
   }
-  window.currentBookingStep = 1;
-};
-// ==========================================================================
-// 🌟 HÀM RESET TOÀN BỘ QUY TRÌNH ĐẶT VÉ VỀ TRẠNG THÁI BAN ĐẦU
-// ==========================================================================
-window.resetBookingWizard = function () {
-  console.log(
-    "🔄 Đang dọn dẹp trạng thái hóa đơn cũ để chuẩn bị mua vé mới...",
-  );
 
   // 3. Kết nối cổng gọi AI Gemini xử lý hội thoại đa năng
   try {
