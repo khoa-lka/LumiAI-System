@@ -66,26 +66,12 @@ function submitCgvLogin(event) {
         sessionStorage.setItem("roleId", uData.roleId);
         window.currentLoggedInId = uData.accountId;
 
-        // 2. KIỂM TRA QUYỀN VÀ ĐIỀU HƯỚNG
-        if (uData.roleId === 4 || uData.roleId === 1) {
-          // Nếu là Manager (4) hoặc Admin (1) -> Chuyển sang trang Quản trị
+        // 2. ĐIỀU HƯỚNG: Tất cả vai trò đều vào HOME sau đăng nhập.
+        //    Manager(1) và Admin(4) truy cập Dashboard CHỦ ĐỘNG qua tab
+        //    "TRUY CẬP DASHBOARD" (Manager -> manager.html, Admin -> admin.html).
+        {
           alert(
-            `Xin chào Quản lý: ${uData.fullName}. Đang chuyển hướng đến Portal...`,
-          );
-          window.location.href = "manager.html";
-          return;
-        }
-        else if (uData.roleId === 2) {
-          alert(
-            `Xin chào Admin: ${uData.fullName}. Đang chuyển hướng đến Portal...`,
-          );
-          window.location.href = "admin.html";
-          return;
-        }
-         else if (  uData.roleId === 3) {
-          // Nếu là Khách hàng (Member) -> Ở lại trang chủ và cập nhật giao diện
-          alert(
-            `Chào mừng thành viên: ${uData.fullName} đăng nhập thành công!`,
+            `Chào mừng ${uData.fullName} đăng nhập thành công!`,
           );
           closeAuthModal();
 
@@ -100,8 +86,9 @@ function submitCgvLogin(event) {
             `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
 
           let roleString = "Khách hàng thành viên";
-          if (uData.roleId === 2) roleString = "Admin";
-          if (uData.roleId === 4) roleString = "Nhân viên cụm rạp (STAFF)";
+          if (uData.roleId === 1) roleString = "Quản lý (MANAGER)";
+          if (uData.roleId === 2) roleString = "Nhân viên cụm rạp (STAFF)";
+          if (uData.roleId === 4) roleString = "Quản trị viên (ADMIN)";
 
           if (document.getElementById("profile-summary-avatar")) {
             document.getElementById("profile-summary-avatar").innerText =
@@ -148,6 +135,9 @@ function submitCgvLogin(event) {
                 `${day}/${month}/${year}`;
             }
           }
+
+          // Cập nhật hiển thị tab "Truy cập Dashboard" theo quyền
+          if (window.refreshDashboardTab) window.refreshDashboardTab();
 
           // Nhảy sang tab Profile của khách hàng an toàn
           switchCgvTab("panel-profile");
