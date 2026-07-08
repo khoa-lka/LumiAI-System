@@ -340,6 +340,28 @@ function generateForgotCaptcha() {
   document.getElementById("forgot-captcha-text").innerText =
     generateRandomCaptcha();
 }
+window.getNameAvatarInitial = getNameAvatarInitial;
+
+window.syncUserLoginSession = function () {
+  const cachedUser = localStorage.getItem("las_logged_in_user");
+  if (cachedUser) {
+    isUserLoggedInState = true;
+    const uData = JSON.parse(cachedUser);
+
+    // Điền thông tin giao diện thanh điều hướng (Giữ nguyên logic UI)
+    const authLinkBox = document.getElementById("top-bar-auth-link");
+    if (authLinkBox) {
+      authLinkBox.onclick = () => switchCgvTab("panel-profile");
+      authLinkBox.style.cursor = "pointer";
+      authLinkBox.innerHTML = `
+          <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
+          <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+      `;
+    }
+    if (document.getElementById("top-bar-ticket-link")) {
+      document.getElementById("top-bar-ticket-link").innerHTML =
+        `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
+    }
 
 function toggleRegPasswordState() {
   const passInput = document.getElementById("reg-password");
@@ -963,6 +985,7 @@ function switchCgvTab(panelId, filterType = "now_showing") {
   if (cgvNavigationHistory[cgvNavigationHistory.length - 1] !== panelId) {
     cgvNavigationHistory.push(panelId);
   }
+}
 
   const bcBackBtnEl = document.getElementById("bc-back-btn");
   if (bcBackBtnEl) {
@@ -2422,6 +2445,15 @@ async function sendChatMessageToServer() {
         "Hệ thống SQL Server lịch chiếu đang bảo trì, vui lòng thử lại sau.";
     }
   }
+  window.currentBookingStep = 1;
+};
+// ==========================================================================
+// 🌟 HÀM RESET TOÀN BỘ QUY TRÌNH ĐẶT VÉ VỀ TRẠNG THÁI BAN ĐẦU
+// ==========================================================================
+window.resetBookingWizard = function () {
+  console.log(
+    "🔄 Đang dọn dẹp trạng thái hóa đơn cũ để chuẩn bị mua vé mới...",
+  );
 
   // 3. Kết nối cổng gọi AI Gemini xử lý hội thoại đa năng
   try {

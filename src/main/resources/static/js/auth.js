@@ -45,6 +45,14 @@ function submitCgvLogin(event) {
   }
 
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
+  sessionStorage.clear();
+
+  localStorage.removeItem("las_logged_in_user");
+  localStorage.removeItem("las_user_invoices");
+  localStorage.removeItem("las_current_booking_cache");
+
+  window.currentLoggedInId = null;
+
   API.login({ identifier: user, password: pass })
     .then((resData) => {
       if (resData.status === "success") {
@@ -325,14 +333,20 @@ function activateEditableFormFields() {
 // --- 4. TIỆN ÍCH KHÁC ---
 function confirmLogoutAction(e) {
   if (e) e.stopPropagation();
-  if (confirm("Bạn có chắc chắn muốn đăng xuất?")) {
-    sessionStorage.clear();
-    localStorage.removeItem("las_logged_in_user");
-    localStorage.removeItem("las_user_invoices");
-    localStorage.removeItem("las_current_booking_cache");
-    isUserLoggedInState = false;
-    location.reload();
-  }
+
+  if (!confirm("Bạn có chắc chắn muốn đăng xuất?")) return;
+
+  sessionStorage.clear();
+
+  localStorage.removeItem("las_logged_in_user");
+  localStorage.removeItem("las_user_invoices");
+  localStorage.removeItem("las_current_booking_cache");
+
+  window.currentLoggedInId = null;
+
+  isUserLoggedInState = false;
+
+  location.reload();
 }
 
 function openOtpModal() {
