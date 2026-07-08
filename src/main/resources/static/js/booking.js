@@ -605,8 +605,7 @@ function generateVietQR() {
   const render = () => {
     const m = Math.floor(remaining / 60);
     const s = remaining % 60;
-    if (timerEl)
-      timerEl.innerText = `${m}:${s < 10 ? "0" : ""}${s}`;
+    if (timerEl) timerEl.innerText = `${m}:${s < 10 ? "0" : ""}${s}`;
   };
   render();
   _vietqrTimerId = setInterval(() => {
@@ -615,8 +614,7 @@ function generateVietQR() {
       stopVietQRTimer();
       if (timerBox) {
         timerBox.classList.add("vietqr-timer-expired");
-        timerBox.innerHTML =
-          `⚠ Mã QR đã hết hạn. <span class="vietqr-regen" onclick="generateVietQR()">Tạo lại mã</span>`;
+        timerBox.innerHTML = `⚠ Mã QR đã hết hạn. <span class="vietqr-regen" onclick="generateVietQR()">Tạo lại mã</span>`;
       }
       return;
     }
@@ -795,6 +793,7 @@ function closePaymentModal() {
 }
 
 function executeFinalCheckout() {
+  console.log("BOOKING EXECUTE");
   console.log("currentSelectedShowtimeId =", window.currentSelectedShowtimeId);
   console.log("selectedShowtime =", selectedShowtime);
   console.log("selectedSeats =", selectedSeats);
