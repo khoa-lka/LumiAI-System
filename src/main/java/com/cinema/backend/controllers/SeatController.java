@@ -12,6 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import com.cinema.backend.service.BookingService;
+import com.cinema.backend.entities.CheckoutRequest;
+import com.cinema.backend.entities.Order1;
+
 
 import java.util.*;
 
@@ -30,6 +34,9 @@ public class SeatController {
 
     @Autowired
     private VoucherService voucherService;
+
+    @Autowired
+    private BookingService bookingService;
 
     // 🚀 ĐÓN ĐÚNG API: /api/seats/matrix?showtimeId=...
     @GetMapping("/matrix")
@@ -80,6 +87,8 @@ public class SeatController {
     }
 
     // 🚀 LUỒNG CHECKOUT: Đặt vé và lưu thông tin Ticket vào database mẫu của nhóm
+
+/*
     @PostMapping("/checkout")
     @Transactional
     public Map<String, Object> checkout(@RequestBody Map<String, Object> payload) {
@@ -150,4 +159,36 @@ catch(Exception e){
     response.put("message", e.getMessage());
 
     return response;
-}}}
+}}  */
+
+@PostMapping("/checkout")
+public Map<String, Object> checkout(@RequestBody CheckoutRequest request) {
+      System.out.println("accountId = " + request.getAccountId());
+    System.out.println("showtimeId = " + request.getShowtimeId());
+    System.out.println("totalMoney = " + request.getTotalMoney());
+    System.out.println("paymentMethod = " + request.getPaymentMethod());
+    System.out.println(request.getShowtimeId());
+    Map<String, Object> response = new HashMap<>();
+
+    try {
+
+        Order1 order = bookingService.checkout(request);
+
+        response.put("success", true);
+        response.put("orderId", order.getOrderId());
+        response.put("orderCode", order.getOrderCode());
+
+        return response;
+
+    } catch (Exception e) {
+
+          e.printStackTrace();
+
+    response.put("success",false);
+    response.put("message",e.getMessage());
+
+    return response;
+    }
+}
+
+}

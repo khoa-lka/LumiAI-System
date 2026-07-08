@@ -522,19 +522,7 @@ function closeLogoutConfirmModal() {
   document.getElementById("logout-confirm-modal").classList.remove("open");
 }
 function confirmCgvLogoutAction() {
-  isUserLoggedInState = false;
-  closeLogoutConfirmModal();
-  // 🌟 DỌN SẠCH LOCALSTORAGE KHI THOÁT
-  localStorage.removeItem("las_logged_in_user");
-  localStorage.removeItem("las_user_invoices");
-  localStorage.removeItem("las_current_booking_cache");
-  const authLinkBox = document.getElementById("top-bar-auth-link");
-  authLinkBox.removeAttribute("style");
-  authLinkBox.onclick = openAuthModal;
-  authLinkBox.innerHTML = `<span class="sub-nav-icon">👤</span> ĐĂNG NHẬP/ ĐĂNG KÝ`;
-  document.getElementById("top-bar-ticket-link").innerHTML =
-    `<span class="sub-nav-icon">🎬</span> VÉ CỦA TÔI`;
-  switchCgvTab("panel-movies", "now_showing");
+  confirmLogoutAction();
 }
 
 function handleTicketViewAccess() {
@@ -1350,14 +1338,33 @@ window.executeFinalCheckout = function () {
     currentEmail,
   );
 
+  const user = JSON.parse(localStorage.getItem("las_logged_in_user"));
+
   fetch("http://localhost:8080/api/seats/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+
     body: JSON.stringify({
-      movie: currentMovie,
-      showtime: ticketShowtime,
+      accountId: user.accountId,
+
+      showtimeId: window.currentSelectedShowtimeId, // ID của suất chiếu
+
+      movieName: currentMovie,
+
       seats: ticketSeats,
+
       email: currentEmail,
+
+      totalMoney: ticketTotal,
+
+      paymentMethod: "VNPAY",
+
+      voucherCode: selectedVoucherCode,
+
+      fnb: ticketFnb.map((i) => ({
+        foodItemId: i.id,
+        quantity: i.qty,
+      })),
     }),
   })
     .then((res) => res.json())

@@ -3,12 +3,16 @@ package com.cinema.backend.entities;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -45,6 +49,12 @@ private Integer updatedBy;
     @Column(name = "minimum_order")
     private BigDecimal minimumOrder;
 
+    @OneToMany(mappedBy = "voucher")
+    @JsonIgnore
+    private List<Order1> orders;
+
+
+    
     public Voucher() {
     }
 
@@ -126,6 +136,14 @@ private Integer updatedBy;
 
     public void setMinimumOrder(BigDecimal minimumOrder) {
         this.minimumOrder = minimumOrder;
+    }
+
+    public List<Order1> getOrders() {
+        return orders;
+    }
+
+    public void setOrders(List<Order1> orders) {
+        this.orders = orders;
     }
 
     

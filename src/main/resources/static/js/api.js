@@ -129,4 +129,8 @@ const API = {
     body: JSON.stringify(data)
   }).then(handleResponse),
   deleteFnbItem: (id) => fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then(res => res.ok ? true : Promise.reject(res))
+
+  getOrderHistory: (accountId) =>
+    fetch(`${BASE_URL}/orders/history/${accountId}`)
+        .then(handleResponse),
 };

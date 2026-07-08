@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "Account")
@@ -39,4 +40,10 @@ public class Account {
 
     @Column(name = "role_id")
     private Integer roleId;
+
+    @OneToMany(mappedBy = "customer")
+    private List<Order1> customerOrders;
+
+    @OneToMany(mappedBy = "staff")
+    private List<Order1> staffOrders;
 }

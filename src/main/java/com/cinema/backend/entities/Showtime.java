@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "showtime")
@@ -40,4 +41,7 @@ public class Showtime {
 
     @Column(name = "updated_by")
     private Integer updatedBy;
+
+    @OneToMany(mappedBy = "showtime")
+    private List<Order1> orders;
 }
