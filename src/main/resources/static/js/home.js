@@ -319,22 +319,47 @@ function toggleAuthTab(type) {
   }
 }
 window.currentFeedbackMovieId = null;
-function openFeedbackModal(movieId, invoiceId = null){
+function openFeedbackModal(movieId, invoiceId = null) {
 
-    window.currentFeedbackMovieId = movieId;
+  window.currentFeedbackMovieId = movieId;
 
-    _feedbackInvoiceId = invoiceId;
+  _feedbackInvoiceId = invoiceId;
 
-    _feedbackRating = 0;
+  _feedbackRating = 0;
 
-    document.getElementById("feedback-text").value = "";
+  document.getElementById("feedback-text").value = "";
 
-    setFeedbackStars(0);
+  setFeedbackStars(0);
 
-    document.getElementById("feedback-modal").style.display = "flex";
+  document.getElementById("feedback-modal").style.display = "flex";
 
 }
+window.openFeedbackFromHistory = function (invoiceId) {
 
+    const inv = userPastInvoices.find(i => i.id === invoiceId);
+
+    if (!inv) {
+        alert("Không tìm thấy hóa đơn!");
+        return;
+    }
+
+    const movie = serverData.movies.find(
+        m => m.title === inv.movie
+    );
+
+    if (!movie) {
+        alert("Không tìm thấy phim!");
+        return;
+    }
+
+    const movieId = movie.movieId || movie.movie_id;
+
+    console.log("Invoice:", inv);
+    console.log("Movie:", movie);
+    console.log("movieId:", movieId);
+
+    openFeedbackModal(movieId, invoiceId);
+};
 
 // Hàm gửi Feedback lên server
 window.submitFeedbackForm = function () {
@@ -346,7 +371,12 @@ window.submitFeedbackForm = function () {
 
   const cachedUser = localStorage.getItem("las_logged_in_user");
   const accId = cachedUser ? JSON.parse(cachedUser).accountId : 1;
-
+  console.log("===== FEEDBACK SUBMIT =====");
+  console.log("movieId =", movieId, typeof movieId);
+  console.log("accountStaffId =", accId, typeof accId);
+  console.log("rating =", rating);
+  console.log("content =", content);
+  console.log("invoiceId =", _feedbackInvoiceId);
   if (!content) {
     alert("Vui lòng nhập nội dung!");
     return;
@@ -578,7 +608,7 @@ function getPosterByMovieName(name) {
       return (
         m.mainposter_url || m.mainposterUrl || m.mainposterurl || m.img || ""
       );
-  } catch (e) {}
+  } catch (e) { }
   return "";
 }
 
@@ -601,7 +631,7 @@ function renderTransactionHistory() {
     const thumb = poster
       ? `<div class="history-poster"><img src="${poster}" alt="${movieName}"></div>`
       : `<div class="history-poster history-poster-fallback">🎬</div>`;
-
+    console.log(inv);
     historyZone.innerHTML += `
           <div class="history-card-item">
               ${thumb}
@@ -618,7 +648,7 @@ function renderTransactionHistory() {
                   </div>
                   <div class="history-card-actions">
                       <button class="history-card-btn" onclick="viewHistoryDetail('${inv.id}')">Xem chi tiết</button>
-                      <button class="history-card-btn ghost" onclick="openFeedbackModal('${inv.id}')">💬 Gửi Feedback</button>
+                      <button class="history-card-btn ghost" onclick="openFeedbackFromHistory('${inv.id}')">💬 Gửi Feedback</button>
                   </div>
               </div>
               <div class="history-card-side">
@@ -662,7 +692,7 @@ function viewHistoryDetail(invoiceId) {
           <span class="hist-inv-amt">${(inv.total || 0).toLocaleString("vi-VN")} đ</span>
         </div>
         <div class="hist-inv-actions">
-          <button class="hist-feedback-btn" onclick="openFeedbackModal('${inv.id}')">💬 Gửi Feedback</button>
+          <button class="hist-feedback-btn" onclick="openFeedbackFromHistory('${inv.id}')">💬 Gửi Feedback</button>
         </div>
       </div>
   `;
@@ -706,7 +736,7 @@ function submitFeedback() {
     const list = JSON.parse(localStorage.getItem("las_feedbacks") || "[]");
     list.unshift(entry);
     localStorage.setItem("las_feedbacks", JSON.stringify(list));
-  } catch (e) {}
+  } catch (e) { }
 
   closeFeedbackModal();
   const toast = document.getElementById("feedback-toast");
@@ -718,19 +748,19 @@ function submitFeedback() {
   }
 }
 
-window.closeFeedbackModal = function(){
+window.closeFeedbackModal = function () {
 
-    document.getElementById("feedback-modal").style.display = "none";
+  document.getElementById("feedback-modal").style.display = "none";
 
-    document.getElementById("feedback-text").value = "";
+  document.getElementById("feedback-text").value = "";
 
-    _feedbackRating = 0;
+  _feedbackRating = 0;
 
 }
 window.openFeedbackModal = openFeedbackModal;
 window.setFeedbackStars = setFeedbackStars;
 window.submitFeedbackForm = submitFeedbackForm;
-window.closeFeedbackModal = closeFeedbackModal; 
+window.closeFeedbackModal = closeFeedbackModal;
 
 
 function executeMovieRealTimeSearch() {
@@ -818,7 +848,7 @@ function submitCgvLogin() {
       if (resData.status === "success") {
         isUserLoggedInState = true;
         let uData = resData.data;
-localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
+        localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
         sessionStorage.setItem("roleId", uData.roleId);
 
         // 🌟 ĐIỀU HƯỚNG DỰA TRÊN ROLE
@@ -932,7 +962,7 @@ function submitCgvRegister() {
       if (resData.status === "success") {
         alert(
           resData.message +
-            "\nHãy kiểm tra màn hình Console của Spring Boot để lấy mã OTP nhé!",
+          "\nHãy kiểm tra màn hình Console của Spring Boot để lấy mã OTP nhé!",
         );
         temporaryRegisterEmail = resData.email;
         closeAuthModal();
@@ -1060,7 +1090,7 @@ window.renderCgvInterface = function () {
 
   let activeMovieTitle = selectCombo
     ? selectCombo.value ||
-      (selectCombo.options[0] ? selectCombo.options[0].value : "")
+    (selectCombo.options[0] ? selectCombo.options[0].value : "")
     : "";
   const safeMovies = (serverData && serverData.movies) || [];
   const targetMovieObj = safeMovies.find((m) => m.title === activeMovieTitle);
@@ -1166,9 +1196,9 @@ window.renderCgvInterface = function () {
             "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
           let displayAge =
             m.age_rating === 0 ||
-            m.ageRating === 0 ||
-            m.age_rating === "0" ||
-            m.ageRating === "0"
+              m.ageRating === 0 ||
+              m.age_rating === "0" ||
+              m.ageRating === "0"
               ? "P"
               : `T${m.age_rating || m.ageRating || "16"}`;
 
@@ -1196,8 +1226,8 @@ window.renderCgvInterface = function () {
     });
     console.log(
       "👉 Đã vẽ thành công " +
-        (rankCounter - 1) +
-        " bộ phim lên màn hình giao diện trang chủ!",
+      (rankCounter - 1) +
+      " bộ phim lên màn hình giao diện trang chủ!",
     );
   }
 
@@ -1610,9 +1640,16 @@ window.executeFinalCheckout = function () {
       const lasTicketId = "LAS-" + Math.floor(100000 + Math.random() * 900000);
       console.log("currentPriceTotal =", currentPriceTotal);
       console.log("appliedVoucherDiscount =", appliedVoucherDiscount);
+      const targetMovie = serverData.movies.find(  m => m.title === currentMovie );
+
+      const movieId = targetMovie
+        ? (targetMovie.movieId || targetMovie.movie_id)
+        : null;
       const invoiceObj = {
         id: lasTicketId,
+        movieId: movieId,
         movie: currentMovie,
+
         date: ticketDate,
         time: ticketShowtime,
         seats: [...ticketSeats],
@@ -1851,8 +1888,8 @@ window.renderLasPromoGrid = function () {
         // 🚀 THẦN CHÚ BẮN THẺ <IMG> TRỰC TIẾP: Triệt tiêu hoàn toàn lỗi sập co rúm khung hình của thẻ div cũ
         let imgHTML =
           validImg.startsWith("http") ||
-          validImg.includes("/") ||
-          validImg.includes(".")
+            validImg.includes("/") ||
+            validImg.includes(".")
             ? `<img src="${validImg}" class="news-card-img-holder" style="width: 100%; height: 200px; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png';">`
             : `<div class="news-card-img-holder" style="background: #a1dbf1; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0c6291; font-size: 14px; height: 200px; width: 100%; text-align: center; padding: 0 10px; box-sizing: border-box;">${validImg || "LAS CINEMA"}</div>`;
         // Tạo cấu trúc thẻ card chuẩn chỉ ăn khớp layout hai phân vùng
