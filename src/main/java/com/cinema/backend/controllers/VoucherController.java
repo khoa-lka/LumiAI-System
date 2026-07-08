@@ -2,11 +2,7 @@ package com.cinema.backend.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.cinema.backend.entities.Voucher;
 import com.cinema.backend.service.VoucherService;
@@ -18,25 +14,62 @@ public class VoucherController {
 
     @Autowired
     private VoucherService voucherService;
-
+    
     @GetMapping("/{code}")
-public ResponseEntity<?> checkVoucher(@PathVariable String code) {
+    public ResponseEntity<?> checkVoucher(@PathVariable String code) {
 
-    Voucher voucher = voucherService.checkVoucher(code);
+        Voucher voucher = voucherService.checkVoucher(code);
 
-    if (voucher == null) {
-        return ResponseEntity.badRequest().body("Voucher không tồn tại");
+        if (voucher == null) {
+            return ResponseEntity.badRequest().body("Voucher không tồn tại");
+        }
+
+        if (voucher.getUsageLimit() <= 0) {
+            return ResponseEntity.badRequest().body("Voucher đã hết lượt sử dụng");
+        }
+
+        if (voucher.getExpiredDate().isBefore(java.time.LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body("Voucher đã hết hạn");
+        }
+
+        return ResponseEntity.ok(voucher);
+    }
+    // 🚀 API 1: Lấy toàn bộ danh sách Voucher cho bảng quản trị của Manager
+    @GetMapping("/manager/all")
+    public ResponseEntity<?> getAllVouchersForManager() {
+        return ResponseEntity.ok(voucherService.getAllVouchers());
     }
 
-    if (voucher.getUsageLimit() <= 0) {
-        return ResponseEntity.badRequest().body("Voucher đã hết lượt sử dụng");
+    // 🚀 API 2: Thêm mới Voucher chiến dịch
+    @PostMapping("/manager/add")
+    public ResponseEntity<?> createVoucher(@RequestBody Voucher voucher) {
+        try {
+            Voucher newVoucher = voucherService.createVoucher(voucher);
+            return ResponseEntity.ok(newVoucher);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi tạo voucher: " + e.getMessage());
+        }
     }
 
-    if (voucher.getExpiredDate().isBefore(java.time.LocalDateTime.now())) {
-        return ResponseEntity.badRequest().body("Voucher đã hết hạn");
+    // 🚀 API 3: Cập nhật thông tin sửa đổi Voucher
+    @PutMapping("/manager/update/{id}") // 🎯 Đã rút gọn sạch đẹp
+    public ResponseEntity<?> updateVoucher(@PathVariable Integer id, @RequestBody Voucher voucherDetails) {
+        try {
+            Voucher updatedVoucher = voucherService.updateVoucher(id, voucherDetails);
+            return ResponseEntity.ok(updatedVoucher);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi cập nhật voucher: " + e.getMessage());
+        }
     }
 
-    return ResponseEntity.ok(voucher);
-}
-
+    // 🚀 API 4: Xóa Voucher vật lý khỏi hệ thống
+    @DeleteMapping("/manager/delete/{id}") // 🎯 Đã rút gọn sạch đẹp
+    public ResponseEntity<?> deleteVoucher(@PathVariable Integer id) {
+        try {
+            voucherService.deleteVoucher(id);
+            return ResponseEntity.ok("Xóa thành công");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi xóa voucher: " + e.getMessage());
+        }
+    }
 }

@@ -132,5 +132,29 @@ const API = {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data)
   }).then(handleResponse),
-  deleteFnbItem: (id) => fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then(res => res.ok ? true : Promise.reject(res))
+  deleteFnbItem: (id) => fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then(res => res.ok ? true : Promise.reject(res)),
+  
+  // 🎟️ QUẢN LÝ VOUCHER CHIẾN DỊCH (MANAGER)
+  getManagerVouchers: () => 
+    fetch(`${BASE_URL}/vouchers/manager/all`).then(handleResponse),
+
+  addVoucher: (voucherData) => 
+    fetch(`${BASE_URL}/vouchers/manager/add`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(voucherData)
+    }).then(handleResponse),
+
+  updateVoucher: (id, voucherData) => 
+    fetch(`${BASE_URL}/vouchers/manager/update/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(voucherData)
+    }).then(handleResponse),
+
+  deleteVoucher: (id) => 
+    fetch(`${BASE_URL}/vouchers/manager/delete/${id}`, { 
+      method: "DELETE" 
+    }).then(res => res.ok ? true : Promise.reject(res))
+
 };

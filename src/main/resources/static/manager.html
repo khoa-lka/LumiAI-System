@@ -412,74 +412,37 @@
           </div>
         </div>
 
-        <div id="mp-tab-promo" class="mp-tab-section">
+        <div id="mp-tab-promo" class="mp-tab-section" style="display: none;">
           <div class="mp-action-bar">
-            <button class="mp-btn-add" onclick="openCreatePromoModal()">
-              Tạo chiến dịch mới
+            <button class="mp-btn-add" onclick="openAddVoucherModal()">
+              ➕ Tạo Chiến Dịch Mới
             </button>
             <div class="mp-filters">
-              <div class="mp-search-box">
-                <span class="mp-search-icon">🔍</span
-                ><input type="text" placeholder="Tìm tên chiến dịch..." />
-              </div>
-              <select class="mp-filter-select">
-                <option>Type</option>
-              </select>
-              <select class="mp-filter-select">
-                <option>Status</option>
-              </select>
+              <button class="mp-btn-outline" onclick="loadManagerVouchers()">🔄 Làm mới dữ liệu</button>
             </div>
           </div>
+
           <div class="mp-box" style="padding: 0">
             <table class="mp-table">
               <thead style="background: #0b0b0e">
                 <tr>
-                  <th style="width: 30px"><input type="checkbox" /></th>
-                  <th>Hình ảnh</th>
-                  <th>Tên chiến dịch / Mã Promo</th>
+                  <th style="width: 50px; text-align: center">STT</th>
+                  <th>Mã Promo / Voucher</th>
                   <th>Loại giảm giá</th>
-                  <th>Giá trị</th>
-                  <th>Thời gian áp dụng</th>
-                  <th>Điều kiện</th>
-                  <th>Trạng thái</th>
+                  <th style="text-align: right">Giá trị giảm</th>
+                  <th style="text-align: center">Số lượt còn lại</th>
+                  <th style="text-align: center">Ngày hết hạn</th>
+                  <th style="text-align: center">Hành động</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="mp-promo-tbody">
                 <tr>
-                  <td><input type="checkbox" /></td>
-                  <td>🎟️</td>
-                  <td><strong>Mừng AI 45K</strong><br />LUMIAI45K</td>
-                  <td>Giảm giá cố định</td>
-                  <td>45,000 VND</td>
-                  <td>01/06 - 31/07/2026</td>
-                  <td>Hóa đơn >= 150k</td>
-                  <td>
-                    <span class="mp-promo-status status-active">ACTIVE</span>
-                  </td>
-                </tr>
-                <tr class="mp-promo-expired">
-                  <td><input type="checkbox" /></td>
-                  <td>🍿</td>
-                  <td><strong>Combo Mùa Hè</strong><br />SUMMER2026</td>
-                  <td>Voucher Combo</td>
-                  <td>1 Combo</td>
-                  <td>01/05 - 20/06/2026</td>
-                  <td>Voucher vật lý</td>
-                  <td>
-                    <span class="mp-promo-status status-expired">EXPIRED</span>
+                  <td colspan="7" style="text-align:center; padding:15px; color:#666;">
+                    Đang quét danh sách chiến dịch khuyến mãi từ Database...
                   </td>
                 </tr>
               </tbody>
             </table>
-          </div>
-          <div class="mp-fnb-tooltip" style="bottom: 20px; right: 20px">
-            <div style="color: #f57c00; font-size: 16px">⚠️</div>
-            <div>
-              <strong>Mã Voucher: SUMMER2026 - Đã hết hạn.</strong><br /><span
-                style="color: #a8a8b3"
-                >Tỷ lệ sử dụng thấp < dự kiến (chỉ 91 đơn vị)</span
-              >
-            </div>
           </div>
         </div>
 
@@ -1387,6 +1350,14 @@
             console.error("Lỗi khi load ma trận lịch chiếu:", err);
           }
         }
+        // 4. Tự động gọi API nạp voucher từ database khi chuyển sang Tab Promo
+        if (tabId === "promo" && typeof loadManagerVouchers === "function") {
+          try {
+            loadManagerVouchers();
+          } catch (err) {
+            console.error("Lỗi khi load danh sách Voucher từ database:", err);
+          }
+        }
       };
 
       // Các hàm Dropdown
@@ -1452,6 +1423,58 @@
         <div style="display: flex; gap: 10px;">
           <button class="btn-cgv-cancel" onclick="closeAddShowtimeModal()" style="flex: 1; cursor: pointer;">Hủy bỏ</button>
           <button class="btn-cgv-submit" onclick="submitAddShowtimeForm()" style="flex: 1; cursor: pointer; background:#e71a0f; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold;">XẾP LỊCH NGAY</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mp-modal-overlay" id="mp-create-promo-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+      <div class="mp-modal-box" style="background: white; width: 450px; padding: 25px; border-radius: 8px; box-sizing: border-box;">
+        <div class="mp-modal-close" onclick="closeCreatePromoModal()" style="cursor: pointer; float: right; font-weight: bold; color: #111;">✕</div>
+        <div class="mp-modal-header" id="mp-promo-modal-title" style="font-weight: bold; font-size: 18px; margin-bottom: 20px; color:#111;">Tạo Chiến Dịch Voucher Mới</div>
+        
+        <input type="hidden" id="v-id" />
+        
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px; color:#333;">Mã Voucher (Ví dụ: LUMIAI45K)</label>
+          <input type="text" id="v-code" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; text-transform: uppercase;" />
+        </div>
+        
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px; color:#333;">Loại giảm giá</label>
+          <select id="v-type" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <option value="MONEY">Giảm tiền mặt trực tiếp (VND)</option>
+            <option value="PERCENT">Giảm theo phần trăm (%)</option>
+          </select>
+        </div>
+        
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px; color:#333;">Giá trị giảm (Số tiền hoặc số %)</label>
+          <input type="number" id="v-value" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px; color:#333;">Mức giảm tối đa (Áp dụng cho % - nếu có)</label>
+          <input type="number" id="v-max" class="cgv-input-text" value="0" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px; color:#333;">Đơn hàng tối thiểu (VND)</label>
+          <input type="number" id="v-min" class="cgv-input-text" value="0" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px; color:#333;">Giới hạn số lượt sử dụng</label>
+          <input type="number" id="v-limit" class="cgv-input-text" value="100" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+
+        <div class="mp-form-group" style="margin-bottom: 20px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px; color:#333;">Ngày và giờ hết hạn chiến dịch</label>
+          <input type="datetime-local" id="v-expired" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-cgv-cancel" onclick="closeCreatePromoModal()" style="flex: 1; cursor: pointer; padding:10px; border-radius:4px; border:1px solid #ccc; background:#fff;">Hủy bỏ</button>
+          <button class="btn-cgv-submit" onclick="submitVoucherForm()" style="flex: 1; cursor: pointer; background:#e71a0f; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold;">LƯU CHIẾN DỊCH</button>
         </div>
       </div>
     </div>
