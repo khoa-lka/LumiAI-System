@@ -318,7 +318,123 @@ function toggleAuthTab(type) {
     document.getElementById("form-register-panel").classList.add("active");
   }
 }
+window.currentFeedbackMovieId = null;
+function openFeedbackModal(movieId, invoiceId = null){
 
+    window.currentFeedbackMovieId = movieId;
+
+    _feedbackInvoiceId = invoiceId;
+
+    _feedbackRating = 0;
+
+    document.getElementById("feedback-text").value = "";
+
+    setFeedbackStars(0);
+
+    document.getElementById("feedback-modal").style.display = "flex";
+
+}
+
+
+// Hàm gửi Feedback lên server
+window.submitFeedbackForm = function () {
+
+  const title = "Đánh giá phim";
+  const content = document.getElementById("feedback-text").value.trim();
+  const rating = _feedbackRating;
+  const movieId = window.currentFeedbackMovieId;
+
+  const cachedUser = localStorage.getItem("las_logged_in_user");
+  const accId = cachedUser ? JSON.parse(cachedUser).accountId : 1;
+
+  if (!content) {
+    alert("Vui lòng nhập nội dung!");
+    return;
+  }
+
+  if (rating === 0) {
+    alert("Vui lòng chọn số sao!");
+    return;
+  }
+
+  fetch("http://localhost:8080/api/feedback/submit", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      title,
+      content,
+      ratingStars: rating,
+      movieId,
+      accountStaffId: accId
+    })
+  })
+    .then(res => res.json())
+    .then(data => {
+
+      if (data.success) {
+
+        closeFeedbackModal();
+
+        loadFeedbacksForMovie(movieId);
+
+        alert("Cảm ơn bạn đã đánh giá!");
+
+      } else {
+
+        alert(data.message);
+
+      }
+
+    })
+    .catch(console.error);
+
+}
+
+window.loadFeedbacksForMovie = function (movieId) {
+  const container = document.getElementById("feedback-list-container");
+  if (!container) return;
+
+  // 🚀 GỌI API ĐỘNG TỪ SPRING BOOT
+  fetch(`http://localhost:8080/api/feedback/movie/${movieId}`)
+    .then(res => res.json())
+    .then(data => {
+      // Render dữ liệu động từ DB
+      container.innerHTML =
+        data.length === 0
+          ? "Chưa có đánh giá nào."
+          : data.map(fb => {
+
+            const time = new Date(fb.createdAt).toLocaleString("vi-VN");
+
+            return `
+<div class="fb-item"
+style="border-bottom:1px solid #333;padding:12px;">
+
+<div style="display:flex;justify-content:space-between;">
+
+<strong>${fb.accountName}</strong>
+
+<span>⭐ ${fb.ratingStars}</span>
+
+</div>
+
+<div style="font-size:12px;color:#888;margin:5px 0;">
+
+${time}
+
+</div>
+
+<p>${fb.content}</p>
+
+</div>
+`;
+
+          }).join("");
+    })
+    .catch(err => console.error("Lỗi load feedback:", err));
+};
 function viewMovieDetailText(title, genre) {
   document.getElementById("detail-movie-title").innerText = title;
   document.getElementById("detail-movie-genre").innerText = genre;
@@ -327,9 +443,10 @@ function viewMovieDetailText(title, genre) {
     alert("Dự án đang tải dữ liệu phim từ SQL Server, vui lòng đợi vài giây!");
     return;
   }
-
   const targetMovie = serverData.movies.find((m) => m.title === title);
   if (targetMovie) {
+    const mId = targetMovie.movieId || targetMovie.movie_id;
+    window.currentFeedbackMovieId = mId;
     if (document.getElementById("detail-movie-duration")) {
       document.getElementById("detail-movie-duration").innerText =
         targetMovie.duration || "-";
@@ -374,6 +491,9 @@ function viewMovieDetailText(title, genre) {
       synopsisBox.innerText =
         targetMovie.synopsis || "Chưa có tóm tắt cho bộ phim điện ảnh này.";
     }
+    if (mId) {
+      window.loadFeedbacksForMovie(mId);
+    }
   }
 
   const bookBtn = document.getElementById("btn-detail-book-now");
@@ -382,8 +502,11 @@ function viewMovieDetailText(title, genre) {
       quickBookMovie(title);
     };
   }
+
   switchCgvTab("panel-movie-detail");
 }
+
+
 
 function openCheckoutReview() {
   const currentMovie = document.getElementById("cgv-combo-movie").value;
@@ -554,20 +677,6 @@ function closeHistoryDetailModal() {
 let _feedbackRating = 0;
 let _feedbackInvoiceId = null;
 
-function openFeedbackModal(invoiceId) {
-  _feedbackInvoiceId = invoiceId || null;
-  _feedbackRating = 0;
-  const inv = userPastInvoices.find((i) => i.id === invoiceId);
-  const refEl = document.getElementById("feedback-invoice-ref");
-  if (refEl)
-    refEl.innerText = inv
-      ? `Phim: ${inv.movie} • Mã vé: ${inv.id}`
-      : "Chia sẻ trải nghiệm của bạn";
-  const txt = document.getElementById("feedback-text");
-  if (txt) txt.value = "";
-  setFeedbackStars(0);
-  document.getElementById("feedback-modal").classList.add("open");
-}
 
 function setFeedbackStars(n) {
   _feedbackRating = n;
@@ -609,13 +718,20 @@ function submitFeedback() {
   }
 }
 
-function closeFeedbackModal() {
-  document.getElementById("feedback-modal").classList.remove("open");
+window.closeFeedbackModal = function(){
+
+    document.getElementById("feedback-modal").style.display = "none";
+
+    document.getElementById("feedback-text").value = "";
+
+    _feedbackRating = 0;
+
 }
 window.openFeedbackModal = openFeedbackModal;
 window.setFeedbackStars = setFeedbackStars;
-window.submitFeedback = submitFeedback;
-window.closeFeedbackModal = closeFeedbackModal;
+window.submitFeedbackForm = submitFeedbackForm;
+window.closeFeedbackModal = closeFeedbackModal; 
+
 
 function executeMovieRealTimeSearch() {
   const inputField = document.getElementById("movie-search-input");

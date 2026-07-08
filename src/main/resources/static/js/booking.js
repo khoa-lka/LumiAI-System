@@ -768,7 +768,12 @@ function executeFinalCheckout() {
   let currentMovie =
     document.getElementById("cgv-combo-movie")?.value?.trim() ||
     document.getElementById("detail-movie-title")?.innerText?.trim();
+const targetMovie = (typeof serverData !== 'undefined' && serverData.movies) 
+        ? serverData.movies.find(m => m.title === currentMovie) 
+        : null;
 
+    // 3. LẤY ID PHIM AN TOÀN
+    const movieId = targetMovie ? (targetMovie.movieId || targetMovie.movie_id) : null;
   if (!currentMovie || currentMovie === "-" || currentMovie === "—") {
     alert("Không xác định được phim!");
     return;
@@ -823,6 +828,7 @@ function executeFinalCheckout() {
   }
   const checkoutPayload = {
     movie: currentMovie,
+    movieId: movieId,
     showtime: showtimeId,
     seats: [...selectedSeats],
     email: currentEmail,
@@ -951,6 +957,7 @@ function executeFinalCheckout() {
             </div>
 
             <div class="bc-actions">
+            <button class="bc-btn" onclick="openFeedbackModal(${targetMovie.movieId})">Đánh giá phim</button>
               <button class="bc-btn bc-btn-primary" onclick="window.print()">⬇ Tải / In vé</button>
               <button class="bc-btn bc-btn-ghost" onclick="goHomeFromBc()">Về trang chủ</button>
             </div>
