@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>LAS Cinemas Vietnam - Official Premium Interface</title>
-    <link rel="stylesheet" href="style.css?v=8" />
+    <link rel="stylesheet" href="style.css?v=13" />
   </head>
   <body>
     <div class="global-viewport-container">
@@ -695,6 +695,15 @@
                 >
                   <span class="arrow-btn-icon"></span>
                   LỊCH SỬ GIAO DỊCH
+                </button>
+                <button
+                  class="arrow-btn arrow-btn-dashboard"
+                  id="pro-subtab-btn-dashboard"
+                  onclick="openDashboardConfirm()"
+                  style="display: none"
+                >
+                  <span class="arrow-btn-icon"></span>
+                  TRUY CẬP DASHBOARD
                 </button>
               </div>
             </div>
@@ -1632,6 +1641,22 @@
     </div>
 
     <div id="feedback-toast" class="feedback-toast">✓ Cảm ơn bạn đã gửi feedback!</div>
+
+    <!-- POPUP XÁC NHẬN CHUYỂN DASHBOARD (chỉ Manager/Admin) -->
+    <div class="cgv-modal-overlay" id="dashboard-confirm-modal">
+      <div class="dash-confirm-box">
+        <h3 class="dash-confirm-title">Truy cập Dashboard</h3>
+        <p class="dash-confirm-text">
+          Bạn sắp rời giao diện khách hàng để chuyển sang <b>Dashboard Làm việc</b>.
+          Bạn có chắc chắn muốn tiếp tục?
+        </p>
+        <div class="dash-confirm-actions">
+          <button class="dash-btn dash-btn-cancel" onclick="closeDashboardConfirm()">Hủy</button>
+          <button class="dash-btn dash-btn-ok" onclick="confirmGoDashboard()">Xác nhận</button>
+        </div>
+      </div>
+    </div>
+
     <div id="las-chatbot-bubble" onclick="window.toggleLasChatbox()" style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background-color: #ff6b35; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4); z-index: 3000; transition: transform 0.2s;">
   💬
 </div>
@@ -1661,18 +1686,19 @@
 </div>
 
 
-<script src="js/state.js?v=8"></script>
+<script src="js/state.js?v=13"></script>
 
   <!-- 2. Nhúng file trang chủ ngay sau state.js để dùng chung 'serverData' không bị trùng lặp -->
   <!-- Thêm đuôi ?v=... để diệt tận gốc lỗi dính cache file cũ của Chrome/Edge -->
-<script src="js/home.js?v=8"></script>
+<script src="js/home.js?v=13"></script>
 
   <!-- 3. Các file giao diện và tính năng chạy sau cùng omg omg omg omg  -->
-  <script src="js/api.js?v=8"></script>   
-  <script src="js/ui.js?v=8"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
-  <script src="js/auth.js?v=8"></script>
-  <script src="js/admin.js?v=8"></script>
-  <script src="js/booking.js?v=8"></script>
-  <script src="js/breadcrumb.js?v=8"></script>
+  <script src="js/api.js?v=13"></script>   
+  <script src="js/ui.js?v=13"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
+  <script src="js/auth.js?v=13"></script>
+  <script src="js/admin.js?v=13"></script>
+  <script src="js/booking.js?v=13"></script>
+  <script src="js/breadcrumb.js?v=13"></script>
+  <script src="js/dashboard-access.js?v=13"></script>
   </body>
 </html>

@@ -3,21 +3,46 @@
 // File: js/manager.js
 // ==========================================================================
 window.addEventListener("DOMContentLoaded", () => {
-  const isLoggedIn = sessionStorage.getItem("isLoggedIn");
-  const roleId = sessionStorage.getItem("roleId");
+  // Xác định vai trò: ưu tiên localStorage (bền vững), dự phòng sessionStorage
+  function resolveRoleAndName() {
+    var roleId = null,
+      fullName = "";
+    try {
+      var raw = localStorage.getItem("las_logged_in_user");
+      if (raw) {
+        var u = JSON.parse(raw);
+        roleId =
+          u.roleId != null ? u.roleId : u.role_id != null ? u.role_id : null;
+        fullName = u.fullName || u.fullname || "";
+      }
+    } catch (e) {}
+    if (roleId == null) {
+      var sr = sessionStorage.getItem("roleId");
+      if (sr != null && sr !== "") roleId = parseInt(sr, 10);
+    }
+    if (!fullName) fullName = sessionStorage.getItem("fullName") || "Manager";
+    return {
+      roleId: roleId != null ? parseInt(roleId, 10) : null,
+      fullName: fullName,
+    };
+  }
 
-  // Nếu chưa đăng nhập hoặc không phải Manager -> Đuổi về trang chủ
-  if (!isLoggedIn || parseInt(roleId) !== 1) {
+  var info = resolveRoleAndName();
+  var ALLOWED_ROLES = [1]; // Chỉ MANAGER (1) — Admin(4) dùng admin.html riêng
+
+  // Nếu không phải Manager -> Đuổi về trang chủ
+  if (ALLOWED_ROLES.indexOf(info.roleId) === -1) {
     alert("CẢNH BÁO: Khu vực nội bộ! Bạn không có quyền truy cập.");
     window.location.href = "index.html";
     return;
   }
 
-  // Nếu hợp lệ, tự động load danh sách phim
+  // Nếu hợp lệ, tự động load danh sách phim + dashboard analytics
   const titleEl = document.getElementById("mp-dynamic-title");
-  if (titleEl)
-    titleEl.innerText = `Xin chào Manager: ${sessionStorage.getItem("fullName")}`;
+  if (titleEl) titleEl.innerText = `Xin chào Manager: ${info.fullName}`;
   loadManagerMovies();
+  if (typeof window.loadManagerDashboard === "function")
+    window.loadManagerDashboard();
 });
 
 // --- THOÁT VAI TRÒ MANAGER, QUAY VỀ GIAO DIỆN CUSTOMER (index.html) ---
@@ -52,6 +77,9 @@ function switchMpTab(tabId) {
     targetTab.classList.add("active");
   }
   if (targetNav) targetNav.classList.add("active");
+
+  if (tabId === "dashboard" && typeof window.loadManagerDashboard === "function")
+    window.loadManagerDashboard();
 
   // Cập nhật tiêu đề trang
   const titleElement = document.getElementById("mp-dynamic-title");
@@ -164,13 +192,12 @@ function renderMoviesTable(movies) {
   movies.forEach((m, index) => { // 🚀 ĐÃ SỬA: Thêm index để đếm số thứ tự
     let ageBadgeClass = m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
     let ageText = m.ageRating === 0 ? "P" : `T${m.ageRating}`;
-    let statusClass = m.status === "now_showing" ? "active" : "inactive";
+    let statusClass = m.status === "now_showing" ? "active" : m.status === "coming_soon" ? "coming" : "inactive";
     let statusText = m.status === "now_showing" ? "Đang chiếu" : m.status === "coming_soon" ? "Sắp chiếu" : "Ngưng chiếu";
-    let rowClass = m.status !== "now_showing" ? 'class="mp-row-inactive"' : "";
     let posterUrl = m.mainposter_url ? m.mainposter_url : "img/default-poster.jpg";
 
     tbody.innerHTML += `
-      <tr ${rowClass}>
+      <tr>
           <td style="text-align: center; font-weight: bold;">${index + 1}</td> <td>
               <div class="mp-movie-info">
                   <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
@@ -337,6 +364,186 @@ window.submitAddMovie = function () {
       loadManagerMovies();
     })
     .catch((err) => alert("Lỗi khi thêm phim: " + err));
+};
+
+// ==========================================================================
+// --- PHẦN DÙNG CHUNG: HIỂN THỊ DANH SÁCH SUẤT CHIẾU (NGÀY / GIỜ / PHÒNG) ---
+// Dùng cho cả Modal "Xem" ở tab Ma trận và phần thông tin trong Modal "Sửa Phim"
+// ==========================================================================
+function getMatrixRoomLabel(roomId) {
+  if (roomId === 1) return "Screen 1 · Standard";
+  if (roomId === 2) return "Screen 2 · IMAX";
+  return `Phòng ${roomId}`;
+}
+
+function renderShowtimeListInto(containerId, movieId, date) {
+  const container = document.getElementById(containerId);
+  if (!container || !movieId || !date) return;
+
+  container.innerHTML =
+    '<div style="padding:10px;color:#888;font-size:12px;">Đang tải suất chiếu...</div>';
+
+  API.getShowtimes(movieId, date)
+    .then((resData) => {
+      const list = resData.showtimes || [];
+
+      if (list.length === 0) {
+        container.innerHTML = `<div style="padding:10px;color:#888;font-size:12px;">Không có suất chiếu nào được xếp trong ngày ${date}.</div>`;
+        return;
+      }
+
+      const rowsHTML = list
+        .slice()
+        .sort((a, b) => (a.startTime > b.startTime ? 1 : -1))
+        .map(
+          (st) => `
+            <tr>
+              <td>${date}</td>
+              <td>${st.startTime} - ${st.endTime}</td>
+              <td>${getMatrixRoomLabel(st.roomId)}</td>
+            </tr>
+          `,
+        )
+        .join("");
+
+      container.innerHTML = `
+        <div style="font-size:12px;color:#9a9aa3;margin-bottom:8px;">
+          Tổng số suất chiếu trong ngày: <strong style="color:#f4f4f5;">${list.length}</strong>
+        </div>
+        <table class="mp-table" style="width:100%;font-size:12px;">
+          <thead>
+            <tr><th>Ngày</th><th>Giờ chiếu</th><th>Phòng</th></tr>
+          </thead>
+          <tbody>${rowsHTML}</tbody>
+        </table>
+      `;
+    })
+    .catch((err) => {
+      container.innerHTML = `<div style="padding:10px;color:#e57373;font-size:12px;">Lỗi tải suất chiếu: ${err.message || err}</div>`;
+    });
+}
+
+function getMatrixDefaultDate() {
+  const dateInput = document.getElementById("mp-matrix-date-input");
+  if (window.matrixSelectedDate) return window.matrixSelectedDate;
+  if (dateInput && dateInput.value) return dateInput.value;
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, "0");
+  const d = String(today.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+// --- MODAL "XEM" RIÊNG CHO TAB MA TRẬN LỊCH CHIẾU ---
+window.openMatrixViewMovie = function (id) {
+  const movie = window.moviesList.find((item) => item.movieId === id);
+  if (!movie) {
+    console.error("Không tìm thấy dữ liệu của phim mang ID:", id);
+    return;
+  }
+
+  document.getElementById("mxview-movie-id").value = id;
+  document.getElementById("mxview-title").innerText = movie.title || "Chưa cập nhật";
+  document.getElementById("mxview-genre").innerText = movie.genre || "Chưa cập nhật";
+  document.getElementById("mxview-duration").innerText =
+    movie.durationMinutes || movie.duration || "0";
+  document.getElementById("mxview-director").innerText = movie.director || "Chưa cập nhật";
+  document.getElementById("mxview-country").innerText = movie.country || "Chưa cập nhật";
+
+  const statusEl = document.getElementById("mxview-status");
+  statusEl.innerText =
+    movie.status === "now_showing"
+      ? "Đang chiếu"
+      : movie.status === "coming_soon"
+        ? "Sắp chiếu"
+        : "Ngừng chiếu";
+  statusEl.style.color = movie.status === "now_showing" ? "#2e7d32" : "#f57c00";
+
+  const imgUrl =
+    movie.mainposterUrl || movie.mainposter_url || "img/default-poster.jpg";
+  document.getElementById("mxview-poster").src = imgUrl;
+
+  const defaultDate = getMatrixDefaultDate();
+  document.getElementById("mxview-date-input").value = defaultDate;
+  renderShowtimeListInto("mxview-schedule-list", id, defaultDate);
+
+  document.getElementById("mp-matrix-view-modal").style.display = "flex";
+};
+
+window.closeMatrixViewMovie = function () {
+  document.getElementById("mp-matrix-view-modal").style.display = "none";
+};
+
+window.reloadMatrixViewSchedule = function () {
+  const id = parseInt(document.getElementById("mxview-movie-id").value);
+  const date = document.getElementById("mxview-date-input").value;
+  renderShowtimeListInto("mxview-schedule-list", id, date);
+};
+
+// --- MODAL "SỬA" GỌN NHẸ RIÊNG CHO TAB MA TRẬN (chỉ Thời lượng + Trạng thái) ---
+window.openMatrixEditMovie = function (id) {
+  const movie = window.moviesList.find((item) => item.movieId === id);
+  if (!movie) {
+    console.error("Không tìm thấy dữ liệu của phim mang ID:", id);
+    return;
+  }
+
+  document.getElementById("mxedit-movie-id").value = id;
+
+  const imgUrl =
+    movie.mainposterUrl || movie.mainposter_url || "img/default-poster.jpg";
+  document.getElementById("mxedit-poster").src = imgUrl;
+  document.getElementById("mxedit-title").innerText = movie.title || "Chưa cập nhật";
+  document.getElementById("mxedit-meta").innerText =
+    `${movie.genre || "Chưa cập nhật"} · Dir. ${movie.director || "Chưa cập nhật"}`;
+
+  document.getElementById("mxedit-duration").value =
+    movie.durationMinutes || movie.duration || "";
+
+  const statusRadio = document.querySelector(
+    `input[name="mxedit_status"][value="${movie.status}"]`,
+  );
+  if (statusRadio) statusRadio.checked = true;
+
+  const defaultDate = getMatrixDefaultDate();
+  document.getElementById("mxedit-date-input").value = defaultDate;
+  renderShowtimeListInto("mxedit-schedule-list", id, defaultDate);
+
+  document.getElementById("mp-matrix-edit-modal").style.display = "flex";
+};
+
+window.closeMatrixEditMovie = function () {
+  document.getElementById("mp-matrix-edit-modal").style.display = "none";
+};
+
+window.reloadMatrixEditSchedule = function () {
+  const id = parseInt(document.getElementById("mxedit-movie-id").value);
+  const date = document.getElementById("mxedit-date-input").value;
+  renderShowtimeListInto("mxedit-schedule-list", id, date);
+};
+
+window.submitMatrixEditMovie = function () {
+  const id = parseInt(document.getElementById("mxedit-movie-id").value);
+  const original = window.moviesList.find((item) => item.movieId === id);
+  if (!original) return;
+
+  const statusChecked = document.querySelector('input[name="mxedit_status"]:checked');
+
+  // Giữ nguyên toàn bộ thông tin gốc của phim, chỉ ghi đè 2 trường được phép sửa ở đây
+  const movieData = {
+    ...original,
+    duration: parseInt(document.getElementById("mxedit-duration").value) || original.duration,
+    status: statusChecked ? statusChecked.value : original.status,
+  };
+
+  API.updateMovie(movieData)
+    .then(() => {
+      alert("✅ Cập nhật thành công!");
+      closeMatrixEditMovie();
+      loadManagerMovies();
+      if (typeof window.loadManagerMatrix === "function") window.loadManagerMatrix();
+    })
+    .catch((err) => alert("Lỗi khi cập nhật: " + err));
 };
 
 window.openUpdateMovie = function (id) {
@@ -539,7 +746,7 @@ window.loadManagerFnb = function() {
               <td style="text-align: center;">
                   <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
                       <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" style="cursor:pointer;" title="Sửa thông tin">✏️ Sửa</button>
-                      <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;" title="Xóa">🗑️ Xóa</button>
+                      <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" style="cursor:pointer; background:rgba(255,107,53,0.12); color:#ff6b35;" title="Xóa">🗑️ Xóa</button>
                   </div>
               </td>
           </tr>
@@ -708,7 +915,7 @@ function renderFilteredFnbTable(items) {
           <td style="text-align: center;">
               <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
                   <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" style="cursor:pointer;" title="Sửa thông tin">✏️ Sửa</button>
-                  <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;" title="Xóa">🗑️ Xóa</button>
+                  <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" style="cursor:pointer; background:rgba(255,107,53,0.12); color:#ff6b35;" title="Xóa">🗑️ Xóa</button>
               </div>
           </td>
       </tr>
@@ -806,6 +1013,60 @@ window.openQuickRestockModal = function() {
 // 🚀 ENGINE XỬ LÝ MA TRẬN LỊCH CHIẾU ĐỘNG & CHECK CONFLICT TỰ ĐỘNG
 // ==========================================================================
 
+// Vẽ bảng "Danh Sách Phim" tham khảo bên dưới Ma trận Lịch chiếu
+// (Movie | Genre | Duration | Rating | Status | Release Date | Actions)
+function renderMatrixMovieList(movies) {
+  const tbody = document.getElementById("mp-matrix-movies-tbody");
+  if (!tbody) return;
+
+  if (!movies || movies.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px; color: #888;">Chưa có dữ liệu phim.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = "";
+  movies.forEach((m) => {
+    const posterUrl = m.mainposter_url ? m.mainposter_url : "img/default-poster.jpg";
+    const statusClass = m.status === "now_showing" ? "active" : m.status === "coming_soon" ? "coming" : "inactive";
+    const statusText = m.status === "now_showing" ? "Now Showing" : m.status === "coming_soon" ? "Coming Soon" : "Ngừng chiếu";
+    const ratingValue = typeof m.rating === "number" ? m.rating.toFixed(1) : "N/A";
+    const genres = (m.genre || "Chưa cập nhật")
+      .split(/[,/|]/)
+      .map((g) => g.trim())
+      .filter(Boolean);
+
+    tbody.innerHTML += `
+      <tr>
+        <td>
+          <div class="mp-movie-info">
+            <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
+            <div>
+              <div class="mp-movie-title">${m.title}</div>
+              <div style="font-size:11px;color:var(--muted,#9a9aa3);">Dir. ${m.director || "Chưa cập nhật"}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="mp-genre-pill-group">
+            ${genres.map((g) => `<span class="mp-genre-pill">${g}</span>`).join("")}
+          </div>
+        </td>
+        <td><span class="mp-duration-chip">⏱ ${m.duration} min</span></td>
+        <td><span class="mp-rating-chip">★ ${ratingValue}</span></td>
+        <td><span class="mp-status ${statusClass}">${statusText}</span></td>
+        <td>${m.releaseDate || "N/A"}</td>
+        <td>
+          <div class="mp-table-actions">
+            <button class="mp-action-btn" onclick="openMatrixViewMovie(${m.movieId})" title="Xem chi tiết suất chiếu">👁️</button>
+            <button class="mp-action-btn" onclick="openMatrixEditMovie(${m.movieId})" title="Sửa">✏️</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+}
+window.renderMatrixMovieList = renderMatrixMovieList;
+
 window.loadManagerMatrix = function() {
   const dateInput = document.getElementById("mp-matrix-date-input");
   const trackRoom1 = document.getElementById("matrix-track-room-1");
@@ -823,6 +1084,7 @@ window.loadManagerMatrix = function() {
   }
 
   const selectedDate = dateInput.value;
+  window.matrixSelectedDate = selectedDate;
   trackRoom1.innerHTML = '<p style="color:#777;font-size:12px;padding:15px;">Đang quét phòng 1...</p>';
   trackRoom2.innerHTML = '<p style="color:#777;font-size:12px;padding:15px;">Đang quét phòng 2...</p>';
 
@@ -889,6 +1151,9 @@ window.loadManagerMatrix = function() {
       trackRoom1.innerHTML = "";
       trackRoom2.innerHTML = "";
 
+      // 5b. Vẽ luôn bảng "Danh Sách Phim" tham khảo bên dưới ma trận
+      renderMatrixMovieList(window.moviesList);
+
       if (globalShowtimes.length === 0) {
         trackRoom1.innerHTML = trackRoom2.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#999;font-size:12px;text-align:center;">Trống lịch. Chưa xếp suất chiếu nào trong ngày này!</div>';
         return;
@@ -932,7 +1197,7 @@ window.loadManagerMatrix = function() {
           <div class="mp-track-block ${blockClass}" style="left: ${leftPercent}%; width: ${widthPercent}%; min-width: 50px;" title="${st.movieTitle} (${st.startTime} - ${st.endTime})">
               ${conflictHTML}
               <strong>${st.movieTitle}</strong><br />
-              <span style="font-size:10px;">${st.startTime} - ${st.endTime}</span>
+              <span style="font-size:11px; opacity:0.92;">${st.startTime} - ${st.endTime}</span>
           </div>
         `;
 

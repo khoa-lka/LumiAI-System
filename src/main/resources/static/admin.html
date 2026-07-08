@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Management Portal</title>
+    <link rel="stylesheet" href="style.css">
     <style>
         :root {
             --primary: #2c3e50;
@@ -22,7 +23,7 @@
 
         /* Content Area */
         .admin-main-content { margin-left: var(--sidebar-width); flex: 1; padding: 30px; }
-        .admin-header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 30px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+
         .admin-tab-section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 
         /* Table Styling */
@@ -34,6 +35,61 @@
         .btn-admin-action { cursor: pointer; padding: 6px 12px; border: none; border-radius: 4px; font-size: 0.8rem; }
         .delete { background: #e74c3c; color: white; }
         .edit { background: #3498db; color: white; margin-right: 5px; }
+
+        /* ===== HEADER ADMIN (giống Manager Dashboard) ===== */
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #17171b;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 16px 24px;
+            margin-bottom: 30px;
+        }
+        .adm-title { font-size: 22px; font-weight: bold; color: #f4f4f5; margin: 0; }
+        .adm-header-utils { display: flex; align-items: center; gap: 18px; }
+        .adm-date-badge {
+            background: #0f0f12; border: 1px solid rgba(255,255,255,0.12);
+            padding: 8px 15px; border-radius: 20px; font-size: 13px; color: #c4c4cc; font-weight: bold;
+        }
+        .adm-bell { font-size: 20px; position: relative; cursor: pointer; color: #e4e4e7; }
+        .adm-bell::after {
+            content: ""; position: absolute; top: 0; right: 0;
+            width: 8px; height: 8px; background: #ff4742; border-radius: 50%;
+        }
+        .adm-notif-dropdown {
+            position: absolute; top: 34px; right: 0; width: 220px;
+            background: #1c2128; color: #cfd3da; border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.35); padding: 14px 16px;
+            font-size: 13px; z-index: 1002; display: none;
+        }
+        .adm-notif-dropdown.open { display: block; animation: admFadeIn 0.2s; }
+        .adm-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; position: relative; }
+        .adm-avatar {
+            width: 40px; height: 40px; border-radius: 50%; background: #ff6b35;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 800; color: #fff;
+        }
+        .adm-user-info { display: flex; flex-direction: column; }
+        .adm-user-name { font-size: 14px; font-weight: bold; color: #f4f4f5; }
+        .adm-user-role { font-size: 12px; color: #9a9aa3; }
+        .adm-user-dropdown {
+            position: absolute; top: 56px; right: 0; width: 230px;
+            background: #1c2128; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.35);
+            padding: 10px 0; z-index: 1002; display: none; color: #fff;
+        }
+        .adm-user-dropdown.open { display: block; animation: admFadeIn 0.2s; }
+        .adm-user-dropdown-header {
+            padding: 10px 20px; font-weight: bold; border-bottom: 1px solid #333; margin-bottom: 5px;
+        }
+        .adm-dropdown-item {
+            display: flex; align-items: center; gap: 10px; padding: 11px 20px;
+            font-size: 13px; cursor: pointer; transition: background 0.2s;
+            color: #ff4742; font-weight: 700;
+        }
+        .adm-dropdown-item:hover { color: #fff; background: #ff4742; }
+        @keyframes admFadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -49,8 +105,31 @@
 
     <div class="admin-main-content">
         <div class="admin-header">
-            <strong>Bảng điều khiển quản trị</strong>
-            <span>Chào, <b>Quản trị hệ thống</b></span>
+            <div>
+                <h2 class="adm-title" id="adm-dynamic-title">Xin chào Admin</h2>
+            </div>
+            <div class="adm-header-utils">
+                <div class="adm-date-badge" id="adm-current-date">--/--/----</div>
+
+                <div style="position: relative;">
+                    <div class="adm-bell" onclick="toggleAdmNotifDropdown()">🔔</div>
+                    <div class="adm-notif-dropdown" id="adm-notif-dropdown">
+                        Chưa có thông báo mới.
+                    </div>
+                </div>
+
+                <div class="adm-profile" onclick="toggleAdmUserDropdown()">
+                    <div class="adm-avatar" id="adm-avatar-initials">AD</div>
+                    <div class="adm-user-info">
+                        <span class="adm-user-name" id="adm-user-name">Quản trị viên ▾</span>
+                        <span class="adm-user-role">Admin</span>
+                    </div>
+                    <div class="adm-user-dropdown" id="adm-user-dropdown">
+                        <div class="adm-user-dropdown-header" id="adm-user-dropdown-header">Chào, Quản trị viên</div>
+                        <div class="adm-dropdown-item" onclick="exitAdminRoleToCustomerView()">→ ĐĂNG XUẤT VAI TRÒ ADMIN</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div id="admin-tab-ban" class="admin-tab-section">
@@ -83,15 +162,88 @@
     </div>
 
 
-<script src="js/state.js"></script>
+<!-- GUARD: Chỉ ADMIN (role_id = 4) mới được truy cập trang này -->
+<script>
+(function () {
+  var roleId = null;
+  try {
+    var raw = localStorage.getItem("las_logged_in_user");
+    if (raw) {
+      var u = JSON.parse(raw);
+      roleId = u.roleId != null ? u.roleId : (u.role_id != null ? u.role_id : null);
+    }
+  } catch (e) {}
+  if (roleId == null) {
+    var sr = sessionStorage.getItem("roleId");
+    if (sr != null && sr !== "") roleId = parseInt(sr, 10);
+  }
+  if (parseInt(roleId, 10) !== 4) {
+    alert("CẢNH BÁO: Khu vực Quản trị viên (ADMIN)! Bạn không có quyền truy cập.");
+    window.location.href = "index.html";
+  }
+})();
+</script>
 
-<script src="js/api.js"></script>
+<!-- HEADER MỚI: đăng xuất, dropdown, ngày hiện tại, tên admin thật -->
+<script>
+(function () {
+  function displayAdmDate() {
+    var today = new Date();
+    var d = String(today.getDate()).padStart(2, "0");
+    var m = String(today.getMonth() + 1).padStart(2, "0");
+    var y = today.getFullYear();
+    var el = document.getElementById("adm-current-date");
+    if (el) el.innerText = d + "/" + m + "/" + y;
+  }
 
-<script src="js/auth.js"></script>
+  function loadAdmProfile() {
+    try {
+      var raw = localStorage.getItem("las_logged_in_user");
+      if (!raw) return;
+      var u = JSON.parse(raw);
+      var fullName = u.fullName || "Quản trị viên";
+      var titleBox = document.getElementById("adm-dynamic-title");
+      if (titleBox) titleBox.innerText = "Xin chào Admin: " + fullName;
+      var nameBox = document.getElementById("adm-user-name");
+      var headerBox = document.getElementById("adm-user-dropdown-header");
+      var avatarBox = document.getElementById("adm-avatar-initials");
+      if (nameBox) nameBox.innerText = fullName + " ▾";
+      if (headerBox) headerBox.innerText = "Chào, " + fullName;
+      if (avatarBox) {
+        var initials = fullName.split(" ").pop().substring(0, 2).toUpperCase();
+        avatarBox.innerText = initials;
+      }
+    } catch (e) {}
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    displayAdmDate();
+    loadAdmProfile();
+  });
+})();
+
+function toggleAdmUserDropdown() {
+  var box = document.getElementById("adm-user-dropdown");
+  if (box) box.classList.toggle("open");
+}
+function toggleAdmNotifDropdown() {
+  var box = document.getElementById("adm-notif-dropdown");
+  if (box) box.classList.toggle("open");
+}
+function exitAdminRoleToCustomerView() {
+  window.location.replace("index.html");
+}
+</script>
+
+<script src="js/state.js?v=12"></script>
+
+<script src="js/api.js?v=12"></script>
+
+<script src="js/auth.js?v=12"></script>
 
 
-<script src="js/admin.js"></script>
-<script src="js/home.js"></script>
+<script src="js/admin.js?v=12"></script>
+<script src="js/home.js?v=12"></script>
     
   
 
