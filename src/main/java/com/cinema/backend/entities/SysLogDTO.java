@@ -1,25 +1,22 @@
 package com.cinema.backend.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import java.time.LocalDateTime; // Import đúng thư viện này
 
 @Entity
-@Table(name = "syslogs") // Bảng này sẽ được tạo trong SQL Server
+@Table(name = "syslogs")
 @Getter
 @Setter
 public class SysLogDTO {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Tự động tăng ID
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "log_id") // Khớp với log_id trong bảng
     private Long id;
 
-    @Column(name = "time_created") // Tên cột trong SQL
-    private String time;
+    @Column(name = "time_created") // Khớp với tên cột trong bảng
+    private LocalDateTime time; // Đổi từ String sang LocalDateTime
 
     @Column(name = "action_name")
     private String action;

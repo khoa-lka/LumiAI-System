@@ -1,7 +1,6 @@
 package com.cinema.backend.entities;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,17 +28,12 @@ public class Voucher {
     @Column(name = "discount_value")
     private Double discountValue;
 
- @Column(name = "expired_date")
-private LocalDateTime expiredDate;
+    @Column(name = "expired_date")
+    private LocalDateTime expiredDate;
 
     @Column(name = "usage_limit")
     private Integer usageLimit;
 
-@Column(name = "created_by")
-private Integer createdBy;
-
-@Column(name = "updated_by")
-private Integer updatedBy;
     @Column(name = "discount_type")
     private String discountType;
 
@@ -47,7 +41,13 @@ private Integer updatedBy;
     private BigDecimal maxDiscount;
 
     @Column(name = "minimum_order")
-    private BigDecimal minimumOrder;
+    private Integer minimumOrder;
+
+    @Column(name = "created_by")
+    private Integer createdBy;
+
+    @Column(name = "updated_by")
+    private Integer updatedBy;
 
     @JsonIgnore
     @OneToMany(mappedBy = "voucher")
@@ -130,11 +130,11 @@ private Integer updatedBy;
         this.maxDiscount = maxDiscount;
     }
 
-    public BigDecimal getMinimumOrder() {
+    public Integer getMinimumOrder() {
         return minimumOrder;
     }
 
-    public void setMinimumOrder(BigDecimal minimumOrder) {
+    public void setMinimumOrder(Integer minimumOrder) {
         this.minimumOrder = minimumOrder;
     }
 

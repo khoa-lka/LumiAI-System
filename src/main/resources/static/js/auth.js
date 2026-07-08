@@ -74,17 +74,12 @@ function submitCgvLogin(event) {
         sessionStorage.setItem("roleId", uData.roleId);
         window.currentLoggedInId = uData.accountId;
 
-        // 2. KIỂM TRA QUYỀN VÀ ĐIỀU HƯỚNG
-        if (uData.roleId === 4 || uData.roleId === 1) {
-          // Nếu là Manager (4) hoặc Admin (1) -> Chuyển sang trang Quản trị
+        // 2. ĐIỀU HƯỚNG: Tất cả vai trò đều vào HOME sau đăng nhập.
+        //    Manager(1) và Admin(4) truy cập Dashboard CHỦ ĐỘNG qua tab
+        //    "TRUY CẬP DASHBOARD" (Manager -> manager.html, Admin -> admin.html).
+        {
           alert(
-            `Xin chào Quản lý: ${uData.fullName}. Đang chuyển hướng đến Portal...`,
-          );
-          window.location.href = "manager.html";
-        } else {
-          // Nếu là Khách hàng (Member) -> Ở lại trang chủ và cập nhật giao diện
-          alert(
-            `Chào mừng thành viên: ${uData.fullName} đăng nhập thành công!`,
+            `Chào mừng ${uData.fullName} đăng nhập thành công!`,
           );
           closeAuthModal();
 
@@ -92,14 +87,16 @@ function submitCgvLogin(event) {
           authLinkBox.onclick = () => switchCgvTab("panel-profile");
           authLinkBox.style.cursor = "pointer";
           authLinkBox.innerHTML = `
-              <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}! 
+              <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}! 
               <span onclick="confirmLogoutAction(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
           `;
           document.getElementById("top-bar-ticket-link").innerHTML =
-            `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
+            `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
 
           let roleString = "Khách hàng thành viên";
+          if (uData.roleId === 1) roleString = "Quản lý (MANAGER)";
           if (uData.roleId === 2) roleString = "Nhân viên cụm rạp (STAFF)";
+          if (uData.roleId === 4) roleString = "Quản trị viên (ADMIN)";
 
           if (document.getElementById("profile-summary-avatar")) {
             document.getElementById("profile-summary-avatar").innerText =
@@ -110,7 +107,7 @@ function submitCgvLogin(event) {
             "profile-welcome-name",
           );
           if (welcomeNameBox)
-            welcomeNameBox.innerText = `Xin chào ${uData.fullName},`;
+            welcomeNameBox.innerText = uData.fullName;
 
           const starRoleBox = document.getElementById("profile-star-role");
           if (starRoleBox) starRoleBox.innerText = "MEMBER";
@@ -146,6 +143,9 @@ function submitCgvLogin(event) {
                 `${day}/${month}/${year}`;
             }
           }
+
+          // Cập nhật hiển thị tab "Truy cập Dashboard" theo quyền
+          if (window.refreshDashboardTab) window.refreshDashboardTab();
 
           // Nhảy sang tab Profile của khách hàng an toàn
           switchCgvTab("panel-profile");
@@ -263,9 +263,10 @@ function saveUpdatedProfileInformationData() {
           .querySelectorAll(".profile-readonly-input")
           .forEach((input) => {
             input.setAttribute("readonly", true);
-            input.setAttribute("disabled", true);
-            input.style.border = "1px solid #ccc";
-            input.style.background = "#f4f2ec";
+            if (input.tagName === "SELECT") input.setAttribute("disabled", true);
+            input.style.border = "1px solid rgba(255,255,255,0.15)";
+            input.style.background = "#1c1c21";
+            input.style.color = "#f4f4f5";
           });
         document.getElementById("btn-save-profile").style.display = "none";
 
@@ -274,7 +275,7 @@ function saveUpdatedProfileInformationData() {
           if (profileRes.status === "success") {
             const updatedData = profileRes.data;
             document.getElementById("profile-welcome-name").innerText =
-              `Xin chào ${updatedData.fullName},`;
+              updatedData.fullName;
 
             const [year, month, day] = updatedData.dateOfBirth.split("-");
             document.getElementById("profile-birth-day").value = parseInt(day);
@@ -308,7 +309,7 @@ function switchProfileSubTab(sub) {
   document
     .querySelectorAll(".arrow-btn")
     .forEach((b) => b.classList.remove("active"));
-  ["chung", "chitiet", "matma", "the", "diem", "lichsu"].forEach((p) => {
+  ["chung", "lichsu"].forEach((p) => {
     const panel = document.getElementById("pro-panel-" + p);
     if (panel) panel.classList.remove("active");
   });
@@ -322,8 +323,9 @@ function activateEditableFormFields() {
   document.querySelectorAll(".profile-readonly-input").forEach((input) => {
     input.removeAttribute("readonly");
     input.removeAttribute("disabled");
-    input.style.border = "1px solid var(--cgv-red)";
-    input.style.background = "#fff";
+    input.style.border = "1px solid #ff6b35";
+    input.style.background = "#0b0b0e";
+    input.style.color = "#f4f4f5";
   });
   document.getElementById("btn-save-profile").style.display = "block";
 }

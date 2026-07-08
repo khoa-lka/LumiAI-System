@@ -162,7 +162,7 @@ function updateTopBarMenu(fullName, roleName) {
   if (authLinkBox) {
     authLinkBox.removeAttribute("onclick");
     authLinkBox.innerHTML = `
-      <span class="sub-nav-icon">👤</span> [${roleName}] ${fullName.toUpperCase()}! 
+      <span class="sub-nav-icon"></span> [${roleName}] ${fullName.toUpperCase()}! 
       <span onclick="confirmLogoutAction(event)" style="color: #ff6b35; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">[THOÁT]</span>
     `;
   }
@@ -390,7 +390,7 @@ function renderCgvInterface() {
 
         let actionBtnHTML =
           m.status === "now_showing"
-            ? `<button class="btn-cgv-buy-ticket-spec" onclick="quickBookMovie('${m.title}')">🎟️ MUA VÉ</button>`
+            ? `<button class="btn-cgv-buy-ticket-spec" onclick="quickBookMovie('${m.title}')"> MUA VÉ</button>`
             : `<button class="btn-cgv-buy-ticket-spec" style="background-color:#555; cursor:not-allowed;" disabled>📋 SẮP CHIẾU</button>`;
 
         let cleanImgUrl =

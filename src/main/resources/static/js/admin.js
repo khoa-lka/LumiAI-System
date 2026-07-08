@@ -3,6 +3,7 @@
 // File: js/admin.js
 // ==========================================================================
 
+
 function switchAdminTab(tabName) {
   document
     .querySelectorAll(".admin-nav-item")
@@ -28,33 +29,43 @@ function switchAdminTab(tabName) {
 
 function renderAdminBanList() {
   const tbody = document.getElementById("admin-ban-tbody");
-  if (!tbody) return;
-
-  // SỬ DỤNG api.js ĐỂ GỌI DỮ LIỆU TỪ SPRING BOOT
-  if (typeof API !== "undefined" && API.getAdminUsers) {
-    API.getAdminUsers()
-      .then((users) => {
-        tbody.innerHTML = users
-          .map((u) => {
-            const badge =
-              u.status === "Active"
-                ? '<span class="status-badge status-now">Hoạt động</span>'
-                : '<span class="status-badge" style="background:#ff6b35;">Bị khóa</span>';
-
-            const action =
-              u.status === "Active"
-                ? `<button class="btn-admin-action delete" onclick="banUserAction('${u.id}')">Khóa (Ban)</button>`
-                : `<button class="btn-admin-action edit">Mở (Unban)</button>`;
-
-            return `<tr><td>${u.id}</td><td><b>${u.email}</b></td><td>${u.role}</td><td>${badge}</td><td>${action}</td></tr>`;
-          })
-          .join("");
-      })
-      .catch((err) => console.error("Lỗi lấy danh sách User: ", err));
-  } else {
-    console.warn("Chưa tìm thấy api.js. Đang dùng giao diện trống.");
-  }
+  API.getAdminUsers().then((users) => {
+    tbody.innerHTML = users.map((u) => {
+      const status = u.status || "Active";
+      const badge = status === "Active" 
+          ? '<span class="status-badge">Hoạt động</span>' 
+          : '<span class="status-badge" style="background:#e71a0f;">Bị khóa</span>';
+      
+      return `<tr>
+          <td>${u.accountId}</td>
+          <td>${u.email}</td>
+          <td>
+            <select onchange="changeRoleAction(${u.accountId}, this.value)">
+                <option value="2" ${u.roleId === 2 ? 'selected' : ''}>Admin</option>
+                <option value="1" ${u.roleId === 1 ? 'selected' : ''}>Manager</option>
+                <option value="3" ${u.roleId === 3 ? 'selected' : ''}>Member</option>
+            </select>
+          </td>
+          <td>${badge}</td>
+          <td>
+            <button class="btn-admin-action ${status === 'Active' ? 'delete' : 'edit'}" 
+                    onclick="banUserAction(${u.accountId})">
+                ${status === 'Active' ? 'Khóa' : 'Mở khóa'}
+            </button>
+          </td>
+      </tr>`;
+    }).join("");
+  });
 }
+
+// Hàm xử lý sự kiện
+function changeRoleAction(userId, roleId) {
+    API.updateUserRole(userId, parseInt(roleId))
+        .then(() => { alert("Đã đổi quyền!"); renderAdminBanList(); })
+        .catch(err => alert(err.message));
+}
+
+
 
 // (Tuỳ chọn) Hàm hỗ trợ khi Admin bấm nút Khóa tài khoản
 function banUserAction(userId) {
@@ -79,14 +90,26 @@ function renderAdminSysLog() {
   const tbody = document.getElementById("admin-syslog-tbody");
   if (!tbody || typeof API === "undefined") return;
 
-  API.getSysLogs()
+  API.getSysLogs() // Đảm bảo API này trả về mảng object từ DB của bạn
     .then((logs) => {
-      // logs là mảng dữ liệu lấy từ Database
       tbody.innerHTML = logs
-        .map(
-          (l) =>
-            `<tr><td>${l.time}</td><td>${l.action}</td><td>${l.user}</td><td>${l.status}</td></tr>`,
-        )
+        .map((l) => {
+          // Xử lý màu sắc cho status
+          const statusClass = l.status === 'SUCCESS' ? 'text-success' : 'text-danger';
+          const statusLabel = l.status === 'SUCCESS' ? 'Thành công' : 'Thất bại';
+
+          // Format lại ngày tháng nếu cần (giả sử l.timeCreated là chuỗi ngày)
+        const dateObj = new Date(l.time);
+    const dateStr = dateObj.toLocaleString('vi-VN');
+          return `<tr>
+             <td>${dateStr}</td>
+              <td>${l.action}</td>
+              <td><b>${l.user}</b></td>
+              <td>
+                <span class="status-badge ${statusClass}">${statusLabel}</span>
+              </td>
+            </tr>`;
+        })
         .join("");
     })
     .catch((err) => console.error("🚨 Lỗi tải SysLog:", err));

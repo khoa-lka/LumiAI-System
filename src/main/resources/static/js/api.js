@@ -120,21 +120,44 @@ const API = {
     fetch(`${BASE_URL}/voucher/${code}`).then(handleResponse),
 
   // 🍿 Kho F&B
+  // Manager Dashboard analytics (TỔNG HỢP) — backend cần trả về JSON theo spec.
+  getManagerDashboard: () =>
+    fetch(`${BASE_URL}/manager/dashboard`).then(handleResponse),
+
   getFnbItems: () => fetch(`${BASE_URL}/fnb`).then(handleResponse),
-  addFnbItem: (data) =>
-    fetch(`${BASE_URL}/fnb`, {
+  addFnbItem: (data) => fetch(`${BASE_URL}/fnb`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  updateFnbItem: (id, data) => fetch(`${BASE_URL}/fnb/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  deleteFnbItem: (id) => fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then(res => res.ok ? true : Promise.reject(res)),
+  
+  // 🎟️ QUẢN LÝ VOUCHER CHIẾN DỊCH (MANAGER)
+  getManagerVouchers: () => 
+    fetch(`${BASE_URL}/vouchers/manager/all`).then(handleResponse),
+
+  addVoucher: (voucherData) => 
+    fetch(`${BASE_URL}/vouchers/manager/add`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(voucherData)
     }).then(handleResponse),
-  updateFnbItem: (id, data) =>
-    fetch(`${BASE_URL}/fnb/${id}`, {
+
+  updateVoucher: (id, voucherData) => 
+    fetch(`${BASE_URL}/vouchers/manager/update/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(voucherData)
     }).then(handleResponse),
-  deleteFnbItem: (id) =>
-    fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then((res) =>
-      res.ok ? true : Promise.reject(res),
-    ),
+
+  deleteVoucher: (id) => 
+    fetch(`${BASE_URL}/vouchers/manager/delete/${id}`, { 
+      method: "DELETE" 
+    }).then(res => res.ok ? true : Promise.reject(res))
+
 };

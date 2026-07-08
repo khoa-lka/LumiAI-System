@@ -26,6 +26,72 @@ temporaryRegisterEmail = "";
 // ==========================================================================
 // 🌟 THẦN CHÚ KHÔI PHỤC SESSION: Ép tài khoản luôn luôn đăng nhập khi Reload
 // ==========================================================================
+// 🌟 HIỂN THỊ/ẨN TAB "TRUY CẬP DASHBOARD" THEO VAI TRÒ (role 1 = Manager, role 4 = Admin)
+window.refreshDashboardTab = function (roleId) {
+  const btn = document.getElementById("pro-subtab-btn-dashboard");
+  if (!btn) return;
+
+  let rid = roleId;
+  if (rid === undefined || rid === null || rid === "") {
+    rid = sessionStorage.getItem("roleId");
+  }
+  if (rid === undefined || rid === null || rid === "") {
+    const cached = localStorage.getItem("las_logged_in_user");
+    if (cached) {
+      try {
+        rid = JSON.parse(cached).roleId;
+      } catch (e) {
+        rid = null;
+      }
+    }
+  }
+  rid = parseInt(rid, 10);
+  window.currentUserRoleId = rid;
+
+  if (rid === 1 || rid === 4) {
+    btn.style.display = "flex";
+  } else {
+    btn.style.display = "none";
+  }
+};
+
+// 🌟 POPUP XÁC NHẬN CHUYỂN SANG TRANG DASHBOARD (Manager/Admin)
+function openDashboardConfirm() {
+  const modal = document.getElementById("dashboard-confirm-modal");
+  if (modal) modal.classList.add("open");
+}
+
+function closeDashboardConfirm() {
+  const modal = document.getElementById("dashboard-confirm-modal");
+  if (modal) modal.classList.remove("open");
+}
+
+function confirmGoDashboard() {
+  let rid = window.currentUserRoleId;
+  if (rid === undefined || rid === null || isNaN(rid)) {
+    rid = parseInt(sessionStorage.getItem("roleId"), 10);
+  }
+  if (rid === 4) {
+    window.location.href = "admin.html";
+  } else if (rid === 1) {
+    window.location.href = "manager.html";
+  } else {
+    closeDashboardConfirm();
+  }
+}
+window.openDashboardConfirm = openDashboardConfirm;
+window.closeDashboardConfirm = closeDashboardConfirm;
+window.confirmGoDashboard = confirmGoDashboard;
+
+// 🌟 HÀM DÙNG CHUNG: Lấy chữ cái đại diện Avatar = chữ cái ĐẦU TIÊN của tên
+function getNameAvatarInitial(fullName) {
+  if (!fullName) return "?";
+  const trimmed = fullName.trim();
+  if (!trimmed) return "?";
+  return trimmed.charAt(0).toUpperCase();
+}
+window.getNameAvatarInitial = getNameAvatarInitial;
+
 window.syncUserLoginSession = function () {
   const cachedUser = localStorage.getItem("las_logged_in_user");
   if (cachedUser) {
@@ -38,14 +104,41 @@ window.syncUserLoginSession = function () {
       authLinkBox.onclick = () => switchCgvTab("panel-profile");
       authLinkBox.style.cursor = "pointer";
       authLinkBox.innerHTML = `
-          <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
+          <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
           <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
       `;
     }
     if (document.getElementById("top-bar-ticket-link")) {
       document.getElementById("top-bar-ticket-link").innerHTML =
-        `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
+        `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
     }
+
+    // 🌟 Đồng bộ lại Avatar / Tên / Vai trò trên tab "Tài Khoản LAS"
+    // (bắt buộc phải làm lại ở đây vì khi RELOAD trang, hàm xử lý đăng nhập
+    //  gốc không chạy lại, nếu không phần này sẽ đứng yên ở giá trị mặc định)
+    if (document.getElementById("profile-summary-avatar")) {
+      document.getElementById("profile-summary-avatar").innerText =
+        getNameAvatarInitial(uData.fullName);
+    }
+    const welcomeNameBoxSync = document.getElementById("profile-welcome-name");
+    if (welcomeNameBoxSync) welcomeNameBoxSync.innerText = uData.fullName;
+
+    let syncRoleString = "Khách hàng thành viên";
+    if (uData.roleId === 1) syncRoleString = "Quản lý (MANAGER)";
+    if (uData.roleId === 2) syncRoleString = "Nhân viên cụm rạp (STAFF)";
+    if (uData.roleId === 4) syncRoleString = "Quản trị viên (ADMIN)";
+
+    if (document.getElementById("profile-field-name"))
+      document.getElementById("profile-field-name").value = uData.fullName;
+    if (document.getElementById("profile-field-phone"))
+      document.getElementById("profile-field-phone").value = uData.phoneNumber;
+    if (document.getElementById("profile-field-email"))
+      document.getElementById("profile-field-email").value = uData.email;
+    if (document.getElementById("profile-field-role"))
+      document.getElementById("profile-field-role").value = syncRoleString;
+
+    // 🌟 Khôi phục hiển thị tab "TRUY CẬP DASHBOARD" theo vai trò đã lưu
+    window.refreshDashboardTab(uData.roleId);
 
     // 🚀 ĐỒNG BỘ DỮ LIỆU ĐÃ ĐƯỢC CHUẨN HÓA TỪ DATABASE
     const accountId = uData.account_id || uData.accountId;
@@ -449,6 +542,19 @@ function cancelCurrentTransaction() {
   }
 }
 
+function getPosterByMovieName(name) {
+  try {
+    const m = (serverData.movies || []).find(
+      (x) => (x.title || "").trim() === (name || "").trim(),
+    );
+    if (m)
+      return (
+        m.mainposter_url || m.mainposterUrl || m.mainposterurl || m.img || ""
+      );
+  } catch (e) {}
+  return "";
+}
+
 function renderTransactionHistory() {
   const historyZone = document.getElementById("cgv-invoice-zone");
 
@@ -540,7 +646,17 @@ function renderTransactionHistory() {
 function viewHistoryDetail(invoiceId) {
   const inv = userPastInvoices.find((i) => i.id === invoiceId);
   if (!inv) return;
-  let fnbHtml = inv.fnb.map((i) => `<li>${i.name} x${i.qty}</li>`).join("");
+  const isPaid = inv.status === "Đã thanh toán";
+  const statusClass = isPaid
+    ? "history-badge-success"
+    : "history-badge-pending";
+  let fnbHtml = (inv.fnb || [])
+    .map((i) => `<li>${i.name} × ${i.qty}</li>`)
+    .join("");
+  const seatBadges = (inv.seats || [])
+    .map((s) => `<span class="bc-seat-badge">${s}</span>`)
+    .join("");
+
   document.getElementById("history-detail-content").innerHTML = `
       <p><strong>Mã vé:</strong> <span style="color:red;">${inv.orderCode}</span></p>
       <p><strong>Phim:</strong> ${movieName}</p>
@@ -558,6 +674,73 @@ function viewHistoryDetail(invoiceId) {
 function closeHistoryDetailModal() {
   document.getElementById("history-detail-modal").classList.remove("open");
 }
+
+/* ---------- FEEDBACK ---------- */
+let _feedbackRating = 0;
+let _feedbackInvoiceId = null;
+
+function openFeedbackModal(invoiceId) {
+  _feedbackInvoiceId = invoiceId || null;
+  _feedbackRating = 0;
+  const inv = userPastInvoices.find((i) => i.id === invoiceId);
+  const refEl = document.getElementById("feedback-invoice-ref");
+  if (refEl)
+    refEl.innerText = inv
+      ? `Phim: ${inv.movie} • Mã vé: ${inv.id}`
+      : "Chia sẻ trải nghiệm của bạn";
+  const txt = document.getElementById("feedback-text");
+  if (txt) txt.value = "";
+  setFeedbackStars(0);
+  document.getElementById("feedback-modal").classList.add("open");
+}
+
+function setFeedbackStars(n) {
+  _feedbackRating = n;
+  document.querySelectorAll("#feedback-stars .fb-star").forEach((el) => {
+    const v = Number(el.getAttribute("data-v"));
+    el.classList.toggle("active", v <= n);
+  });
+}
+
+function submitFeedback() {
+  const txt = document.getElementById("feedback-text").value.trim();
+  if (_feedbackRating === 0) {
+    alert("Vui lòng chọn số sao đánh giá!");
+    return;
+  }
+  if (!txt) {
+    alert("Vui lòng nhập nội dung feedback!");
+    return;
+  }
+  const entry = {
+    invoiceId: _feedbackInvoiceId,
+    rating: _feedbackRating,
+    content: txt,
+    at: new Date().toISOString(),
+  };
+  try {
+    const list = JSON.parse(localStorage.getItem("las_feedbacks") || "[]");
+    list.unshift(entry);
+    localStorage.setItem("las_feedbacks", JSON.stringify(list));
+  } catch (e) {}
+
+  closeFeedbackModal();
+  const toast = document.getElementById("feedback-toast");
+  if (toast) {
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2600);
+  } else {
+    alert("Cảm ơn bạn đã gửi feedback! 🧡");
+  }
+}
+
+function closeFeedbackModal() {
+  document.getElementById("feedback-modal").classList.remove("open");
+}
+window.openFeedbackModal = openFeedbackModal;
+window.setFeedbackStars = setFeedbackStars;
+window.submitFeedback = submitFeedback;
+window.closeFeedbackModal = closeFeedbackModal;
 
 function executeMovieRealTimeSearch() {
   const inputField = document.getElementById("movie-search-input");
@@ -632,32 +815,37 @@ function submitCgvLogin() {
       if (resData.status === "success") {
         isUserLoggedInState = true;
         let uData = resData.data;
+localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
+        sessionStorage.setItem("roleId", uData.roleId);
 
-        alert(`Chào mừng thành viên: ${uData.fullName} đăng nhập thành công!`);
+        // 🌟 ĐIỀU HƯỚNG: Tất cả vai trò đều vào HOME sau đăng nhập.
+        // Manager(1) & Admin(4) truy cập Dashboard chủ động qua tab "TRUY CẬP DASHBOARD".
+        alert(`Chào mừng ${uData.fullName} đăng nhập thành công!`);
         closeAuthModal();
 
         const authLinkBox = document.getElementById("top-bar-auth-link");
         authLinkBox.onclick = () => switchCgvTab("panel-profile");
         authLinkBox.style.cursor = "pointer";
         authLinkBox.innerHTML = `
-            <span class="sub-nav-icon">👤</span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
+            <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
               <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
           `;
         document.getElementById("top-bar-ticket-link").innerHTML =
-          `<span class="sub-nav-icon">🎬</span> LỊCH SỬ GIAO DỊCH`;
+          `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
 
         let roleString = "Khách hàng thành viên";
-        if (uData.roleId === 1) roleString = "Quản lý hệ thống (ADMIN)";
+        if (uData.roleId === 1) roleString = "Quản lý (MANAGER)";
         if (uData.roleId === 2) roleString = "Nhân viên cụm rạp (STAFF)";
+        if (uData.roleId === 4) roleString = "Quản trị viên (ADMIN)";
 
         if (document.getElementById("profile-summary-avatar")) {
           document.getElementById("profile-summary-avatar").innerText =
-            uData.fullName.split(" ").pop().substring(0, 2).toUpperCase();
+            getNameAvatarInitial(uData.fullName);
         }
 
         const welcomeNameBox = document.getElementById("profile-welcome-name");
         if (welcomeNameBox)
-          welcomeNameBox.innerText = `Xin chào ${uData.fullName},`;
+          welcomeNameBox.innerText = uData.fullName;
 
         const starRoleBox = document.getElementById("profile-star-role");
         if (starRoleBox)
@@ -672,6 +860,7 @@ function submitCgvLogin() {
           document.getElementById("profile-field-role").value = roleString;
         }
 
+        if (window.refreshDashboardTab) window.refreshDashboardTab();
         switchCgvTab("panel-profile");
         // 🌟 GHIM LẠI LÊN Ổ CỨNG TRÌNH DUYỆT:
         localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
@@ -1451,28 +1640,55 @@ window.executeFinalCheckout = function () {
       );
 
       let fnbTicketHtml = invoiceObj.fnb
-        .map((i) => `<li>${i.name} x${i.qty}</li>`)
+        .map((i) => `<li>${i.name} × ${i.qty}</li>`)
+        .join("");
+      const seatBadgesH = invoiceObj.seats
+        .map((s) => `<span class="bc-seat-badge">${s}</span>`)
         .join("");
 
       const beautifulTicketHTML = `
-        <div style="text-align: center; margin-bottom: 25px;">
-            <h2 style="color: #10B981; margin-bottom: 10px; font-size: 26px;">🎟️ ĐẶT VÉ ĐIỆN TỬ THÀNH CÔNG!</h2>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${invoiceObj.id}" style="border: 2px solid #222; padding: 6px; background:#17171b;">
-            <p style="color: #d4d4d8; font-weight: bold; font-size: 13px; margin-top: 12px;">LAS Cinemas đã gửi một bản sao hóa đơn vé qua Email của bạn.</p>
-        </div>
-        <div style="background: #0b0b0e; padding: 25px; border: 2px dashed #cca23b; border-radius: 8px; text-align: left; max-width: 500px; margin: 0 auto; box-sizing: border-box; color:#222;">
-            <p><strong>Mã tra cứu vé:</strong> <span style="color:#ff6b35; font-size: 20px; font-family: monospace; font-weight:bold;">${invoiceObj.id}</span></p>
-            <p><strong>Tên bộ phim:</strong> <b>${invoiceObj.movie}</b></p>
-            <p><strong>Suất chiếu rạp:</strong> Suất ${invoiceObj.time} | Ngày ${invoiceObj.date}</p>
-            <hr style="margin: 15px 0; border: none; border-top: 1px dashed rgba(255,255,255,0.15);">
-            <p><strong>🎟️ Vị trí ghế ngồi:</strong> <span style="color:#ff6b35; font-weight:bold;">${invoiceObj.seats.join(", ")}</span></p>
-            <p><strong>🍿 Dịch vụ kèm theo:</strong></p><ul>${fnbTicketHtml || "<li>Không có dịch vụ ăn kèm</li>"}</ul>
-            <hr style="margin: 15px 0; border: none; border-top: 1px dashed rgba(255,255,255,0.15);">
-            <p style="font-size: 18px; text-align: right; margin: 0;">Tổng tiền: <span style="color:#10B981; font-weight:bold;">${invoiceObj.total.toLocaleString("vi-VN")} đ</span></p>
-        </div>
-        <div style="margin-top: 35px; text-align: center;">
-            <button class="btn-cgv-submit" style="width: auto; padding: 12px 35px; background: #333; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="window.goHomeFromBc()">HOÀN TẤT & QUAY VỀ</button>
-        </div>
+          <div class="bc-confirm">
+            <div class="bc-hero">
+              <div class="bc-check">✓</div>
+              <h2 class="bc-title">Đặt Vé Thành Công!</h2>
+              <p class="bc-subtitle">Vé xem phim của bạn đã được đặt thành công.</p>
+              <div class="bc-id-pill">Mã vé: ${invoiceObj.id}</div>
+            </div>
+            <div class="bc-card">
+              <div class="bc-card-head">🎫 Thông tin vé</div>
+              <div class="bc-movie">${invoiceObj.movie}</div>
+              <div class="bc-meta">
+                <span>📅 ${invoiceObj.date}</span>
+                <span>🕐 ${invoiceObj.time}</span>
+                <span>💺 ${invoiceObj.seats.length} ghế</span>
+              </div>
+              <div class="bc-section-label">Ghế đã chọn</div>
+              <div class="bc-seats">${seatBadgesH}</div>
+              <div class="bc-section-label">Bắp nước</div>
+              <ul class="bc-fnb">${fnbTicketHtml || "<li>Không có</li>"}</ul>
+              <div class="bc-qr-row">
+                <img class="bc-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(invoiceObj.id)}" alt="QR vé">
+                <div class="bc-qr-note">Xuất trình mã QR này tại quầy soát vé.<br>Bản sao đã được gửi vào Email của bạn.</div>
+              </div>
+              <div class="bc-total-row">
+                <span>Đã thanh toán</span>
+                <span class="bc-total-amt">${invoiceObj.total.toLocaleString("vi-VN")} đ</span>
+              </div>
+            </div>
+            <div class="bc-info-box">
+              <div class="bc-info-title">ℹ️ Thông tin quan trọng</div>
+              <ul>
+                <li>Vui lòng đến rạp trước giờ chiếu ít nhất 15 phút.</li>
+                <li>Mang theo giấy tờ tùy thân (CCCD) nếu phim giới hạn độ tuổi.</li>
+                <li>Không mang đồ ăn, thức uống bên ngoài vào rạp.</li>
+                <li>Vé không hoàn/đổi trong vòng 2 giờ trước suất chiếu.</li>
+              </ul>
+            </div>
+            <div class="bc-actions">
+              <button class="bc-btn bc-btn-primary" onclick="window.print()">⬇ Tải / In vé</button>
+              <button class="bc-btn bc-btn-ghost" onclick="window.goHomeFromBc()">Về trang chủ</button>
+            </div>
+          </div>
       `;
 
       const finalResultDiv = document.getElementById("final-ticket-result");
@@ -1624,7 +1840,6 @@ window.lasPromoList = [
 ];
 
 // Hàm tự động vẽ danh sách ưu đãi động ra ngoài trang chủ
-// Tìm hàm này và sửa lại 2 dòng đầu hàm như sau:
 window.renderLasPromoGrid = function () {
   const promoNewsContainer = document.getElementById("cgv-event-grid-news");
   // 🚀 Cào dữ liệu động trực tiếp từ Database SQL Server qua Spring Boot
@@ -1671,48 +1886,23 @@ window.renderLasPromoGrid = function () {
     );
 };
 
-// ==========================================================================
-// 🌟 THAY THẾ HOÀN TOÀN HÀM VIEWPROMODETAILTEXT CŨ THÀNH BẢN PRO NÀY:
-// ==========================================================================
+// Hàm kích hoạt nhảy sang tab chi tiết ưu đãi và đổ dữ liệu
 window.viewPromoDetailText = function (promoId) {
-  if (!window.lasPromoList) return;
-
-  // Tìm kiếm đối tượng bài viết ưu đãi khớp với ID click chuột
+  // Đồng bộ ép kiểu dữ liệu về chuỗi hoặc số để so sánh khớp với ID dưới DB gửi lên
   const targetPromo = window.lasPromoList.find(
     (p) => String(p.id) === String(promoId),
   );
   if (!targetPromo) return;
 
-  // 1. Đồng bộ Tiêu đề bài viết khuyên mãi
-  const titleEl = document.getElementById("detail-promo-title");
-  if (titleEl) {
-    titleEl.innerText = targetPromo.title || "Chương trình ưu đãi đặc biệt";
-  }
+  document.getElementById("detail-promo-title").innerText = targetPromo.title;
+  document.getElementById("detail-promo-date").innerText =
+    "Thời gian áp dụng: " +
+    (targetPromo.startDate || targetPromo.start_date) +
+    " đến " +
+    (targetPromo.endDate || targetPromo.end_date);
+  document.getElementById("detail-promo-content").innerHTML =
+    targetPromo.content;
 
-  // 2. Bọc giáp lỗi hiển thị ngày tháng (Quét sạch mọi kiểu đặt tên của Java & SQL)
-  const dateEl = document.getElementById("detail-promo-date");
-  if (dateEl) {
-    let start = targetPromo.startDate || targetPromo.start_date || "";
-    let end = targetPromo.endDate || targetPromo.end_date || "";
-    if (start && end) {
-      dateEl.innerText = "Thời gian áp dụng: " + start + " đến " + end;
-    } else if (targetPromo.date) {
-      dateEl.innerText = "Thời gian áp dụng: " + targetPromo.date;
-    } else {
-      dateEl.innerText = "Thời gian áp dụng: Đang diễn ra trong tháng";
-    }
-  }
-
-  // 3. Đổ nội dung mô tả chi tiết chương trình ưu đãi rạp phim
-  const contentEl = document.getElementById("detail-promo-content");
-  if (contentEl) {
-    contentEl.innerHTML =
-      targetPromo.content || "Chưa có nội dung mô tả chi tiết chương trình.";
-  }
-
-  // 4. FIX TRIỆT ĐỂ LỖI POSTER: Vẽ ảnh full kích thước, xóa sạch chữ "IMAGE" thô
-  // Tìm khối số 4 xử lý ảnh trong hàm window.viewPromoDetailText và sửa lại như sau:
-  // 4. FIX TRIỆT ĐỂ LỖI POSTER: Sử dụng thẻ img trực tiếp để lấy trọn vẹn 100% hình ảnh không bị cắt tỉa
   const imgBoxEl = document.getElementById("detail-promo-img-box");
   if (imgBoxEl) {
     let validImg =
@@ -1755,8 +1945,10 @@ window.viewPromoDetailText = function (promoId) {
   window.switchCgvTab("panel-news-detail");
 };
 
+// Tìm đến sự kiện tải trang sẵn có (DOMContentLoaded) ở cuối file home.js của em, thêm dòng này vào:
 window.addEventListener("DOMContentLoaded", () => {
-  window.renderLasPromoGrid();
+  // ... các hàm có sẵn của em (generateCgvDateSlider, fetchSyncData...)
+  window.renderLasPromoGrid(); // 🌟 Gọi hàm vẽ tin tức ưu đãi lên trang chủ
 });
 
 // ==========================================================================
@@ -1918,7 +2110,7 @@ function switchProfileSubTab(sub) {
   document
     .querySelectorAll(".arrow-btn")
     .forEach((b) => b.classList.remove("active"));
-  ["chung", "chitiet", "matma", "the", "diem", "lichsu"].forEach((p) => {
+  ["chung", "lichsu"].forEach((p) => {
     const panel = document.getElementById("pro-panel-" + p);
     if (panel) panel.classList.remove("active");
   });
@@ -1931,8 +2123,9 @@ function switchProfileSubTab(sub) {
 function activateEditableFormFields() {
   document.querySelectorAll(".profile-readonly-input").forEach((input) => {
     input.removeAttribute("readonly");
-    input.style.border = "1px solid var(--cgv-red)";
-    input.style.background = "#fff";
+    input.removeAttribute("disabled");
+    input.style.border = "1px solid #ff6b35";
+    input.style.background = "#0b0b0e";
   });
   document.getElementById("btn-save-profile").style.display = "block";
 }
@@ -1976,8 +2169,9 @@ function submitOtpVerification() {
 function saveUpdatedProfileInformationData() {
   document.querySelectorAll(".profile-readonly-input").forEach((input) => {
     input.setAttribute("readonly", true);
-    input.style.border = "1px solid #ccc";
-    input.style.background = "#f4f2ec";
+    if (input.tagName === "SELECT") input.setAttribute("disabled", true);
+    input.style.border = "1px solid rgba(255,255,255,0.15)";
+    input.style.background = "#1c1c21";
   });
   document.getElementById("btn-save-profile").style.display = "none";
   alert("Cập nhật thông tin tài khoản mới thành công!");
