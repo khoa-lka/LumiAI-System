@@ -94,7 +94,7 @@ const API = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(cancelData),
     }).then(handleResponse),
-    // 🚀 THÊM MỚI: Gọi API gửi yêu cầu tạo suất chiếu xuống Spring Boot
+  // 🚀 THÊM MỚI: Gọi API gửi yêu cầu tạo suất chiếu xuống Spring Boot
   addShowtime: (showtimeData) =>
     fetch(`${BASE_URL}/showtimes/add`, {
       method: "POST",
@@ -112,11 +112,18 @@ const API = {
     fetch(`${BASE_URL}/admin/users/ban/${userId}`, { method: "PUT" }).then(
       handleResponse,
     ),
+
+  getOrderHistory: (accountId) =>
+    fetch(`${BASE_URL}/orders/history/${accountId}`).then(handleResponse),
   // Voucher
   checkVoucher: (code) =>
     fetch(`${BASE_URL}/voucher/${code}`).then(handleResponse),
 
   // 🍿 Kho F&B
+  // Manager Dashboard analytics (TỔNG HỢP) — backend cần trả về JSON theo spec.
+  getManagerDashboard: () =>
+    fetch(`${BASE_URL}/manager/dashboard`).then(handleResponse),
+
   getFnbItems: () => fetch(`${BASE_URL}/fnb`).then(handleResponse),
   addFnbItem: (data) => fetch(`${BASE_URL}/fnb`, {
     method: "POST",
@@ -128,5 +135,29 @@ const API = {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data)
   }).then(handleResponse),
-  deleteFnbItem: (id) => fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then(res => res.ok ? true : Promise.reject(res))
+  deleteFnbItem: (id) => fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then(res => res.ok ? true : Promise.reject(res)),
+  
+  // 🎟️ QUẢN LÝ VOUCHER CHIẾN DỊCH (MANAGER)
+  getManagerVouchers: () => 
+    fetch(`${BASE_URL}/vouchers/manager/all`).then(handleResponse),
+
+  addVoucher: (voucherData) => 
+    fetch(`${BASE_URL}/vouchers/manager/add`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(voucherData)
+    }).then(handleResponse),
+
+  updateVoucher: (id, voucherData) => 
+    fetch(`${BASE_URL}/vouchers/manager/update/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(voucherData)
+    }).then(handleResponse),
+
+  deleteVoucher: (id) => 
+    fetch(`${BASE_URL}/vouchers/manager/delete/${id}`, { 
+      method: "DELETE" 
+    }).then(res => res.ok ? true : Promise.reject(res))
+
 };
