@@ -26,6 +26,63 @@ temporaryRegisterEmail = "";
 // ==========================================================================
 // 🌟 THẦN CHÚ KHÔI PHỤC SESSION: Ép tài khoản luôn luôn đăng nhập khi Reload
 // ==========================================================================
+// 🌟 HIỂN THỊ/ẨN TAB "TRUY CẬP DASHBOARD" THEO VAI TRÒ (role 1 = Manager, role 4 = Admin)
+window.refreshDashboardTab = function (roleId) {
+  const btn = document.getElementById("pro-subtab-btn-dashboard");
+  if (!btn) return;
+
+  let rid = roleId;
+  if (rid === undefined || rid === null || rid === "") {
+    rid = sessionStorage.getItem("roleId");
+  }
+  if (rid === undefined || rid === null || rid === "") {
+    const cached = localStorage.getItem("las_logged_in_user");
+    if (cached) {
+      try {
+        rid = JSON.parse(cached).roleId;
+      } catch (e) {
+        rid = null;
+      }
+    }
+  }
+  rid = parseInt(rid, 10);
+  window.currentUserRoleId = rid;
+
+  if (rid === 1 || rid === 4) {
+    btn.style.display = "flex";
+  } else {
+    btn.style.display = "none";
+  }
+};
+
+// 🌟 POPUP XÁC NHẬN CHUYỂN SANG TRANG DASHBOARD (Manager/Admin)
+function openDashboardConfirm() {
+  const modal = document.getElementById("dashboard-confirm-modal");
+  if (modal) modal.classList.add("open");
+}
+
+function closeDashboardConfirm() {
+  const modal = document.getElementById("dashboard-confirm-modal");
+  if (modal) modal.classList.remove("open");
+}
+
+function confirmGoDashboard() {
+  let rid = window.currentUserRoleId;
+  if (rid === undefined || rid === null || isNaN(rid)) {
+    rid = parseInt(sessionStorage.getItem("roleId"), 10);
+  }
+  if (rid === 4) {
+    window.location.href = "admin.html";
+  } else if (rid === 1) {
+    window.location.href = "manager.html";
+  } else {
+    closeDashboardConfirm();
+  }
+}
+window.openDashboardConfirm = openDashboardConfirm;
+window.closeDashboardConfirm = closeDashboardConfirm;
+window.confirmGoDashboard = confirmGoDashboard;
+
 window.syncUserLoginSession = function () {
   const cachedUser = localStorage.getItem("las_logged_in_user");
   if (cachedUser) {
@@ -46,6 +103,9 @@ window.syncUserLoginSession = function () {
       document.getElementById("top-bar-ticket-link").innerHTML =
         `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
     }
+
+    // 🌟 Khôi phục hiển thị tab "TRUY CẬP DASHBOARD" theo vai trò đã lưu
+    window.refreshDashboardTab(uData.roleId);
 
     // 🚀 ĐỒNG BỘ DỮ LIỆU ĐÃ ĐƯỢC CHUẨN HÓA TỪ DATABASE
     const accountId = uData.account_id || uData.accountId;
@@ -705,15 +765,9 @@ function submitCgvLogin() {
 localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
         sessionStorage.setItem("roleId", uData.roleId);
 
-        // 🌟 ĐIỀU HƯỚNG DỰA TRÊN ROLE
-        if (uData.roleId === 2) {
-          window.location.href = "admin.html";
-          return; // Dừng hàm ngay lập tức
-        } else if (uData.roleId === 1) {
-          window.location.href = "manager.html";
-          return; // Dừng hàm ngay lập tức
-        }
-        alert(`Chào mừng thành viên: ${uData.fullName} đăng nhập thành công!`);
+        // 🌟 ĐIỀU HƯỚNG: Tất cả vai trò đều vào HOME sau đăng nhập.
+        // Manager(1) & Admin(4) truy cập Dashboard chủ động qua tab "TRUY CẬP DASHBOARD".
+        alert(`Chào mừng ${uData.fullName} đăng nhập thành công!`);
         closeAuthModal();
 
         const authLinkBox = document.getElementById("top-bar-auth-link");
@@ -727,8 +781,9 @@ localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
           `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
 
         let roleString = "Khách hàng thành viên";
-        if (uData.roleId === 1) roleString = "Quản lý hệ thống (ADMIN)";
+        if (uData.roleId === 1) roleString = "Quản lý (MANAGER)";
         if (uData.roleId === 2) roleString = "Nhân viên cụm rạp (STAFF)";
+        if (uData.roleId === 4) roleString = "Quản trị viên (ADMIN)";
 
         if (document.getElementById("profile-summary-avatar")) {
           document.getElementById("profile-summary-avatar").innerText =
@@ -752,6 +807,7 @@ localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
           document.getElementById("profile-field-role").value = roleString;
         }
 
+        if (window.refreshDashboardTab) window.refreshDashboardTab();
         switchCgvTab("panel-profile");
         // 🌟 GHIM LẠI LÊN Ổ CỨNG TRÌNH DUYỆT:
         localStorage.setItem("las_logged_in_user", JSON.stringify(uData));

@@ -2127,6 +2127,80 @@ select.profile-readonly-input:not([disabled]) {
 }
 
 /* ==========================================================================
+   POPUP XÁC NHẬN TRUY CẬP DASHBOARD (Manager / Admin)
+   ========================================================================== */
+.dash-confirm-box {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px 26px;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+  animation: fadeIn 0.2s ease-in-out;
+}
+.dash-confirm-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  border-radius: 50%;
+  background: rgba(255, 107, 53, 0.14);
+  border: 1px solid rgba(255, 107, 53, 0.35);
+}
+.dash-confirm-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-light);
+  margin: 0 0 10px 0;
+}
+.dash-confirm-text {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 24px 0;
+}
+.dash-confirm-text b {
+  color: var(--text-dark);
+}
+.dash-confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+.dash-btn {
+  flex: 1;
+  padding: 11px 0;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: filter 0.2s, transform 0.2s;
+}
+.dash-btn:hover {
+  transform: translateY(-1px);
+}
+.dash-btn-cancel {
+  background: var(--surface-2);
+  color: var(--text-dark);
+  border: 1px solid var(--border-color);
+}
+.dash-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.dash-btn-ok {
+  background: var(--cgv-red);
+  color: #fff;
+}
+.dash-btn-ok:hover {
+  filter: brightness(1.1);
+}
+
+/* ==========================================================================
    MODAL ĐĂNG NHẬP / ĐĂNG KÝ - THIẾT KẾ MỚI 1 CỘT (kiểu FilmFanatic)
    ========================================================================== */
 .las-auth-card {

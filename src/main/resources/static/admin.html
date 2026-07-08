@@ -83,15 +83,37 @@
     </div>
 
 
-<script src="js/state.js"></script>
+<!-- GUARD: Chỉ ADMIN (role_id = 4) mới được truy cập trang này -->
+<script>
+(function () {
+  var roleId = null;
+  try {
+    var raw = localStorage.getItem("las_logged_in_user");
+    if (raw) {
+      var u = JSON.parse(raw);
+      roleId = u.roleId != null ? u.roleId : (u.role_id != null ? u.role_id : null);
+    }
+  } catch (e) {}
+  if (roleId == null) {
+    var sr = sessionStorage.getItem("roleId");
+    if (sr != null && sr !== "") roleId = parseInt(sr, 10);
+  }
+  if (parseInt(roleId, 10) !== 4) {
+    alert("CẢNH BÁO: Khu vực Quản trị viên (ADMIN)! Bạn không có quyền truy cập.");
+    window.location.href = "index.html";
+  }
+})();
+</script>
 
-<script src="js/api.js"></script>
+<script src="js/state.js?v=12"></script>
 
-<script src="js/auth.js"></script>
+<script src="js/api.js?v=12"></script>
+
+<script src="js/auth.js?v=12"></script>
 
 
-<script src="js/admin.js"></script>
-<script src="js/home.js"></script>
+<script src="js/admin.js?v=12"></script>
+<script src="js/home.js?v=12"></script>
     
   
 

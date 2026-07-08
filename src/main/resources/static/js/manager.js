@@ -3,11 +3,35 @@
 // File: js/manager.js
 // ==========================================================================
 window.addEventListener("DOMContentLoaded", () => {
-  const isLoggedIn = sessionStorage.getItem("isLoggedIn");
-  const roleId = sessionStorage.getItem("roleId");
+  // Xác định vai trò: ưu tiên localStorage (bền vững), dự phòng sessionStorage
+  function resolveRoleAndName() {
+    var roleId = null,
+      fullName = "";
+    try {
+      var raw = localStorage.getItem("las_logged_in_user");
+      if (raw) {
+        var u = JSON.parse(raw);
+        roleId =
+          u.roleId != null ? u.roleId : u.role_id != null ? u.role_id : null;
+        fullName = u.fullName || u.fullname || "";
+      }
+    } catch (e) {}
+    if (roleId == null) {
+      var sr = sessionStorage.getItem("roleId");
+      if (sr != null && sr !== "") roleId = parseInt(sr, 10);
+    }
+    if (!fullName) fullName = sessionStorage.getItem("fullName") || "Manager";
+    return {
+      roleId: roleId != null ? parseInt(roleId, 10) : null,
+      fullName: fullName,
+    };
+  }
 
-  // Nếu chưa đăng nhập hoặc không phải Manager -> Đuổi về trang chủ
-  if (!isLoggedIn || parseInt(roleId) !== 1) {
+  var info = resolveRoleAndName();
+  var ALLOWED_ROLES = [1]; // Chỉ MANAGER (1) — Admin(4) dùng admin.html riêng
+
+  // Nếu không phải Manager -> Đuổi về trang chủ
+  if (ALLOWED_ROLES.indexOf(info.roleId) === -1) {
     alert("CẢNH BÁO: Khu vực nội bộ! Bạn không có quyền truy cập.");
     window.location.href = "index.html";
     return;
@@ -15,8 +39,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // Nếu hợp lệ, tự động load danh sách phim
   const titleEl = document.getElementById("mp-dynamic-title");
-  if (titleEl)
-    titleEl.innerText = `Xin chào Manager: ${sessionStorage.getItem("fullName")}`;
+  if (titleEl) titleEl.innerText = `Xin chào Manager: ${info.fullName}`;
   loadManagerMovies();
 });
 
