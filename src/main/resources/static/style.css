@@ -760,6 +760,23 @@ header {
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.inv-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: #e4e4e7;
+}
+.sum-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #e4e4e7;
+  vertical-align: -2px;
+  margin-right: 5px;
 }
 .inv-v {
   color: var(--text-light);
@@ -1455,25 +1472,42 @@ header {
 }
 
 .cinema-room {
-  background: #111111;
-  padding: 40px 20px;
-  border-radius: 5px;
+  background: radial-gradient(ellipse at 50% 0%, #16161a 0%, #0a0a0c 65%);
+  padding: 45px 20px 35px;
+  border-radius: 10px;
   color: white;
   text-align: center;
   margin-bottom: 30px;
   width: 100%;
   box-sizing: border-box;
   overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 /* ==========================================
    🎬 KHUNG GIAO DIỆN MÀN HÌNH RẠP CHIẾU
    ========================================== */
 .screen-curve {
-  width: 70%;
-  height: 20px;
-  border-top: 3px solid #e5a93b;
-  border-radius: 50% / 10px 10px 0 0;
-  margin: 0 auto 40px auto;
+  width: 72%;
+  max-width: 480px;
+  height: 6px;
+  margin: 0 auto 46px auto;
+  background: linear-gradient(90deg, transparent, var(--cgv-gold, #e5a93b) 15%, var(--cgv-gold, #e5a93b) 85%, transparent);
+  border-radius: 50%;
+  box-shadow: 0 0 25px 4px rgba(229, 169, 59, 0.55), 0 12px 30px -4px rgba(229, 169, 59, 0.25);
+  position: relative;
+  color: transparent;
+}
+.screen-curve::after {
+  content: "MÀN HÌNH CHÍNH (SCREEN)";
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #8a8a94;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  white-space: nowrap;
 }
 
 .screen-text {
@@ -1486,45 +1520,56 @@ header {
 }
 
 /* ==========================================
-   🚀 ĐÃ SỬA: KHUNG LƯỚI MA TRẬN GHẾ ĐỘNG (CGV-SEAT-GRID)
+   🚀 KHUNG LƯỚI MA TRẬN GHẾ ĐỘNG (CGV-SEAT-GRID)
    ========================================== */
 #cgv-seat-grid {
   display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
   margin: 0 auto 25px auto;
-  /* Bỏ max-width cũ để phòng IMAX rộng 21 cột tự do bung ra không bị bó hẹp */
-  max-width: 95%;
+  max-width: 620px;
   background: #18181c;
-  padding: 20px;
-  border-radius: 8px;
+  padding: 24px 28px;
+  border-radius: 10px;
   box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
 }
 
+/* Phòng IMAX 21 cột cần rộng hơn hẳn để mỗi ghế không bị bóp quá nhỏ */
+#cgv-seat-grid.imax-room {
+  max-width: 95%;
+}
+
 /* ==========================================
-   🎨 ĐÃ SỬA: ĐỊNH DẠNG TỪNG Ô GHẾ CO GIÃN ĐỘNG
+   🎨 GHẾ DẠNG Ô VUÔNG BO GÓC - ĐỒNG BỘ CHO MỌI LOẠI GHẾ
+   VÀ CẢ 2 HẠNG PHÒNG (Standard 10 cột / IMAX 21 cột)
    ========================================== */
 .cgv-seat {
-  /* Thay width/height cố định bằng tỷ lệ 1:1 (aspect-ratio) để tự co giãn khi rạp có nhiều cột */
+  position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  font-size: 10px; /* Hạ nhẹ font size xuống để vừa khít phòng IMAX */
-  font-weight: bold;
+  font-size: 10px;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
   cursor: pointer;
   user-select: none;
-  transition: all 0.2s ease;
+  transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+  box-sizing: border-box;
+  border-radius: 6px;
+  background-color: #55555a;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.cgv-seat:not(.sold):not(.selected):hover {
+  filter: brightness(1.25);
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 /* 🟢 Ghế Thường (Standard) */
-.cgv-seat:not(.sold):not(.selected):hover {
-  filter: brightness(1.25);
-  transform: scale(1.08);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.25);
-}
 .cgv-seat.Standard {
-  background-color: #555559;
+  background-color: #55555a;
   color: white;
 }
 
@@ -1535,39 +1580,49 @@ header {
   color: white;
 }
 
-/* 💗 Ghế Đôi (Sweetbox) */
+/* 💗 Ghế Đôi (Sweetbox) - vẫn là ô vuông bo góc, chỉ khác màu để phân biệt loại */
 .cgv-seat.Sweetbox {
   background-color: #e25b8b;
   color: white;
 }
 
 /* ⚠️ Trạng thái giữ ghế tạm thời */
-.cgv-seat.holding {
-  background-color: #e5a93b !important;
-  color: black !important;
-}
-
-/* 🔒 Ghế đã bán cứng (sold) */
+/* 🔒 Ghế đã bán cứng (sold) - mờ gần trùng nền khung + dấu ✕, không dùng xám (dễ nhầm Standard) */
 .cgv-seat.sold {
-  background-color: #222225 !important;
-  color: #444448 !important;
+  background-color: #232326 !important;
+  color: transparent !important;
   cursor: not-allowed;
-  transform: scale(0.95);
-  box-shadow: none !important;
+  box-shadow: none;
+  opacity: 0.6;
+}
+.cgv-seat.sold::after {
+  content: "✕";
+  position: absolute;
+  color: #6a6a70;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 /* 🌟 Ghế đang được click chọn (selected) */
 .cgv-seat.selected {
-  background-color: #ff6b35 !important;
+  background-color: #22c55e !important;
   color: white !important;
-  box-shadow: 0 0 10px #ff6b35;
-  transform: scale(1.05);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.9), 0 0 14px rgba(34, 197, 94, 0.85);
+  transform: translateY(-2px) scale(1.08);
+  z-index: 3;
 }
 
 /* 🚀 LỐI ĐI DỌC TRONG RẠP: Giữ ô trống không màu */
 .cgv-seat-spacer {
   background: transparent;
   pointer-events: none;
+  box-shadow: none;
+}
+
+/* 📱 IMAX (21 cột) có nhiều ghế hơn -> chữ nhỏ lại một chút cho gọn, vẫn cùng kiểu ô vuông bo góc */
+#cgv-seat-grid.imax-room .cgv-seat {
+  font-size: 8.5px;
+  border-radius: 4px;
 }
 
 /* ==========================================
@@ -1577,22 +1632,30 @@ header {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 10px;
   font-size: 12px;
-  color: #8a8a94;
-  margin-top: 15px;
+  color: #c4c4cc;
+  margin-top: 28px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+  padding-top: 20px;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 14px 6px 10px;
+  border-radius: 20px;
 }
 
 .legend-box {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
 }
 
 /* --- HÓA ĐƠN ĐẶT VÉ --- */
@@ -5797,6 +5860,9 @@ select.profile-readonly-input:not([disabled]) {
   margin-bottom: 14px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .bc-movie {
   font-family: var(--font-display);
@@ -5812,6 +5878,11 @@ select.profile-readonly-input:not([disabled]) {
   color: var(--muted);
   font-size: 13px;
   margin-bottom: 18px;
+}
+.bc-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .bc-section-label {
   color: var(--muted);
@@ -5898,6 +5969,9 @@ select.profile-readonly-input:not([disabled]) {
   font-weight: 800;
   font-size: 13.5px;
   margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 .bc-info-box ul {
   margin: 0;
@@ -5921,6 +5995,10 @@ select.profile-readonly-input:not([disabled]) {
   font-family: var(--font-main);
   font-weight: 800;
   font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   transition:
     transform 0.15s var(--ease),
     background 0.2s var(--ease);

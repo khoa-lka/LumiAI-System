@@ -1,6 +1,24 @@
 console.log("BOOKING JS LOADED");
 window.selectedPaymentGateway = "qr";
 
+// 🎨 Icon outline trắng dùng chung cho khối Rà soát hóa đơn
+const ICON_MOVIE =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l1.3-4a1 1 0 011-.7l13 2.3a1 1 0 01.8 1.2L18.5 10"/><rect x="3" y="10" width="18" height="9" rx="1.3"/><path d="M6.3 6.3l2 3.7M11 5.3l2 3.7M15.7 4.6l2 3.7"/></svg>';
+const ICON_CLOCK =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>';
+const ICON_SEAT =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13V6a1.5 1.5 0 013 0v6"/><path d="M15 13V6a1.5 1.5 0 013 0v6"/><path d="M5 13h14v3a2 2 0 01-2 2H7a2 2 0 01-2-2v-3z"/><path d="M7 18v2M17 18v2"/></svg>';
+const ICON_POPCORN =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l1.2 11a1.2 1.2 0 001.2 1.1h5.2a1.2 1.2 0 001.2-1.1L17 9"/><path d="M5.5 9a2.3 2.3 0 012-3.6 2.3 2.3 0 014-1.4 2.3 2.3 0 014 1.4 2.3 2.3 0 012 3.6z"/></svg>';
+const ICON_TICKET =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 012-2h14a2 2 0 012 2v2a1.5 1.5 0 000 3v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a1.5 1.5 0 000-3V8z"/><path d="M9 6v12" stroke-dasharray="2 2"/></svg>';
+const ICON_CALENDAR =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+const ICON_DOWNLOAD =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>';
+const ICON_INFO =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>';
+
 // 🚀 THÊM MỚI: Khai báo mảng fnbMenu toàn cục ban đầu trống
 window.fnbMenu = [];
 
@@ -450,10 +468,10 @@ function goToBookingStep(step) {
 
     document.getElementById("review-invoice-content").innerHTML = `
             <div class="inv-review">
-              <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
-              <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
-              <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
-              <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${window.fnbMenu.length ? "" : "Không có"}</span></div>
+              <div class="inv-line"><span class="inv-k">${ICON_MOVIE}Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
+              <div class="inv-line"><span class="inv-k">${ICON_CLOCK}Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
+              <div class="inv-line"><span class="inv-k">${ICON_SEAT}Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
+              <div class="inv-line"><span class="inv-k">${ICON_POPCORN}Bắp nước</span><span class="inv-v">${window.fnbMenu.length ? "" : "Không có"}</span></div>
               ${fnbHtml}
               <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
             </div>
@@ -548,10 +566,10 @@ function openCheckoutReview() {
 
   document.getElementById("review-invoice-content").innerHTML = `
         <div class="inv-review">
-          <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
-          <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
-          <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
-          <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
+          <div class="inv-line"><span class="inv-k">${ICON_MOVIE}Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
+          <div class="inv-line"><span class="inv-k">${ICON_CLOCK}Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
+          <div class="inv-line"><span class="inv-k">${ICON_SEAT}Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
+          <div class="inv-line"><span class="inv-k">${ICON_POPCORN}Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
           ${fnbHtml}
           <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
         </div>
@@ -1001,12 +1019,12 @@ function executeFinalCheckout() {
             </div>
 
             <div class="bc-card">
-              <div class="bc-card-head">🎫 Thông tin vé</div>
+              <div class="bc-card-head">${ICON_TICKET}Thông tin vé</div>
               <div class="bc-movie">${invoiceObj.movie}</div>
               <div class="bc-meta">
-                <span>📅 ${invoiceObj.date}</span>
-                <span>🕐 ${invoiceObj.time}</span>
-                <span>💺 ${invoiceObj.seats.length} ghế</span>
+                <span>${ICON_CALENDAR}${invoiceObj.date}</span>
+                <span>${ICON_CLOCK}${invoiceObj.time}</span>
+                <span>${ICON_SEAT}${invoiceObj.seats.length} ghế</span>
               </div>
 
               <div class="bc-section-label">Ghế đã chọn</div>
@@ -1027,7 +1045,7 @@ function executeFinalCheckout() {
             </div>
 
             <div class="bc-info-box">
-              <div class="bc-info-title">ℹ️ Thông tin quan trọng</div>
+              <div class="bc-info-title">${ICON_INFO}Thông tin quan trọng</div>
               <ul>
                 <li>Vui lòng đến rạp trước giờ chiếu ít nhất 15 phút.</li>
                 <li>Mang theo giấy tờ tùy thân (CCCD) nếu phim giới hạn độ tuổi.</li>
@@ -1037,7 +1055,7 @@ function executeFinalCheckout() {
             </div>
 
             <div class="bc-actions">
-              <button class="bc-btn bc-btn-primary" onclick="window.print()">⬇ Tải / In vé</button>
+              <button class="bc-btn bc-btn-primary" onclick="window.print()">${ICON_DOWNLOAD}Tải / In vé</button>
               <button class="bc-btn bc-btn-ghost" onclick="goHomeFromBc()">Về trang chủ</button>
             </div>
           </div>
