@@ -158,6 +158,9 @@ const API = {
   deleteVoucher: (id) => 
     fetch(`${BASE_URL}/vouchers/manager/delete/${id}`, { 
       method: "DELETE" 
-    }).then(res => res.ok ? true : Promise.reject(res))
-
+    }).then(res => res.ok ? true : Promise.reject(res)),
+  
+    // 📊 PHÂN HỆ DASHBOARD TỔNG QUAN (MANAGER)
+  getDashboardOverviewData: () => 
+    fetch(`${BASE_URL}/dashboard/overview`).then(handleResponse)
 };
