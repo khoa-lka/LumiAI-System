@@ -6483,26 +6483,3 @@ select.profile-readonly-input:not([disabled]) {
   .ad-metrics { grid-template-columns: repeat(2, 1fr); }
   .ad-summary-grid { grid-template-columns: 1fr; }
 }
-/* ============================================================
-   4 ICON LINE TRẮNG CHO THẺ TỔNG QUAN (Manager Dashboard)
-   Thay 4 emoji hiện tại (💰 🎟️ 🎬 🎁) bằng 4 đoạn SVG bên dưới.
-   Icon dùng stroke="currentColor" -> theo màu chữ của ô (.md-metric-icon).
-   ============================================================ */
-
-/* ---------- 1) CSS cho ô icon (dán vào style.css, hoặc đảm bảo đã có) ---------- */
-.md-metric-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.03);   /* ô tối */
-  border: 1px solid rgba(255, 255, 255, 0.14); /* viền mảnh */
-  color: #ffffff;                           /* icon TRẮNG */
-}
-.md-metric-icon svg {
-  width: 22px;
-  height: 22px;
-}
-

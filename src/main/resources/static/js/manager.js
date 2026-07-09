@@ -46,6 +46,7 @@ window.addEventListener("DOMContentLoaded", () => {
   updateManagerProfileHeader(info.fullName);
 
   loadManagerMovies();
+  if (typeof window.loadManagerPromo === "function") window.loadManagerPromo();
   if (typeof window.loadManagerDashboard === "function")
     window.loadManagerDashboard();
 });
@@ -121,6 +122,10 @@ function switchMpTab(tabId) {
   if (tabId === "fnb") {
     loadManagerFnb();
   }
+  // Tìm trong hàm switchMpTab, đắp thêm logic này vào cuối hàm:
+  if (tabId === "promo") {
+    loadManagerVouchers();
+  }
 }
 
 // --- 2. QUẢN LÝ MODAL & POPUP (CÁC MODAL KHÁC) ---
@@ -133,14 +138,7 @@ function closeMpDeleteModal() {
   if (el) el.classList.remove("open");
 }
 
-function openCreatePromoModal() {
-  const el = document.getElementById("mp-create-promo-modal");
-  if (el) el.classList.add("open");
-}
-function closeCreatePromoModal() {
-  const el = document.getElementById("mp-create-promo-modal");
-  if (el) el.classList.remove("open");
-}
+// (Modal Tạo/Sửa Chiến dịch Khuyến mãi được định nghĩa đầy đủ ở mục 8 bên dưới)
 
 // --- 3. ĐIỀU KHIỂN DROPDOWN (USER & NOTIFICATION) ---
 function toggleUserDropdown() {
@@ -163,6 +161,10 @@ window.addEventListener("click", function (event) {
   const notifDropdown = document.getElementById("mp-notif-dropdown");
   const bellIcon = document.querySelector(".mp-bell");
   const editMovieModal = document.getElementById("mp-edit-movie-modal");
+  const restockModal = document.getElementById("mp-restock-modal");
+  const fnbDeleteModal = document.getElementById("mp-fnb-delete-modal");
+  const createPromoModal = document.getElementById("mp-create-promo-modal");
+  const promoDeleteModal = document.getElementById("mp-promo-delete-modal");
 
   // Đóng User Dropdown
   if (
@@ -188,6 +190,26 @@ window.addEventListener("click", function (event) {
   if (event.target === editMovieModal) {
     closeEditMovie();
   }
+
+  // Bấm ra ngoài vùng nền mờ để đóng Modal Nhập Hàng
+  if (event.target === restockModal) {
+    closeRestockModal();
+  }
+
+  // Bấm ra ngoài vùng nền mờ để đóng Modal Xác nhận Xóa F&B
+  if (event.target === fnbDeleteModal) {
+    closeFnbDeleteModal();
+  }
+
+  // Bấm ra ngoài vùng nền mờ để đóng Modal Tạo/Sửa Chiến dịch Khuyến mãi
+  if (event.target === createPromoModal) {
+    closeCreatePromoModal();
+  }
+
+  // Bấm ra ngoài vùng nền mờ để đóng Modal Xác nhận Xóa Chiến dịch Khuyến mãi
+  if (event.target === promoDeleteModal) {
+    closePromoDeleteModal();
+  }
 });
 
 // ==========================================================================
@@ -210,13 +232,12 @@ function renderMoviesTable(movies) {
   movies.forEach((m, index) => { // 🚀 ĐÃ SỬA: Thêm index để đếm số thứ tự
     let ageBadgeClass = m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
     let ageText = m.ageRating === 0 ? "P" : `T${m.ageRating}`;
-    let statusClass = m.status === "now_showing" ? "active" : "inactive";
+    let statusClass = m.status === "now_showing" ? "active" : m.status === "coming_soon" ? "coming" : "inactive";
     let statusText = m.status === "now_showing" ? "Đang chiếu" : m.status === "coming_soon" ? "Sắp chiếu" : "Ngưng chiếu";
-    let rowClass = m.status !== "now_showing" ? 'class="mp-row-inactive"' : "";
     let posterUrl = m.mainposter_url ? m.mainposter_url : "img/default-poster.jpg";
 
     tbody.innerHTML += `
-      <tr ${rowClass}>
+      <tr>
           <td style="text-align: center; font-weight: bold;">${index + 1}</td> <td>
               <div class="mp-movie-info">
                   <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
@@ -385,6 +406,186 @@ window.submitAddMovie = function () {
     .catch((err) => alert("Lỗi khi thêm phim: " + err));
 };
 
+// ==========================================================================
+// --- PHẦN DÙNG CHUNG: HIỂN THỊ DANH SÁCH SUẤT CHIẾU (NGÀY / GIỜ / PHÒNG) ---
+// Dùng cho cả Modal "Xem" ở tab Ma trận và phần thông tin trong Modal "Sửa Phim"
+// ==========================================================================
+function getMatrixRoomLabel(roomId) {
+  if (roomId === 1) return "Screen 1 · Standard";
+  if (roomId === 2) return "Screen 2 · IMAX";
+  return `Phòng ${roomId}`;
+}
+
+function renderShowtimeListInto(containerId, movieId, date) {
+  const container = document.getElementById(containerId);
+  if (!container || !movieId || !date) return;
+
+  container.innerHTML =
+    '<div style="padding:10px;color:#888;font-size:12px;">Đang tải suất chiếu...</div>';
+
+  API.getShowtimes(movieId, date)
+    .then((resData) => {
+      const list = resData.showtimes || [];
+
+      if (list.length === 0) {
+        container.innerHTML = `<div style="padding:10px;color:#888;font-size:12px;">Không có suất chiếu nào được xếp trong ngày ${date}.</div>`;
+        return;
+      }
+
+      const rowsHTML = list
+        .slice()
+        .sort((a, b) => (a.startTime > b.startTime ? 1 : -1))
+        .map(
+          (st) => `
+            <tr>
+              <td>${date}</td>
+              <td>${st.startTime} - ${st.endTime}</td>
+              <td>${getMatrixRoomLabel(st.roomId)}</td>
+            </tr>
+          `,
+        )
+        .join("");
+
+      container.innerHTML = `
+        <div style="font-size:12px;color:#9a9aa3;margin-bottom:8px;">
+          Tổng số suất chiếu trong ngày: <strong style="color:#f4f4f5;">${list.length}</strong>
+        </div>
+        <table class="mp-table" style="width:100%;font-size:12px;">
+          <thead>
+            <tr><th>Ngày</th><th>Giờ chiếu</th><th>Phòng</th></tr>
+          </thead>
+          <tbody>${rowsHTML}</tbody>
+        </table>
+      `;
+    })
+    .catch((err) => {
+      container.innerHTML = `<div style="padding:10px;color:#e57373;font-size:12px;">Lỗi tải suất chiếu: ${err.message || err}</div>`;
+    });
+}
+
+function getMatrixDefaultDate() {
+  const dateInput = document.getElementById("mp-matrix-date-input");
+  if (window.matrixSelectedDate) return window.matrixSelectedDate;
+  if (dateInput && dateInput.value) return dateInput.value;
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, "0");
+  const d = String(today.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+// --- MODAL "XEM" RIÊNG CHO TAB MA TRẬN LỊCH CHIẾU ---
+window.openMatrixViewMovie = function (id) {
+  const movie = window.moviesList.find((item) => item.movieId === id);
+  if (!movie) {
+    console.error("Không tìm thấy dữ liệu của phim mang ID:", id);
+    return;
+  }
+
+  document.getElementById("mxview-movie-id").value = id;
+  document.getElementById("mxview-title").innerText = movie.title || "Chưa cập nhật";
+  document.getElementById("mxview-genre").innerText = movie.genre || "Chưa cập nhật";
+  document.getElementById("mxview-duration").innerText =
+    movie.durationMinutes || movie.duration || "0";
+  document.getElementById("mxview-director").innerText = movie.director || "Chưa cập nhật";
+  document.getElementById("mxview-country").innerText = movie.country || "Chưa cập nhật";
+
+  const statusEl = document.getElementById("mxview-status");
+  statusEl.innerText =
+    movie.status === "now_showing"
+      ? "Đang chiếu"
+      : movie.status === "coming_soon"
+        ? "Sắp chiếu"
+        : "Ngừng chiếu";
+  statusEl.style.color = movie.status === "now_showing" ? "#2e7d32" : "#f57c00";
+
+  const imgUrl =
+    movie.mainposterUrl || movie.mainposter_url || "img/default-poster.jpg";
+  document.getElementById("mxview-poster").src = imgUrl;
+
+  const defaultDate = getMatrixDefaultDate();
+  document.getElementById("mxview-date-input").value = defaultDate;
+  renderShowtimeListInto("mxview-schedule-list", id, defaultDate);
+
+  document.getElementById("mp-matrix-view-modal").style.display = "flex";
+};
+
+window.closeMatrixViewMovie = function () {
+  document.getElementById("mp-matrix-view-modal").style.display = "none";
+};
+
+window.reloadMatrixViewSchedule = function () {
+  const id = parseInt(document.getElementById("mxview-movie-id").value);
+  const date = document.getElementById("mxview-date-input").value;
+  renderShowtimeListInto("mxview-schedule-list", id, date);
+};
+
+// --- MODAL "SỬA" GỌN NHẸ RIÊNG CHO TAB MA TRẬN (chỉ Thời lượng + Trạng thái) ---
+window.openMatrixEditMovie = function (id) {
+  const movie = window.moviesList.find((item) => item.movieId === id);
+  if (!movie) {
+    console.error("Không tìm thấy dữ liệu của phim mang ID:", id);
+    return;
+  }
+
+  document.getElementById("mxedit-movie-id").value = id;
+
+  const imgUrl =
+    movie.mainposterUrl || movie.mainposter_url || "img/default-poster.jpg";
+  document.getElementById("mxedit-poster").src = imgUrl;
+  document.getElementById("mxedit-title").innerText = movie.title || "Chưa cập nhật";
+  document.getElementById("mxedit-meta").innerText =
+    `${movie.genre || "Chưa cập nhật"} · Dir. ${movie.director || "Chưa cập nhật"}`;
+
+  document.getElementById("mxedit-duration").value =
+    movie.durationMinutes || movie.duration || "";
+
+  const statusRadio = document.querySelector(
+    `input[name="mxedit_status"][value="${movie.status}"]`,
+  );
+  if (statusRadio) statusRadio.checked = true;
+
+  const defaultDate = getMatrixDefaultDate();
+  document.getElementById("mxedit-date-input").value = defaultDate;
+  renderShowtimeListInto("mxedit-schedule-list", id, defaultDate);
+
+  document.getElementById("mp-matrix-edit-modal").style.display = "flex";
+};
+
+window.closeMatrixEditMovie = function () {
+  document.getElementById("mp-matrix-edit-modal").style.display = "none";
+};
+
+window.reloadMatrixEditSchedule = function () {
+  const id = parseInt(document.getElementById("mxedit-movie-id").value);
+  const date = document.getElementById("mxedit-date-input").value;
+  renderShowtimeListInto("mxedit-schedule-list", id, date);
+};
+
+window.submitMatrixEditMovie = function () {
+  const id = parseInt(document.getElementById("mxedit-movie-id").value);
+  const original = window.moviesList.find((item) => item.movieId === id);
+  if (!original) return;
+
+  const statusChecked = document.querySelector('input[name="mxedit_status"]:checked');
+
+  // Giữ nguyên toàn bộ thông tin gốc của phim, chỉ ghi đè 2 trường được phép sửa ở đây
+  const movieData = {
+    ...original,
+    duration: parseInt(document.getElementById("mxedit-duration").value) || original.duration,
+    status: statusChecked ? statusChecked.value : original.status,
+  };
+
+  API.updateMovie(movieData)
+    .then(() => {
+      alert("✅ Cập nhật thành công!");
+      closeMatrixEditMovie();
+      loadManagerMovies();
+      if (typeof window.loadManagerMatrix === "function") window.loadManagerMatrix();
+    })
+    .catch((err) => alert("Lỗi khi cập nhật: " + err));
+};
+
 window.openUpdateMovie = function (id) {
   const movie = window.moviesList.find((item) => item.movieId === id);
 
@@ -540,6 +741,45 @@ document.addEventListener("DOMContentLoaded", displayCurrentDate);
 // --- 7. BỘ CHỨC NĂNG QUẢN LÝ KHO F&B CHUYÊN NGHIỆP ---
 // ==========================================================================
 
+// Hàm tự động phân loại sản phẩm dựa theo từ khóa trong tên (dùng chung cho load + filter)
+function getFnbTypeMeta(itemName) {
+  const nameLower = (itemName || "").toLowerCase();
+  if (nameLower.includes("combo")) return { key: "combo", text: "Combo", icon: "🎁" };
+  if (nameLower.includes("nuoc") || nameLower.includes("coca")) return { key: "nuoc", text: "Nước ngọt", icon: "🥤" };
+  if (nameLower.includes("khoai") || nameLower.includes("chien")) return { key: "anvat", text: "Đồ ăn vặt", icon: "🍟" };
+  return { key: "bap", text: "Bắp rang", icon: "🍿" };
+}
+
+// Vẽ 1 dòng bảng F&B theo đúng format của bảng Quản lý Danh mục Phim
+// (cột STT, ảnh/thumbnail, badge phân loại, badge trạng thái tồn kho, action icon-only)
+function renderFnbRow(item, index) {
+  const type = getFnbTypeMeta(item.itemName);
+  const isLowStock = item.stockQuantity <= 30;
+  const rowClass = isLowStock ? 'class="mp-row-lowstock"' : "";
+  const stockStatusClass = isLowStock ? "lowstock" : "available";
+  const stockStatusText = isLowStock ? "Tồn thấp" : "Còn hàng";
+
+  return `
+    <tr ${rowClass}>
+        <td style="text-align: center; font-weight: bold;">${index + 1}</td>
+        <td style="text-align: center;"><div class="mp-fnb-thumb">${type.icon}</div></td>
+        <td><div class="mp-movie-title">${item.itemName}</div></td>
+        <td><span class="mp-fnb-type ${type.key}">${type.text}</span></td>
+        <td style="text-align: right; font-weight: bold; color: var(--text-light);">${item.price.toLocaleString("vi-VN")} đ</td>
+        <td style="text-align: center;">
+            <div style="font-weight: bold; color: var(--text-light); margin-bottom: 4px;">${item.stockQuantity}</div>
+            <span class="mp-status ${stockStatusClass}">${stockStatusText}</span>
+        </td>
+        <td>
+            <div class="mp-table-actions">
+                <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" title="Sửa thông tin">✏️</button>
+                <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" title="Xóa">🗑️</button>
+            </div>
+        </td>
+    </tr>
+  `;
+}
+
 // Hàm tải danh sách F&B thực tế từ database lên giao diện
 window.loadManagerFnb = function() {
   const tbody = document.getElementById("mp-fnb-tbody");
@@ -557,39 +797,8 @@ window.loadManagerFnb = function() {
         return;
       }
 
-      items.forEach((item) => {
-        // Tự động phân loại dựa theo từ khóa trong tên để hiển thị lên UI khớp thiết kế của em
-        const nameLower = item.itemName.toLowerCase();
-        let typeText = "Bắp rang";
-        let icon = "🍿";
-        if (nameLower.includes("combo")) { typeText = "Combo"; icon = "🎁"; }
-        else if (nameLower.includes("nuoc") || nameLower.includes("coca")) { typeText = "Nước ngọt"; icon = "🥤"; }
-        else if (nameLower.includes("khoai") || nameLower.includes("chien")) { typeText = "Đồ ăn vặt"; icon = "🍟"; }
-
-        // Logic kiểm tra cảnh báo tồn kho thấp (Low Stock < 30 đơn vị)
-        let stockHTML = `${item.stockQuantity} ly`;
-        let rowStyle = "";
-        if (item.stockQuantity <= 30) {
-          rowStyle = 'style="background-color: #fff8f8;"';
-          stockHTML = `<strong>${item.stockQuantity}</strong> <span class="mp-badge-lowstock" style="background:#fff3e0; color:#e65100; font-size:10px; padding:2px 4px; border-radius:3px; margin-left:5px;">Tồn thấp</span>`;
-        }
-
-        tbody.innerHTML += `
-          <tr ${rowStyle}>
-              <td style="text-align: center;"><input type="checkbox" value="${item.foodItemId}" /></td>
-              <td style="text-align: center;"><div style="font-size: 22px">${icon}</div></td>
-              <td><strong>${item.itemName}</strong></td>
-              <td>${typeText}</td>
-              <td style="text-align: right; font-weight: bold; color:#b71c1c;">${item.price.toLocaleString("vi-VN")} đ</td>
-              <td style="text-align: center;">${stockHTML}</td>
-              <td style="text-align: center;">
-                  <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
-                      <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" style="cursor:pointer;" title="Sửa thông tin">✏️ Sửa</button>
-                      <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;" title="Xóa">🗑️ Xóa</button>
-                  </div>
-              </td>
-          </tr>
-        `;
+      items.forEach((item, index) => {
+        tbody.innerHTML += renderFnbRow(item, index);
       });
     })
     .catch((err) => {
@@ -659,16 +868,40 @@ window.submitFnbForm = function() {
   }
 };
 
-// Hàm xử lý kích hoạt xóa sản phẩm
+// --- XÁC NHẬN XÓA SẢN PHẨM F&B BẰNG MODAL RIÊNG (thay cho confirm() mặc định) ---
 window.submitDeleteFnb = function(id) {
-  if (confirm("⚠️ Bạn có chắc chắn muốn gỡ sản phẩm bắp nước này ra khỏi kho hệ thống không?")) {
-    API.deleteFnbItem(id)
-      .then(() => {
-        alert("✅ Đã xóa sản phẩm khỏi kho thành công!");
-        loadManagerFnb();
-      })
-      .catch(err => alert("Thất bại! Sản phẩm này đang dính vào lịch sử hóa đơn đặt vé cũ nên không thể xóa vật lý."));
+  const item = (window.fnbItemsList || []).find((x) => x.foodItemId === id);
+  window._pendingDeleteFnbId = id;
+
+  const nameBox = document.getElementById("fnb-delete-item-name");
+  if (nameBox) {
+    nameBox.innerText = item
+      ? `Bạn có chắc chắn muốn gỡ "${item.itemName}" ra khỏi kho hệ thống không?`
+      : "Bạn có chắc chắn muốn gỡ sản phẩm này ra khỏi kho hệ thống không?";
   }
+
+  document.getElementById("mp-fnb-delete-modal").style.display = "flex";
+};
+
+window.closeFnbDeleteModal = function() {
+  document.getElementById("mp-fnb-delete-modal").style.display = "none";
+  window._pendingDeleteFnbId = null;
+};
+
+window.confirmDeleteFnb = function() {
+  const id = window._pendingDeleteFnbId;
+  if (!id) return;
+
+  API.deleteFnbItem(id)
+    .then(() => {
+      alert("✅ Đã xóa sản phẩm khỏi kho thành công!");
+      closeFnbDeleteModal();
+      loadManagerFnb();
+    })
+    .catch(() => {
+      alert("Thất bại! Sản phẩm này đang dính vào lịch sử hóa đơn đặt vé cũ nên không thể xóa vật lý.");
+      closeFnbDeleteModal();
+    });
 };
 
 // ==========================================================================
@@ -691,11 +924,7 @@ function filterManagerFnb() {
     const matchesKeyword = item.itemName ? item.itemName.toLowerCase().includes(keyword) : false;
     
     // 2. Tự động nhận diện Phân loại dựa theo từ khóa chuỗi tên tương tự hàm load gốc
-    const nameLower = (item.itemName || "").toLowerCase();
-    let currentType = "bap";
-    if (nameLower.includes("combo")) currentType = "combo";
-    else if (nameLower.includes("nuoc") || nameLower.includes("coca")) currentType = "nuoc";
-    else if (nameLower.includes("khoai") || nameLower.includes("chien")) currentType = "anvat";
+    const currentType = getFnbTypeMeta(item.itemName).key;
 
     const matchesType = typeFilter === "all" || currentType === typeFilter;
 
@@ -716,7 +945,7 @@ function filterManagerFnb() {
 // Phơi hàm ra phạm vi toàn cục window để các thẻ select/input HTML kích hoạt được
 window.filterManagerFnb = filterManagerFnb;
 
-// Hàm tái render bảng dữ liệu sau khi lọc (Đảm bảo giữ nguyên cấu trúc icon, tồn kho thấp của em)
+// Hàm tái render bảng dữ liệu sau khi lọc (giữ đồng bộ format với renderFnbRow dùng chung)
 function renderFilteredFnbTable(items) {
   const tbody = document.getElementById("mp-fnb-tbody");
   if (!tbody) return;
@@ -728,37 +957,8 @@ function renderFilteredFnbTable(items) {
     return;
   }
 
-  items.forEach((item) => {
-    const nameLower = item.itemName.toLowerCase();
-    let typeText = "Bắp rang";
-    let icon = "🍿";
-    if (nameLower.includes("combo")) { typeText = "Combo"; icon = "🎁"; }
-    else if (nameLower.includes("nuoc") || nameLower.includes("coca")) { typeText = "Nước ngọt"; icon = "🥤"; }
-    else if (nameLower.includes("khoai") || nameLower.includes("chien")) { typeText = "Đồ ăn vặt"; icon = "🍟"; }
-
-    let stockHTML = `${item.stockQuantity} ly`;
-    let rowStyle = "";
-    if (item.stockQuantity <= 30) {
-      rowStyle = 'style="background-color: #fff8f8;"';
-      stockHTML = `<strong>${item.stockQuantity}</strong> <span class="mp-badge-lowstock" style="background:#fff3e0; color:#e65100; font-size:10px; padding:2px 4px; border-radius:3px; margin-left:5px;">Tồn thấp</span>`;
-    }
-
-    tbody.innerHTML += `
-      <tr ${rowStyle}>
-          <td style="text-align: center;"><input type="checkbox" value="${item.foodItemId}" /></td>
-          <td style="text-align: center;"><div style="font-size: 22px">${icon}</div></td>
-          <td><strong>${item.itemName}</strong></td>
-          <td>${typeText}</td>
-          <td style="text-align: right; font-weight: bold; color:#b71c1c;">${item.price.toLocaleString("vi-VN")} đ</td>
-          <td style="text-align: center;">${stockHTML}</td>
-          <td style="text-align: center;">
-              <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
-                  <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" style="cursor:pointer;" title="Sửa thông tin">✏️ Sửa</button>
-                  <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;" title="Xóa">🗑️ Xóa</button>
-              </div>
-          </td>
-      </tr>
-    `;
+  items.forEach((item, index) => {
+    tbody.innerHTML += renderFnbRow(item, index);
   });
 }
 
@@ -807,27 +1007,45 @@ window.handleAutoReplenish = function() {
 };
 
 // --- CHỨC NĂNG 2: NHẬP HÀNG NHANH (QUICK RESTOCK) ---
+// 🚀 ĐÃ SỬA: Thay thế hoàn toàn prompt()/confirm() mặc định xấu xí của trình duyệt
+// bằng modal riêng #mp-restock-modal, đồng bộ giao diện với modal Thêm/Sửa F&B.
 window.openQuickRestockModal = function() {
   if (!window.fnbItemsList || window.fnbItemsList.length === 0) {
     alert("Kho hàng trống, vui lòng thêm sản phẩm mới trước!");
     return;
   }
 
-  // Tận dụng Modal Form điền dữ liệu có sẵn của Khoa để làm form nhập nhanh
-  // Tìm một sản phẩm bất kỳ hoặc mở modal chỉnh số lượng tồn kho
-  const itemId = prompt("Nhập mã ID sản phẩm F&B bạn muốn nhập thêm hàng vào kho:", "");
-  if (!itemId) return;
+  const select = document.getElementById("restock-product-select");
+  select.innerHTML = window.fnbItemsList
+    .map((item) => `<option value="${item.foodItemId}">${item.itemName} (Tồn: ${item.stockQuantity})</option>`)
+    .join("");
 
-  const item = window.fnbItemsList.find(x => String(x.foodItemId) === String(itemId).trim());
+  document.getElementById("restock-add-qty").value = "";
+  onRestockProductChange();
+  document.getElementById("mp-restock-modal").style.display = "flex";
+};
+
+// Cập nhật số tồn kho hiện tại hiển thị khi đổi sản phẩm trong dropdown
+window.onRestockProductChange = function() {
+  const select = document.getElementById("restock-product-select");
+  const item = window.fnbItemsList.find((x) => String(x.foodItemId) === String(select.value));
+  document.getElementById("restock-current-stock").innerText = item ? `${item.stockQuantity} ly` : "0";
+};
+
+window.closeRestockModal = function() {
+  document.getElementById("mp-restock-modal").style.display = "none";
+};
+
+// Xử lý xác nhận nhập hàng: cộng dồn số lượng mới vào tồn kho hiện tại rồi gửi API
+window.submitRestockForm = function() {
+  const select = document.getElementById("restock-product-select");
+  const item = window.fnbItemsList.find((x) => String(x.foodItemId) === String(select.value));
   if (!item) {
-    alert("❌ Không tìm thấy sản phẩm nào mang ID #" + itemId);
+    alert("❌ Vui lòng chọn sản phẩm cần nhập hàng!");
     return;
   }
 
-  const addQtyStr = prompt(`Sản phẩm: ${item.itemName}\nTồn kho hiện tại: ${item.stockQuantity} ly\n\nNhập số lượng bạn muốn CỘNG THÊM vào kho:`, "50");
-  if (!addQtyStr) return;
-
-  const addQty = parseInt(addQtyStr) || 0;
+  const addQty = parseInt(document.getElementById("restock-add-qty").value) || 0;
   if (addQty <= 0) {
     alert("Số lượng nhập kho phải lớn hơn 0!");
     return;
@@ -836,21 +1054,73 @@ window.openQuickRestockModal = function() {
   const fnbData = {
     itemName: item.itemName,
     price: item.price,
-    stockQuantity: item.stockQuantity + addQty // Cộng dồn số lượng mới vào số lượng cũ
+    stockQuantity: item.stockQuantity + addQty, // Cộng dồn số lượng mới vào số lượng cũ
   };
 
-  // Gửi request cập nhật lên Spring Boot
   API.updateFnbItem(item.foodItemId, fnbData)
     .then(() => {
       alert(`✅ Nhập hàng thành công! Đã cộng thêm ${addQty} đơn vị vào sản phẩm ${item.itemName}.`);
+      closeRestockModal();
       loadManagerFnb();
     })
-    .catch(err => alert("Lỗi khi nhập hàng: " + err.message));
+    .catch((err) => alert("Lỗi khi nhập hàng: " + err.message));
 };
 
 // ==========================================================================
 // 🚀 ENGINE XỬ LÝ MA TRẬN LỊCH CHIẾU ĐỘNG & CHECK CONFLICT TỰ ĐỘNG
 // ==========================================================================
+
+// Vẽ bảng "Danh Sách Phim" tham khảo bên dưới Ma trận Lịch chiếu
+// (Movie | Genre | Duration | Status | Release Date | Actions)
+function renderMatrixMovieList(movies) {
+  const tbody = document.getElementById("mp-matrix-movies-tbody");
+  if (!tbody) return;
+
+  if (!movies || movies.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #888;">Chưa có dữ liệu phim.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = "";
+  movies.forEach((m) => {
+    const posterUrl = m.mainposter_url ? m.mainposter_url : "img/default-poster.jpg";
+    const statusClass = m.status === "now_showing" ? "active" : m.status === "coming_soon" ? "coming" : "inactive";
+    const statusText = m.status === "now_showing" ? "Now Showing" : m.status === "coming_soon" ? "Coming Soon" : "Ngừng chiếu";
+    const genres = (m.genre || "Chưa cập nhật")
+      .split(/[,/|]/)
+      .map((g) => g.trim())
+      .filter(Boolean);
+
+    tbody.innerHTML += `
+      <tr>
+        <td>
+          <div class="mp-movie-info">
+            <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
+            <div>
+              <div class="mp-movie-title">${m.title}</div>
+              <div style="font-size:11px;color:var(--muted,#9a9aa3);">Dir. ${m.director || "Chưa cập nhật"}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="mp-genre-pill-group">
+            ${genres.map((g) => `<span class="mp-genre-pill">${g}</span>`).join("")}
+          </div>
+        </td>
+        <td><span class="mp-duration-chip">⏱ ${m.duration} min</span></td>
+        <td><span class="mp-status ${statusClass}">${statusText}</span></td>
+        <td>${m.releaseDate || "N/A"}</td>
+        <td>
+          <div class="mp-table-actions">
+            <button class="mp-action-btn" onclick="openMatrixViewMovie(${m.movieId})" title="Xem chi tiết suất chiếu">👁️</button>
+            <button class="mp-action-btn" onclick="openMatrixEditMovie(${m.movieId})" title="Sửa">✏️</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+}
+window.renderMatrixMovieList = renderMatrixMovieList;
 
 window.loadManagerMatrix = function() {
   const dateInput = document.getElementById("mp-matrix-date-input");
@@ -869,6 +1139,7 @@ window.loadManagerMatrix = function() {
   }
 
   const selectedDate = dateInput.value;
+  window.matrixSelectedDate = selectedDate;
   trackRoom1.innerHTML = '<p style="color:#777;font-size:12px;padding:15px;">Đang quét phòng 1...</p>';
   trackRoom2.innerHTML = '<p style="color:#777;font-size:12px;padding:15px;">Đang quét phòng 2...</p>';
 
@@ -935,6 +1206,9 @@ window.loadManagerMatrix = function() {
       trackRoom1.innerHTML = "";
       trackRoom2.innerHTML = "";
 
+      // 5b. Vẽ luôn bảng "Danh Sách Phim" tham khảo bên dưới ma trận
+      renderMatrixMovieList(window.moviesList);
+
       if (globalShowtimes.length === 0) {
         trackRoom1.innerHTML = trackRoom2.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#999;font-size:12px;text-align:center;">Trống lịch. Chưa xếp suất chiếu nào trong ngày này!</div>';
         return;
@@ -978,7 +1252,7 @@ window.loadManagerMatrix = function() {
           <div class="mp-track-block ${blockClass}" style="left: ${leftPercent}%; width: ${widthPercent}%; min-width: 50px;" title="${st.movieTitle} (${st.startTime} - ${st.endTime})">
               ${conflictHTML}
               <strong>${st.movieTitle}</strong><br />
-              <span style="font-size:10px;">${st.startTime} - ${st.endTime}</span>
+              <span style="font-size:11px; opacity:0.92;">${st.startTime} - ${st.endTime}</span>
           </div>
         `;
 
@@ -1139,4 +1413,149 @@ window.submitAddShowtimeForm = function() {
       console.error("Lỗi khi kiểm tra trùng lịch:", err);
       alert("🚨 Không thể xác thực trùng lịch do lỗi kết nối!");
     });
+};
+
+// ==========================================================================
+// 🚀 BỘ CHỨC NĂNG QUẢN LÝ CHIẾN DỊCH VOUCHER / KHUYẾN MÃI (BẢO ĐẢM THÔNG NÚT 100%)
+// ==========================================================================
+
+// Hàm ẩn/hiện Modal gốc (🎯 ĐÃ SỬA: Khớp chuẩn đét ID mp-create-promo-modal bên HTML)
+window.openCreatePromoModal = function() {
+  const modal = document.getElementById("mp-create-promo-modal");
+  if (modal) modal.style.display = "flex";
+};
+
+window.closeCreatePromoModal = function() {
+  const modal = document.getElementById("mp-create-promo-modal");
+  if (modal) modal.style.display = "none";
+};
+
+// 1. Tải danh sách Voucher từ database lên bảng Admin thông qua API tổng
+window.loadManagerVouchers = function() {
+  const tbody = document.getElementById("mp-promo-tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Đang quét danh sách chiến dịch khuyến mãi...</td></tr>';
+
+  API.getManagerVouchers()
+    .then((vouchers) => {
+      tbody.innerHTML = "";
+      window.vouchersList = vouchers;
+
+      if (!vouchers || vouchers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Chưa có chiến dịch khuyến mãi nào được tạo!</td></tr>';
+        return;
+      }
+
+      vouchers.forEach((v, index) => {
+        let expiryDate = v.expiredDate ? new Date(v.expiredDate).toLocaleDateString("vi-VN") : "Vô thời hạn";
+        let discountText = v.discountType === "PERCENT" ? `${v.discountValue}%` : `${v.discountValue.toLocaleString("vi-VN")} đ`;
+        
+        tbody.innerHTML += `
+          <tr>
+              <td style="text-align: center; font-weight: bold;">${index + 1}</td>
+              <td><span class="mp-badge-code" style="background:#e8f5e9; color:#2e7d32; font-weight:bold; padding:4px 8px; border-radius:4px;">${v.voucherCode}</span></td>
+              <td>${v.discountType === "PERCENT" ? "Giảm theo phần禅 (%)" : "Giảm tiền mặt trực tiếp"}</td>
+              <td style="text-align: right; font-weight: bold; color: #b71c1c;">${discountText}</td>
+              <td style="text-align: center;">${v.usageLimit} lượt</td>
+              <td style="text-align: center;">${expiryDate}</td>
+              <td style="text-align: center;">
+                  <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
+                      <button class="mp-action-btn" onclick="openEditVoucherModal(${v.voucherId})" style="cursor:pointer;">✏️ Sửa</button>
+                      <button class="mp-action-btn" onclick="submitDeleteVoucher(${v.voucherId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;">🗑️ Xóa</button>
+                  </div>
+              </td>
+          </tr>
+        `;
+      });
+    })
+    .catch((err) => {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Lỗi kết nối danh mục Voucher: ${err.message}</td></tr>`;
+    });
+};
+
+// 2. Mở modal để THÊM MỚI Voucher (Xóa sạch dữ liệu cũ trong form)
+window.openAddVoucherModal = function() {
+  document.getElementById("v-id").value = "";
+  document.getElementById("v-code").value = "";
+  document.getElementById("v-type").value = "PERCENT";
+  document.getElementById("v-value").value = "";
+  document.getElementById("v-max").value = "0";
+  document.getElementById("v-min").value = "0";
+  document.getElementById("v-limit").value = "100";
+  document.getElementById("v-expired").value = "";
+
+  document.getElementById("mp-promo-modal-title").innerText = "Thêm Mới Chiến Dịch Khuyến Mãi";
+  window.openCreatePromoModal();
+};
+
+// 3. Mở modal để CHỈNH SỬA Voucher đã có
+window.openEditVoucherModal = function(id) {
+  const v = window.vouchersList.find(x => x.voucherId === id);
+  if (!v) return;
+
+  document.getElementById("v-id").value = v.voucherId;
+  document.getElementById("v-code").value = v.voucherCode;
+  document.getElementById("v-type").value = v.discountType;
+  document.getElementById("v-value").value = v.discountValue;
+  document.getElementById("v-max").value = v.maxDiscount || 0;
+  document.getElementById("v-min").value = v.minimumOrder || 0;
+  document.getElementById("v-limit").value = v.usageLimit;
+  
+  if (v.expiredDate) {
+    document.getElementById("v-expired").value = v.expiredDate.substring(0, 16);
+  }
+
+  document.getElementById("mp-promo-modal-title").innerText = "Cập Nhật Chiến Dịch Khuyến Mãi";
+  window.openCreatePromoModal();
+};
+
+// 4. Xử lý bấm nút "Lưu chiến dịch" (Form Submit)
+window.submitVoucherForm = function() {
+  const id = document.getElementById("v-id").value;
+  const code = document.getElementById("v-code").value.trim().toUpperCase();
+  const type = document.getElementById("v-type").value;
+  const value = parseFloat(document.getElementById("v-value").value) || 0;
+  const max = parseFloat(document.getElementById("v-max").value) || 0;
+  const min = parseFloat(document.getElementById("v-min").value) || 0;
+  const limit = parseInt(document.getElementById("v-limit").value) || 0;
+  const expired = document.getElementById("v-expired").value;
+
+  if (!code) { alert("Vui lòng nhập mã Voucher!"); return; }
+  if (value <= 0) { alert("Giá trị giảm phải lớn hơn 0!"); return; }
+
+  const voucherData = {
+    voucherCode: code,
+    discountType: type,
+    discountValue: value,
+    maxDiscount: max,
+    minimumOrder: min,
+    usageLimit: limit,
+    expiredDate: expired ? `${expired}:00` : null,
+    createdBy: parseInt(sessionStorage.getItem("roleId")) || 1,
+    updatedBy: parseInt(sessionStorage.getItem("roleId")) || 1
+  };
+
+  const apiCall = id ? API.updateVoucher(id, voucherData) : API.addVoucher(voucherData);
+
+  apiCall
+    .then(() => {
+      alert(id ? "✅ Cập nhật chiến dịch thành công!" : "✅ Tạo mã Voucher khuyến mãi mới thành công!");
+      window.closeCreatePromoModal();
+      loadManagerVouchers();
+    })
+    .catch(err => alert("Lỗi xử lý Voucher: " + err.message));
+};
+
+// 5. Xử lý Xóa Voucher qua API tổng
+window.submitDeleteVoucher = function(id) {
+  if (confirm("⚠️ Bạn có chắc chắn muốn gỡ bỏ hoàn toàn mã Voucher này khỏi hệ thống không?")) {
+    API.deleteVoucher(id)
+      .then(() => {
+        alert("✅ Đã gỡ chiến dịch khuyến mãi thành công!");
+        loadManagerVouchers();
+      })
+      .catch(err => alert("Lỗi khi xóa voucher: " + err.message));
+  }
 };

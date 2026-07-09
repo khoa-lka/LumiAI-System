@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>LAS Cinemas Vietnam - Official Premium Interface</title>
-    <link rel="stylesheet" href="style.css?v=12" />
+    <link rel="stylesheet" href="style.css?v=16" />
   </head>
   <body>
     <div class="global-viewport-container">
@@ -821,10 +821,12 @@
 
               <div id="pro-panel-lichsu" class="profile-sub-content">
                 <div class="sub-content-header-title">LỊCH SỬ GIAO DỊCH VÉ</div>
-                <div id="cgv-invoice-zone" style="padding: 15px">
+                    <div class="invoice-history-wrapper">
+                      <div id="cgv-invoice-zone" style="padding: 15px">
                   <p style="color: #9a9aa3; font-size: 13px">
                     Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.
                   </p>
+                    </div>
                 </div>
               </div>
             </div>
@@ -1686,19 +1688,19 @@
 </div>
 
 
-<script src="js/state.js?v=12"></script>
+<script src="js/state.js?v=16"></script>
 
   <!-- 2. Nhúng file trang chủ ngay sau state.js để dùng chung 'serverData' không bị trùng lặp -->
   <!-- Thêm đuôi ?v=... để diệt tận gốc lỗi dính cache file cũ của Chrome/Edge -->
-<script src="js/home.js?v=12"></script>
+<script src="js/home.js?v=16"></script>
 
   <!-- 3. Các file giao diện và tính năng chạy sau cùng omg omg omg omg  -->
-  <script src="js/api.js?v=12"></script>   
-  <script src="js/ui.js?v=12"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
-  <script src="js/auth.js?v=12"></script>
-  <script src="js/admin.js?v=12"></script>
-  <script src="js/booking.js?v=12"></script>
-  <script src="js/breadcrumb.js?v=12"></script>
-  <script src="js/dashboard-access.js?v=12"></script>
+  <script src="js/api.js?v=16"></script>   
+  <script src="js/ui.js?v=16"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
+  <script src="js/auth.js?v=16"></script>
+  <script src="js/admin.js?v=16"></script>
+  <script src="js/booking.js?v=16"></script>
+  <script src="js/breadcrumb.js?v=16"></script>
+  <script src="js/dashboard-access.js?v=16"></script>
   </body>
 </html>
