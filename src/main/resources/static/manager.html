@@ -80,8 +80,21 @@
             Tổng quan hoạt động rạp
           </h2>
           <div class="mp-header-utils">
-            <div class="mp-date-badge" id="mp-current-date">--/--/----</div>
-            <div class="mp-bell" onclick="toggleNotifDropdown()">🔔</div>
+            <div class="mp-date-badge" id="mp-current-date">
+              <svg class="mp-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M3 9.5H21" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M8 3V6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                <path d="M16 3V6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              <span id="mp-current-date-text">--/--/----</span>
+            </div>
+            <div class="mp-bell" onclick="toggleNotifDropdown()">
+              <svg class="mp-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3.5C9.5 3.5 7.5 5.5 7.5 8V11.2C7.5 11.8 7.28 12.38 6.88 12.83L5.6 14.28C4.83 15.15 5.45 16.5 6.6 16.5H17.4C18.55 16.5 19.17 15.15 18.4 14.28L17.12 12.83C16.72 12.38 16.5 11.8 16.5 11.2V8C16.5 5.5 14.5 3.5 12 3.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="M9.5 19C10 20 10.9 20.5 12 20.5C13.1 20.5 14 20 14.5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </div>
 
             <div class="mp-notif-dropdown" id="mp-notif-dropdown">
               <div class="mp-notif-header">Thông báo mới</div>
@@ -114,13 +127,18 @@
               style="cursor: pointer; position: relative"
               onclick="toggleUserDropdown()"
             >
-              <div class="mp-avatar">👨‍💼</div>
+              <div class="mp-avatar" id="mp-avatar-initials">
+                <svg class="mp-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="8.5" r="3.2" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M5.5 19C6.4 16 8.9 14.2 12 14.2C15.1 14.2 17.6 16 18.5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </div>
               <div class="mp-user-info">
-                <span class="mp-user-name">Nguyễn Văn Viên ▾</span>
-                <span class="mp-user-role">Quản lý</span>
+                <span class="mp-user-name"><span id="mp-user-name-text">Đang tải...</span> <svg class="mp-chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span class="mp-user-role" id="mp-user-role">Quản lý</span>
               </div>
               <div class="mp-user-dropdown" id="mp-user-dropdown">
-                <div class="mp-user-dropdown-header">Chào, Nguyễn Văn Viên</div>
+                <div class="mp-user-dropdown-header" id="mp-user-dropdown-header">Chào, ...</div>
                 <div
                   class="mp-dropdown-item logout"
                   onclick="exitManagerRoleToCustomerView()"

@@ -40,10 +40,28 @@ window.addEventListener("DOMContentLoaded", () => {
   // Nếu hợp lệ, tự động load danh sách phim + dashboard analytics
   const titleEl = document.getElementById("mp-dynamic-title");
   if (titleEl) titleEl.innerText = `Xin chào Manager: ${info.fullName}`;
+
+  // 🚀 Cập nhật tên/quyền/avatar ở góc phải header theo đúng tài khoản đang đăng nhập
+  // (trước đây các thẻ này bị viết cứng "Nguyễn Văn Viên" / "Quản lý")
+  updateManagerProfileHeader(info.fullName);
+
   loadManagerMovies();
   if (typeof window.loadManagerDashboard === "function")
     window.loadManagerDashboard();
 });
+
+// --- CẬP NHẬT TÊN/QUYỀN/AVATAR TRÊN HEADER THEO TÀI KHOẢN ĐANG ĐĂNG NHẬP ---
+function updateManagerProfileHeader(fullName) {
+  var nameBox = document.getElementById("mp-user-name-text");
+  var headerBox = document.getElementById("mp-user-dropdown-header");
+
+  if (nameBox) nameBox.innerText = fullName;
+  if (headerBox) headerBox.innerText = "Chào, " + fullName;
+  // Avatar & mũi tên (▾) giờ là icon SVG cố định (đồng bộ theo ảnh mẫu),
+  // không cần cập nhật động theo tên tài khoản nữa.
+  // Vai trò (mp-user-role) hiện cố định là "Quản lý" vì manager.html chỉ cho
+  // phép roleId === 1 truy cập (xem ALLOWED_ROLES ở trên), nên không cần đổi.
+}
 
 // --- THOÁT VAI TRÒ MANAGER, QUAY VỀ GIAO DIỆN CUSTOMER (index.html) ---
 // Lưu ý: KHÔNG xóa localStorage "las_logged_in_user" / sessionStorage đăng nhập
@@ -510,7 +528,7 @@ function displayCurrentDate() {
   const year = today.getFullYear();
 
   const formattedDate = `${day}/${month}/${year}`;
-  const dateBadge = document.getElementById("mp-current-date");
+  const dateBadge = document.getElementById("mp-current-date-text");
   if (dateBadge) {
     dateBadge.innerText = formattedDate;
   }
