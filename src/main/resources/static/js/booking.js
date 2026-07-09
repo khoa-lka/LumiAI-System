@@ -29,6 +29,11 @@ function initFnbMenuFromServer() {
 }
 
 function handleBookNowClick() {
+  if (typeof window.isBookingRestrictedRole === "function" && window.isBookingRestrictedRole()) {
+    showBookingRestrictedModal();
+    return;
+  }
+
   const ticket = document.getElementById("final-ticket-result");
   if (ticket) ticket.innerHTML = "";
   if (!isUserLoggedInState) {
@@ -140,6 +145,14 @@ function renderDynamicShowtimeGrid() {
 }
 
 function quickBookMovie(movieTitle) {
+  // 🛡️ LỚP CHẶN THỨ 2: chặn ngay tại nút bấm, không phụ thuộc vào việc
+  // switchCgvTab có chuyển tab thành công hay không (trước đây hàm này vẫn
+  // tiếp tục chạy tiếp dù switchCgvTab đã âm thầm bị chặn, gây lọt luồng).
+  if (typeof window.isBookingRestrictedRole === "function" && window.isBookingRestrictedRole()) {
+    showBookingRestrictedModal();
+    return;
+  }
+
   switchCgvTab("panel-booking");
   const selectCombo = document.getElementById("cgv-combo-movie");
   if (selectCombo) {
@@ -469,6 +482,14 @@ function goToBookingStep(step) {
 }
 
 function handleMainAction() {
+  // 🛡️ LỚP CHẶN THỨ 3: chặn nút "Tiếp tục" điều khiển toàn bộ wizard đặt vé
+  // (chọn ghế -> F&B -> thanh toán), phòng trường hợp user vào được panel-booking
+  // bằng đường khác chưa lường tới.
+  if (typeof window.isBookingRestrictedRole === "function" && window.isBookingRestrictedRole()) {
+    showBookingRestrictedModal();
+    return;
+  }
+
   if (!isUserLoggedInState) {
     alert(
       "Bạn phải đăng nhập tài khoản thành viên mới có thể tiến hành đặt vé!",
@@ -793,6 +814,16 @@ function closePaymentModal() {
 }
 
 function executeFinalCheckout() {
+  // 🛡️ LỚP CHẶN CUỐI CÙNG (TUYỆT ĐỐI): đây là nơi duy nhất thực sự gọi API
+  // tạo đơn vé (API.checkoutTickets) xuống Database. Dù 3 lớp chặn phía trên
+  // (switchCgvTab / quickBookMovie / handleMainAction) có bị lọt qua bằng bất
+  // kỳ đường nào chưa lường tới, đơn vé vẫn KHÔNG THỂ được tạo ra nếu chặn được
+  // tại đây, vì không còn đường nào khác để tạo đơn ngoài hàm này.
+  if (typeof window.isBookingRestrictedRole === "function" && window.isBookingRestrictedRole()) {
+    showBookingRestrictedModal();
+    return;
+  }
+
   console.log("BOOKING EXECUTE");
   console.log("currentSelectedShowtimeId =", window.currentSelectedShowtimeId);
   console.log("selectedShowtime =", selectedShowtime);

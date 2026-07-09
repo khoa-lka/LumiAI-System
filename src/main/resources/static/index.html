@@ -1659,6 +1659,23 @@
       </div>
     </div>
 
+    <!-- POPUP THÔNG BÁO CHẶN ĐẶT VÉ (Manager/Admin) - thay cho alert() mặc định -->
+    <div class="cgv-modal-overlay" id="booking-restricted-modal">
+      <div class="dash-confirm-box">
+        <div class="dash-confirm-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/></svg>
+        </div>
+        <h3 class="dash-confirm-title">Không thể đặt vé</h3>
+        <p class="dash-confirm-text">
+          Tài khoản <b>Quản lý / Quản trị viên</b> không được phép đặt vé trên hệ thống.<br />
+          Vui lòng dùng tài khoản khách hàng để trải nghiệm chức năng này.
+        </p>
+        <div class="dash-confirm-actions">
+          <button class="dash-btn dash-btn-ok" style="flex: 1;" onclick="closeBookingRestrictedModal()">Đã hiểu</button>
+        </div>
+      </div>
+    </div>
+
     <div id="las-chatbot-bubble" onclick="window.toggleLasChatbox()" style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background-color: #ff6b35; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4); z-index: 3000; transition: transform 0.2s;">
   💬
 </div>
@@ -1688,19 +1705,19 @@
 </div>
 
 
-<script src="js/state.js?v=16"></script>
+<script src="js/state.js?v=17"></script>
 
   <!-- 2. Nhúng file trang chủ ngay sau state.js để dùng chung 'serverData' không bị trùng lặp -->
   <!-- Thêm đuôi ?v=... để diệt tận gốc lỗi dính cache file cũ của Chrome/Edge -->
-<script src="js/home.js?v=16"></script>
+<script src="js/home.js?v=17"></script>
 
   <!-- 3. Các file giao diện và tính năng chạy sau cùng omg omg omg omg  -->
-  <script src="js/api.js?v=16"></script>   
-  <script src="js/ui.js?v=16"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
-  <script src="js/auth.js?v=16"></script>
-  <script src="js/admin.js?v=16"></script>
-  <script src="js/booking.js?v=16"></script>
-  <script src="js/breadcrumb.js?v=16"></script>
-  <script src="js/dashboard-access.js?v=16"></script>
+  <script src="js/api.js?v=17"></script>   
+  <script src="js/ui.js?v=17"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
+  <script src="js/auth.js?v=17"></script>
+  <script src="js/admin.js?v=17"></script>
+  <script src="js/booking.js?v=17"></script>
+  <script src="js/breadcrumb.js?v=17"></script>
+  <script src="js/dashboard-access.js?v=17"></script>
   </body>
 </html>
