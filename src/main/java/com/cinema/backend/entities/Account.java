@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "Account")
@@ -39,6 +42,17 @@ public class Account {
 
     @Column(name = "role_id")
     private Integer roleId;
+
     @Column(name = "status")
-private String status; // Giá trị: "Active", "Banned"
+    private String status; // Giá trị: "Active", "Banned"
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "customer")
+    private List<Order1> customerOrders;
+
+    @OneToMany(mappedBy = "staff")
+    private List<Order1> staffOrders;
+
+    @Column(name = "status")
+    private String status; // Giá trị: "Active", "Banned"
 }

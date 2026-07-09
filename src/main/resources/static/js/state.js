@@ -1,6 +1,6 @@
 // js/state.js
 let serverData = { masterSeatStore: {}, movies: [], showtimes: [] };
-let fnbMenu = [
+window.fnbMenu = [
   {
     id: "fnb1",
     name: "LAS Combo Thần Thánh",
@@ -47,3 +47,4 @@ let selectedDateStr = "";
 let currentBannerIndex = 0;
 let totalBanners = 0;
 let temporaryRegisterEmail = "";
+let fnbMenu = window.fnbMenu;

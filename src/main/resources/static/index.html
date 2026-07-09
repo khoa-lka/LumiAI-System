@@ -5,7 +5,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>LAS Cinemas Vietnam - Official Premium Interface</title>
-  <link rel="stylesheet" href="style.css?v=8" />
+  <link rel="stylesheet" href="style.css?v=13" />
 </head>
 
 <body>
@@ -488,21 +488,38 @@
 
       </div>
 
-      <div id="panel-profile" class="cgv-panel">
-        <div class="cgv-profile-layout">
-          <div class="profile-arrow-sidebar">
-            <h2 class="sidebar-main-title">TÀI KHOẢN LAS</h2>
-            <div class="arrow-menu-list">
-              <button class="arrow-btn active" id="pro-subtab-btn-chung" onclick="switchProfileSubTab('chung')">
-                <span class="arrow-btn-icon"></span>
-                THÔNG TIN CHUNG
-              </button>
-              <button class="arrow-btn" id="pro-subtab-btn-lichsu" onclick="switchProfileSubTab('lichsu')">
-                <span class="arrow-btn-icon"></span>
-                LỊCH SỬ GIAO DỊCH
-              </button>
+        <div id="panel-profile" class="cgv-panel">
+          <div class="cgv-profile-layout">
+            <div class="profile-arrow-sidebar">
+              <h2 class="sidebar-main-title">TÀI KHOẢN LAS</h2>
+              <div class="arrow-menu-list">
+                <button
+                  class="arrow-btn active"
+                  id="pro-subtab-btn-chung"
+                  onclick="switchProfileSubTab('chung')"
+                >
+                  <span class="arrow-btn-icon"></span>
+                  THÔNG TIN CHUNG
+                </button>
+                <button
+                  class="arrow-btn"
+                  id="pro-subtab-btn-lichsu"
+                  onclick="switchProfileSubTab('lichsu')"
+                >
+                  <span class="arrow-btn-icon"></span>
+                  LỊCH SỬ GIAO DỊCH
+                </button>
+                <button
+                  class="arrow-btn arrow-btn-dashboard"
+                  id="pro-subtab-btn-dashboard"
+                  onclick="openDashboardConfirm()"
+                  style="display: none"
+                >
+                  <span class="arrow-btn-icon"></span>
+                  TRUY CẬP DASHBOARD
+                </button>
+              </div>
             </div>
-          </div>
 
           <div class="profile-content-display">
             <div id="pro-panel-chung" class="profile-sub-content active">
@@ -594,28 +611,26 @@
               </div>
             </div>
 
-            <div id="pro-panel-lichsu" class="profile-sub-content">
-              <div class="sub-content-header-title">LỊCH SỬ GIAO DỊCH VÉ</div>
-              <div id="cgv-invoice-zone" style="padding: 15px">
-                <p style="color: #9a9aa3; font-size: 13px">
-                  Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.
-                </p>
+              <div id="pro-panel-lichsu" class="profile-sub-content">
+                <div class="sub-content-header-title">LỊCH SỬ GIAO DỊCH VÉ</div>
+                    <div class="invoice-history-wrapper">
+                      <div id="cgv-invoice-zone" style="padding: 15px">
+                  <p style="color: #9a9aa3; font-size: 13px">
+                    Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.
+                  </p>
+                    </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <div id="panel-about" class="cgv-panel">
-        <div
-          style="text-align: center; font-size: 24px; font-weight: bold; color: #f4f4f5; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 25px 0;">
-          — GIỚI THIỆU VỀ LAS CINEMAS —
-        </div>
-
-        <div class="about-container">
-          <p><strong>LAS Cinemas</strong> tự hào là hệ thống rạp chiếu phim hiện đại và nền tảng đặt vé trực tuyến tiên
-            tiến do <strong>LAS Cinema</strong> phát triển. Mục tiêu của <strong>LAS Cinemas</strong> là trở thành nền
-            tảng giải trí điển hình, mang đến những trải nghiệm điện ảnh đột phá và đóng góp vào sự phát triển không
-            ngừng của lĩnh vực điện ảnh số tại Việt Nam.</p>
+       <div id="panel-about" class="cgv-panel">
+            <div style="text-align: center; font-size: 24px; font-weight: bold; color: #f4f4f5; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 25px 0;">
+                — GIỚI THIỆU VỀ LAS CINEMAS —
+            </div>
+            
+            <div class="about-container">
+                <p><strong>LAS Cinemas</strong> tự hào là hệ thống rạp chiếu phim hiện đại và nền tảng đặt vé trực tuyến tiên tiến do <strong>LAS Cinema</strong> phát triển. Mục tiêu của <strong>LAS Cinemas</strong> là trở thành nền tảng giải trí điển hình, mang đến những trải nghiệm điện ảnh đột phá và đóng góp vào sự phát triển không ngừng của lĩnh vực điện ảnh số tại Việt Nam.</p>
 
           <p>Kế thừa và phát huy tinh hoa công nghệ, <strong>LAS Cinemas</strong> hội nhập, hài hòa và góp phần tạo nên
             khái niệm độc đáo về không gian văn hóa nghệ thuật đa chiều "<strong>Cultureplex</strong>". Tại đây, khán
@@ -1661,11 +1676,26 @@
     </div>
   </div>
 
-  <div id="feedback-toast" class="feedback-toast">✓ Cảm ơn bạn đã gửi feedback!</div>
-  <div id="las-chatbot-bubble" onclick="window.toggleLasChatbox()"
-    style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background-color: #ff6b35; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4); z-index: 3000; transition: transform 0.2s;">
-    💬
-  </div>
+    <div id="feedback-toast" class="feedback-toast">✓ Cảm ơn bạn đã gửi feedback!</div>
+
+    <!-- POPUP XÁC NHẬN CHUYỂN DASHBOARD (chỉ Manager/Admin) -->
+    <div class="cgv-modal-overlay" id="dashboard-confirm-modal">
+      <div class="dash-confirm-box">
+        <h3 class="dash-confirm-title">Truy cập Dashboard</h3>
+        <p class="dash-confirm-text">
+          Bạn sắp rời giao diện khách hàng để chuyển sang <b>Dashboard Làm việc</b>.
+          Bạn có chắc chắn muốn tiếp tục?
+        </p>
+        <div class="dash-confirm-actions">
+          <button class="dash-btn dash-btn-cancel" onclick="closeDashboardConfirm()">Hủy</button>
+          <button class="dash-btn dash-btn-ok" onclick="confirmGoDashboard()">Xác nhận</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="las-chatbot-bubble" onclick="window.toggleLasChatbox()" style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background-color: #ff6b35; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4); z-index: 3000; transition: transform 0.2s;">
+  💬
+</div>
 
   <div id="las-chatbox-window"
     style="position: fixed; bottom: 105px; right: 30px; width: 380px; height: 500px; background-color: #0b0b0e; border: 2px solid #111; border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); display: none; flex-direction: column; z-index: 3000; overflow: hidden; font-family: Arial, sans-serif;">
@@ -1701,19 +1731,19 @@
   </div>
 
 
-  <script src="js/state.js?v=8"></script>
+<script src="js/state.js?v=13"></script>
 
   <!-- 2. Nhúng file trang chủ ngay sau state.js để dùng chung 'serverData' không bị trùng lặp -->
   <!-- Thêm đuôi ?v=... để diệt tận gốc lỗi dính cache file cũ của Chrome/Edge -->
-  <script src="js/home.js?v=8"></script>
+<script src="js/home.js?v=13"></script>
 
   <!-- 3. Các file giao diện và tính năng chạy sau cùng omg omg omg omg  -->
-  <script src="js/api.js?v=8"></script>
-  <script src="js/ui.js?v=8"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
-  <script src="js/auth.js?v=8"></script>
-  <script src="js/admin.js?v=8"></script>
-  <script src="js/booking.js?v=8"></script>
-  <script src="js/breadcrumb.js?v=8"></script>
-</body>
-
+  <script src="js/api.js?v=13"></script>   
+  <script src="js/ui.js?v=13"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
+  <script src="js/auth.js?v=13"></script>
+  <script src="js/admin.js?v=13"></script>
+  <script src="js/booking.js?v=13"></script>
+  <script src="js/breadcrumb.js?v=13"></script>
+  <script src="js/dashboard-access.js?v=13"></script>
+  </body>
 </html>
