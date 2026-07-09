@@ -11,6 +11,7 @@
   --cgv-gold-dark: #b37d1b;
   --cgv-red: #ff6b35;
   --cgv-red-hover: #ff8a52;
+  --cgv-red-dark: #e5502e;
   --cgv-gray-bg: #0a0a0c;
   --text-dark: #e4e4e7;
   --text-light: #ffffff;
@@ -3766,17 +3767,6 @@ select.profile-readonly-input:not([disabled]) {
 }
 
 /* --- QUẢN LÝ F&B --- */
-.fnb-card {
-  background: white;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
-  padding: 15px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  position: relative;
-  overflow: hidden;
-}
 .fnb-icon-box {
   width: 60px;
   height: 60px;
@@ -3819,23 +3809,32 @@ select.profile-readonly-input:not([disabled]) {
 .manager-pro-layout {
   display: flex;
   width: 100%;
-  min-height: 800px;
-  background: #1c1c21;
+  min-height: 100vh;
+  background: transparent;
   font-family: var(--font-main);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  overflow: hidden;
 }
 
 /* --- SIDEBAR MANAGER --- */
+/* 🚀 ĐÃ SỬA: chuyển sang position:fixed + height:100vh giống hệt sidebar Admin.
+   Trước đây sidebar chỉ cao bằng flex-stretch theo nội dung, nên khi tab Dashboard
+   có nội dung dài hơn sidebar, phần dư bên dưới lộ ra màu nền trang (tạo vệt loang
+   ngang giữa sidebar). Cố định sidebar theo viewport sẽ luôn phủ kín 100% chiều cao
+   màn hình, không phụ thuộc nội dung bên phải dài hay ngắn. */
 .mp-sidebar {
   width: 260px;
-  background: #1c2128;
+  background: #111114;
   color: #fff;
   display: flex;
   flex-direction: column;
   padding: 20px 15px;
   box-sizing: border-box;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
 }
 
 .mp-logo-zone {
@@ -3852,7 +3851,7 @@ select.profile-readonly-input:not([disabled]) {
 .mp-logo-icon {
   width: 24px;
   height: 24px;
-  background: linear-gradient(135deg, var(--cgv-red), var(--cgv-red-hover));
+  background: linear-gradient(135deg, var(--cgv-red), var(--cgv-red-dark));
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -3887,13 +3886,22 @@ select.profile-readonly-input:not([disabled]) {
 }
 
 .mp-nav-item.active {
-  background: linear-gradient(135deg, var(--cgv-red), var(--cgv-red-hover));
+  background: linear-gradient(135deg, var(--cgv-red), var(--cgv-red-dark));
   color: #fff;
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
 }
 
 .mp-nav-icon {
   font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+.mp-nav-icon svg {
+  width: 20px;
+  height: 20px;
 }
 .mp-nav-text {
   display: flex;
@@ -3908,9 +3916,12 @@ select.profile-readonly-input:not([disabled]) {
 /* --- MAIN CONTENT MANAGER --- */
 .mp-main-content {
   flex-grow: 1;
+  margin-left: 260px;
   padding: 30px 40px;
   box-sizing: border-box;
   overflow-y: auto;
+  min-height: 100vh;
+  background: var(--cgv-gray-bg);
 }
 
 .mp-header {
@@ -6447,4 +6458,91 @@ select.profile-readonly-input:not([disabled]) {
 @media (max-width: 640px) {
   .ad-metrics { grid-template-columns: repeat(2, 1fr); }
   .ad-summary-grid { grid-template-columns: 1fr; }
+}
+
+
+/* ===== FEEDBACK PHIM - CUỘN NGANG, TÁCH CARD RÕ ===== */
+
+#feedback-list-container {
+  width: 100%;
+  overflow: hidden;
+}
+
+.feedback-scroll-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 18px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 12px 4px 22px;
+  scroll-behavior: smooth;
+}
+
+.feedback-scroll-row::-webkit-scrollbar {
+  height: 8px;
+}
+
+.feedback-scroll-row::-webkit-scrollbar-track {
+  background: #17171b;
+  border-radius: 20px;
+}
+
+.feedback-scroll-row::-webkit-scrollbar-thumb {
+  background: #ff6b35;
+  border-radius: 20px;
+}
+
+.fb-item {
+  min-width: 360px;
+  max-width: 360px;
+  flex: 0 0 360px;
+  background: #17171b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 4px solid #ff6b35;
+  border-radius: 16px;
+  padding: 18px;
+  box-sizing: border-box;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.fb-item + .fb-item {
+  margin-left: 0;
+}
+
+.fb-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.fb-card-top strong {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.fb-rating-badge {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.fb-time {
+  font-size: 12px;
+  color: #9a9aa3;
+  margin-bottom: 12px;
+}
+
+.fb-content {
+  color: #e4e4e7;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  word-break: break-word;
 }
