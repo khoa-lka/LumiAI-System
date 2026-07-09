@@ -90,10 +90,13 @@
         .adm-date-badge {
             background: #0f0f12; border: 1px solid rgba(255,255,255,0.12);
             padding: 8px 15px; border-radius: 20px; font-size: 13px; color: #c4c4cc; font-weight: bold;
+            display: flex; align-items: center; gap: 8px;
         }
-        .adm-bell { font-size: 20px; position: relative; cursor: pointer; color: #e4e4e7; }
+        .adm-icon-svg { width: 20px; height: 20px; color: #fff; flex-shrink: 0; }
+        .adm-chevron { width: 14px; height: 14px; color: #fff; vertical-align: middle; margin-left: 2px; }
+        .adm-bell { position: relative; cursor: pointer; color: #e4e4e7; display: flex; align-items: center; }
         .adm-bell::after {
-            content: ""; position: absolute; top: 0; right: 0;
+            content: ""; position: absolute; top: -2px; right: -2px;
             width: 8px; height: 8px; background: #ff4742; border-radius: 50%;
         }
         .adm-notif-dropdown {
@@ -105,10 +108,11 @@
         .adm-notif-dropdown.open { display: block; animation: admFadeIn 0.2s; }
         .adm-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; position: relative; }
         .adm-avatar {
-            width: 40px; height: 40px; border-radius: 50%; background: #ff6b35;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 800; color: #fff;
+            width: 40px; height: 40px; border-radius: 50%; background: transparent;
+            border: 1.6px solid rgba(255,255,255,0.6);
+            display: flex; align-items: center; justify-content: center; color: #fff;
         }
+        .adm-avatar .adm-icon-svg { width: 22px; height: 22px; }
         .adm-user-info { display: flex; flex-direction: column; }
         .adm-user-name { font-size: 14px; font-weight: bold; color: #f4f4f5; }
         .adm-user-role { font-size: 12px; color: #9a9aa3; }
@@ -166,19 +170,37 @@
                 <h2 class="adm-title" id="adm-dynamic-title">Xin chào Admin</h2>
             </div>
             <div class="adm-header-utils">
-                <div class="adm-date-badge" id="adm-current-date">--/--/----</div>
+                <div class="adm-date-badge" id="adm-current-date">
+                    <svg class="adm-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.6"/>
+                        <path d="M3 9.5H21" stroke="currentColor" stroke-width="1.6"/>
+                        <path d="M8 3V6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <path d="M16 3V6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                    </svg>
+                    <span id="adm-current-date-text">--/--/----</span>
+                </div>
 
                 <div style="position: relative;">
-                    <div class="adm-bell" onclick="toggleAdmNotifDropdown()">🔔</div>
+                    <div class="adm-bell" onclick="toggleAdmNotifDropdown()">
+                        <svg class="adm-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 3.5C9.5 3.5 7.5 5.5 7.5 8V11.2C7.5 11.8 7.28 12.38 6.88 12.83L5.6 14.28C4.83 15.15 5.45 16.5 6.6 16.5H17.4C18.55 16.5 19.17 15.15 18.4 14.28L17.12 12.83C16.72 12.38 16.5 11.8 16.5 11.2V8C16.5 5.5 14.5 3.5 12 3.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                            <path d="M9.5 19C10 20 10.9 20.5 12 20.5C13.1 20.5 14 20 14.5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                    </div>
                     <div class="adm-notif-dropdown" id="adm-notif-dropdown">
                         Chưa có thông báo mới.
                     </div>
                 </div>
 
                 <div class="adm-profile" onclick="toggleAdmUserDropdown()">
-                    <div class="adm-avatar" id="adm-avatar-initials">AD</div>
+                    <div class="adm-avatar" id="adm-avatar-initials">
+                        <svg class="adm-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="8.5" r="3.2" stroke="currentColor" stroke-width="1.6"/>
+                            <path d="M5.5 19C6.4 16 8.9 14.2 12 14.2C15.1 14.2 17.6 16 18.5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                    </div>
                     <div class="adm-user-info">
-                        <span class="adm-user-name" id="adm-user-name">Quản trị viên ▾</span>
+                        <span class="adm-user-name"><span id="adm-user-name-text">Quản trị viên</span> <svg class="adm-chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                         <span class="adm-user-role">Admin</span>
                     </div>
                     <div class="adm-user-dropdown" id="adm-user-dropdown">
@@ -282,7 +304,7 @@
 
             <div class="adm-toolbar">
                 <div class="adm-search-box">
-                    <span>🔍</span>
+                    <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
                     <input type="text" id="adm-ban-search" placeholder="Tìm theo ID hoặc Email..." oninput="filterAdminBanList()" />
                 </div>
                 <select class="adm-filter-select" id="adm-ban-status-filter" onchange="filterAdminBanList()">
@@ -309,7 +331,7 @@
             <div class="md-box" style="margin-bottom:0;">
                 <div class="adm-toolbar" style="margin-bottom:16px;">
                     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                        <div class="adm-date-badge" id="adm-syslog-date-range" style="cursor:pointer;">📅 02/07/2026 - 09/07/2026 🗓️</div>
+                        <div class="adm-date-badge" id="adm-syslog-date-range" style="cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9.5H21M8 3v3.5M16 3v3.5"/></svg> 02/07/2026 - 09/07/2026 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>
                         <select class="adm-filter-select" id="adm-syslog-level-filter" onchange="filterAdminSysLogTable()">
                             <option value="">Tất cả mức độ</option>
                             <option value="info">Thông tin</option>
@@ -322,11 +344,11 @@
                     </div>
                     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                         <div class="adm-search-box">
-                            <span>🔍</span>
+                            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
                             <input type="text" id="adm-syslog-search" placeholder="Tìm kiếm log..." oninput="filterAdminSysLogTable()" />
                         </div>
-                        <button class="btn-admin-action edit" onclick="renderAdminSysLogPage()">↻ Làm mới</button>
-                        <button class="adm-primary-btn" onclick="exportAdminSysLogCsv()">⭳ Xuất CSV</button>
+                        <button class="btn-admin-action edit" onclick="renderAdminSysLogPage()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 8M20 4v4h-4M20 12a8 8 0 0 1-14 5.3L4 16M4 20v-4h4"/></svg> Làm mới</button>
+                        <button class="adm-primary-btn" onclick="exportAdminSysLogCsv()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 20h14"/></svg> Xuất CSV</button>
                     </div>
                 </div>
 
@@ -361,7 +383,7 @@
                     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                         <div>
                             <div class="md-box-sub" style="margin-bottom:6px;">Khoảng thời gian</div>
-                            <div class="adm-date-badge" id="adm-webhook-date-range" style="cursor:pointer;">📅 02/07/2026 - 09/07/2026 ↻</div>
+                            <div class="adm-date-badge" id="adm-webhook-date-range" style="cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9.5H21M8 3v3.5M16 3v3.5"/></svg> 02/07/2026 - 09/07/2026 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 8M20 4v4h-4M20 12a8 8 0 0 1-14 5.3L4 16M4 20v-4h4"/></svg></div>
                         </div>
                         <div>
                             <div class="md-box-sub" style="margin-bottom:6px;">Endpoint</div>
@@ -386,11 +408,11 @@
                     </div>
                     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                         <div class="adm-search-box">
-                            <span>🔍</span>
+                            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
                             <input type="text" id="adm-webhook-search" placeholder="Tìm kiếm..." oninput="filterAdminWebhookTable()" />
                         </div>
-                        <button class="btn-admin-action edit" onclick="renderAdminWebhookPage()">↻ Làm mới</button>
-                        <button class="adm-primary-btn" onclick="exportAdminWebhookCsv()">⭳ Xuất CSV</button>
+                        <button class="btn-admin-action edit" onclick="renderAdminWebhookPage()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 8M20 4v4h-4M20 12a8 8 0 0 1-14 5.3L4 16M4 20v-4h4"/></svg> Làm mới</button>
+                        <button class="adm-primary-btn" onclick="exportAdminWebhookCsv()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 20h14"/></svg> Xuất CSV</button>
                     </div>
                 </div>
 
@@ -456,7 +478,7 @@
     var d = String(today.getDate()).padStart(2, "0");
     var m = String(today.getMonth() + 1).padStart(2, "0");
     var y = today.getFullYear();
-    var el = document.getElementById("adm-current-date");
+    var el = document.getElementById("adm-current-date-text");
     if (el) el.innerText = d + "/" + m + "/" + y;
   }
 
@@ -468,15 +490,10 @@
       var fullName = u.fullName || "Quản trị viên";
       var titleBox = document.getElementById("adm-dynamic-title");
       if (titleBox) titleBox.innerText = "Xin chào Admin: " + fullName;
-      var nameBox = document.getElementById("adm-user-name");
+      var nameBox = document.getElementById("adm-user-name-text");
       var headerBox = document.getElementById("adm-user-dropdown-header");
-      var avatarBox = document.getElementById("adm-avatar-initials");
-      if (nameBox) nameBox.innerText = fullName + " ▾";
+      if (nameBox) nameBox.innerText = fullName;
       if (headerBox) headerBox.innerText = "Chào, " + fullName;
-      if (avatarBox) {
-        var initials = fullName.split(" ").pop().substring(0, 2).toUpperCase();
-        avatarBox.innerText = initials;
-      }
     } catch (e) {}
   }
 
@@ -510,9 +527,9 @@ function exitAdminRoleToCustomerView() {
 
 
 <script src="js/admin.js?v=16"></script>
-<script src="js/admin-dashboard.js?v=1"></script>
-<script src="js/admin-syslog.js?v=1"></script>
-<script src="js/admin-webhook.js?v=1"></script>
+<script src="js/admin-dashboard.js?v=3"></script>
+<script src="js/admin-syslog.js?v=3"></script>
+<script src="js/admin-webhook.js?v=3"></script>
 <script src="js/home.js?v=12"></script>
     
   
