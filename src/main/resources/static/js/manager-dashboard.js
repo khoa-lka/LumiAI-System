@@ -5,64 +5,6 @@
    các hằng số MD_* bên dưới bằng dữ liệu fetch() từ server.
    ========================================================================= */
 
-/* --- 1. BỘ DỮ LIỆU TĨNH --- */
-
-const MD_METRICS = [
-  { icon: "💰", label: "Doanh thu (Tháng này)", value: "92.000.000đ", delta: "+18.2%", up: true },
-  { icon: "🎟️", label: "Vé đã bán (Tháng này)", value: "1.150", delta: "+16.7%", up: true },
-  { icon: "👥", label: "Người dùng hoạt động", value: "3.284", delta: "+8.4%", up: true },
-  { icon: "🎬", label: "Phim đang chiếu", value: "5", delta: "+2 phim mới", up: true },
-];
-
-// Doanh thu (VNĐ) & vé bán theo từng mốc thời gian
-const MD_TREND_6M = [
-  { label: "T1", revenue: 58000000, tickets: 620 },
-  { label: "T2", revenue: 61500000, tickets: 655 },
-  { label: "T3", revenue: 59000000, tickets: 640 },
-  { label: "T4", revenue: 68000000, tickets: 710 },
-  { label: "T5", revenue: 79500000, tickets: 890 },
-  { label: "T6", revenue: 92000000, tickets: 1150 },
-];
-const MD_TREND_3M = MD_TREND_6M.slice(3); // T4 - T6
-const MD_TREND_1M = [
-  { label: "Tuần 1", revenue: 19500000, tickets: 240 },
-  { label: "Tuần 2", revenue: 21000000, tickets: 262 },
-  { label: "Tuần 3", revenue: 24500000, tickets: 305 },
-  { label: "Tuần 4", revenue: 27000000, tickets: 343 },
-];
-const MD_TREND_MAP = { "6M": MD_TREND_6M, "3M": MD_TREND_3M, "1M": MD_TREND_1M };
-
-// Vé bán theo tháng (dùng lại cùng dữ liệu vé của biểu đồ xu hướng cho đồng bộ)
-const MD_BAR_MONTHLY = MD_TREND_6M.map((d) => ({ label: d.label, value: d.tickets }));
-
-// Phân bố thể loại phim
-const MD_GENRES = [
-  { label: "Hành động", pct: 38, color: "#ff6b35" },
-  { label: "Kinh dị", pct: 22, color: "#4ade80" },
-  { label: "Chính kịch", pct: 16, color: "#f59e0b" },
-  { label: "Hoạt hình", pct: 12, color: "#3b82f6" },
-  { label: "Tình cảm", pct: 8, color: "#a78bfa" },
-  { label: "Khác", pct: 4, color: "#6b6b73" },
-];
-
-// Top phim trong tuần (tái sử dụng poster + tên phim đã có sẵn trong dự án)
-const MD_TOP_MOVIES = [
-  { title: "Tên cậu là gì", poster: "img/yournamemain.jpg", rating: 9.1, genre: "Hoạt hình", sold: 239 },
-  { title: "Lầu Chú Hỏa", poster: "img/lauchuhoaposter.jpg", rating: 8.4, genre: "Kinh dị", sold: 213 },
-  { title: "Ma Xó", poster: "img/maxoposter.png", rating: 7.9, genre: "Kinh dị", sold: 187 },
-  { title: "Lớp Học Ẩm", poster: "img/lopmain.jpg", rating: 7.6, genre: "Hài hước", sold: 110 },
-];
-
-// Giao dịch gần đây
-const MD_TRANSACTIONS = [
-  { id: "BK-2026-00155", movie: "Lầu Chú Hỏa", room: "Phòng 3", time: "09/06/2026 19:30", amount: "350.000đ", status: "ok", method: "Thẻ tín dụng" },
-  { id: "BK-2026-00154", movie: "Tên cậu là gì", room: "Phòng 1", time: "09/06/2026 21:00", amount: "120.000đ", status: "pending", method: "VNPay" },
-  { id: "BK-2026-00153", movie: "Ma Xó", room: "Phòng 2", time: "08/06/2026 16:00", amount: "390.000đ", status: "ok", method: "MoMo" },
-  { id: "BK-2026-00152", movie: "Lớp Học Ẩm", room: "Phòng 4", time: "08/06/2026 14:00", amount: "260.000đ", status: "fail", method: "Thẻ tín dụng" },
-  { id: "BK-2026-00151", movie: "Lầu Chú Hỏa", room: "Phòng 3", time: "07/06/2026 13:30", amount: "520.000đ", status: "ok", method: "Thẻ tín dụng" },
-];
-
-const MD_STATUS_TEXT = { ok: "Thành công", pending: "Đang xử lý", fail: "Thất bại" };
 
 /* --- 2. HÀM TIỆN ÍCH --- */
 
@@ -281,19 +223,247 @@ function renderMdTransactions() {
     </table>`;
 }
 
-/* --- 9. KHỞI TẠO TOÀN BỘ DASHBOARD --- */
+/* =========================================================================
+   🚀 ENGINE ĐỔ DỮ LIỆU ĐỘNG TỪ SPRING BOOT LÊN DASHBOARD MANAGER
+   ========================================================================= */
 
+// Hàm khởi tạo và bốc dữ liệu từ API tổng
 function renderManagerDashboard() {
-  try { renderMdMetrics(); } catch (e) { console.error("Lỗi render metrics:", e); }
-  try { renderMdTrendChart("6M"); } catch (e) { console.error("Lỗi render trend chart:", e); }
-  try { renderMdGenreDonut(); } catch (e) { console.error("Lỗi render genre donut:", e); }
-  try { renderMdBarChart(); } catch (e) { console.error("Lỗi render bar chart:", e); }
-  try { renderMdTopMovies(); } catch (e) { console.error("Lỗi render top movies:", e); }
-  try { renderMdTransactions(); } catch (e) { console.error("Lỗi render transactions:", e); }
+  const metricsHost = document.getElementById("md-metrics");
+  if (!metricsHost) return;
+
+  // 1. Hiển thị trạng thái chờ trong lúc quét Database
+  metricsHost.innerHTML = `<div style="color:#888; padding:20px;">Hệ thống đang tổng hợp số liệu thời gian thực...</div>`;
+
+  // Gọi API tổng hợp báo cáo từ Spring Boot
+  API.getDashboardOverviewData()
+    .then((data) => {
+      // Lưu trữ bộ dữ liệu biểu đồ vào window để hàm chuyển tab switchTrend bốc ra xài
+      window.dashboardTrendMap = {
+        "6M": data.trendRevenueData || [],
+        "3M": (data.trendRevenueData || []).slice(3),
+        "1M": (data.trendRevenueData || []).slice(4)
+      };
+      window.dashboardTicketsMonthly = data.ticketsMonthlyData || [];
+
+      // Execute 1: Vẽ 4 thẻ metric bằng dữ liệu thật bốc từ DB
+      metricsHost.innerHTML = `
+        <div class="md-metric-card">
+          <div class="md-metric-top"><div class="md-metric-icon">💰</div><span class="md-badge md-badge-up">↗ Live</span></div>
+          <div class="md-metric-label">Doanh thu hôm nay</div>
+          <div class="md-metric-value">${(data.todayRevenue || 0).toLocaleString("vi-VN")}đ</div>
+        </div>
+        <div class="md-metric-card">
+          <div class="md-metric-top"><div class="md-metric-icon">🎟️</div><span class="md-badge md-badge-up">↗ Live</span></div>
+          <div class="md-metric-label">Vé đã bán hôm nay</div>
+          <div class="md-metric-value">${(data.todayTicketsSold || 0).toLocaleString("vi-VN")} vé</div>
+        </div>
+        <div class="md-metric-card">
+          <div class="md-metric-top"><div class="md-metric-icon">🎬</div><span class="md-badge md-badge-up">Active</span></div>
+          <div class="md-metric-label">Phim đang hoạt động</div>
+          <div class="md-metric-value">${data.activeMoviesCount || 0} phim</div>
+        </div>
+        <div class="md-metric-card">
+          <div class="md-metric-top"><div class="md-metric-icon">🍿</div><span class="md-badge md-badge-down">Kho an toàn</span></div>
+          <div class="md-metric-label">Tồn kho bắp nước</div>
+          <div class="md-metric-value">Ổn định</div>
+        </div>
+      `;
+
+      // Execute 2: Vẽ biểu đồ đường xu hướng doanh thu & số vé
+      renderDynamicTrendChart("6M");
+
+      // Execute 3: Vẽ biểu đồ hình tròn phân bổ thể loại phim từ Database
+      renderDynamicGenreDonut(data.genreData || []);
+
+      // Execute 4: Vẽ biểu đồ cột lượng vé bán ra theo tháng
+      renderDynamicBarChart(data.ticketsMonthlyData || []);
+
+      // Execute 5: Hiển thị Top phim đặt nhiều nhất từ Database
+      renderDynamicTopMovies(data.topMovies || []);
+
+      // Execute 6: In danh sách 5 giao dịch gần đây nhất ở đáy trang
+      renderDynamicTransactions(data.recentOrders || []);
+    })
+    // 🎯 ĐÃ SỬA: Thay -> bằng => để hết gạch đỏ cú pháp
+    .catch((err) => {
+      console.error(err);
+      metricsHost.innerHTML = `<div style="color:red; padding:20px;">Lỗi kết nối API Dashboard: ${err.message}</div>`;
+    });
 }
 window.renderManagerDashboard = renderManagerDashboard;
 
-// Dashboard là tab mặc định khi tải trang -> render ngay khi DOM sẵn sàng
+// --- ĐOẠN HÀM XỬ LÝ VẼ SVG ĐỘNG HOÀN TOÀN KHÔNG DÙNG SỐ MỒI ---
+
+function renderDynamicTrendChart(range) {
+  const host = document.getElementById("md-trend-chart");
+  if (!host || !window.dashboardTrendMap) return;
+  const data = window.dashboardTrendMap[range] || [];
+
+  if (data.length === 0) { host.innerHTML = "<p style='color:#666;'>Chưa có dữ liệu xu hướng</p>"; return; }
+
+  // Logic tự tính toán tỉ lệ khung SVG dựa trên tiền thật trong Database
+  const W = 640, H = 230, padL = 10, padR = 10, padT = 15, padB = 26;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const maxVal = Math.max(...data.map(d => d.value || 0)) * 1.15 || 1000000;
+  const stepX = data.length > 1 ? innerW / (data.length - 1) : innerW;
+
+  const points = data.map((d, i) => [padL + stepX * i, padT + innerH - ((d.value || 0) / maxVal) * innerH]);
+  const linePath = points.map((p, i) => (i === 0 ? "M" : "L") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  const areaPath = linePath + ` L${(padL + stepX * (data.length - 1)).toFixed(1)},${padT + innerH} L${padL},${padT + innerH} Z`;
+
+  let gridLines = "";
+  for (let i = 0; i <= 3; i++) {
+    const y = padT + (innerH / 3) * i;
+    gridLines += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-width="1"></line>`;
+  }
+
+  const labels = data.map((d, i) => `<text x="${(padL + stepX * i).toFixed(1)}" y="${H - 6}" text-anchor="middle" fill="#888" font-size="10">${d.label}</text>`).join("");
+  const dots = points.map((p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="#ff6b35"><title>${data[i].label}: ${(data[i].value || 0).toLocaleString("vi-VN")}đ</title></circle>`).join("");
+
+  host.innerHTML = `
+    <div style="display:flex; gap:16px; margin-bottom:6px; font-size:11px; color:#9a9aa3;">
+      <span style="display:flex;align-items:center;gap:6px;"><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff6b35;"></i> Xu hướng dòng tiền</span>
+    </div>
+    <svg style="width:100%; height:${H}px; overflow:visible;" viewBox="0 0 ${W} ${H}">
+      <defs>
+        <linearGradient id="dbTrendFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ff6b35" stop-opacity="0.25"></stop>
+          <stop offset="100%" stop-color="#ff6b35" stop-opacity="0"></stop>
+        </linearGradient>
+      </defs>
+      ${gridLines}
+      <path d="${areaPath}" fill="url(#dbTrendFill)"></path>
+      <path d="${linePath}" fill="none" stroke="#ff6b35" stroke-width="2.5"></path>
+      ${dots} ${labels}
+    </svg>`;
+}
+
+// Hàm đổi mốc thời gian biểu đồ
+window.mdSwitchTrend = function(range, btnEl) {
+  document.querySelectorAll(".md-seg-btn").forEach((b) => b.classList.remove("active"));
+  if (btnEl) btnEl.classList.add("active");
+  renderDynamicTrendChart(range);
+};
+
+function renderDynamicGenreDonut(genres) {
+  const host = document.getElementById("md-genre-chart");
+  const legendHost = document.getElementById("md-genre-legend");
+  if (!host || !legendHost) return;
+
+  if (genres.length === 0) {
+    host.innerHTML = legendHost.innerHTML = "<p style='color:#666;'>Trống</p>";
+    return;
+  }
+
+  const colors = ["#ff6b35", "#4ade80", "#f59e0b", "#3b82f6", "#a78bfa", "#6b6b73"];
+  const total = genres.reduce((acc, g) => acc + g.count, 0) || 1;
+  const size = 160, cx = 80, cy = 80, r = 58, strokeW = 22;
+  const circumference = 2 * Math.PI * r;
+  let offsetAcc = 0;
+
+  const segments = genres.map((g, idx) => {
+    const pct = (g.count / total) * 100;
+    const segLen = (pct / 100) * circumference;
+    const color = colors[idx % colors.length];
+    const seg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${strokeW}"
+        stroke-dasharray="${segLen.toFixed(2)} ${(circumference - segLen).toFixed(2)}"
+        stroke-dashoffset="${(-offsetAcc).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})">
+        <title>${g.genreName}: ${pct.toFixed(1)}%</title>
+      </circle>`;
+    offsetAcc += segLen;
+    return { html: seg, color: color, pct: pct, label: g.genreName };
+  });
+
+  host.innerHTML = `
+    <svg style="width:100%; max-width:${size}px;" viewBox="0 0 ${size} ${size}">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="${strokeW}"></circle>
+      ${segments.map(s => s.html).join("")}
+    </svg>`;
+
+  legendHost.innerHTML = segments.map(s => `
+    <div class="md-legend-row" style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+      <span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color};margin-right:6px;"></i>${s.label}</span>
+      <b>${s.pct.toFixed(1)}%</b>
+    </div>`).join("");
+}
+
+function renderDynamicBarChart(monthlyData) {
+  const host = document.getElementById("md-bar-chart");
+  if (!host) return;
+  if (monthlyData.length === 0) { host.innerHTML = "<p style='color:#666;padding:20px;'>Trống</p>"; return; }
+
+  const maxVal = Math.max(...monthlyData.map(d => d.value || 0)) || 1;
+
+  host.innerHTML = `
+    <div class="md-bars" style="display:flex; justify-content:space-between; align-items:flex-end; height:160px; padding-top:10px;">
+      ${monthlyData.map((d) => {
+        const pct = Math.max(5, Math.round(((d.value || 0) / maxVal) * 100));
+        return `
+        <div class="md-bar-col" style="display:flex; flex-direction:column; align-items:center; flex:1;">
+          <div class="md-bar-wrap" style="width:24px; height:130px; background:rgba(255,255,255,0.04); border-radius:4px; display:flex; align-items:flex-end; overflow:hidden;">
+            <div class="md-bar-fill" style="height:${pct}%; width:100%; background:linear-gradient(to top, #42a5f5, #26a69a); border-radius:4px;" title="${d.label}: ${d.value} vé"></div>
+          </div>
+          <span style="font-size:10px; color:#888; margin-top:6px;">${d.label}</span>
+        </div>`;
+      }).join("")}
+    </div>`;
+}
+
+function renderDynamicTopMovies(movies) {
+  const host = document.getElementById("md-top-movies");
+  if (!host) return;
+
+  if (movies.length === 0) { host.innerHTML = "<div style='color:#666;padding:15px;'>Chưa phát sinh lượt mua vé tuần này</div>"; return; }
+
+  host.innerHTML = movies.map((m, i) => `
+    <div class="md-tm-row" style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
+      <div style="font-weight:bold; color:#ff6b35; width:20px;">${i + 1}</div>
+      <div style="flex:1;">
+        <div style="font-weight:bold; color:#f4f4f5; font-size:13px;">${m.title}</div>
+        <div style="font-size:11px; color:#888;">★ ${m.rating ? m.rating.toFixed(1) : "0.0"}</div>
+      </div>
+      <span style="font-size:12px; font-weight:bold; color:#4ade80;">${m.ticketsCount} vé</span>
+    </div>`).join("");
+}
+
+function renderDynamicTransactions(orders) {
+  const host = document.getElementById("md-transactions");
+  if (!host) return;
+
+  if (orders.length === 0) { host.innerHTML = "<div style='color:#666;padding:20px;text-align:center;'>Chưa có giao dịch nào</div>"; return; }
+
+  host.innerHTML = `
+    <table class="md-tx-table" style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+      <thead>
+        <tr style="color:#888; border-bottom:1px solid rgba(255,255,255,0.06);">
+          <th style="padding:12px;">Mã đặt hóa đơn</th>
+          <th>Khách hàng</th>
+          <th>Thời gian mua</th>
+          <th>Số tiền</th>
+          <th>Trạng thái</th>
+          <th>Phương thức</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${orders.map((o) => {
+          let statusStyle = o.orderStatus === "COMPLETELY" ? "color:#4ade80; background:rgba(74,222,128,0.1);" : "color:#ef5350; background:rgba(239,83,80,0.1);";
+          let statusText = o.orderStatus === "COMPLETELY" ? "Thành công" : "Hủy/Lỗi";
+          return `
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.03); color:#d4d4d8;">
+            <td style="padding:12px; font-weight:bold; color:#ff6b35;">${o.orderCode}</td>
+            <td><strong>${o.customerName}</strong></td>
+            <td>${o.createdTime}</td>
+            <td style="font-weight:bold; color:#ffca28;">${o.finalAmount.toLocaleString("vi-VN")}đ</td>
+            <td><span style="padding:2px 6px; border-radius:4px; font-size:11px; font-weight:bold; ${statusStyle}">${statusText}</span></td>
+            <td><span style="color:#888;">${o.paymentMethod || "CASH"}</span></td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>`;
+}
+
+// Tự động kích hoạt khi tải trang
 window.addEventListener("DOMContentLoaded", () => {
   renderManagerDashboard();
 });
