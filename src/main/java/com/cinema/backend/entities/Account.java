@@ -43,9 +43,6 @@ public class Account {
     @Column(name = "role_id")
     private Integer roleId;
 
-    @Column(name = "status")
-    private String status; // Giá trị: "Active", "Banned"
-
     @JsonIgnore
     @OneToMany(mappedBy = "customer")
     private List<Order1> customerOrders;
