@@ -1,11 +1,10 @@
-
 <!doctype html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LAS Cinemas - Manager Portal</title>
-    <link rel="stylesheet" href="style.css?v=19" />
+    <link rel="stylesheet" href="style.css?v=21" />
   </head>
   <body>
     <div class="manager-pro-layout">
@@ -19,6 +18,9 @@
             id="mp-nav-dashboard"
             onclick="switchMpTab('dashboard')"
           >
+            <span class="mp-nav-icon"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg
+            ></span>
             <div class="mp-nav-text">
               <strong>Dashboard</strong
               ><span class="mp-nav-subtext">Tổng quan</span>
@@ -29,7 +31,9 @@
             id="mp-nav-movies"
             onclick="switchMpTab('movies')"
           >
-            <span class="mp-nav-icon">🎞️</span>
+            <span class="mp-nav-icon"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg
+            ></span>
             <div class="mp-nav-text">
               Quản lý<span class="mp-nav-subtext">Danh mục Phim</span>
             </div>
@@ -39,13 +43,17 @@
             id="mp-nav-matrix"
             onclick="switchMpTab('matrix')"
           >
-            <span class="mp-nav-icon">📅</span>
+            <span class="mp-nav-icon"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="8" cy="14" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="16" cy="14" r="1"/></svg
+            ></span>
             <div class="mp-nav-text">
               Ma trận<span class="mp-nav-subtext">Lịch chiếu</span>
             </div>
           </li>
           <li class="mp-nav-item" id="mp-nav-fnb" onclick="switchMpTab('fnb')">
-            <span class="mp-nav-icon">🍿</span>
+            <span class="mp-nav-icon"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.59 2.59 20 10a2 2 0 0 1 0 2.83l-7.17 7.17a2 2 0 0 1-2.83 0L3 13V5a2 2 0 0 1 2-2h7.59Z"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/></svg
+            ></span>
             <div class="mp-nav-text">
               Kho &<span class="mp-nav-subtext">Dịch vụ F&B</span>
             </div>
@@ -55,7 +63,9 @@
             id="mp-nav-promo"
             onclick="switchMpTab('promo')"
           >
-            <span class="mp-nav-icon">🎟️</span>
+            <span class="mp-nav-icon"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a2 2 0 0 0 0 4v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a2 2 0 0 1 0-4V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z"/><path d="M9 5v14" stroke-dasharray="2 2"/></svg
+            ></span>
             <div class="mp-nav-text">
               Chiến dịch<span class="mp-nav-subtext">Khuyến mãi</span>
             </div>
@@ -65,7 +75,9 @@
             id="mp-nav-audit"
             onclick="switchMpTab('audit')"
           >
-            <span class="mp-nav-icon">📈</span>
+            <span class="mp-nav-icon"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg
+            ></span>
             <div class="mp-nav-text">
               Báo cáo &<span class="mp-nav-subtext">Kiểm toán</span>
             </div>
@@ -278,7 +290,7 @@
               <!-- Thay thế date picker tĩnh bằng ô input date động -->
               <input type="date" id="mp-matrix-date-input" class="mp-filter-select" style="width: 160px; font-weight: bold;" onchange="loadManagerMatrix()" />
               <button class="mp-btn-add" onclick="openAddShowtimeModal()">Tạo suất chiếu mới</button>
-              <button class="mp-btn-outline" onclick="loadManagerMatrix()">🔄 Làm mới</button>
+              <button class="mp-btn-outline" onclick="loadManagerMatrix()">Làm mới</button>
             </div>
           </div>
           
@@ -330,7 +342,6 @@
                     <th>Movie</th>
                     <th>Genre</th>
                     <th>Duration</th>
-                    <th>Rating</th>
                     <th>Status</th>
                     <th>Release Date</th>
                     <th style="text-align: center">Actions</th>
@@ -338,7 +349,7 @@
                 </thead>
                 <tbody id="mp-matrix-movies-tbody">
                   <tr>
-                    <td colspan="7" style="text-align: center; padding: 20px; color: #888">
+                    <td colspan="6" style="text-align: center; padding: 20px; color: #888">
                       Đang tải danh sách phim...
                     </td>
                   </tr>
@@ -1292,7 +1303,7 @@
 
     <script src="js/state.js?v=19"></script>
     <script src="js/api.js?v=19"></script>
-    <script src="js/manager.js?v=19"></script>
+    <script src="js/manager.js?v=20"></script>
     <script src="js/manager-dashboard.js?v=19"></script>
     <script src="js/manager-audit.js?v=1"></script>
     <script src="js/admin.js?v=19"></script>

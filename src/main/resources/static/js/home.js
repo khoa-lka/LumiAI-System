@@ -332,15 +332,14 @@ function closeAuthModal() {
 }
 
 function renderFnbMenu() {
-  console.log("window.fnbMenu =", window.fnbMenu);
-  console.log("fnbMenu =", fnbMenu);
-  console.log("same =", window.fnbMenu === fnbMenu);
   const container = document.getElementById("cgv-fnb-menu");
   if (!container) return;
   container.innerHTML = "";
-  fnbMenu.forEach((item, index) => {
+  const menu = window.fnbMenu && window.fnbMenu.length ? window.fnbMenu : fnbMenu;
+  menu.forEach((item, index) => {
     const inCart = item.qty > 0;
     const bullets = (item.items || []).map((t) => `<li>${t}</li>`).join("");
+    const icon = item.icon || "🍿";
     const control = inCart
       ? `<div class="fnb-stepper">
             <button class="fnb-step-btn" onclick="updateComboQty(${index}, -1)">−</button>
@@ -351,11 +350,11 @@ function renderFnbMenu() {
     container.innerHTML += `
       <div class="fnb-card ${inCart ? "fnb-card-active" : ""}">
         <div class="fnb-card-head">
-          <div class="fnb-card-icon">${item.icon}</div>
+          <div class="fnb-card-icon">${icon}</div>
           ${item.popular ? `<span class="fnb-tag-popular">Phổ biến</span>` : ""}
-          <span class="fnb-card-price">${item.price.toLocaleString("vi-VN")}đ</span>
+          <span class="fnb-card-price">${(item.price || 0).toLocaleString("vi-VN")}đ</span>
         </div>
-        <h4 class="fnb-card-title">${item.name}</h4>
+        <h4 class="fnb-card-title">${item.name || "Combo"}</h4>
         ${item.desc ? `<p class="fnb-card-desc">${item.desc}</p>` : ""}
         ${bullets ? `<ul class="fnb-card-list">${bullets}</ul>` : ""}
         <div class="fnb-card-action">${control}</div>

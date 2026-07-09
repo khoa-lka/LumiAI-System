@@ -1053,13 +1053,13 @@ window.submitRestockForm = function() {
 // ==========================================================================
 
 // Vẽ bảng "Danh Sách Phim" tham khảo bên dưới Ma trận Lịch chiếu
-// (Movie | Genre | Duration | Rating | Status | Release Date | Actions)
+// (Movie | Genre | Duration | Status | Release Date | Actions)
 function renderMatrixMovieList(movies) {
   const tbody = document.getElementById("mp-matrix-movies-tbody");
   if (!tbody) return;
 
   if (!movies || movies.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px; color: #888;">Chưa có dữ liệu phim.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #888;">Chưa có dữ liệu phim.</td></tr>`;
     return;
   }
 
@@ -1068,7 +1068,6 @@ function renderMatrixMovieList(movies) {
     const posterUrl = m.mainposter_url ? m.mainposter_url : "img/default-poster.jpg";
     const statusClass = m.status === "now_showing" ? "active" : m.status === "coming_soon" ? "coming" : "inactive";
     const statusText = m.status === "now_showing" ? "Now Showing" : m.status === "coming_soon" ? "Coming Soon" : "Ngừng chiếu";
-    const ratingValue = typeof m.rating === "number" ? m.rating.toFixed(1) : "N/A";
     const genres = (m.genre || "Chưa cập nhật")
       .split(/[,/|]/)
       .map((g) => g.trim())
@@ -1091,7 +1090,6 @@ function renderMatrixMovieList(movies) {
           </div>
         </td>
         <td><span class="mp-duration-chip">⏱ ${m.duration} min</span></td>
-        <td><span class="mp-rating-chip">★ ${ratingValue}</span></td>
         <td><span class="mp-status ${statusClass}">${statusText}</span></td>
         <td>${m.releaseDate || "N/A"}</td>
         <td>

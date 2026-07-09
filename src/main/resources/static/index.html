@@ -1,31 +1,44 @@
 <!doctype html>
 <!-- BUILD: v3.6-home-section-titles-redesign | Thanh bước dùng emoji (KHÔNG phải số tròn) | Cập nhật: polish luồng đặt vé -->
 <html lang="vi">
-
-<head>
-  <meta charset="UTF-8" />
-  <title>LAS Cinemas Vietnam - Official Premium Interface</title>
-  <link rel="stylesheet" href="style.css?v=13" />
-</head>
-
-<body>
-  <div class="global-viewport-container">
-    <div class="cgv-top-utility-wrapper">
-      <div class="cgv-top-sub-nav" style="border-top: 3px solid #ff6b35">
-        <div class="sub-nav-container" style="max-width: 1200px">
-          <div class="sub-nav-links-right">
-            <a href="#" class="sub-nav-item" onclick="switchCgvTab('panel-news')">
-              <span class="sub-nav-icon"></span> SỰ KIỆN & ƯU ĐÃI
-            </a>
-            <a href="#" class="sub-nav-item" id="top-bar-ticket-link" onclick="handleTicketViewAccess()">
-              <span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH
-            </a>
-            <a href="#" class="sub-nav-item" id="top-bar-auth-link" onclick="openAuthModal()">
-              <span class="sub-nav-icon"></span> ĐĂNG NHẬP/ ĐĂNG KÝ
-            </a>
-            <div class="lang-selector-box">
-              <span class="lang-btn lang-vn">VN</span>
-              <span class="lang-btn lang-en">EN</span>
+  <head>
+    <meta charset="UTF-8" />
+    <title>LAS Cinemas Vietnam - Official Premium Interface</title>
+    <link rel="stylesheet" href="style.css?v=16" />
+  </head>
+  <body>
+    <div class="global-viewport-container">
+      <div class="cgv-top-utility-wrapper">
+        <div class="cgv-top-sub-nav" style="border-top: 3px solid #ff6b35">
+          <div class="sub-nav-container" style="max-width: 1200px">
+            <div class="sub-nav-links-right">
+              <a
+                href="#"
+                class="sub-nav-item"
+                onclick="switchCgvTab('panel-news')"
+              >
+                <span class="sub-nav-icon"></span> SỰ KIỆN & ƯU ĐÃI
+              </a>
+              <a
+                href="#"
+                class="sub-nav-item"
+                id="top-bar-ticket-link"
+                onclick="handleTicketViewAccess()"
+              >
+                <span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH
+              </a>
+              <a
+                href="#"
+                class="sub-nav-item"
+                id="top-bar-auth-link"
+                onclick="openAuthModal()"
+              >
+                <span class="sub-nav-icon"></span> ĐĂNG NHẬP/ ĐĂNG KÝ
+              </a>
+              <div class="lang-selector-box">
+                <span class="lang-btn lang-vn">VN</span>
+                <span class="lang-btn lang-en">EN</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1731,19 +1744,19 @@
   </div>
 
 
-<script src="js/state.js?v=13"></script>
+<script src="js/state.js?v=16"></script>
 
   <!-- 2. Nhúng file trang chủ ngay sau state.js để dùng chung 'serverData' không bị trùng lặp -->
   <!-- Thêm đuôi ?v=... để diệt tận gốc lỗi dính cache file cũ của Chrome/Edge -->
-<script src="js/home.js?v=13"></script>
+<script src="js/home.js?v=16"></script>
 
   <!-- 3. Các file giao diện và tính năng chạy sau cùng omg omg omg omg  -->
-  <script src="js/api.js?v=13"></script>   
-  <script src="js/ui.js?v=13"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
-  <script src="js/auth.js?v=13"></script>
-  <script src="js/admin.js?v=13"></script>
-  <script src="js/booking.js?v=13"></script>
-  <script src="js/breadcrumb.js?v=13"></script>
-  <script src="js/dashboard-access.js?v=13"></script>
+  <script src="js/api.js?v=16"></script>   
+  <script src="js/ui.js?v=16"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
+  <script src="js/auth.js?v=16"></script>
+  <script src="js/admin.js?v=16"></script>
+  <script src="js/booking.js?v=16"></script>
+  <script src="js/breadcrumb.js?v=16"></script>
+  <script src="js/dashboard-access.js?v=16"></script>
   </body>
 </html>

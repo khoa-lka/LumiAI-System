@@ -11,6 +11,7 @@
   --cgv-gold-dark: #b37d1b;
   --cgv-red: #ff6b35;
   --cgv-red-hover: #ff8a52;
+  --cgv-red-dark: #e5502e;
   --cgv-gray-bg: #0a0a0c;
   --text-dark: #e4e4e7;
   --text-light: #ffffff;
@@ -3766,17 +3767,6 @@ select.profile-readonly-input:not([disabled]) {
 }
 
 /* --- QUẢN LÝ F&B --- */
-.fnb-card {
-  background: white;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
-  padding: 15px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  position: relative;
-  overflow: hidden;
-}
 .fnb-icon-box {
   width: 60px;
   height: 60px;
@@ -3819,23 +3809,32 @@ select.profile-readonly-input:not([disabled]) {
 .manager-pro-layout {
   display: flex;
   width: 100%;
-  min-height: 800px;
-  background: #1c1c21;
+  min-height: 100vh;
+  background: transparent;
   font-family: var(--font-main);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  overflow: hidden;
 }
 
 /* --- SIDEBAR MANAGER --- */
+/* 🚀 ĐÃ SỬA: chuyển sang position:fixed + height:100vh giống hệt sidebar Admin.
+   Trước đây sidebar chỉ cao bằng flex-stretch theo nội dung, nên khi tab Dashboard
+   có nội dung dài hơn sidebar, phần dư bên dưới lộ ra màu nền trang (tạo vệt loang
+   ngang giữa sidebar). Cố định sidebar theo viewport sẽ luôn phủ kín 100% chiều cao
+   màn hình, không phụ thuộc nội dung bên phải dài hay ngắn. */
 .mp-sidebar {
   width: 260px;
-  background: #1c2128;
+  background: #111114;
   color: #fff;
   display: flex;
   flex-direction: column;
   padding: 20px 15px;
   box-sizing: border-box;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
 }
 
 .mp-logo-zone {
@@ -3852,7 +3851,7 @@ select.profile-readonly-input:not([disabled]) {
 .mp-logo-icon {
   width: 24px;
   height: 24px;
-  background: linear-gradient(135deg, var(--cgv-red), var(--cgv-red-hover));
+  background: linear-gradient(135deg, var(--cgv-red), var(--cgv-red-dark));
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -3887,13 +3886,22 @@ select.profile-readonly-input:not([disabled]) {
 }
 
 .mp-nav-item.active {
-  background: linear-gradient(135deg, var(--cgv-red), var(--cgv-red-hover));
+  background: linear-gradient(135deg, var(--cgv-red), var(--cgv-red-dark));
   color: #fff;
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
 }
 
 .mp-nav-icon {
   font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+.mp-nav-icon svg {
+  width: 20px;
+  height: 20px;
 }
 .mp-nav-text {
   display: flex;
@@ -3908,9 +3916,12 @@ select.profile-readonly-input:not([disabled]) {
 /* --- MAIN CONTENT MANAGER --- */
 .mp-main-content {
   flex-grow: 1;
+  margin-left: 260px;
   padding: 30px 40px;
   box-sizing: border-box;
   overflow-y: auto;
+  min-height: 100vh;
+  background: var(--cgv-gray-bg);
 }
 
 .mp-header {

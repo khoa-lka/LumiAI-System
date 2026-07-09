@@ -43,8 +43,6 @@ public class Account {
     @Column(name = "role_id")
     private Integer roleId;
 
-   
-
     @JsonIgnore
     @OneToMany(mappedBy = "customer")
     private List<Order1> customerOrders;
