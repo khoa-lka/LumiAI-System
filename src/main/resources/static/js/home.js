@@ -94,88 +94,62 @@ window.getNameAvatarInitial = getNameAvatarInitial;
 
 window.syncUserLoginSession = function () {
   const cachedUser = localStorage.getItem("las_logged_in_user");
-  if (cachedUser) {
-    isUserLoggedInState = true;
-    const uData = JSON.parse(cachedUser);
+  if (!cachedUser) return;
 
-    // Điền thông tin giao diện thanh điều hướng (Giữ nguyên logic UI)
-    const authLinkBox = document.getElementById("top-bar-auth-link");
-    if (authLinkBox) {
-      authLinkBox.onclick = () => switchCgvTab("panel-profile");
-      authLinkBox.style.cursor = "pointer";
-      authLinkBox.innerHTML = `
-          <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
-          <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
-      `;
-    }
-    if (document.getElementById("top-bar-ticket-link")) {
-      document.getElementById("top-bar-ticket-link").innerHTML =
-        `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
-    }
+  isUserLoggedInState = true;
+  const uData = JSON.parse(cachedUser);
 
-    // 🌟 Đồng bộ lại Avatar / Tên / Vai trò trên tab "Tài Khoản LAS"
-    // (bắt buộc phải làm lại ở đây vì khi RELOAD trang, hàm xử lý đăng nhập
-    //  gốc không chạy lại, nếu không phần này sẽ đứng yên ở giá trị mặc định)
-    if (document.getElementById("profile-summary-avatar")) {
-      document.getElementById("profile-summary-avatar").innerText =
-        getNameAvatarInitial(uData.fullName);
-    }
-    const welcomeNameBoxSync = document.getElementById("profile-welcome-name");
-    if (welcomeNameBoxSync) welcomeNameBoxSync.innerText = uData.fullName;
+  const accountId = uData.account_id || uData.accountId;
+  if (accountId) {
+    sessionStorage.setItem("accountId", accountId);
+  }
 
-    let syncRoleString = "Khách hàng thành viên";
-    if (uData.roleId === 1) syncRoleString = "Quản lý (MANAGER)";
-    if (uData.roleId === 2) syncRoleString = "Nhân viên cụm rạp (STAFF)";
-    if (uData.roleId === 4) syncRoleString = "Quản trị viên (ADMIN)";
+  const authLinkBox = document.getElementById("top-bar-auth-link");
+  if (authLinkBox) {
+    authLinkBox.onclick = () => switchCgvTab("panel-profile");
+    authLinkBox.style.cursor = "pointer";
+    authLinkBox.innerHTML = `
+      <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
+      <span onclick="handleCgvLogout(event)" style="color:#5b9dff;margin-left:8px;cursor:pointer;text-decoration:underline;font-weight:bold;">THOÁT</span>
+    `;
+  }
 
-    if (document.getElementById("profile-field-name"))
-      document.getElementById("profile-field-name").value = uData.fullName;
-    if (document.getElementById("profile-field-phone"))
-      document.getElementById("profile-field-phone").value = uData.phoneNumber;
-    if (document.getElementById("profile-field-email"))
-      document.getElementById("profile-field-email").value = uData.email;
-    if (document.getElementById("profile-field-role"))
-      document.getElementById("profile-field-role").value = syncRoleString;
+  const ticketLink = document.getElementById("top-bar-ticket-link");
+  if (ticketLink) {
+    ticketLink.innerHTML = `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
+  }
 
-    // 🌟 Khôi phục hiển thị tab "TRUY CẬP DASHBOARD" theo vai trò đã lưu
+  const avatar = document.getElementById("profile-summary-avatar");
+  if (avatar) avatar.innerText = getNameAvatarInitial(uData.fullName);
+
+  const welcomeNameBoxSync = document.getElementById("profile-welcome-name");
+  if (welcomeNameBoxSync) welcomeNameBoxSync.innerText = uData.fullName;
+
+  let syncRoleString = "Khách hàng thành viên";
+  if (uData.roleId === 1) syncRoleString = "Quản lý (MANAGER)";
+  if (uData.roleId === 2) syncRoleString = "Nhân viên cụm rạp (STAFF)";
+  if (uData.roleId === 4) syncRoleString = "Quản trị viên (ADMIN)";
+
+  const nameField = document.getElementById("profile-field-name");
+  if (nameField) nameField.value = uData.fullName;
+
+  const phoneField = document.getElementById("profile-field-phone");
+  if (phoneField) phoneField.value = uData.phoneNumber;
+
+  const emailField = document.getElementById("profile-field-email");
+  if (emailField) emailField.value = uData.email;
+
+  const roleField = document.getElementById("profile-field-role");
+  if (roleField) roleField.value = syncRoleString;
+
+  if (window.refreshDashboardTab) {
     window.refreshDashboardTab(uData.roleId);
+  }
 
-    // 🚀 ĐỒNG BỘ DỮ LIỆU ĐÃ ĐƯỢC CHUẨN HÓA TỪ DATABASE
-    const accountId = uData.account_id || uData.accountId;
-    if (accountId) {
-      fetch(`http://localhost:8080/api/bookings/user/${accountId}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Thất bại khi lấy dữ liệu từ DB");
-          return res.json();
-        })
-        .then((dbBookings) => {
-          // Map chính xác các thuộc tính sạch từ backend trả về
-          window.userPastInvoices = dbBookings.map((b) => ({
-            id: "BK-" + b.bookingId,
-            movie: b.movieTitle, // Lấy từ kết quả JOIN movie
-            date: new Date(b.bookingDate).toLocaleDateString("vi-VN"), // Ngày đặt thực tế trong DB
-            time: b.showStartTime, // Giờ chiếu thực tế lấy từ bảng showtime chứ không lấy biến tạm b.js
-            seats: b.reservedSeats ? b.reservedSeats.split(", ") : [], // Mảng ghế thật trích từ ticket + seat
-            fnb: [], // Có thể bổ sung orderdetail food sau nếu cần
-            total: b.totalMoney,
-            status:
-              b.paymentStatus === "SUCCESS" || b.paymentStatus === "COMPLETELY"
-                ? "Đã thanh toán"
-                : "Chờ xử lý",
-          }));
-
-          // Gọi hàm render hiển thị giao diện lịch sử trong Profile
-          if (typeof renderTransactionHistory === "function") {
-            renderTransactionHistory();
-          }
-        })
-        .catch((err) =>
-          console.error(
-            "🚨 Lỗi nghiêm trọng khi đồng bộ phiên làm việc từ DB:",
-            err,
-          ),
-        );
-    }
+  // Không gọi /api/bookings/user nữa, vì API đó đang lỗi 500
+  // Lịch sử giao dịch sẽ dùng API.getOrderHistory(accountId)
+  if (accountId && typeof renderTransactionHistory === "function") {
+    renderTransactionHistory();
   }
 };
 
@@ -432,16 +406,17 @@ function openFeedbackModal(movieId, invoiceId = null) {
 }
 window.openFeedbackFromHistory = function (invoiceId) {
 
-    const inv = userPastInvoices.find(i => i.id === invoiceId);
-
+const inv = window.orderHistoryCache.find(o => o.orderId == invoiceId);
     if (!inv) {
         alert("Không tìm thấy hóa đơn!");
         return;
     }
+    if (inv.ticketStatus !== "Đã sử dụng") {
+  alert("Chỉ vé đã sử dụng mới được gửi feedback!");
+  return;
+}
 
-    const movie = serverData.movies.find(
-        m => m.title === inv.movie
-    );
+    const movie = inv.showtime?.movie;
 
     if (!movie) {
         alert("Không tìm thấy phim!");
@@ -450,9 +425,7 @@ window.openFeedbackFromHistory = function (invoiceId) {
 
     const movieId = movie.movieId || movie.movie_id;
 
-    console.log("Invoice:", inv);
-    console.log("Movie:", movie);
-    console.log("movieId:", movieId);
+   
 
     openFeedbackModal(movieId, invoiceId);
 };
@@ -493,7 +466,9 @@ window.submitFeedbackForm = function () {
       content,
       ratingStars: rating,
       movieId,
-      accountStaffId: accId
+      accountStaffId: accId,
+      orderId: _feedbackInvoiceId,
+      ticketStatus: "Đã sử dụng"
     })
   })
     .then(res => res.json())
@@ -743,9 +718,9 @@ function renderTransactionHistory() {
                 <img src="${poster}" alt="${movieName}">
              </div>`
           : `<div class="history-poster history-poster-fallback">🎬</div>`;
-    console.log(inv);
-        const status = order.ticketStatus || "Không xác định";
 
+        const status = order.ticketStatus || "Không xác định";
+let statusClass = "";
         switch (status) {
           case "Sắp chiếu":
             statusClass = "history-badge-upcoming";
@@ -820,13 +795,13 @@ function renderTransactionHistory() {
 
                       </button>
 
-                      <button
-                          class="history-card-btn ghost"
-                          onclick="openFeedbackFromHistory(${order.orderId})">
-
-                          💬 Gửi Feedback
-
-                      </button>
+                      ${status === "Đã sử dụng" ? `
+  <button
+    class="history-card-btn ghost"
+    onclick="openFeedbackFromHistory(${order.orderId})">
+    💬 Gửi Feedback
+  </button>
+` : ""}
 
                   </div>
 
@@ -1001,20 +976,20 @@ function closeHistoryDetailModal() {
 let _feedbackRating = 0;
 let _feedbackInvoiceId = null;
 
-function openFeedbackModal(invoiceId) {
-  _feedbackInvoiceId = invoiceId || null;
-  _feedbackRating = 0;
-  const inv = userPastInvoices.find((i) => i.id === invoiceId);
-  const refEl = document.getElementById("feedback-invoice-ref");
-  if (refEl)
-    refEl.innerText = inv
-      ? `Phim: ${inv.showtime.movie.title} • Mã vé: ${inv.orderCode}`
-      : "Chia sẻ trải nghiệm của bạn";
-  const txt = document.getElementById("feedback-text");
-  if (txt) txt.value = "";
-  setFeedbackStars(0);
-  document.getElementById("feedback-modal").classList.add("open");
-}
+// function openFeedbackModal(invoiceId) {
+//   _feedbackInvoiceId = invoiceId || null;
+//   _feedbackRating = 0;
+//   const inv = userPastInvoices.find((i) => i.id === invoiceId);
+//   const refEl = document.getElementById("feedback-invoice-ref");
+//   if (refEl)
+//     refEl.innerText = inv
+//       ? `Phim: ${inv.showtime.movie.title} • Mã vé: ${inv.orderCode}`
+//       : "Chia sẻ trải nghiệm của bạn";
+//   const txt = document.getElementById("feedback-text");
+//   if (txt) txt.value = "";
+//   setFeedbackStars(0);
+//   document.getElementById("feedback-modal").classList.add("open");
+// }
 
 function setFeedbackStars(n) {
   _feedbackRating = n;
@@ -1024,37 +999,37 @@ function setFeedbackStars(n) {
   });
 }
 
-function submitFeedback() {
-  const txt = document.getElementById("feedback-text").value.trim();
-  if (_feedbackRating === 0) {
-    alert("Vui lòng chọn số sao đánh giá!");
-    return;
-  }
-  if (!txt) {
-    alert("Vui lòng nhập nội dung feedback!");
-    return;
-  }
-  const entry = {
-    invoiceId: _feedbackInvoiceId,
-    rating: _feedbackRating,
-    content: txt,
-    at: new Date().toISOString(),
-  };
-  try {
-    const list = JSON.parse(localStorage.getItem("las_feedbacks") || "[]");
-    list.unshift(entry);
-    localStorage.setItem("las_feedbacks", JSON.stringify(list));
-  } catch (e) { }
+// function submitFeedback() {
+//   const txt = document.getElementById("feedback-text").value.trim();
+//   if (_feedbackRating === 0) {
+//     alert("Vui lòng chọn số sao đánh giá!");
+//     return;
+//   }
+//   if (!txt) {
+//     alert("Vui lòng nhập nội dung feedback!");
+//     return;
+//   }
+//   const entry = {
+//     invoiceId: _feedbackInvoiceId,
+//     rating: _feedbackRating,
+//     content: txt,
+//     at: new Date().toISOString(),
+//   };
+//   try {
+//     const list = JSON.parse(localStorage.getItem("las_feedbacks") || "[]");
+//     list.unshift(entry);
+//     localStorage.setItem("las_feedbacks", JSON.stringify(list));
+//   } catch (e) { }
 
-  closeFeedbackModal();
-  const toast = document.getElementById("feedback-toast");
-  if (toast) {
-    toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 2600);
-  } else {
-    alert("Cảm ơn bạn đã gửi feedback! 🧡");
-  }
-}
+//   closeFeedbackModal();
+//   const toast = document.getElementById("feedback-toast");
+//   if (toast) {
+//     toast.classList.add("show");
+//     setTimeout(() => toast.classList.remove("show"), 2600);
+//   } else {
+//     alert("Cảm ơn bạn đã gửi feedback! 🧡");
+//   }
+// }
 
 window.closeFeedbackModal = function () {
 
@@ -1067,7 +1042,6 @@ window.closeFeedbackModal = function () {
 }
 window.openFeedbackModal = openFeedbackModal;
 window.setFeedbackStars = setFeedbackStars;
-window.submitFeedbackForm = submitFeedbackForm;
 window.closeFeedbackModal = closeFeedbackModal;
 
 
