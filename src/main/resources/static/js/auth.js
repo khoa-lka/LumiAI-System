@@ -78,9 +78,7 @@ function submitCgvLogin(event) {
         //    Manager(1) và Admin(4) truy cập Dashboard CHỦ ĐỘNG qua tab
         //    "TRUY CẬP DASHBOARD" (Manager -> manager.html, Admin -> admin.html).
         {
-          alert(
-            `Chào mừng ${uData.fullName} đăng nhập thành công!`,
-          );
+          alert(`Chào mừng ${uData.fullName} đăng nhập thành công!`);
           closeAuthModal();
 
           const authLinkBox = document.getElementById("top-bar-auth-link");
@@ -106,8 +104,7 @@ function submitCgvLogin(event) {
           const welcomeNameBox = document.getElementById(
             "profile-welcome-name",
           );
-          if (welcomeNameBox)
-            welcomeNameBox.innerText = uData.fullName;
+          if (welcomeNameBox) welcomeNameBox.innerText = uData.fullName;
 
           const starRoleBox = document.getElementById("profile-star-role");
           if (starRoleBox) starRoleBox.innerText = "MEMBER";
@@ -263,7 +260,8 @@ function saveUpdatedProfileInformationData() {
           .querySelectorAll(".profile-readonly-input")
           .forEach((input) => {
             input.setAttribute("readonly", true);
-            if (input.tagName === "SELECT") input.setAttribute("disabled", true);
+            if (input.tagName === "SELECT")
+              input.setAttribute("disabled", true);
             input.style.border = "1px solid rgba(255,255,255,0.15)";
             input.style.background = "#1c1c21";
             input.style.color = "#f4f4f5";

@@ -1597,14 +1597,17 @@
           </div>
 
           <p class="vietqr-status">
-            Trạng thái: <span class="vietqr-status-wait">Đang chờ thanh toán...</span>
+             Trạng thái:
+            <span id="vietqr-payment-status-text" class="vietqr-status-wait">
+            Đang chờ thanh toán...
+             </span>
           </p>
 
           <button
-            class="vietqr-done-btn"
-            onclick="document.getElementById('payment-redirect-modal').classList.remove('open'); stopVietQRTimer(); executeFinalCheckout();"
-          >
-            ✓ Đã Chuyển Khoản Thành Công
+              class="vietqr-done-btn"
+              onclick="cancelQrPayment()"
+              >
+                    Hủy thanh toán
           </button>
         </div>
       </div>
