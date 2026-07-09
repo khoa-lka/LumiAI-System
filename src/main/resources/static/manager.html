@@ -461,14 +461,14 @@
             <select class="mp-select-sm">
               <option>Doanh thu/Đối soát</option>
             </select>
-            <select class="mp-select-sm" id="aud-range-select" onchange="renderAuditReport(this.value)">
-              <option value="week">Tuần này (03/06 - 09/06)</option>
-              <option value="prev_week">Tuần trước (27/05 - 02/06)</option>
-            </select>
-            <button class="mp-btn-report mp-btn-export" onclick="alert('Đang xuất báo cáo PDF/Excel...')">
-              Xuất báo cáo (PDF/Excel)
+  
+            <input type="date" id="mp-audit-date-input" class="mp-select-sm" style="font-weight: bold; padding: 4px 10px;" onchange="window.loadManagerAudit()" />
+  
+            <button class="mp-btn-report mp-btn-export" 
+              onclick="alert('Đang xuất báo cáo PDF/Excel...')">Xuất báo cáo (PDF/Excel)
             </button>
-            <button class="mp-btn-report mp-btn-audit" onclick="alert('Đã chạy đối soát dữ liệu mới nhất!')">Đối soát Ngay</button>
+            <button class="mp-btn-report mp-btn-audit" 
+              onclick="window.triggerReconciliation()">Đối soát Ngay</button>
           </div>
 
           <div class="md-metrics" id="aud-metrics"></div>
@@ -1291,101 +1291,19 @@
     </div>
 
     <script src="js/state.js?v=19"></script>
-    <script src="js/api.js?v=19"></script>
-    <script src="js/manager.js?v=19"></script>
+    <script src="js/api.js?v=20"></script>
     <script src="js/manager-dashboard.js?v=19"></script>
-    <script src="js/manager-audit.js?v=1"></script>
+    <script src="js/manager-audit.js?v=19"></script>
+    <script src="js/manager.js?v=19"></script>
     <script src="js/admin.js?v=19"></script>
 
     <script>
-      // HÀM CHUYỂN TAB MẠNH MẼ (KHÔNG BỊ LỖI CHẶN)
-      window.switchMpTab = function (tabId) {
-        console.log("Đang chuyển sang tab:", tabId);
+      // =========================================================================
+      // 🎯 HÀM CHUYỂN TAB TRUNG GIAN (Gọi trực tiếp "nhà mới" trong manager.js)
+      // =========================================================================
+      
 
-        // Ép ẩn toàn bộ thẻ và xóa active
-        document.querySelectorAll(".mp-tab-section").forEach((tab) => {
-          tab.classList.remove("active");
-          tab.style.display = "none";
-        });
-        document.querySelectorAll(".mp-nav-item").forEach((nav) => {
-          nav.classList.remove("active");
-        });
-
-        // Ép hiện thẻ được gọi
-        const targetTab = document.getElementById("mp-tab-" + tabId);
-        const targetNav = document.getElementById("mp-nav-" + tabId);
-
-        if (targetTab) {
-          targetTab.classList.add("active");
-          targetTab.style.display = "block";
-        }
-        if (targetNav) {
-          targetNav.classList.add("active");
-        }
-
-        // Đổi tiêu đề Header
-        const titles = {
-          dashboard: "Tổng quan hoạt động rạp",
-          movies: "Quản lý Danh mục Phim",
-          matrix: "Ma trận Lịch chiếu",
-          fnb: "F&B Services & Inventory Control",
-          promo: "Chiến dịch Khuyến mãi",
-          audit: "Báo cáo & Kiểm toán",
-        };
-        const titleEl = document.getElementById("mp-dynamic-title");
-        if (titleEl) titleEl.innerText = titles[tabId] || "Manager Portal";
-
-        // 0. Vẽ lại Dashboard (dữ liệu tĩnh) mỗi khi quay lại Tab Dashboard
-        if (tabId === "dashboard" && typeof renderManagerDashboard === "function") {
-          try {
-            renderManagerDashboard();
-          } catch (err) {
-            console.error("Lỗi khi render Dashboard:", err);
-          }
-        }
-        // 1. Gọi API nạp dữ liệu phim khi qua Tab Movies
-        if (tabId === "movies" && typeof loadManagerMovies === "function") {
-          try {
-            loadManagerMovies();
-          } catch (err) {
-            console.error("Lỗi khi load danh sách phim:", err);
-          }
-        }
-        // 2. Tự động kích hoạt gọi API nạp bắp nước từ DB khi chuyển sang Tab F&B
-        if (tabId === "fnb" && typeof loadManagerFnb === "function") {
-          try {
-            loadManagerFnb();
-          } catch (err) {
-            console.error("Lỗi khi load danh sách F&B từ database:", err);
-          }
-        }
-        // 3. Tự động kích hoạt gọi ma trận lịch chiếu tổng hợp khi qua Tab Matrix
-        if (tabId === "matrix" && typeof loadManagerMatrix === "function") {
-          try {
-            loadManagerMatrix();
-          } catch (err) {
-            console.error("Lỗi khi load ma trận lịch chiếu:", err);
-          }
-        }
-        // 4. Tự động gọi API nạp voucher từ database khi chuyển sang Tab Promo
-        if (tabId === "promo" && typeof loadManagerVouchers === "function") {
-          try {
-            loadManagerVouchers();
-          } catch (err) {
-            console.error("Lỗi khi load danh sách Voucher từ database:", err);
-          }
-        }
-        // 5. Vẽ lại Báo cáo & Kiểm toán mỗi khi vào Tab Audit
-        if (tabId === "audit" && typeof renderAuditReport === "function") {
-          try {
-            renderAuditReport();
-          } catch (err) {
-            console.error("Lỗi khi render Báo cáo & Kiểm toán:", err);
-          }
-        }
-      };
-
-      // Các hàm Dropdown
+      // 🔔 Các hàm xử lý Dropdown tiện ích (Giữ nguyên logic giao diện)
       function toggleNotifDropdown() {
         document.getElementById("mp-notif-dropdown").classList.toggle("open");
       }

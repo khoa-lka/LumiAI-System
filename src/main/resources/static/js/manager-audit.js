@@ -5,66 +5,7 @@
    AUD_* bên dưới bằng dữ liệu fetch() từ server, giữ nguyên các hàm render.
    ========================================================================= */
 
-/* --- 1. BỘ DỮ LIỆU TĨNH --- */
 
-const AUD_METRICS = [
-  { icon: "🔥", label: "Doanh thu hôm nay", value: "125.000.000đ", delta: "+12.4%", type: "up" },
-  { icon: "🏟️", label: "Tỷ lệ lấp đầy phòng chiếu", value: "78%", delta: "+8.1%", type: "up" },
-  { icon: "🍿", label: "Hiệu suất F&B (Đơn bán)", value: "150 đơn", delta: "+9.8%", type: "up" },
-  { icon: "⚠️", label: "Đối soát lệch tuần này", value: "2 ngày", delta: "Cần kiểm tra", type: "warn" },
-];
-
-// Tỷ lệ đối soát khớp theo ngày (7 ngày gần nhất)
-const AUD_MATCH_RATE = [
-  { label: "T2", pct: 96 },
-  { label: "T3", pct: 94 },
-  { label: "T4", pct: 89 },
-  { label: "T5", pct: 97 },
-  { label: "T6", pct: 100 },
-  { label: "T7", pct: 82 },
-  { label: "CN", pct: 91 },
-];
-
-// Phân bổ nguồn doanh thu theo kênh thanh toán
-const AUD_REVENUE_SOURCE = [
-  { label: "POS tại quầy", pct: 45, color: "#ff6b35" },
-  { label: "Cổng thanh toán", pct: 33, color: "#3b82f6" },
-  { label: "Ứng dụng di động", pct: 15, color: "#4ade80" },
-  { label: "Đối tác bán vé", pct: 7, color: "#a78bfa" },
-];
-
-// Nhận định & đề xuất
-const AUD_INSIGHTS = [
-  {
-    type: "peak",
-    title: "Hiệu Suất Đỉnh Điểm",
-    content:
-      "Tỷ lệ đối soát khớp cao nhất vào Thứ 6 (100%), thấp nhất vào Thứ 7 (82%) do lượng giao dịch cuối tuần tăng đột biến. Nên tăng cường nhân sự đối soát vào cuối tuần.",
-  },
-  {
-    type: "growth",
-    title: "Tăng Trưởng Doanh Thu",
-    content:
-      "Doanh thu trung bình mỗi ngày tăng 12.4% so với tuần trước, chủ yếu đến từ combo bắp nước và các suất chiếu tối. Cân nhắc mở rộng danh mục combo cao cấp.",
-  },
-  {
-    type: "warn",
-    title: "Cảnh Báo Chênh Lệch",
-    content:
-      "Phát hiện 2/7 ngày có chênh lệch giữa doanh thu POS và Cổng thanh toán vượt ngưỡng cho phép (&gt;0.5%). Cần đối soát thủ công trước khi chốt sổ.",
-  },
-];
-
-// Chi tiết đối soát doanh thu (POS vs Cổng thanh toán trực tuyến)
-const AUD_REVENUE_TABLE = [
-  { date: "03/06/2026", pos: 118500000, gateway: 118500000 },
-  { date: "04/06/2026", pos: 121200000, gateway: 121200000 },
-  { date: "05/06/2026", pos: 109800000, gateway: 108950000 },
-  { date: "06/06/2026", pos: 125000000, gateway: 124450000 },
-  { date: "07/06/2026", pos: 132400000, gateway: 132400000 },
-  { date: "08/06/2026", pos: 145900000, gateway: 145900000 },
-  { date: "09/06/2026", pos: 125000000, gateway: 125000000 },
-];
 
 /* --- 2. HÀM TIỆN ÍCH --- */
 
@@ -203,13 +144,120 @@ function renderAuditTable() {
     </table>`;
 }
 
-/* --- 8. KHỞI TẠO TOÀN BỘ TAB BÁO CÁO & KIỂM TOÁN --- */
+/* =========================================================================
+   🚀 ENGINE ĐỔ DỮ LIỆU ĐỘNG TỪ SPRING BOOT LÊN CẤU TRÚC GỐC HTML CỦA EM
+   ========================================================================= */
 
-function renderAuditReport() {
-  try { renderAuditMetrics(); } catch (e) { console.error("Lỗi render metrics kiểm toán:", e); }
-  try { renderAuditBarChart(); } catch (e) { console.error("Lỗi render bar chart đối soát:", e); }
-  try { renderAuditDonut(); } catch (e) { console.error("Lỗi render donut nguồn doanh thu:", e); }
-  try { renderAuditInsights(); } catch (e) { console.error("Lỗi render nhận định & đề xuất:", e); }
-  try { renderAuditTable(); } catch (e) { console.error("Lỗi render bảng đối soát:", e); }
-}
-window.renderAuditReport = renderAuditReport;
+// Hàm bốc dữ liệu theo ngày được chọn trên giao diện
+window.loadManagerAudit = function() {
+  const dateInput = document.getElementById("mp-audit-date-input");
+
+  // 🛡️ LỚP BẢO VỆ: Nếu chưa có ô input trên giao diện thì dừng lại, không báo lỗi đỏ lòm
+  if (!dateInput) return;
+  
+  // Tự động mồi ngày hôm nay nếu Manager mới vào tab chưa chọn ngày cụ thể
+  if (dateInput && !dateInput.value) {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, "0");
+    const d = String(today.getDate()).padStart(2, "0");
+    dateInput.value = `${y}-${m}-${d}`;
+  }
+
+  const selectedDate = dateInput.value;
+  
+  const metricsHost = document.getElementById("aud-metrics");
+  const tableHost = document.getElementById("aud-table");
+
+  if (metricsHost) metricsHost.innerHTML = '<div style="color:#888; padding:10px;">Hệ thống đang đối soát dòng tiền...</div>';
+
+  // Gọi API tổng hợp báo cáo đối soát từ Spring Boot
+  API.getAuditReportData(selectedDate)
+    .then((data) => {
+      // 1. 🎯 ĐỔ DỮ LIỆU VÀO 4 THẺ METRICS GỐC (id="aud-metrics")
+      if (metricsHost) {
+        metricsHost.innerHTML = `
+          <div class="md-metric-card">
+            <div class="md-metric-top"><div class="md-metric-icon">🎟️</div><span class="md-badge md-badge-up">Live</span></div>
+            <div class="md-metric-label">Doanh thu vé xem phim</div>
+            <div class="md-metric-value">${(data.ticketRevenue || 0).toLocaleString("vi-VN")}đ</div>
+          </div>
+          <div class="md-metric-card">
+            <div class="md-metric-top"><div class="md-metric-icon">🏟️</div><span class="md-badge md-badge-up">Live</span></div>
+            <div class="md-metric-label">Tỷ lệ Lấp đầy ghế</div>
+            <div class="md-metric-value">${data.occupancyRate || 0}%</div>
+          </div>
+          <div class="md-metric-card">
+            <div class="md-metric-top"><div class="md-metric-icon">🍿</div><span class="md-badge md-badge-up">Live</span></div>
+            <div class="md-metric-label">Sản phẩm F&B đã bán</div>
+            <div class="md-metric-value">${data.fnbQuantity || 0} món</div>
+          </div>
+          <div class="md-metric-card">
+            <div class="md-metric-top"><div class="md-metric-icon">💰</div><span class="md-badge md-badge-up">Live</span></div>
+            <div class="md-metric-label">Doanh thu Quầy / F&B</div>
+            <div class="md-metric-value">${(data.fnbRevenue || 0).toLocaleString("vi-VN")}đ</div>
+          </div>
+        `;
+      }
+
+      // 2. 🎯 ĐỔ DỮ LIỆU CHI TIẾT VÀO BẢNG ĐỐI SOÁT GỐC (id="aud-table")
+      if (tableHost) {
+        const rows = data.auditRows || [];
+
+        if (rows.length === 0) {
+          tableHost.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">Không phát sinh giao dịch đối soát trong ngày này!</div>';
+          return;
+        }
+
+        let rowsHTML = rows.map((row) => {
+          let isMatch = row.deviation === 0;
+          let deviationStyle = !isMatch ? "color: #ef5350; font-weight: bold;" : "color: #4ade80; font-weight: bold;";
+          let statusStyle = isMatch ? "color:#4ade80; background:rgba(74,222,128,0.1);" : "color:#ef5350; background:rgba(239,83,80,0.1);";
+          let statusText = isMatch ? "Khớp hoàn toàn" : "Lỗi Chênh lệch";
+
+          return `
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.03); color:#d4d4d8;">
+              <td style="padding:12px; font-weight: bold; color: #ff6b35; text-align: center;">${new Date(row.labelDate).toLocaleDateString("vi-VN")}</td>
+              <td style="font-weight: bold;">${(row.posAmount || 0).toLocaleString("vi-VN")} đ</td>
+              <td style="font-weight: bold;">${(row.onlineAmount || 0).toLocaleString("vi-VN")} đ</td>
+              <td style="text-align: right; ${deviationStyle}">${(row.deviation || 0).toLocaleString("vi-VN")} đ</td>
+              <td style="text-align: center;">
+                <span style="padding:4px 8px; border-radius:4px; font-size:11px; font-weight:bold; ${statusStyle}">
+                  ${statusText}
+                </span>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+        tableHost.innerHTML = `
+          <table class="md-tx-table" style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+            <thead>
+              <tr style="color:#888; border-bottom:1px solid rgba(255,255,255,0.06);">
+                <th style="padding:12px; text-align: center;">Ngày đối soát</th>
+                <th>Doanh thu POS / Quầy</th>
+                <th>Doanh thu Cổng TTTT</th>
+                <th style="text-align: right;">Chênh lệch</th>
+                <th style="text-align: center;">Trạng thái hệ thống</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHTML}
+            </tbody>
+          </table>
+        `;
+      }
+
+      console.log("📊 Đối soát hoàn tất cho ngày: " + selectedDate);
+    })
+    .catch((err) => {
+      console.error(err);
+      if (metricsHost) metricsHost.innerHTML = `<div style="color:red; padding:10px;">Lỗi đồng bộ dữ liệu kiểm toán: ${err.message}</div>`;
+    });
+};
+
+// Hàm kích hoạt tính năng khi nhấn nút Đối soát ngay
+window.triggerReconciliation = function() {
+  alert("🚀 Hệ thống đang chạy đối chiếu dữ liệu hóa đơn POS quầy và chữ ký số từ Cổng trực tuyến...");
+  window.loadManagerAudit();
+};
