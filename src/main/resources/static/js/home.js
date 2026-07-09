@@ -424,44 +424,45 @@ window.submitFeedbackForm = function () {
 
 window.loadFeedbacksForMovie = function (movieId) {
   const container = document.getElementById("feedback-list-container");
+  const avgBox = document.getElementById("feedback-average-box");
   if (!container) return;
 
-  // 🚀 GỌI API ĐỘNG TỪ SPRING BOOT
   fetch(`http://localhost:8080/api/feedback/movie/${movieId}`)
     .then(res => res.json())
     .then(data => {
-      // Render dữ liệu động từ DB
-      container.innerHTML =
-        data.length === 0
-          ? "Chưa có đánh giá nào."
-          : data.map(fb => {
+      if (!data || data.length === 0) {
+        container.innerHTML = "Chưa có đánh giá nào.";
+        if (avgBox) avgBox.innerHTML = "⭐ 0 / 5";
+        return;
+      }
 
-            const time = new Date(fb.createdAt).toLocaleString("vi-VN");
+      const total = data.reduce((sum, fb) => sum + Number(fb.ratingStars || 0), 0);
+      const avg = (total / data.length).toFixed(1);
 
-            return `
-<div class="fb-item"
-style="border-bottom:1px solid #333;padding:12px;">
+      if (avgBox) {
+        avgBox.innerHTML = `⭐ ${avg} / 5`;
+      }
 
-<div style="display:flex;justify-content:space-between;">
+      container.innerHTML = `
+  <div class="feedback-scroll-row">
+    ${data.map(fb => {
+      const time = new Date(fb.createdAt).toLocaleString("vi-VN");
 
-<strong>${fb.accountName}</strong>
+      return `
+        <div class="fb-item">
+          <div class="fb-card-top">
+            <strong>${fb.accountName}</strong>
+            <span class="fb-rating-badge">⭐ ${fb.ratingStars}</span>
+          </div>
 
-<span>⭐ ${fb.ratingStars}</span>
+          <div class="fb-time">${time}</div>
 
-</div>
-
-<div style="font-size:12px;color:#888;margin:5px 0;">
-
-${time}
-
-</div>
-
-<p>${fb.content}</p>
-
-</div>
+          <p class="fb-content">${fb.content}</p>
+        </div>
+      `;
+    }).join("")}
+  </div>
 `;
-
-          }).join("");
     })
     .catch(err => console.error("Lỗi load feedback:", err));
 };

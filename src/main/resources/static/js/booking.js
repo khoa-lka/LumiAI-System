@@ -957,7 +957,6 @@ const targetMovie = (typeof serverData !== 'undefined' && serverData.movies)
             </div>
 
             <div class="bc-actions">
-            <button class="bc-btn" onclick="openFeedbackModal(${targetMovie.movieId})">Đánh giá phim</button>
               <button class="bc-btn bc-btn-primary" onclick="window.print()">⬇ Tải / In vé</button>
               <button class="bc-btn bc-btn-ghost" onclick="goHomeFromBc()">Về trang chủ</button>
             </div>
