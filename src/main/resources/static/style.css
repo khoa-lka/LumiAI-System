@@ -4,6 +4,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap");
 
 :root {
+  color-scheme: dark;
   --cgv-black: #0a0a0c;
   --cgv-dark: #17171b;
   --cgv-gold: #e5a93b;
@@ -3851,7 +3852,7 @@ select.profile-readonly-input:not([disabled]) {
 .mp-logo-icon {
   width: 24px;
   height: 24px;
-  background: #ff5722;
+  background: linear-gradient(135deg, var(--cgv-red), var(--cgv-red-hover));
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -3886,9 +3887,9 @@ select.profile-readonly-input:not([disabled]) {
 }
 
 .mp-nav-item.active {
-  background: #ff4742;
+  background: linear-gradient(135deg, var(--cgv-red), var(--cgv-red-hover));
   color: #fff;
-  box-shadow: 0 4px 10px rgba(255, 71, 66, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
 }
 
 .mp-nav-icon {
@@ -3953,7 +3954,7 @@ select.profile-readonly-input:not([disabled]) {
   right: 0;
   width: 8px;
   height: 8px;
-  background: #ff4742;
+  background: var(--cgv-red);
   border-radius: 50%;
 }
 
@@ -4584,14 +4585,14 @@ select.profile-readonly-input:not([disabled]) {
   transition: background 0.2s;
 }
 .mp-dropdown-item:hover {
-  background: #ff4742;
+  background: var(--cgv-red);
 }
 .mp-dropdown-item.logout {
-  color: #ff4742;
+  color: var(--cgv-red);
 }
 .mp-dropdown-item.logout:hover {
   color: white;
-  background: #ff4742;
+  background: var(--cgv-red);
 }
 /* ==========================================================================
    CINEMA MANAGER PRO - MA TRẬN LỊCH CHIẾU (GANTT CHART)
@@ -5053,6 +5054,11 @@ select.profile-readonly-input:not([disabled]) {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 4px;
   font-size: 12px;
+  background-color: #1c1c21;
+  color: #e4e4e7;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 .mp-btn-report {
   padding: 8px 15px;
@@ -5071,32 +5077,91 @@ select.profile-readonly-input:not([disabled]) {
   color: white;
 }
 
-.mp-report-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-  margin-bottom: 20px;
+/* --- Thẻ chỉ số cảnh báo (dùng chung khung .md-metric-card) --- */
+.aud-metric-warn {
+  border-color: rgba(248, 113, 113, 0.35);
 }
-.mp-report-card {
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.md-badge-warn {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
 }
 
-.mp-audit-status {
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: bold;
+/* --- Legend biểu đồ cột đối soát --- */
+.aud-chart-legend {
+  display: flex;
+  gap: 14px;
+  font-size: 11.5px;
+  color: #9a9aa3;
 }
-.status-error {
-  background: rgba(255, 107, 53, 0.1);
-  color: #c62828;
+.aud-chart-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
-.status-ok {
-  background: #e8f5e9;
-  color: #2e7d32;
+
+/* --- Giá trị % phía trên mỗi cột --- */
+.aud-bar-value {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #cfd3da;
+  margin-bottom: 6px;
+}
+.md-bar-fill.warn {
+  background: linear-gradient(180deg, #f87171, #dc2626);
+}
+
+/* --- Nhận định & Đề xuất --- */
+.aud-insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.aud-insight-card {
+  border-radius: 10px;
+  padding: 14px 16px;
+  border-left: 3px solid;
+}
+.aud-insight-title {
+  display: block;
+  font-size: 13.5px;
+  margin-bottom: 5px;
+}
+.aud-insight-text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #cfd3da;
+}
+.aud-insight-peak {
+  background: rgba(59, 130, 246, 0.08);
+  border-left-color: #3b82f6;
+}
+.aud-insight-peak .aud-insight-title {
+  color: #60a5fa;
+}
+.aud-insight-growth {
+  background: rgba(34, 197, 94, 0.08);
+  border-left-color: #4ade80;
+}
+.aud-insight-growth .aud-insight-title {
+  color: #4ade80;
+}
+.aud-insight-warn {
+  background: rgba(248, 113, 113, 0.08);
+  border-left-color: #f87171;
+}
+.aud-insight-warn .aud-insight-title {
+  color: #f87171;
+}
+
+/* --- Bảng chi tiết đối soát doanh thu --- */
+.aud-diff-ok {
+  color: #4ade80;
+  font-weight: 700;
+}
+.aud-diff-bad {
+  color: #f87171;
+  font-weight: 700;
 }
 
 /* Khung upload file */
@@ -6290,4 +6355,96 @@ select.profile-readonly-input:not([disabled]) {
   padding: 5px 12px;
   border-radius: 15px;
   font-weight: 600;
+}
+
+/* --- MANAGER: chỉ hiện tab đang active (sửa lỗi các tab chồng lên nhau lúc tải trang) --- */
+.mp-tab-section { display: none; }
+.mp-tab-section.active { display: block; }
+
+/* ==========================================================================
+   ADMIN DASHBOARD - TỔNG QUAN (6 KPI, biểu đồ, trạng thái, bảng)
+   ========================================================================== */
+.ad-metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 22px; }
+.ad-metric-card { background: #141417; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px; }
+.ad-metric-top { display: flex; align-items: center; margin-bottom: 12px; }
+.ad-metric-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.ad-metric-label { color: #9a9aa3; font-size: 11.5px; margin-bottom: 6px; line-height: 1.3; }
+.ad-metric-value { color: #fff; font-size: 21px; font-weight: 900; font-family: "Sora","Be Vietnam Pro",sans-serif; margin-bottom: 6px; }
+.ad-metric-delta { font-size: 11px; color: #6b6b73; }
+.ad-badge-up { background: rgba(34,197,94,0.15); color: #4ade80; font-weight: 800; padding: 2px 7px; border-radius: 999px; margin-right: 4px; }
+.ad-badge-down { background: rgba(239,68,68,0.15); color: #f87171; font-weight: 800; padding: 2px 7px; border-radius: 999px; margin-right: 4px; }
+
+/* Pill mức độ Log (Thông tin / Cảnh báo / Lỗi) */
+.log-level-badge { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+.log-level-info { background: rgba(59,130,246,0.16); color: #60a5fa; }
+.log-level-warning { background: rgba(245,158,11,0.16); color: #f59e0b; }
+.log-level-error { background: rgba(239,68,68,0.16); color: #f87171; }
+.log-level-success { background: rgba(34,197,94,0.16); color: #4ade80; }
+
+/* Phân trang bảng */
+.adm-pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; flex-wrap: wrap; gap: 12px; }
+.adm-pagination-info { color: var(--adm-muted); font-size: 13px; }
+.adm-pagination-controls { display: flex; align-items: center; gap: 6px; }
+.adm-page-btn { background: var(--adm-surface-2); border: 1px solid var(--adm-border); color: var(--adm-text); border-radius: 6px; padding: 6px 11px; font-size: 13px; cursor: pointer; transition: 0.2s; }
+.adm-page-btn:hover:not(:disabled) { background: rgba(255,107,53,0.12); border-color: var(--adm-red); }
+.adm-page-btn.active { background: var(--adm-red); border-color: var(--adm-red); color: #fff; font-weight: 700; }
+.adm-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.adm-page-size-select { background: var(--adm-surface-2); color: var(--adm-text); border: 1px solid var(--adm-border); border-radius: 6px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
+
+.ad-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.ad-grid { stroke: rgba(255,255,255,0.06); stroke-width: 1; }
+.ad-axis { fill: #6b6b73; font-size: 10px; }
+.ad-svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+.ad-donut-host { position: relative; }
+.ad-donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; }
+.ad-donut-center span { font-size: 10.5px; color: #9a9aa3; }
+.ad-donut-center b { font-size: 17px; color: #fff; font-weight: 900; }
+.ad-legend-count { color: #6b6b73; font-weight: 600; font-size: 11.5px; }
+
+.ad-bars { display: flex; align-items: flex-end; justify-content: space-around; gap: 10px; height: 200px; padding-top: 10px; }
+.ad-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.ad-bar-wrap { flex: 1; width: 100%; max-width: 50px; display: flex; align-items: flex-end; justify-content: center; gap: 4px; }
+.ad-bar-fill { width: 12px; border-radius: 4px 4px 0 0; transition: transform .15s; }
+.ad-bar-fill:hover { transform: scaleY(1.02); }
+.ad-bar-logs { background: linear-gradient(180deg, #60a5fa, #3b82f6); }
+.ad-bar-webhook { background: linear-gradient(180deg, #4ade80, #22c55e); }
+.ad-bar-x { color: #9a9aa3; font-size: 11px; margin-top: 8px; }
+
+.ad-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; align-items: start; }
+.ad-box-sub-inline { font-size: 11px; color: #6b6b73; font-weight: 500; }
+
+.ad-status-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.ad-status-row:last-child { border-bottom: none; }
+.ad-status-left { display: flex; align-items: center; gap: 10px; color: #cfd3da; font-size: 13px; }
+.ad-status-icon { font-style: normal; font-size: 14px; }
+.ad-pill { font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 999px; }
+.ad-pill-green { background: rgba(34,197,94,0.15); color: #4ade80; }
+.ad-pill-red { background: rgba(239,68,68,0.15); color: #f87171; }
+
+.ad-kv-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; font-size: 12.5px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.ad-kv-row:last-child { border-bottom: none; }
+.ad-kv-icon { font-style: normal; flex: 0 0 16px; }
+.ad-kv-label { color: #9a9aa3; flex: 1; }
+.ad-kv-val { color: #fff; font-weight: 700; text-align: right; }
+.ad-kv-ok { color: #4ade80 !important; }
+.ad-kv-green { color: #4ade80; }
+.ad-kv-red { color: #f87171; }
+.ad-kv-blue { color: #60a5fa; }
+.ad-kv-warn { color: #fbbf24; }
+.ad-summary-btn { width: 100%; margin-top: 14px; text-align: center; }
+
+.ad-role-badge { font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 999px; }
+.ad-role-admin { background: rgba(96,165,250,0.15); color: #60a5fa; }
+.ad-role-editor { background: rgba(74,222,128,0.15); color: #4ade80; }
+.ad-role-user { background: rgba(167,139,250,0.15); color: #a78bfa; }
+.ad-role-viewer { background: rgba(245,158,11,0.15); color: #f59e0b; }
+
+@media (max-width: 1100px) {
+  .ad-metrics { grid-template-columns: repeat(3, 1fr); }
+  .ad-summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .ad-metrics { grid-template-columns: repeat(2, 1fr); }
+  .ad-summary-grid { grid-template-columns: 1fr; }
 }

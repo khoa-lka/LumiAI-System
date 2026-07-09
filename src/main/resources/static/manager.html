@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="vi">
   <head>
@@ -10,7 +11,7 @@
     <div class="manager-pro-layout">
       <div class="mp-sidebar">
         <div class="mp-logo-zone">
-          CinemaManager Pro
+          QUẢN LÝ LAS CINEMA
         </div>
         <ul class="mp-nav-list">
           <li
@@ -361,7 +362,6 @@
             </div>
             <div class="mp-fnb-bottom-row">
               <div class="mp-search-box">
-                <span class="mp-search-icon">🔍</span>
                 <input type="text" id="mp-fnb-search-input" placeholder="Tìm tên bắp nước, combo..." oninput="filterManagerFnb()" />
               </div>
               <div class="mp-filters">
@@ -408,7 +408,7 @@
         <div id="mp-tab-promo" class="mp-tab-section" style="display: none;">
           <div class="mp-action-bar">
             <button class="mp-btn-add" onclick="openAddVoucherModal()">
-              ➕ Tạo Chiến Dịch Mới
+              Tạo Chiến Dịch Mới
             </button>
             <div class="mp-filters">
               <div class="mp-search-box">
@@ -461,59 +461,65 @@
             <select class="mp-select-sm">
               <option>Doanh thu/Đối soát</option>
             </select>
-            <select class="mp-select-sm">
-              <option>DatePicker</option>
+            <select class="mp-select-sm" id="aud-range-select" onchange="renderAuditReport(this.value)">
+              <option value="week">Tuần này (03/06 - 09/06)</option>
+              <option value="prev_week">Tuần trước (27/05 - 02/06)</option>
             </select>
-            <button class="mp-btn-report mp-btn-export">
+            <button class="mp-btn-report mp-btn-export" onclick="alert('Đang xuất báo cáo PDF/Excel...')">
               Xuất báo cáo (PDF/Excel)
             </button>
-            <button class="mp-btn-report mp-btn-audit">Đối soát Ngay</button>
+            <button class="mp-btn-report mp-btn-audit" onclick="alert('Đã chạy đối soát dữ liệu mới nhất!')">Đối soát Ngay</button>
           </div>
 
-          <div class="mp-report-grid">
-            <div class="mp-report-card">
-              Doanh thu hôm nay<br /><strong style="font-size: 18px"
-                >125,000,000 VND</strong
-              >
+          <div class="md-metrics" id="aud-metrics"></div>
+
+          <div class="md-row-2">
+            <div class="md-box">
+              <div class="md-box-head">
+                <div>
+                  <h3 class="md-box-title">Tỷ Lệ Đối Soát Khớp Theo Ngày</h3>
+                  <span class="md-box-sub">7 ngày gần nhất</span>
+                </div>
+                <div class="aud-chart-legend">
+                  <span><i class="md-dot" style="background: #ff6b35"></i> Tốt nhất</span>
+                  <span><i class="md-dot" style="background: #f87171"></i> Cần chú ý (&lt;90%)</span>
+                </div>
+              </div>
+              <div class="md-chart-host" id="aud-bar-chart"></div>
             </div>
-            <div class="mp-report-card">
-              Tỷ lệ Lấp đầy<br /><strong style="font-size: 18px">78%</strong>
-            </div>
-            <div class="mp-report-card">
-              Hiệu suất F&B<br /><strong style="font-size: 18px">150</strong>
-            </div>
-            <div class="mp-report-card">
-              Đối soát (19/06)<br /><strong style="font-size: 14px"
-                >125,000,000 VND</strong
-              >
+
+            <div class="md-box">
+              <div class="md-box-head">
+                <div>
+                  <h3 class="md-box-title">Phân Bổ Nguồn Doanh Thu</h3>
+                  <span class="md-box-sub">Theo kênh thanh toán</span>
+                </div>
+              </div>
+              <div class="md-genre-wrap">
+                <div class="md-donut-host" id="aud-donut-chart"></div>
+                <div class="md-genre-legend" id="aud-donut-legend"></div>
+              </div>
             </div>
           </div>
 
-          <div class="mp-box">
-            <table class="mp-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>POS Revenue</th>
-                  <th>Cổng TTTT Revenue</th>
-                  <th>Chênh lệch</th>
-                  <th>Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>06/06/2026</td>
-                  <td>125,000,000 VND</td>
-                  <td>550,000 VND</td>
-                  <td style="color: red">-125,004</td>
-                  <td>
-                    <span class="mp-audit-status status-error"
-                      >Lỗi Chênh lệch</span
-                    >
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="md-box">
+            <div class="md-box-head">
+              <div>
+                <h3 class="md-box-title">Nhận Định &amp; Đề Xuất</h3>
+                <span class="md-box-sub">Tổng hợp từ dữ liệu đối soát tuần này</span>
+              </div>
+            </div>
+            <div class="aud-insight-list" id="aud-insights"></div>
+          </div>
+
+          <div class="md-box" style="padding: 0">
+            <div class="md-box-head" style="padding: 20px 22px 0">
+              <div>
+                <h3 class="md-box-title">Chi Tiết Đối Soát Doanh Thu</h3>
+                <span class="md-box-sub">So sánh doanh thu POS &amp; Cổng thanh toán trực tuyến</span>
+              </div>
+            </div>
+            <div id="aud-table"></div>
           </div>
         </div>
       </div>
@@ -1288,6 +1294,7 @@
     <script src="js/api.js?v=19"></script>
     <script src="js/manager.js?v=19"></script>
     <script src="js/manager-dashboard.js?v=19"></script>
+    <script src="js/manager-audit.js?v=1"></script>
     <script src="js/admin.js?v=19"></script>
 
     <script>
@@ -1366,6 +1373,14 @@
             loadManagerVouchers();
           } catch (err) {
             console.error("Lỗi khi load danh sách Voucher từ database:", err);
+          }
+        }
+        // 5. Vẽ lại Báo cáo & Kiểm toán mỗi khi vào Tab Audit
+        if (tabId === "audit" && typeof renderAuditReport === "function") {
+          try {
+            renderAuditReport();
+          } catch (err) {
+            console.error("Lỗi khi render Báo cáo & Kiểm toán:", err);
           }
         }
       };
