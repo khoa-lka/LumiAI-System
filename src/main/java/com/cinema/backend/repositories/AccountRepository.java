@@ -9,6 +9,7 @@ import java.util.Optional;
 public interface AccountRepository extends JpaRepository<Account, Integer> {
     // Tìm tài khoản bằng email hoặc số điện thoại khi đăng nhập
     Optional<Account> findByEmailOrPhone(String email, String phone);
+    Optional<Account> findByEmail(String email);
     
     // Kiểm tra trùng lặp khi đăng ký thành viên mới
     boolean existsByEmail(String email);

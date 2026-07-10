@@ -2499,7 +2499,7 @@ window.processToPaymentGateway = function () {
 
     const bankId = "ICB";
     const accountNo = "101879388698";
-    const accountName = "NGUYEN BAO HOANG";
+    const accountName = " BAO HOANG";
     const qrData = `LAS CINEMAS THANH TOAN VE`;
 
     const qrImg = document.getElementById("bank-qr-img");

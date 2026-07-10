@@ -1641,14 +1641,20 @@
           </div>
         </div>
 
-        <p class="vietqr-status">
-          Trạng thái: <span class="vietqr-status-wait">Đang chờ thanh toán...</span>
-        </p>
+          <p class="vietqr-status">
+             Trạng thái:
+            <span id="vietqr-payment-status-text" class="vietqr-status-wait">
+            Đang chờ thanh toán...
+             </span>
+          </p>
 
-        <button class="vietqr-done-btn"
-          onclick="document.getElementById('payment-redirect-modal').classList.remove('open'); stopVietQRTimer(); executeFinalCheckout();">
-          ✓ Đã Chuyển Khoản Thành Công
-        </button>
+          <button
+              class="vietqr-done-btn"
+              onclick="cancelQrPayment()"
+              >
+                    Hủy thanh toán
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1774,6 +1780,19 @@
         style="background-color: #ff6b35; color: white; border: none; padding: 9px 15px; border-radius: 4px; font-weight: bold; font-size: 13px; cursor: pointer; text-transform: uppercase;">Gửi</button>
     </div>
   </div>
+
+<!-- Custom Alert Modal -->
+<div id="custom-alert-overlay" class="custom-alert-overlay">
+    <div class="custom-alert-box">
+        <div class="custom-alert-icon" id="custom-alert-icon">!</div>
+
+        <h3 id="custom-alert-title">Thông báo</h3>
+
+        <p id="custom-alert-message">Nội dung thông báo</p>
+
+        <button id="custom-alert-btn" onclick="closeCustomAlert()">OK</button>
+    </div>
+</div>
 
 
 <script src="js/state.js?v=17"></script>
