@@ -984,8 +984,12 @@ function confirmCgvLogoutAction() {
 
 function handleTicketViewAccess() {
   if (!isUserLoggedInState) {
-    alert("Vui lòng đăng nhập hệ thống!");
-    openAuthModal();
+    if (typeof window.showLoginRequiredModal === "function") {
+      window.showLoginRequiredModal();
+    } else {
+      alert("Vui lòng đăng nhập hệ thống!");
+      openAuthModal();
+    }
   } else if (typeof window.isBookingRestrictedRole === "function" && window.isBookingRestrictedRole()) {
     // Tài khoản Manager/Admin không có lịch sử mua vé (vì không được phép đặt vé)
     if (typeof window.showBookingRestrictedModal === "function") {
@@ -1676,11 +1680,15 @@ window.handleMainAction = function () {
 
     // 🌟 ÉP BUỘC ĐĂNG NHẬP: Nếu chưa đăng nhập thì chặn đứng tiến trình và mở bảng Login lập tức
     if (!isUserLoggedInState) {
-      alert(
-        "Vui lòng đăng nhập tài khoản thành viên LAS Cinemas trước khi tiến hành chọn bắp nước và đặt vé!",
-      );
-      if (typeof window.handleAuthModalAccess === "function") {
-        window.handleAuthModalAccess(); // Mở bảng đăng nhập/đăng ký
+      if (typeof window.showLoginRequiredModal === "function") {
+        window.showLoginRequiredModal();
+      } else {
+        alert(
+          "Vui lòng đăng nhập tài khoản thành viên LAS Cinemas trước khi tiến hành chọn bắp nước và đặt vé!",
+        );
+        if (typeof window.handleAuthModalAccess === "function") {
+          window.handleAuthModalAccess(); // Mở bảng đăng nhập/đăng ký
+        }
       }
       return;
     }
