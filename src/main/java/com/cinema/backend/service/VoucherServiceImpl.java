@@ -1,6 +1,7 @@
 package com.cinema.backend.service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -15,42 +16,81 @@ public class VoucherServiceImpl implements VoucherService {
     private VoucherRepository voucherRepository;
 
     @Override
-    public Voucher checkVoucher(String code) {
-         Voucher voucher = voucherRepository.findByVoucherCode(code);
+public Voucher checkVoucher(String code) {
 
-        if(voucher==null)
-            return null;
+    Optional<Voucher> optionalVoucher = voucherRepository.findByVoucherCode(code);
 
-        if(voucher.getUsageLimit()<=0)
-            return null;
+    if (optionalVoucher.isEmpty()) {
+        return null;
+    }
 
-        if(voucher.getExpiredDate().isBefore(LocalDateTime.now()))
-            return null;
+    Voucher voucher = optionalVoucher.get();
 
-        return voucher;
+    if (voucher.getUsageLimit() <= 0) {
+        return null;
+    }
+
+    if (voucher.getExpiredDate().isBefore(LocalDateTime.now())) {
+        return null;
+    }
+
+    return voucher;
+}
+
+    @Override
+    public boolean useVoucher(String code){
+
+        System.out.println("useVoucher chạy");
+
+        Voucher voucher = checkVoucher(code);
+
+        if(voucher==null){
+            System.out.println("voucher null");
+            return false;
+        }
+
+        System.out.println("Before = " + voucher.getUsageLimit());
+
+        voucher.setUsageLimit(voucher.getUsageLimit()-1);
+
+        voucherRepository.save(voucher);
+
+        System.out.println("After = " + voucher.getUsageLimit());
+
+        return true;
     }
 
     @Override
-   public boolean useVoucher(String code){
-
-    System.out.println("useVoucher chạy");
-
-    Voucher voucher = checkVoucher(code);
-
-    if(voucher==null){
-        System.out.println("voucher null");
-        return false;
+    public java.util.List<Voucher> getAllVouchers() {
+        return voucherRepository.findAll();
     }
 
-    System.out.println("Before = " + voucher.getUsageLimit());
+    @Override
+    public Voucher createVoucher(Voucher voucher) {
+        return voucherRepository.save(voucher);
+    }
 
-    voucher.setUsageLimit(voucher.getUsageLimit()-1);
+    @Override
+    public Voucher updateVoucher(Integer id, Voucher voucherDetails) {
+        Voucher voucher = voucherRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Voucher không tồn tại với id: " + id));
+        
+        voucher.setVoucherCode(voucherDetails.getVoucherCode());
+        voucher.setDiscountValue(voucherDetails.getDiscountValue());
+        voucher.setDiscountType(voucherDetails.getDiscountType());
+        voucher.setMaxDiscount(voucherDetails.getMaxDiscount());
+        voucher.setMinimumOrder(voucherDetails.getMinimumOrder());
+        voucher.setUsageLimit(voucherDetails.getUsageLimit());
+        voucher.setExpiredDate(voucherDetails.getExpiredDate());
+        voucher.setUpdatedBy(voucherDetails.getUpdatedBy());
+        
+        return voucherRepository.save(voucher);
+    }
 
-    voucherRepository.save(voucher);
-
-    System.out.println("After = " + voucher.getUsageLimit());
-
-    return true;
-}
-    
+    @Override
+    public void deleteVoucher(Integer id) {
+        Voucher voucher = voucherRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Voucher không tồn tại with id: " + id));
+        voucherRepository.delete(voucher);
+    }
 }
