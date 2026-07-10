@@ -2339,7 +2339,7 @@ window.processToPaymentGateway = function () {
 
     const bankId = "ICB";
     const accountNo = "101879388698";
-    const accountName = "NGUYEN BAO HOANG";
+    const accountName = " BAO HOANG";
     const qrData = `LAS CINEMAS THANH TOAN VE`;
 
     const qrImg = document.getElementById("bank-qr-img");
@@ -2387,24 +2387,6 @@ function generateCgvDateSlider() {
   }
 }
 
-function startCountdown(expiresAt) {
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    const remain = expiresAt - Date.now();
-    if (remain <= 0) {
-      clearInterval(timerInterval);
-      alert("Hết thời gian giữ ghế 5 phút!");
-      resetHoldState();
-      selectedSeats = [];
-      calculateCgvCart();
-    } else {
-      const minutes = Math.floor(remain / 60000);
-      const seconds = Math.floor((remain % 60000) / 1000);
-      document.getElementById("timer-string").innerText =
-        `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-    }
-  }, 1000);
-}
 
 function resetHoldState() {
   clearInterval(timerInterval);
