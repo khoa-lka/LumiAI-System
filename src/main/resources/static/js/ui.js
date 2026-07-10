@@ -521,9 +521,11 @@ function renderCgvInterface() {
     if (currentRoomId == 2) {
       seatGrid.style.gridTemplateColumns = "repeat(21, 1fr)";
       seatGrid.style.gap = "4px";
+      seatGrid.classList.add("imax-room");
     } else {
       seatGrid.style.gridTemplateColumns = "repeat(10, 1fr)";
       seatGrid.style.gap = "6px";
+      seatGrid.classList.remove("imax-room");
     }
 
     API.getSeatsByShowtime(window.currentSelectedShowtimeId)

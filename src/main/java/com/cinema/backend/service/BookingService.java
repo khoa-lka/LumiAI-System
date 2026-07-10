@@ -356,4 +356,3 @@ private String toPublicImageUrl(String imagePath) {
     return publicUrl + "/" + imagePath;
 }
 }
-

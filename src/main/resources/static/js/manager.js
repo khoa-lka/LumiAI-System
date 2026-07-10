@@ -40,11 +40,29 @@ window.addEventListener("DOMContentLoaded", () => {
   // Nếu hợp lệ, tự động load danh sách phim + dashboard analytics
   const titleEl = document.getElementById("mp-dynamic-title");
   if (titleEl) titleEl.innerText = `Xin chào Manager: ${info.fullName}`;
+
+  // 🚀 Cập nhật tên/quyền/avatar ở góc phải header theo đúng tài khoản đang đăng nhập
+  // (trước đây các thẻ này bị viết cứng "Nguyễn Văn Viên" / "Quản lý")
+  updateManagerProfileHeader(info.fullName);
+
   loadManagerMovies();
   if (typeof window.loadManagerPromo === "function") window.loadManagerPromo();
   if (typeof window.loadManagerDashboard === "function")
     window.loadManagerDashboard();
 });
+
+// --- CẬP NHẬT TÊN/QUYỀN/AVATAR TRÊN HEADER THEO TÀI KHOẢN ĐANG ĐĂNG NHẬP ---
+function updateManagerProfileHeader(fullName) {
+  var nameBox = document.getElementById("mp-user-name-text");
+  var headerBox = document.getElementById("mp-user-dropdown-header");
+
+  if (nameBox) nameBox.innerText = fullName;
+  if (headerBox) headerBox.innerText = "Chào, " + fullName;
+  // Avatar & mũi tên (▾) giờ là icon SVG cố định (đồng bộ theo ảnh mẫu),
+  // không cần cập nhật động theo tên tài khoản nữa.
+  // Vai trò (mp-user-role) hiện cố định là "Quản lý" vì manager.html chỉ cho
+  // phép roleId === 1 truy cập (xem ALLOWED_ROLES ở trên), nên không cần đổi.
+}
 
 // --- THOÁT VAI TRÒ MANAGER, QUAY VỀ GIAO DIỆN CUSTOMER (index.html) ---
 // Lưu ý: KHÔNG xóa localStorage "las_logged_in_user" / sessionStorage đăng nhập
@@ -56,9 +74,11 @@ function exitManagerRoleToCustomerView() {
 }
 window.exitManagerRoleToCustomerView = exitManagerRoleToCustomerView;
 
-// --- 1. CHUYỂN TAB TRONG MANAGER DASHBOARD ---
-function switchMpTab(tabId) {
-  // Ẩn tất cả tab section
+// --- 1. CHUYỂN TAB TRONG MANAGER DASHBOARD (BỘ ENGINE ĐÃ ĐỒNG BỘ ĐỘNG LUỒNG NEW) ---
+window.switchMpTab = function(tabId) {
+  console.log("🚀 [Manager Portal] Chuyển sang phân hệ:", tabId);
+
+  // Ép ẩn toàn bộ thẻ và xóa active
   document.querySelectorAll(".mp-tab-section").forEach((tab) => {
     tab.style.display = "none";
     tab.classList.remove("active");
@@ -79,36 +99,78 @@ function switchMpTab(tabId) {
   }
   if (targetNav) targetNav.classList.add("active");
 
-  if (tabId === "dashboard" && typeof window.loadManagerDashboard === "function")
-    window.loadManagerDashboard();
-
-  // Cập nhật tiêu đề trang
+  // Cập nhật tiêu đề trang tương ứng
   const titleElement = document.getElementById("mp-dynamic-title");
   if (titleElement) {
     const titles = {
       dashboard: "Tổng quan hoạt động rạp",
       movies: "Quản lý Danh mục Phim",
       matrix: "Ma trận Lịch chiếu",
-      fnb: "Quản lý Kho F&B",
-      promo: "Quản lý Chiến dịch Khuyến mãi",
-      audit: "Báo cáo và Kiểm toán Tài chính",
+      fnb: "F&B Services & Inventory Control",
+      promo: "Chiến dịch Khuyến mãi",
+      audit: "Báo cáo & Kiểm toán",
     };
-    titleElement.innerText = titles[tabId] || "Chức năng đang phát triển...";
+    titleElement.innerText = titles[tabId] || "Manager Portal";
   }
 
-  // Nếu chuyển sang tab phim, tự động gọi API load danh sách phim
-  if (tabId === "movies") {
-    loadManagerMovies();
+  // =========================================================================
+  // 🎯 TỰ ĐỘNG GỌI API THỜI GIAN THỰC ĐƯỢC CHUYỂN TOÀN BỘ TỪ HTML SANG JS
+  // =========================================================================
+  
+  // 0. Vẽ lại Dashboard (dữ liệu động từ DB) mỗi khi quay lại Tab Dashboard
+  if (tabId === "dashboard" && typeof renderManagerDashboard === "function") {
+    try {
+      renderManagerDashboard();
+    } catch (err) {
+      console.error("Lỗi khi render Dashboard:", err);
+    }
   }
-  // Bổ sung vào cuối hàm switchMpTab của em:
-  if (tabId === "fnb") {
-    loadManagerFnb();
+  
+  // 1. Gọi API nạp dữ liệu phim khi qua Tab Movies
+  if (tabId === "movies" && typeof loadManagerMovies === "function") {
+    try {
+      loadManagerMovies();
+    } catch (err) {
+      console.error("Lỗi khi load danh sách phim:", err);
+    }
   }
-  // Tìm trong hàm switchMpTab, đắp thêm logic này vào cuối hàm:
-  if (tabId === "promo") {
-    loadManagerVouchers();
+  
+  // 2. Tự động kích hoạt gọi API nạp bắp nước từ DB khi chuyển sang Tab F&B
+  if (tabId === "fnb" && typeof loadManagerFnb === "function") {
+    try {
+      loadManagerFnb();
+    } catch (err) {
+      console.error("Lỗi khi load danh sách F&B từ database:", err);
+    }
   }
-}
+  
+  // 3. Tự động kích hoạt gọi ma trận lịch chiếu tổng hợp khi qua Tab Matrix
+  if (tabId === "matrix" && typeof loadManagerMatrix === "function") {
+    try {
+      loadManagerMatrix();
+    } catch (err) {
+      console.error("Lỗi khi load ma trận lịch chiếu:", err);
+    }
+  }
+  
+  // 4. Tự động gọi API nạp voucher từ database khi chuyển sang Tab Promo
+  if (tabId === "promo" && typeof loadManagerVouchers === "function") {
+    try {
+      loadManagerVouchers();
+    } catch (err) {
+      console.error("Lỗi khi load danh sách Voucher từ database:", err);
+    }
+  }
+
+  // 5. Vẽ lại Báo cáo & Kiểm toán mỗi khi vào Tab Audit (Gọi sang file manager-audit.js)
+  if (tabId === "audit" && typeof window.loadManagerAudit === "function") {
+    try {
+      window.loadManagerAudit(); 
+    } catch (err) {
+      console.error("Lỗi khi load dữ liệu Báo cáo & Kiểm toán:", err);
+    }
+  }
+};
 
 // --- 2. QUẢN LÝ MODAL & POPUP (CÁC MODAL KHÁC) ---
 function openMpDeleteModal() {
@@ -235,9 +297,9 @@ function renderMoviesTable(movies) {
           <td>${m.releaseDate || "N/A"}</td>
           <td>
               <div class="mp-table-actions">
-                  <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết">👁️</button>
-                  <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa">✏️</button>
-                  <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
+                  <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                  <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
               </div>
           </td>
       </tr>
@@ -319,9 +381,9 @@ function loadManagerMovies() {
                 <td>${m.releaseDate || "N/A"}</td>
                 <td>
                     <div class="mp-table-actions">
-                        <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết">👁️</button>
-                        <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa">✏️</button>
-                        <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
+                        <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                        <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                        <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
                     </div>
                 </td>
             </tr>
@@ -381,7 +443,7 @@ window.submitAddMovie = function () {
 
   API.addMovie(movieData)
     .then(() => {
-      alert("✅ Thêm phim thành công!");
+      alert("Thêm phim thành công!");
       closeAddMovie();
       loadManagerMovies();
     })
@@ -560,7 +622,7 @@ window.submitMatrixEditMovie = function () {
 
   API.updateMovie(movieData)
     .then(() => {
-      alert("✅ Cập nhật thành công!");
+      alert("Cập nhật thành công!");
       closeMatrixEditMovie();
       loadManagerMovies();
       if (typeof window.loadManagerMatrix === "function") window.loadManagerMatrix();
@@ -623,7 +685,7 @@ window.submitUpdateMovie = function () {
 
   API.updateMovie(movieData)
     .then(() => {
-      alert("✅ Cập nhật phim thành công!");
+      alert("Cập nhật phim thành công!");
       closeUpdateMovie();
       loadManagerMovies();
     })
@@ -651,7 +713,7 @@ window.submitDeleteMovie = function () {
 
   API.deleteMovie(movieId)
     .then(() => {
-      alert("✅ Hệ thống đã gỡ phim thành công!");
+      alert("Hệ thống đã gỡ phim thành công!");
       closeMpDeleteModal();
       loadManagerMovies();
     })
@@ -659,7 +721,7 @@ window.submitDeleteMovie = function () {
 };
 
 // ==========================================================================
-// --- LOGIC XỬ LÝ XEM CHI TIẾT PHIM (CON MẮT 👁️) ---
+// --- LOGIC XỬ LÝ XEM CHI TIẾT PHIM (CON MẮT 👁) ---
 // ==========================================================================
 window.openViewMovie = function (id) {
   const movie = window.moviesList.find((item) => item.movieId === id);
@@ -711,7 +773,7 @@ function displayCurrentDate() {
   const year = today.getFullYear();
 
   const formattedDate = `${day}/${month}/${year}`;
-  const dateBadge = document.getElementById("mp-current-date");
+  const dateBadge = document.getElementById("mp-current-date-text");
   if (dateBadge) {
     dateBadge.innerText = formattedDate;
   }
@@ -754,8 +816,8 @@ function renderFnbRow(item, index) {
         </td>
         <td>
             <div class="mp-table-actions">
-                <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" title="Sửa thông tin">✏️</button>
-                <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" title="Xóa">🗑️</button>
+                <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" title="Sửa thông tin"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" title="Xóa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
             </div>
         </td>
     </tr>
@@ -833,7 +895,7 @@ window.submitFnbForm = function() {
     // Nếu có ID -> Gọi API cập nhật thông tin sản phẩm
     API.updateFnbItem(id, fnbData)
       .then(() => {
-        alert("✅ Đã cập nhật sản phẩm F&B thành công!");
+        alert("Đã cập nhật sản phẩm F&B thành công!");
         closeFnbModal();
         loadManagerFnb();
       })
@@ -842,7 +904,7 @@ window.submitFnbForm = function() {
     // Nếu ID trống -> Gọi API thêm sản phẩm mới vào DB
     API.addFnbItem(fnbData)
       .then(() => {
-        alert("✅ Đã thêm sản phẩm mới vào kho thành công!");
+        alert("Đã thêm sản phẩm mới vào kho thành công!");
         closeFnbModal();
         loadManagerFnb();
       })
@@ -876,7 +938,7 @@ window.confirmDeleteFnb = function() {
 
   API.deleteFnbItem(id)
     .then(() => {
-      alert("✅ Đã xóa sản phẩm khỏi kho thành công!");
+      alert("Đã xóa sản phẩm khỏi kho thành công!");
       closeFnbDeleteModal();
       loadManagerFnb();
     })
@@ -959,7 +1021,7 @@ window.handleAutoReplenish = function() {
   const lowStockItems = window.fnbItemsList.filter(item => item.stockQuantity <= 30);
 
   if (lowStockItems.length === 0) {
-    alert("✨ Tất cả sản phẩm trong kho đều đang ở mức an toàn (>30 ly). Không cần tái cung ứng!");
+    alert("Tất cả sản phẩm trong kho đều đang ở mức an toàn (>30 ly). Không cần tái cung ứng!");
     return;
   }
 
@@ -978,12 +1040,12 @@ window.handleAutoReplenish = function() {
     // Chờ tất cả API cập nhật xong xuôi
     Promise.all(updatePromises)
       .then(() => {
-        alert("✅ Chiến dịch tái cung ứng hoàn tất! Toàn bộ sản phẩm tồn thấp đã được đưa về mức an toàn.");
+        alert("Chiến dịch tái cung ứng hoàn tất! Toàn bộ sản phẩm tồn thấp đã được đưa về mức an toàn.");
         loadManagerFnb(); // Tải lại bảng để cập nhật số lượng mới
       })
       .catch(err => {
         console.error("Lỗi tái cung ứng:", err);
-        alert("🚨 Có lỗi xảy ra trong quá trình cập nhật kho hàng: " + err.message);
+        alert("Có lỗi xảy ra trong quá trình cập nhật kho hàng: " + err.message);
       });
   }
 };
@@ -1023,7 +1085,7 @@ window.submitRestockForm = function() {
   const select = document.getElementById("restock-product-select");
   const item = window.fnbItemsList.find((x) => String(x.foodItemId) === String(select.value));
   if (!item) {
-    alert("❌ Vui lòng chọn sản phẩm cần nhập hàng!");
+    alert("Vui lòng chọn sản phẩm cần nhập hàng!");
     return;
   }
 
@@ -1041,7 +1103,7 @@ window.submitRestockForm = function() {
 
   API.updateFnbItem(item.foodItemId, fnbData)
     .then(() => {
-      alert(`✅ Nhập hàng thành công! Đã cộng thêm ${addQty} đơn vị vào sản phẩm ${item.itemName}.`);
+      alert(`Nhập hàng thành công! Đã cộng thêm ${addQty} đơn vị vào sản phẩm ${item.itemName}.`);
       closeRestockModal();
       loadManagerFnb();
     })
@@ -1053,13 +1115,13 @@ window.submitRestockForm = function() {
 // ==========================================================================
 
 // Vẽ bảng "Danh Sách Phim" tham khảo bên dưới Ma trận Lịch chiếu
-// (Movie | Genre | Duration | Rating | Status | Release Date | Actions)
+// (Movie | Genre | Duration | Status | Release Date | Actions)
 function renderMatrixMovieList(movies) {
   const tbody = document.getElementById("mp-matrix-movies-tbody");
   if (!tbody) return;
 
   if (!movies || movies.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px; color: #888;">Chưa có dữ liệu phim.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #888;">Chưa có dữ liệu phim.</td></tr>`;
     return;
   }
 
@@ -1068,7 +1130,6 @@ function renderMatrixMovieList(movies) {
     const posterUrl = m.mainposter_url ? m.mainposter_url : "img/default-poster.jpg";
     const statusClass = m.status === "now_showing" ? "active" : m.status === "coming_soon" ? "coming" : "inactive";
     const statusText = m.status === "now_showing" ? "Now Showing" : m.status === "coming_soon" ? "Coming Soon" : "Ngừng chiếu";
-    const ratingValue = typeof m.rating === "number" ? m.rating.toFixed(1) : "N/A";
     const genres = (m.genre || "Chưa cập nhật")
       .split(/[,/|]/)
       .map((g) => g.trim())
@@ -1091,13 +1152,12 @@ function renderMatrixMovieList(movies) {
           </div>
         </td>
         <td><span class="mp-duration-chip">⏱ ${m.duration} min</span></td>
-        <td><span class="mp-rating-chip">★ ${ratingValue}</span></td>
         <td><span class="mp-status ${statusClass}">${statusText}</span></td>
         <td>${m.releaseDate || "N/A"}</td>
         <td>
           <div class="mp-table-actions">
-            <button class="mp-action-btn" onclick="openMatrixViewMovie(${m.movieId})" title="Xem chi tiết suất chiếu">👁️</button>
-            <button class="mp-action-btn" onclick="openMatrixEditMovie(${m.movieId})" title="Sửa">✏️</button>
+            <button class="mp-action-btn" onclick="openMatrixViewMovie(${m.movieId})" title="Xem chi tiết suất chiếu"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="mp-action-btn" onclick="openMatrixEditMovie(${m.movieId})" title="Sửa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
           </div>
         </td>
       </tr>
@@ -1253,7 +1313,7 @@ window.loadManagerMatrix = function() {
       if (trackRoom2.innerHTML === "") trackRoom2.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#bbb;">Trống lịch phòng 2</div>';
     })
     .catch((err) => {
-      console.error("🚨 Lỗi vẽ ma trận lịch chiếu:", err);
+      console.error("Lỗi vẽ ma trận lịch chiếu:", err);
       trackRoom1.innerHTML = trackRoom2.innerHTML = `<span style="color:red;padding:10px;display:block;">Lỗi đồng bộ lịch chiếu: ${err.message}</span>`;
     });
 };
@@ -1338,7 +1398,7 @@ window.submitAddShowtimeForm = function() {
   console.log("🚀 Payload gửi lên Spring Boot tạo suất chiếu:", payload);
 
   // ==========================================================================
-  // 🚨 POPUP CHẶN TRÙNG LỊCH (BẰNG DATA ĐỘNG - KHÔNG XÀI DOM - GIỮ NGUYÊN CẤU TRÚC CỦA KHOA)
+  // POPUP CHẶN TRÙNG LỊCH (BẰNG DATA ĐỘNG - KHÔNG XÀI DOM - GIỮ NGUYÊN CẤU TRÚC CỦA KHOA)
   // ==========================================================================
   const timeToMinutes = (timeStr) => {
     const [h, m] = timeStr.split(":").map(Number);
@@ -1377,25 +1437,58 @@ window.submitAddShowtimeForm = function() {
       }
 
       if (isTimeConflict) {
-        alert(`❌ KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`);
+        alert(`KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`);
         return; // Chặn đứng tại đây, không cho gọi API add
       }
 
       // Nếu an toàn, thực hiện gọi API lưu xuống database y như cũ của em
       API.addShowtime(payload)
         .then(() => {
-          alert("✅ Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.");
+          alert("Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.");
           closeAddShowtimeModal();
           loadManagerMatrix();
         })
         .catch((err) => {
           console.error(err);
-          alert("🚨 Thêm suất chiếu thất bại: " + err.message);
+          alert("Thêm suất chiếu thất bại: " + err.message);
         });
     })
     .catch((err) => {
       console.error("Lỗi khi kiểm tra trùng lịch:", err);
-      alert("🚨 Không thể xác thực trùng lịch do lỗi kết nối!");
+      alert("Không thể xác thực trùng lịch do lỗi kết nối!");
+    });
+};
+
+// ==========================================================================
+// 🚀 BỘ CHỨC NĂNG QUẢN LÝ CHIẾN DỊCH VOUCHER / KHUYẾN MÃI (BẢO ĐẢM THÔNG NÚT 100%)
+// ==========================================================================
+
+// Hàm ẩn/hiện Modal gốc (🎯 ĐÃ SỬA: Khớp chuẩn đét ID mp-create-promo-modal bên HTML)
+window.openCreatePromoModal = function() {
+  const modal = document.getElementById("mp-create-promo-modal");
+  if (modal) modal.style.display = "flex";
+};
+
+window.closeCreatePromoModal = function() {
+  const modal = document.getElementById("mp-create-promo-modal");
+  if (modal) modal.style.display = "none";
+};
+
+// 1. Tải danh sách Voucher từ database lên bảng Admin thông qua API tổng
+window.loadManagerVouchers = function() {
+  const tbody = document.getElementById("mp-promo-tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:15px;">Đang quét danh sách chiến dịch khuyến mãi...</td></tr>';
+
+  API.getManagerVouchers()
+    .then((vouchers) => {
+      window.vouchersList = vouchers;
+      renderVoucherRows(vouchers);
+    })
+    .catch((err) => {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Lỗi kết nối danh mục Voucher: ${err.message}</td></tr>`;
     });
 };
 
@@ -1469,6 +1562,7 @@ window.openAddVoucherModal = function() {
   document.getElementById("v-min").value = "0";
   document.getElementById("v-limit").value = "100";
   document.getElementById("v-expired").value = "";
+  document.getElementById("v-status").value = "ACTIVE";
 
   document.getElementById("mp-promo-modal-title").innerText = "Thêm Mới Chiến Dịch Khuyến Mãi";
   window.openCreatePromoModal();
@@ -1490,6 +1584,7 @@ window.openEditVoucherModal = function(id) {
   if (v.expiredDate) {
     document.getElementById("v-expired").value = v.expiredDate.substring(0, 16);
   }
+  document.getElementById("v-status").value = v.status || "ACTIVE";
 
   document.getElementById("mp-promo-modal-title").innerText = "Cập Nhật Chiến Dịch Khuyến Mãi";
   window.openCreatePromoModal();
@@ -1505,6 +1600,7 @@ window.submitVoucherForm = function() {
   const min = parseFloat(document.getElementById("v-min").value) || 0;
   const limit = parseInt(document.getElementById("v-limit").value) || 0;
   const expired = document.getElementById("v-expired").value;
+  const status = document.getElementById("v-status").value;
 
   if (!code) { alert("Vui lòng nhập mã Voucher!"); return; }
   if (value <= 0) { alert("Giá trị giảm phải lớn hơn 0!"); return; }
@@ -1517,6 +1613,7 @@ window.submitVoucherForm = function() {
     minimumOrder: min,
     usageLimit: limit,
     expiredDate: expired ? `${expired}:00` : null,
+    status: status,
     createdBy: parseInt(sessionStorage.getItem("roleId")) || 1,
     updatedBy: parseInt(sessionStorage.getItem("roleId")) || 1
   };
@@ -1525,19 +1622,75 @@ window.submitVoucherForm = function() {
 
   apiCall
     .then(() => {
-      alert(id ? "✅ Cập nhật chiến dịch thành công!" : "✅ Tạo mã Voucher khuyến mãi mới thành công!");
+      alert(id ? "Cập nhật chiến dịch thành công!" : "Tạo mã Voucher khuyến mãi mới thành công!");
       window.closeCreatePromoModal();
       loadManagerVouchers();
     })
     .catch(err => alert("Lỗi xử lý Voucher: " + err.message));
 };
 
+// 6. Lọc/tìm kiếm danh sách voucher theo mã, loại giảm giá, trạng thái (client-side)
+window.filterManagerPromo = function() {
+  const tbody = document.getElementById("mp-promo-tbody");
+  if (!tbody || !window.vouchersList) return;
+
+  const keyword = (document.getElementById("mp-promo-search-input").value || "").trim().toUpperCase();
+  const typeFilter = document.getElementById("mp-promo-filter-type").value;
+  const statusFilter = document.getElementById("mp-promo-filter-status").value;
+
+  const filtered = window.vouchersList.filter((v) => {
+    const matchKeyword = !keyword || (v.voucherCode || "").toUpperCase().includes(keyword);
+    const matchType = typeFilter === "all" || v.discountType === typeFilter;
+    const matchStatus = statusFilter === "all" || (v.status || "ACTIVE") === statusFilter;
+    return matchKeyword && matchType && matchStatus;
+  });
+
+  renderVoucherRows(filtered);
+};
+
+// Tách phần render bảng ra hàm riêng để dùng chung cho load & filter
+function renderVoucherRows(vouchers) {
+  const tbody = document.getElementById("mp-promo-tbody");
+  tbody.innerHTML = "";
+
+  if (!vouchers || vouchers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888; padding:15px;">Không tìm thấy chiến dịch khuyến mãi phù hợp!</td></tr>';
+    return;
+  }
+
+  vouchers.forEach((v, index) => {
+    let expiryDate = v.expiredDate ? new Date(v.expiredDate).toLocaleDateString("vi-VN") : "Vô thời hạn";
+    let discountText = v.discountType === "PERCENT" ? `${v.discountValue}%` : `${v.discountValue.toLocaleString("vi-VN")} đ`;
+    let statusText = v.status === "INACTIVE"
+      ? '<span style="color:#9a9aa3;">Ngừng hoạt động</span>'
+      : '<span style="color:#2e7d32; font-weight:bold;">Đang hoạt động</span>';
+
+    tbody.innerHTML += `
+      <tr>
+          <td style="text-align: center; font-weight: bold;">${index + 1}</td>
+          <td><span class="mp-badge-code" style="background:#e8f5e9; color:#2e7d32; font-weight:bold; padding:4px 8px; border-radius:4px;">${v.voucherCode}</span></td>
+          <td>${v.discountType === "PERCENT" ? "Giảm theo phần trăm (%)" : "Giảm tiền mặt trực tiếp"}</td>
+          <td style="text-align: right; font-weight: bold; color: #b71c1c;">${discountText}</td>
+          <td style="text-align: center;">${v.usageLimit} lượt</td>
+          <td style="text-align: center;">${expiryDate}</td>
+          <td style="text-align: center;">${statusText}</td>
+          <td style="text-align: center;">
+              <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
+                  <button class="mp-action-btn" onclick="openEditVoucherModal(${v.voucherId})" style="cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Sửa</button>
+                  <button class="mp-action-btn" onclick="submitDeleteVoucher(${v.voucherId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Xóa</button>
+              </div>
+          </td>
+      </tr>
+    `;
+  });
+}
+
 // 5. Xử lý Xóa Voucher qua API tổng
 window.submitDeleteVoucher = function(id) {
-  if (confirm("⚠️ Bạn có chắc chắn muốn gỡ bỏ hoàn toàn mã Voucher này khỏi hệ thống không?")) {
+  if (confirm("Bạn có chắc chắn muốn gỡ bỏ hoàn toàn mã Voucher này khỏi hệ thống không?")) {
     API.deleteVoucher(id)
       .then(() => {
-        alert("✅ Đã gỡ chiến dịch khuyến mãi thành công!");
+        alert("Đã gỡ chiến dịch khuyến mãi thành công!");
         loadManagerVouchers();
       })
       .catch(err => alert("Lỗi khi xóa voucher: " + err.message));

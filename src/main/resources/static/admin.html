@@ -3,104 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Management Portal</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        :root {
-            --primary: #2c3e50;
-            --secondary: #3498db;
-            --bg: #f8f9fa;
-            --sidebar-width: 260px;
-        }
-
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; background: var(--bg); }
-
-        /* Sidebar */
-        .admin-sidebar { width: var(--sidebar-width); background: var(--primary); color: white; height: 100vh; padding: 20px 0; position: fixed; }
-        .admin-sidebar h3 { text-align: center; color: #bdc3c7; font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 20px; }
-        .admin-nav-item { padding: 15px 25px; cursor: pointer; transition: 0.3s; border-left: 4px solid transparent; }
-        .admin-nav-item:hover { background: #34495e; }
-        .admin-nav-item.active { background: #34495e; border-left-color: var(--secondary); color: #fff; font-weight: bold; }
-
-        /* Content Area */
-        .admin-main-content { margin-left: var(--sidebar-width); flex: 1; padding: 30px; }
-
-        .admin-tab-section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-
-        /* Table Styling */
-        .mp-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .mp-table th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; }
-        .mp-table td { padding: 12px; border-bottom: 1px solid #eee; }
-        
-        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; background: #d4edda; color: #155724; }
-        .btn-admin-action { cursor: pointer; padding: 6px 12px; border: none; border-radius: 4px; font-size: 0.8rem; }
-        .delete { background: #e74c3c; color: white; }
-        .edit { background: #3498db; color: white; margin-right: 5px; }
-
-        /* ===== HEADER ADMIN (giống Manager Dashboard) ===== */
-        .admin-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #17171b;
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 10px;
-            padding: 16px 24px;
-            margin-bottom: 30px;
-        }
-        .adm-title { font-size: 22px; font-weight: bold; color: #f4f4f5; margin: 0; }
-        .adm-header-utils { display: flex; align-items: center; gap: 18px; }
-        .adm-date-badge {
-            background: #0f0f12; border: 1px solid rgba(255,255,255,0.12);
-            padding: 8px 15px; border-radius: 20px; font-size: 13px; color: #c4c4cc; font-weight: bold;
-        }
-        .adm-bell { font-size: 20px; position: relative; cursor: pointer; color: #e4e4e7; }
-        .adm-bell::after {
-            content: ""; position: absolute; top: 0; right: 0;
-            width: 8px; height: 8px; background: #ff4742; border-radius: 50%;
-        }
-        .adm-notif-dropdown {
-            position: absolute; top: 34px; right: 0; width: 220px;
-            background: #1c2128; color: #cfd3da; border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.35); padding: 14px 16px;
-            font-size: 13px; z-index: 1002; display: none;
-        }
-        .adm-notif-dropdown.open { display: block; animation: admFadeIn 0.2s; }
-        .adm-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; position: relative; }
-        .adm-avatar {
-            width: 40px; height: 40px; border-radius: 50%; background: #ff6b35;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 800; color: #fff;
-        }
-        .adm-user-info { display: flex; flex-direction: column; }
-        .adm-user-name { font-size: 14px; font-weight: bold; color: #f4f4f5; }
-        .adm-user-role { font-size: 12px; color: #9a9aa3; }
-        .adm-user-dropdown {
-            position: absolute; top: 56px; right: 0; width: 230px;
-            background: #1c2128; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.35);
-            padding: 10px 0; z-index: 1002; display: none; color: #fff;
-        }
-        .adm-user-dropdown.open { display: block; animation: admFadeIn 0.2s; }
-        .adm-user-dropdown-header {
-            padding: 10px 20px; font-weight: bold; border-bottom: 1px solid #333; margin-bottom: 5px;
-        }
-        .adm-dropdown-item {
-            display: flex; align-items: center; gap: 10px; padding: 11px 20px;
-            font-size: 13px; cursor: pointer; transition: background 0.2s;
-            color: #ff4742; font-weight: 700;
-        }
-        .adm-dropdown-item:hover { color: #fff; background: #ff4742; }
-        @keyframes admFadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
+    <link rel="stylesheet" href="style.css?v=21">
+    <link rel="stylesheet" href="admin.css">
 </head>
 <body>
 
     <div class="admin-sidebar">
-        <h3>QUẢN TRỊ HỆ THỐNG</h3>
-        <div class="admin-nav-item active" onclick="switchAdminTab('ban')">Khóa tài khoản</div>
-        <div class="admin-nav-item" onclick="switchAdminTab('syslog')">Logs hệ thống</div>
-        <div class="admin-nav-item" onclick="switchAdminTab('faq')">Quản trị FAQ</div>
-        <div class="admin-nav-item" onclick="switchAdminTab('webhook')">Webhook Logs</div>
-        <div class="admin-nav-item" onclick="switchAdminTab('db')">Backup Database</div>
+        <div class="adm-logo-zone">
+            QUẢN TRỊ HỆ THỐNG
+        </div>
+        <ul class="admin-nav-list">
+            <li class="admin-nav-item active" id="nav-admin-dashboard" onclick="switchAdminTab('dashboard')">
+                <span class="admin-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg></span>
+                <div class="admin-nav-text"><strong>Dashboard</strong><span class="admin-nav-subtext">Tổng quan</span></div>
+            </li>
+            <li class="admin-nav-item" id="nav-admin-ban" onclick="switchAdminTab('ban')">
+                <span class="admin-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span>
+                <div class="admin-nav-text"><strong>Quản lý tài khoản</strong><span class="admin-nav-subtext">Người dùng &amp; phân quyền</span></div>
+            </li>
+            <li class="admin-nav-item" id="nav-admin-syslog" onclick="switchAdminTab('syslog')">
+                <span class="admin-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg></span>
+                <div class="admin-nav-text"><strong>Logs hệ thống</strong><span class="admin-nav-subtext">Nhật ký hoạt động</span></div>
+            </li>
+            <li class="admin-nav-item" id="nav-admin-webhook" onclick="switchAdminTab('webhook')">
+                <span class="admin-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15 15 9"/><path d="M11 6l1.5-1.5a3.5 3.5 0 1 1 5 5L16 11"/><path d="M13 18l-1.5 1.5a3.5 3.5 0 1 1-5-5L8 13"/></svg></span>
+                <div class="admin-nav-text"><strong>Webhook Logs</strong><span class="admin-nav-subtext">Giám sát webhook</span></div>
+            </li>
+            <li class="admin-nav-item" id="nav-admin-db" onclick="switchAdminTab('db')">
+                <span class="admin-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3"/></svg></span>
+                <div class="admin-nav-text"><strong>Backup Database</strong><span class="admin-nav-subtext">Sao lưu &amp; phục hồi</span></div>
+            </li>
+        </ul>
     </div>
 
     <div class="admin-main-content">
@@ -109,19 +42,37 @@
                 <h2 class="adm-title" id="adm-dynamic-title">Xin chào Admin</h2>
             </div>
             <div class="adm-header-utils">
-                <div class="adm-date-badge" id="adm-current-date">--/--/----</div>
+                <div class="adm-date-badge" id="adm-current-date">
+                    <svg class="adm-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.6"/>
+                        <path d="M3 9.5H21" stroke="currentColor" stroke-width="1.6"/>
+                        <path d="M8 3V6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <path d="M16 3V6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                    </svg>
+                    <span id="adm-current-date-text">--/--/----</span>
+                </div>
 
                 <div style="position: relative;">
-                    <div class="adm-bell" onclick="toggleAdmNotifDropdown()">🔔</div>
+                    <div class="adm-bell" onclick="toggleAdmNotifDropdown()">
+                        <svg class="adm-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 3.5C9.5 3.5 7.5 5.5 7.5 8V11.2C7.5 11.8 7.28 12.38 6.88 12.83L5.6 14.28C4.83 15.15 5.45 16.5 6.6 16.5H17.4C18.55 16.5 19.17 15.15 18.4 14.28L17.12 12.83C16.72 12.38 16.5 11.8 16.5 11.2V8C16.5 5.5 14.5 3.5 12 3.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                            <path d="M9.5 19C10 20 10.9 20.5 12 20.5C13.1 20.5 14 20 14.5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                    </div>
                     <div class="adm-notif-dropdown" id="adm-notif-dropdown">
                         Chưa có thông báo mới.
                     </div>
                 </div>
 
                 <div class="adm-profile" onclick="toggleAdmUserDropdown()">
-                    <div class="adm-avatar" id="adm-avatar-initials">AD</div>
+                    <div class="adm-avatar" id="adm-avatar-initials">
+                        <svg class="adm-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="8.5" r="3.2" stroke="currentColor" stroke-width="1.6"/>
+                            <path d="M5.5 19C6.4 16 8.9 14.2 12 14.2C15.1 14.2 17.6 16 18.5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                    </div>
                     <div class="adm-user-info">
-                        <span class="adm-user-name" id="adm-user-name">Quản trị viên ▾</span>
+                        <span class="adm-user-name"><span id="adm-user-name-text">Quản trị viên</span> <svg class="adm-chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                         <span class="adm-user-role">Admin</span>
                     </div>
                     <div class="adm-user-dropdown" id="adm-user-dropdown">
@@ -132,32 +83,239 @@
             </div>
         </div>
 
-        <div id="admin-tab-ban" class="admin-tab-section">
-            <h2>Quản lý người dùng</h2>
+        <div id="admin-tab-dashboard" class="admin-tab-section" style="border-top:none; background:transparent; border:none; box-shadow:none; padding:0;">
+
+            <div class="ad-metrics" id="ad-metrics"></div>
+
+            <div class="md-row-2">
+                <div class="md-box">
+                    <div class="md-box-head">
+                        <div>
+                            <h3 class="md-box-title">Biểu đồ tổng quan</h3>
+                            <span class="md-box-sub">Người dùng, tài khoản mới &amp; bị khóa theo ngày</span>
+                        </div>
+                    </div>
+                    <div class="md-chart-host" id="ad-trend-chart"></div>
+                </div>
+                <div class="md-box">
+                    <div class="md-box-head">
+                        <div>
+                            <h3 class="md-box-title">Phân bố vai trò</h3>
+                        </div>
+                    </div>
+                    <div class="md-genre-wrap">
+                        <div class="md-donut-host ad-donut-host">
+                            <div id="ad-role-chart"></div>
+                            <div class="ad-donut-center" id="ad-role-total"></div>
+                        </div>
+                        <div class="md-genre-legend" id="ad-role-legend"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md-box" style="margin-bottom:22px;">
+                <div class="md-box-head">
+                    <div>
+                        <h3 class="md-box-title">Hoạt động theo ngày</h3>
+                        <span class="md-box-sub">Logs hệ thống &amp; Webhook Logs 7 ngày qua</span>
+                    </div>
+                    <div style="display:flex; gap:14px; font-size:11px; color:#9a9aa3;">
+                        <span style="display:flex;align-items:center;gap:6px;"><i class="ad-dot" style="background:#60a5fa;"></i> Logs hệ thống</span>
+                        <span style="display:flex;align-items:center;gap:6px;"><i class="ad-dot" style="background:#4ade80;"></i> Webhook Logs</span>
+                    </div>
+                </div>
+                <div id="ad-activity-bars"></div>
+            </div>
+
+            <div class="ad-summary-grid">
+                <div class="md-box">
+                    <h3 class="md-box-title" style="margin-bottom:14px;">Trạng thái hệ thống</h3>
+                    <div id="ad-system-status"></div>
+                </div>
+                <div class="md-box">
+                    <h3 class="md-box-title" style="margin-bottom:14px;">Backup gần nhất</h3>
+                    <div id="ad-backup-box"></div>
+                    <button class="btn-admin-action edit ad-summary-btn" onclick="switchAdminTab('db')">Xem lịch sử backup</button>
+                </div>
+                <div class="md-box">
+                    <h3 class="md-box-title" style="margin-bottom:14px;">Webhook Logs <span class="ad-box-sub-inline">(7 ngày qua)</span></h3>
+                    <div id="ad-webhook-box"></div>
+                    <button class="btn-admin-action edit ad-summary-btn" onclick="switchAdminTab('webhook')">Xem chi tiết</button>
+                </div>
+                <div class="md-box">
+                    <h3 class="md-box-title" style="margin-bottom:14px;">Logs hệ thống <span class="ad-box-sub-inline">(7 ngày qua)</span></h3>
+                    <div id="ad-logs-box"></div>
+                    <button class="btn-admin-action edit ad-summary-btn" onclick="switchAdminTab('syslog')">Xem chi tiết</button>
+                </div>
+            </div>
+
+            <div class="md-row-2" style="grid-template-columns: 1fr 1fr;">
+                <div class="md-box">
+                    <div class="md-box-head">
+                        <h3 class="md-box-title">Tài khoản mới nhất</h3>
+                    </div>
+                    <div id="ad-new-accounts"></div>
+                    <div style="text-align:center; margin-top:14px;">
+                        <a href="#" onclick="switchAdminTab('ban'); return false;" style="color:var(--adm-red); font-size:13px; font-weight:700; text-decoration:none;">Xem tất cả →</a>
+                    </div>
+                </div>
+                <div class="md-box">
+                    <div class="md-box-head">
+                        <h3 class="md-box-title">Hoạt động hệ thống gần đây</h3>
+                    </div>
+                    <div id="ad-activity-log"></div>
+                    <div style="text-align:center; margin-top:14px;">
+                        <a href="#" onclick="switchAdminTab('syslog'); return false;" style="color:var(--adm-red); font-size:13px; font-weight:700; text-decoration:none;">Xem tất cả →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-tab-ban" class="admin-tab-section" style="display:none;">
+            <h2>Quản lý tài khoản</h2>
+
+            <div class="adm-toolbar">
+                <div class="adm-search-box">
+                    <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+                    <input type="text" id="adm-ban-search" placeholder="Tìm theo ID hoặc Email..." oninput="filterAdminBanList()" />
+                </div>
+                <select class="adm-filter-select" id="adm-ban-status-filter" onchange="filterAdminBanList()">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Active">Hoạt động</option>
+                    <option value="Banned">Bị khóa</option>
+                </select>
+            </div>
+
             <table class="mp-table">
-                <thead><tr><th>ID</th><th>Email</th><th>Role</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
+                <thead><tr><th>ID</th><th>Email</th><th>Chức vụ</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
                 <tbody id="admin-ban-tbody"></tbody>
             </table>
         </div>
 
-        <div id="admin-tab-syslog" class="admin-tab-section" style="display:none;">
-            <h2>Hệ thống Logs</h2>
-            <table class="mp-table"><thead><tr><th>Thời gian</th><th>Hành động</th><th>User</th><th>Status</th></tr></thead><tbody id="admin-syslog-tbody"></tbody></table>
-        </div>
-        
-        <div id="admin-tab-faq" class="admin-tab-section" style="display:none;">
-            <h2>Câu hỏi thường gặp</h2>
-            <table class="mp-table"><thead><tr><th>Câu hỏi</th><th>Trả lời</th><th>Thao tác</th></tr></thead><tbody id="admin-faq-tbody"></tbody></table>
+        <div id="admin-tab-syslog" class="admin-tab-section" style="display:none; border-top:none; background:transparent; border:none; box-shadow:none; padding:0;">
+            <div style="margin-bottom:20px;">
+                <h2 style="margin:0 0 4px 0; font-size:22px;">Logs hệ thống</h2>
+                <span class="md-box-sub">Theo dõi các hoạt động và sự kiện trong hệ thống</span>
+            </div>
+
+            <div class="ad-metrics" id="adm-syslog-metrics" style="grid-template-columns: repeat(4, 1fr);"></div>
+
+            <div class="md-box" style="margin-bottom:0;">
+                <div class="adm-toolbar" style="margin-bottom:16px;">
+                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <div class="adm-date-badge" id="adm-syslog-date-range" style="cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9.5H21M8 3v3.5M16 3v3.5"/></svg> 02/07/2026 - 09/07/2026 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>
+                        <select class="adm-filter-select" id="adm-syslog-level-filter" onchange="filterAdminSysLogTable()">
+                            <option value="">Tất cả mức độ</option>
+                            <option value="info">Thông tin</option>
+                            <option value="warning">Cảnh báo</option>
+                            <option value="error">Lỗi</option>
+                        </select>
+                        <select class="adm-filter-select" id="adm-syslog-action-filter" onchange="filterAdminSysLogTable()">
+                            <option value="">Tất cả hành động</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <div class="adm-search-box">
+                            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+                            <input type="text" id="adm-syslog-search" placeholder="Tìm kiếm log..." oninput="filterAdminSysLogTable()" />
+                        </div>
+                        <button class="btn-admin-action edit" onclick="renderAdminSysLogPage()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 8M20 4v4h-4M20 12a8 8 0 0 1-14 5.3L4 16M4 20v-4h4"/></svg> Làm mới</button>
+                        <button class="adm-primary-btn" onclick="exportAdminSysLogCsv()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 20h14"/></svg> Xuất CSV</button>
+                    </div>
+                </div>
+
+                <table class="mp-table">
+                    <thead>
+                        <tr>
+                            <th>THỜI GIAN</th>
+                            <th>MỨC ĐỘ</th>
+                            <th>HÀNH ĐỘNG</th>
+                            <th>USER</th>
+                            <th>IP ADDRESS</th>
+                            <th>CHI TIẾT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-syslog-tbody"></tbody>
+                </table>
+
+                <div class="adm-pagination" id="adm-syslog-pagination"></div>
+            </div>
         </div>
 
-        <div id="admin-tab-webhook" class="admin-tab-section" style="display:none;">
-            <h2>Webhook Monitoring</h2>
-            <table class="mp-table"><thead><tr><th>Thời gian</th><th>Source</th><th>Payload</th><th>HTTP Code</th></tr></thead><tbody id="admin-webhook-tbody"></tbody></table>
+        <div id="admin-tab-webhook" class="admin-tab-section" style="display:none; border-top:none; background:transparent; border:none; box-shadow:none; padding:0;">
+            <div style="margin-bottom:20px;">
+                <h2 style="margin:0 0 4px 0; font-size:22px;">Webhook Logs</h2>
+                <span class="md-box-sub">Theo dõi và giám sát các webhook được gửi từ hệ thống</span>
+            </div>
+
+            <div class="ad-metrics" id="adm-webhook-metrics" style="grid-template-columns: repeat(4, 1fr);"></div>
+
+            <div class="md-box" style="margin-bottom:0;">
+                <div class="adm-toolbar" style="margin-bottom:16px; align-items:flex-end;">
+                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <div>
+                            <div class="md-box-sub" style="margin-bottom:6px;">Khoảng thời gian</div>
+                            <div class="adm-date-badge" id="adm-webhook-date-range" style="cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9.5H21M8 3v3.5M16 3v3.5"/></svg> 02/07/2026 - 09/07/2026 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 8M20 4v4h-4M20 12a8 8 0 0 1-14 5.3L4 16M4 20v-4h4"/></svg></div>
+                        </div>
+                        <div>
+                            <div class="md-box-sub" style="margin-bottom:6px;">Endpoint</div>
+                            <select class="adm-filter-select" id="adm-webhook-endpoint-filter" onchange="filterAdminWebhookTable()">
+                                <option value="">Tất cả endpoint</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="md-box-sub" style="margin-bottom:6px;">Trạng thái</div>
+                            <select class="adm-filter-select" id="adm-webhook-status-filter" onchange="filterAdminWebhookTable()">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="success">Thành công</option>
+                                <option value="failed">Thất bại</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="md-box-sub" style="margin-bottom:6px;">HTTP Code</div>
+                            <select class="adm-filter-select" id="adm-webhook-code-filter" onchange="filterAdminWebhookTable()">
+                                <option value="">Tất cả mã</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <div class="adm-search-box">
+                            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+                            <input type="text" id="adm-webhook-search" placeholder="Tìm kiếm..." oninput="filterAdminWebhookTable()" />
+                        </div>
+                        <button class="btn-admin-action edit" onclick="renderAdminWebhookPage()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3L20 8M20 4v4h-4M20 12a8 8 0 0 1-14 5.3L4 16M4 20v-4h4"/></svg> Làm mới</button>
+                        <button class="adm-primary-btn" onclick="exportAdminWebhookCsv()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 20h14"/></svg> Xuất CSV</button>
+                    </div>
+                </div>
+
+                <table class="mp-table">
+                    <thead>
+                        <tr>
+                            <th>THỜI GIAN</th>
+                            <th>ENDPOINT</th>
+                            <th>HTTP CODE</th>
+                            <th>TRẠNG THÁI</th>
+                            <th>THỜI GIAN PHẢN HỒI</th>
+                            <th>KÍCH THƯỚC</th>
+                            <th>THAO TÁC</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-webhook-tbody"></tbody>
+                </table>
+
+                <div class="adm-pagination" id="adm-webhook-pagination"></div>
+            </div>
         </div>
 
         <div id="admin-tab-db" class="admin-tab-section" style="display:none;">
             <h2>Database Backups</h2>
-            <table class="mp-table"><thead><tr><th>Phiên bản</th><th>Ngày tạo</th><th>Dung lượng</th><th>Loại</th><th>Action</th></tr></thead><tbody id="admin-db-tbody"></tbody></table>
+
+            <div class="adm-toolbar">
+                <div style="color: var(--adm-muted); font-size: 13px;">Danh sách các bản sao lưu cơ sở dữ liệu</div>
+                <button class="adm-primary-btn" onclick="createManualBackupAction()">+ Tạo bản sao lưu thủ công</button>
+            </div>
+
+            <table class="mp-table"><thead><tr><th>Mã bản sao lưu</th><th>Ngày giờ</th><th>Dung lượng</th><th>Hình thức</th><th>Thao tác</th></tr></thead><tbody id="admin-db-tbody"></tbody></table>
         </div>
     </div>
 
@@ -192,7 +350,7 @@
     var d = String(today.getDate()).padStart(2, "0");
     var m = String(today.getMonth() + 1).padStart(2, "0");
     var y = today.getFullYear();
-    var el = document.getElementById("adm-current-date");
+    var el = document.getElementById("adm-current-date-text");
     if (el) el.innerText = d + "/" + m + "/" + y;
   }
 
@@ -204,21 +362,19 @@
       var fullName = u.fullName || "Quản trị viên";
       var titleBox = document.getElementById("adm-dynamic-title");
       if (titleBox) titleBox.innerText = "Xin chào Admin: " + fullName;
-      var nameBox = document.getElementById("adm-user-name");
+      var nameBox = document.getElementById("adm-user-name-text");
       var headerBox = document.getElementById("adm-user-dropdown-header");
-      var avatarBox = document.getElementById("adm-avatar-initials");
-      if (nameBox) nameBox.innerText = fullName + " ▾";
+      if (nameBox) nameBox.innerText = fullName;
       if (headerBox) headerBox.innerText = "Chào, " + fullName;
-      if (avatarBox) {
-        var initials = fullName.split(" ").pop().substring(0, 2).toUpperCase();
-        avatarBox.innerText = initials;
-      }
     } catch (e) {}
   }
 
   document.addEventListener("DOMContentLoaded", function () {
     displayAdmDate();
     loadAdmProfile();
+    // Tab "Dashboard" mặc định active ngay khi tải trang,
+    // nên phải load data ngay từ đầu (không đợi người dùng click vào tab).
+    if (typeof renderAdminDashboard === "function") renderAdminDashboard();
   });
 })();
 
@@ -242,7 +398,10 @@ function exitAdminRoleToCustomerView() {
 <script src="js/auth.js?v=12"></script>
 
 
-<script src="js/admin.js?v=12"></script>
+<script src="js/admin.js?v=16"></script>
+<script src="js/admin-dashboard.js?v=3"></script>
+<script src="js/admin-syslog.js?v=3"></script>
+<script src="js/admin-webhook.js?v=3"></script>
 <script src="js/home.js?v=12"></script>
     
   
