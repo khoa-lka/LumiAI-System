@@ -8,10 +8,34 @@
 /* --- 1. BỘ DỮ LIỆU TĨNH --- */
 
 const AUD_METRICS = [
-  { icon: "🔥", label: "Doanh thu hôm nay", value: "125.000.000đ", delta: "+12.4%", type: "up" },
-  { icon: "🏟️", label: "Tỷ lệ lấp đầy phòng chiếu", value: "78%", delta: "+8.1%", type: "up" },
-  { icon: "🍿", label: "Hiệu suất F&B (Đơn bán)", value: "150 đơn", delta: "+9.8%", type: "up" },
-  { icon: "⚠️", label: "Đối soát lệch tuần này", value: "2 ngày", delta: "Cần kiểm tra", type: "warn" },
+  {
+    icon: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C12 3 7.5 7.5 7.5 12C7.5 15.6 9.9 18 13 18C15.5 18 17.5 16 17.5 13.3C17.5 10.5 15.3 9 14.5 7C14.3 8.3 13.5 9.2 12.6 9.6C12.8 8 12.5 5.3 12 3Z"/></svg>`,
+    label: "Doanh thu hôm nay",
+    value: "125.000.000đ",
+    delta: "+12.4%",
+    type: "up",
+  },
+  {
+    icon: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10H21"/><path d="M8 6V4.5C8 3.7 8.7 3 9.5 3H14.5C15.3 3 16 3.7 16 4.5V6"/></svg>`,
+    label: "Tỷ lệ lấp đầy phòng chiếu",
+    value: "78%",
+    delta: "+8.1%",
+    type: "up",
+  },
+  {
+    icon: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9L7.3 20C7.35 20.6 7.85 21 8.4 21H15.6C16.15 21 16.65 20.6 16.7 20L17.5 9"/><path d="M5.5 9C5.5 6.5 8.4 4.5 12 4.5C15.6 4.5 18.5 6.5 18.5 9C18.5 9 17 9.7 12 9.7C7 9.7 5.5 9 5.5 9Z"/><path d="M10 12.5V17.5"/><path d="M14 12.5V17.5"/></svg>`,
+    label: "Hiệu suất F&B (Đơn bán)",
+    value: "150 đơn",
+    delta: "+9.8%",
+    type: "up",
+  },
+  {
+    icon: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4L21.5 20H2.5L12 4Z" stroke-linejoin="round"/><path d="M12 10V14.5"/><circle cx="12" cy="17.3" r="0.9" fill="#fff" stroke="none"/></svg>`,
+    label: "Đối soát lệch tuần này",
+    value: "2 ngày",
+    delta: "Cần kiểm tra",
+    type: "warn",
+  },
 ];
 
 // Tỷ lệ đối soát khớp theo ngày (7 ngày gần nhất)

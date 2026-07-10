@@ -399,7 +399,7 @@ window.submitAddMovie = function () {
 
   API.addMovie(movieData)
     .then(() => {
-      alert("✅ Thêm phim thành công!");
+      alert("Thêm phim thành công!");
       closeAddMovie();
       loadManagerMovies();
     })
@@ -578,7 +578,7 @@ window.submitMatrixEditMovie = function () {
 
   API.updateMovie(movieData)
     .then(() => {
-      alert("✅ Cập nhật thành công!");
+      alert("Cập nhật thành công!");
       closeMatrixEditMovie();
       loadManagerMovies();
       if (typeof window.loadManagerMatrix === "function") window.loadManagerMatrix();
@@ -641,7 +641,7 @@ window.submitUpdateMovie = function () {
 
   API.updateMovie(movieData)
     .then(() => {
-      alert("✅ Cập nhật phim thành công!");
+      alert("Cập nhật phim thành công!");
       closeUpdateMovie();
       loadManagerMovies();
     })
@@ -669,7 +669,7 @@ window.submitDeleteMovie = function () {
 
   API.deleteMovie(movieId)
     .then(() => {
-      alert("✅ Hệ thống đã gỡ phim thành công!");
+      alert("Hệ thống đã gỡ phim thành công!");
       closeMpDeleteModal();
       loadManagerMovies();
     })
@@ -677,7 +677,7 @@ window.submitDeleteMovie = function () {
 };
 
 // ==========================================================================
-// --- LOGIC XỬ LÝ XEM CHI TIẾT PHIM (CON MẮT 👁️) ---
+// --- LOGIC XỬ LÝ XEM CHI TIẾT PHIM (CON MẮT 👁) ---
 // ==========================================================================
 window.openViewMovie = function (id) {
   const movie = window.moviesList.find((item) => item.movieId === id);
@@ -851,7 +851,7 @@ window.submitFnbForm = function() {
     // Nếu có ID -> Gọi API cập nhật thông tin sản phẩm
     API.updateFnbItem(id, fnbData)
       .then(() => {
-        alert("✅ Đã cập nhật sản phẩm F&B thành công!");
+        alert("Đã cập nhật sản phẩm F&B thành công!");
         closeFnbModal();
         loadManagerFnb();
       })
@@ -860,7 +860,7 @@ window.submitFnbForm = function() {
     // Nếu ID trống -> Gọi API thêm sản phẩm mới vào DB
     API.addFnbItem(fnbData)
       .then(() => {
-        alert("✅ Đã thêm sản phẩm mới vào kho thành công!");
+        alert("Đã thêm sản phẩm mới vào kho thành công!");
         closeFnbModal();
         loadManagerFnb();
       })
@@ -894,7 +894,7 @@ window.confirmDeleteFnb = function() {
 
   API.deleteFnbItem(id)
     .then(() => {
-      alert("✅ Đã xóa sản phẩm khỏi kho thành công!");
+      alert("Đã xóa sản phẩm khỏi kho thành công!");
       closeFnbDeleteModal();
       loadManagerFnb();
     })
@@ -977,7 +977,7 @@ window.handleAutoReplenish = function() {
   const lowStockItems = window.fnbItemsList.filter(item => item.stockQuantity <= 30);
 
   if (lowStockItems.length === 0) {
-    alert("✨ Tất cả sản phẩm trong kho đều đang ở mức an toàn (>30 ly). Không cần tái cung ứng!");
+    alert("Tất cả sản phẩm trong kho đều đang ở mức an toàn (>30 ly). Không cần tái cung ứng!");
     return;
   }
 
@@ -996,12 +996,12 @@ window.handleAutoReplenish = function() {
     // Chờ tất cả API cập nhật xong xuôi
     Promise.all(updatePromises)
       .then(() => {
-        alert("✅ Chiến dịch tái cung ứng hoàn tất! Toàn bộ sản phẩm tồn thấp đã được đưa về mức an toàn.");
+        alert("Chiến dịch tái cung ứng hoàn tất! Toàn bộ sản phẩm tồn thấp đã được đưa về mức an toàn.");
         loadManagerFnb(); // Tải lại bảng để cập nhật số lượng mới
       })
       .catch(err => {
         console.error("Lỗi tái cung ứng:", err);
-        alert("🚨 Có lỗi xảy ra trong quá trình cập nhật kho hàng: " + err.message);
+        alert("Có lỗi xảy ra trong quá trình cập nhật kho hàng: " + err.message);
       });
   }
 };
@@ -1041,7 +1041,7 @@ window.submitRestockForm = function() {
   const select = document.getElementById("restock-product-select");
   const item = window.fnbItemsList.find((x) => String(x.foodItemId) === String(select.value));
   if (!item) {
-    alert("❌ Vui lòng chọn sản phẩm cần nhập hàng!");
+    alert("Vui lòng chọn sản phẩm cần nhập hàng!");
     return;
   }
 
@@ -1059,7 +1059,7 @@ window.submitRestockForm = function() {
 
   API.updateFnbItem(item.foodItemId, fnbData)
     .then(() => {
-      alert(`✅ Nhập hàng thành công! Đã cộng thêm ${addQty} đơn vị vào sản phẩm ${item.itemName}.`);
+      alert(`Nhập hàng thành công! Đã cộng thêm ${addQty} đơn vị vào sản phẩm ${item.itemName}.`);
       closeRestockModal();
       loadManagerFnb();
     })
@@ -1269,7 +1269,7 @@ window.loadManagerMatrix = function() {
       if (trackRoom2.innerHTML === "") trackRoom2.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#bbb;">Trống lịch phòng 2</div>';
     })
     .catch((err) => {
-      console.error("🚨 Lỗi vẽ ma trận lịch chiếu:", err);
+      console.error("Lỗi vẽ ma trận lịch chiếu:", err);
       trackRoom1.innerHTML = trackRoom2.innerHTML = `<span style="color:red;padding:10px;display:block;">Lỗi đồng bộ lịch chiếu: ${err.message}</span>`;
     });
 };
@@ -1354,7 +1354,7 @@ window.submitAddShowtimeForm = function() {
   console.log("🚀 Payload gửi lên Spring Boot tạo suất chiếu:", payload);
 
   // ==========================================================================
-  // 🚨 POPUP CHẶN TRÙNG LỊCH (BẰNG DATA ĐỘNG - KHÔNG XÀI DOM - GIỮ NGUYÊN CẤU TRÚC CỦA KHOA)
+  // POPUP CHẶN TRÙNG LỊCH (BẰNG DATA ĐỘNG - KHÔNG XÀI DOM - GIỮ NGUYÊN CẤU TRÚC CỦA KHOA)
   // ==========================================================================
   const timeToMinutes = (timeStr) => {
     const [h, m] = timeStr.split(":").map(Number);
@@ -1393,25 +1393,25 @@ window.submitAddShowtimeForm = function() {
       }
 
       if (isTimeConflict) {
-        alert(`❌ KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`);
+        alert(`KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`);
         return; // Chặn đứng tại đây, không cho gọi API add
       }
 
       // Nếu an toàn, thực hiện gọi API lưu xuống database y như cũ của em
       API.addShowtime(payload)
         .then(() => {
-          alert("✅ Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.");
+          alert("Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.");
           closeAddShowtimeModal();
           loadManagerMatrix();
         })
         .catch((err) => {
           console.error(err);
-          alert("🚨 Thêm suất chiếu thất bại: " + err.message);
+          alert("Thêm suất chiếu thất bại: " + err.message);
         });
     })
     .catch((err) => {
       console.error("Lỗi khi kiểm tra trùng lịch:", err);
-      alert("🚨 Không thể xác thực trùng lịch do lỗi kết nối!");
+      alert("Không thể xác thực trùng lịch do lỗi kết nối!");
     });
 };
 
@@ -1518,7 +1518,7 @@ window.submitVoucherForm = function() {
 
   apiCall
     .then(() => {
-      alert(id ? "✅ Cập nhật chiến dịch thành công!" : "✅ Tạo mã Voucher khuyến mãi mới thành công!");
+      alert(id ? "Cập nhật chiến dịch thành công!" : "Tạo mã Voucher khuyến mãi mới thành công!");
       window.closeCreatePromoModal();
       loadManagerVouchers();
     })
@@ -1583,10 +1583,10 @@ function renderVoucherRows(vouchers) {
 
 // 5. Xử lý Xóa Voucher qua API tổng
 window.submitDeleteVoucher = function(id) {
-  if (confirm("⚠️ Bạn có chắc chắn muốn gỡ bỏ hoàn toàn mã Voucher này khỏi hệ thống không?")) {
+  if (confirm("Bạn có chắc chắn muốn gỡ bỏ hoàn toàn mã Voucher này khỏi hệ thống không?")) {
     API.deleteVoucher(id)
       .then(() => {
-        alert("✅ Đã gỡ chiến dịch khuyến mãi thành công!");
+        alert("Đã gỡ chiến dịch khuyến mãi thành công!");
         loadManagerVouchers();
       })
       .catch(err => alert("Lỗi khi xóa voucher: " + err.message));
