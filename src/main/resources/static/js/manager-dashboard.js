@@ -8,10 +8,34 @@
 /* --- 1. BỘ DỮ LIỆU TĨNH --- */
 
 const MD_METRICS = [
-  { icon: "💰", label: "Doanh thu (Tháng này)", value: "92.000.000đ", delta: "+18.2%", up: true },
-  { icon: "🎟️", label: "Vé đã bán (Tháng này)", value: "1.150", delta: "+16.7%", up: true },
-  { icon: "👥", label: "Người dùng hoạt động", value: "3.284", delta: "+8.4%", up: true },
-  { icon: "🎬", label: "Phim đang chiếu", value: "5", delta: "+2 phim mới", up: true },
+  {
+    icon: "💰",
+    label: "Doanh thu (Tháng này)",
+    value: "92.000.000đ",
+    delta: "+18.2%",
+    up: true,
+  },
+  {
+    icon: "🎟️",
+    label: "Vé đã bán (Tháng này)",
+    value: "1.150",
+    delta: "+16.7%",
+    up: true,
+  },
+  {
+    icon: "👥",
+    label: "Người dùng hoạt động",
+    value: "3.284",
+    delta: "+8.4%",
+    up: true,
+  },
+  {
+    icon: "🎬",
+    label: "Phim đang chiếu",
+    value: "5",
+    delta: "+2 phim mới",
+    up: true,
+  },
 ];
 
 // Doanh thu (VNĐ) & vé bán theo từng mốc thời gian
@@ -30,10 +54,17 @@ const MD_TREND_1M = [
   { label: "Tuần 3", revenue: 24500000, tickets: 305 },
   { label: "Tuần 4", revenue: 27000000, tickets: 343 },
 ];
-const MD_TREND_MAP = { "6M": MD_TREND_6M, "3M": MD_TREND_3M, "1M": MD_TREND_1M };
+const MD_TREND_MAP = {
+  "6M": MD_TREND_6M,
+  "3M": MD_TREND_3M,
+  "1M": MD_TREND_1M,
+};
 
 // Vé bán theo tháng (dùng lại cùng dữ liệu vé của biểu đồ xu hướng cho đồng bộ)
-const MD_BAR_MONTHLY = MD_TREND_6M.map((d) => ({ label: d.label, value: d.tickets }));
+const MD_BAR_MONTHLY = MD_TREND_6M.map((d) => ({
+  label: d.label,
+  value: d.tickets,
+}));
 
 // Phân bố thể loại phim
 const MD_GENRES = [
@@ -47,22 +78,90 @@ const MD_GENRES = [
 
 // Top phim trong tuần (tái sử dụng poster + tên phim đã có sẵn trong dự án)
 const MD_TOP_MOVIES = [
-  { title: "Tên cậu là gì", poster: "img/yournamemain.jpg", rating: 9.1, genre: "Hoạt hình", sold: 239 },
-  { title: "Lầu Chú Hỏa", poster: "img/lauchuhoaposter.jpg", rating: 8.4, genre: "Kinh dị", sold: 213 },
-  { title: "Ma Xó", poster: "img/maxoposter.png", rating: 7.9, genre: "Kinh dị", sold: 187 },
-  { title: "Lớp Học Ẩm", poster: "img/lopmain.jpg", rating: 7.6, genre: "Hài hước", sold: 110 },
+  {
+    title: "Tên cậu là gì",
+    poster: "img/yournamemain.jpg",
+    rating: 9.1,
+    genre: "Hoạt hình",
+    sold: 239,
+  },
+  {
+    title: "Lầu Chú Hỏa",
+    poster: "img/lauchuhoaposter.jpg",
+    rating: 8.4,
+    genre: "Kinh dị",
+    sold: 213,
+  },
+  {
+    title: "Ma Xó",
+    poster: "img/maxoposter.png",
+    rating: 7.9,
+    genre: "Kinh dị",
+    sold: 187,
+  },
+  {
+    title: "Lớp Học Ẩm",
+    poster: "img/lopmain.jpg",
+    rating: 7.6,
+    genre: "Hài hước",
+    sold: 110,
+  },
 ];
 
 // Giao dịch gần đây
 const MD_TRANSACTIONS = [
-  { id: "BK-2026-00155", movie: "Lầu Chú Hỏa", room: "Phòng 3", time: "09/06/2026 19:30", amount: "350.000đ", status: "ok", method: "Thẻ tín dụng" },
-  { id: "BK-2026-00154", movie: "Tên cậu là gì", room: "Phòng 1", time: "09/06/2026 21:00", amount: "120.000đ", status: "pending", method: "VNPay" },
-  { id: "BK-2026-00153", movie: "Ma Xó", room: "Phòng 2", time: "08/06/2026 16:00", amount: "390.000đ", status: "ok", method: "MoMo" },
-  { id: "BK-2026-00152", movie: "Lớp Học Ẩm", room: "Phòng 4", time: "08/06/2026 14:00", amount: "260.000đ", status: "fail", method: "Thẻ tín dụng" },
-  { id: "BK-2026-00151", movie: "Lầu Chú Hỏa", room: "Phòng 3", time: "07/06/2026 13:30", amount: "520.000đ", status: "ok", method: "Thẻ tín dụng" },
+  {
+    id: "BK-2026-00155",
+    movie: "Lầu Chú Hỏa",
+    room: "Phòng 3",
+    time: "09/06/2026 19:30",
+    amount: "350.000đ",
+    status: "ok",
+    method: "Thẻ tín dụng",
+  },
+  {
+    id: "BK-2026-00154",
+    movie: "Tên cậu là gì",
+    room: "Phòng 1",
+    time: "09/06/2026 21:00",
+    amount: "120.000đ",
+    status: "pending",
+    method: "VNPay",
+  },
+  {
+    id: "BK-2026-00153",
+    movie: "Ma Xó",
+    room: "Phòng 2",
+    time: "08/06/2026 16:00",
+    amount: "390.000đ",
+    status: "ok",
+    method: "MoMo",
+  },
+  {
+    id: "BK-2026-00152",
+    movie: "Lớp Học Ẩm",
+    room: "Phòng 4",
+    time: "08/06/2026 14:00",
+    amount: "260.000đ",
+    status: "fail",
+    method: "Thẻ tín dụng",
+  },
+  {
+    id: "BK-2026-00151",
+    movie: "Lầu Chú Hỏa",
+    room: "Phòng 3",
+    time: "07/06/2026 13:30",
+    amount: "520.000đ",
+    status: "ok",
+    method: "Thẻ tín dụng",
+  },
 ];
 
-const MD_STATUS_TEXT = { ok: "Thành công", pending: "Đang xử lý", fail: "Thất bại" };
+const MD_STATUS_TEXT = {
+  ok: "Thành công",
+  pending: "Đang xử lý",
+  fail: "Thất bại",
+};
 
 /* --- 2. HÀM TIỆN ÍCH --- */
 
@@ -87,7 +186,7 @@ function renderMdMetrics() {
       </div>
       <div class="md-metric-label">${m.label}</div>
       <div class="md-metric-value">${m.value}</div>
-    </div>`
+    </div>`,
   ).join("");
 }
 
@@ -98,8 +197,14 @@ function renderMdTrendChart(range) {
   if (!host) return;
   const data = MD_TREND_MAP[range] || MD_TREND_6M;
 
-  const W = 640, H = 230, padL = 10, padR = 10, padT = 15, padB = 26;
-  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const W = 640,
+    H = 230,
+    padL = 10,
+    padR = 10,
+    padT = 15,
+    padB = 26;
+  const innerW = W - padL - padR,
+    innerH = H - padT - padB;
   const maxRevenue = Math.max(...data.map((d) => d.revenue)) * 1.15;
   const maxTickets = Math.max(...data.map((d) => d.tickets)) * 1.15;
   const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
@@ -111,9 +216,17 @@ function renderMdTrendChart(range) {
   const revenuePts = data.map((d, i) => [xAt(i), yAtRevenue(d.revenue)]);
   const ticketPts = data.map((d, i) => [xAt(i), yAtTickets(d.tickets)]);
 
-  const toPath = (pts) => pts.map((p, i) => (i === 0 ? "M" : "L") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  const toPath = (pts) =>
+    pts
+      .map(
+        (p, i) =>
+          (i === 0 ? "M" : "L") + p[0].toFixed(1) + "," + p[1].toFixed(1),
+      )
+      .join(" ");
   const revenueLine = toPath(revenuePts);
-  const revenueArea = revenueLine + ` L${xAt(data.length - 1).toFixed(1)},${padT + innerH} L${padL},${padT + innerH} Z`;
+  const revenueArea =
+    revenueLine +
+    ` L${xAt(data.length - 1).toFixed(1)},${padT + innerH} L${padL},${padT + innerH} Z`;
   const ticketLine = toPath(ticketPts);
 
   // Đường lưới ngang (4 mốc)
@@ -124,17 +237,22 @@ function renderMdTrendChart(range) {
   }
 
   const axisLabels = data
-    .map((d, i) => `<text x="${xAt(i).toFixed(1)}" y="${H - 6}" text-anchor="middle" class="md-axis">${d.label}</text>`)
+    .map(
+      (d, i) =>
+        `<text x="${xAt(i).toFixed(1)}" y="${H - 6}" text-anchor="middle" class="md-axis">${d.label}</text>`,
+    )
     .join("");
 
   const revenueDots = revenuePts
     .map(
-      (p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="#ff6b35" class="md-hit"><title>${data[i].label}: ${mdFormatVnd(data[i].revenue)}</title></circle>`
+      (p, i) =>
+        `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="#ff6b35" class="md-hit"><title>${data[i].label}: ${mdFormatVnd(data[i].revenue)}</title></circle>`,
     )
     .join("");
   const ticketDots = ticketPts
     .map(
-      (p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5" fill="#4ade80" class="md-hit"><title>${data[i].label}: ${mdFormatNum(data[i].tickets)} vé</title></circle>`
+      (p, i) =>
+        `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5" fill="#4ade80" class="md-hit"><title>${data[i].label}: ${mdFormatNum(data[i].tickets)} vé</title></circle>`,
     )
     .join("");
 
@@ -161,7 +279,9 @@ function renderMdTrendChart(range) {
 }
 
 function mdSwitchTrend(range, btnEl) {
-  document.querySelectorAll(".md-seg-btn").forEach((b) => b.classList.remove("active"));
+  document
+    .querySelectorAll(".md-seg-btn")
+    .forEach((b) => b.classList.remove("active"));
   if (btnEl) btnEl.classList.add("active");
   renderMdTrendChart(range);
 }
@@ -174,7 +294,11 @@ function renderMdGenreDonut() {
   const legendHost = document.getElementById("md-genre-legend");
   if (!host || !legendHost) return;
 
-  const size = 160, cx = 80, cy = 80, r = 58, strokeW = 22;
+  const size = 160,
+    cx = 80,
+    cy = 80,
+    r = 58,
+    strokeW = 22;
   const circumference = 2 * Math.PI * r;
   let offsetAcc = 0;
 
@@ -200,7 +324,7 @@ function renderMdGenreDonut() {
     <div class="md-legend-row">
       <span class="md-legend-left"><i class="md-dot" style="background:${g.color};"></i>${g.label}</span>
       <b>${g.pct}%</b>
-    </div>`
+    </div>`,
   ).join("");
 }
 
@@ -242,7 +366,7 @@ function renderMdTopMovies() {
         <div class="md-tm-meta">★ ${m.rating.toFixed(1)} <span class="md-tm-genre">· ${m.genre}</span></div>
       </div>
       <span class="md-tm-sold">${m.sold} vé</span>
-    </div>`
+    </div>`,
   ).join("");
 }
 
@@ -275,7 +399,7 @@ function renderMdTransactions() {
           <td class="md-tx-amt">${t.amount}</td>
           <td><span class="md-tx-status ${t.status}">${MD_STATUS_TEXT[t.status]}</span></td>
           <td>${t.method}</td>
-        </tr>`
+        </tr>`,
         ).join("")}
       </tbody>
     </table>`;
@@ -284,12 +408,36 @@ function renderMdTransactions() {
 /* --- 9. KHỞI TẠO TOÀN BỘ DASHBOARD --- */
 
 function renderManagerDashboard() {
-  try { renderMdMetrics(); } catch (e) { console.error("Lỗi render metrics:", e); }
-  try { renderMdTrendChart("6M"); } catch (e) { console.error("Lỗi render trend chart:", e); }
-  try { renderMdGenreDonut(); } catch (e) { console.error("Lỗi render genre donut:", e); }
-  try { renderMdBarChart(); } catch (e) { console.error("Lỗi render bar chart:", e); }
-  try { renderMdTopMovies(); } catch (e) { console.error("Lỗi render top movies:", e); }
-  try { renderMdTransactions(); } catch (e) { console.error("Lỗi render transactions:", e); }
+  try {
+    renderMdMetrics();
+  } catch (e) {
+    console.error("Lỗi render metrics:", e);
+  }
+  try {
+    renderMdTrendChart("6M");
+  } catch (e) {
+    console.error("Lỗi render trend chart:", e);
+  }
+  try {
+    renderMdGenreDonut();
+  } catch (e) {
+    console.error("Lỗi render genre donut:", e);
+  }
+  try {
+    renderMdBarChart();
+  } catch (e) {
+    console.error("Lỗi render bar chart:", e);
+  }
+  try {
+    renderMdTopMovies();
+  } catch (e) {
+    console.error("Lỗi render top movies:", e);
+  }
+  try {
+    renderMdTransactions();
+  } catch (e) {
+    console.error("Lỗi render transactions:", e);
+  }
 }
 window.renderManagerDashboard = renderManagerDashboard;
 

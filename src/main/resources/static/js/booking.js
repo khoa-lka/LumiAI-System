@@ -243,7 +243,7 @@ function calculateCgvCart() {
 
   // 🚀 LOGIC ĐỘC LẬP HOÀN TOÀN TỪ BACKEND CỦA KHOA: Cấm quét DOM
   selectedSeats.forEach((seatId) => {
-    let price = 2000;
+    let price = 90000;
 
     if (
       window.currentBackendSeats &&
@@ -272,7 +272,7 @@ function calculateCgvCart() {
             price = 250000;
             break;
           default:
-            price = 2000;
+            price = 90000;
         }
       }
     }

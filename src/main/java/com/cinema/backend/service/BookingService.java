@@ -34,6 +34,7 @@ import com.cinema.backend.entities.CheckoutFoodItem;
 import com.cinema.backend.entities.FoodBeverage;
 
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class BookingService {
@@ -67,6 +68,12 @@ public class BookingService {
     @Autowired
     private FoodBeverageRepository foodRepository;
 
+    @Autowired
+    private EmailService emailService;
+
+    @Value("${app.public-url}")
+    private String publicUrl;
+
     
 @Transactional
 public Order1 checkout(CheckoutRequest request) {
@@ -89,6 +96,8 @@ System.out.println(request);
     // =========================
 
     BigDecimal grossAmount = BigDecimal.ZERO;
+    String firstTicketCode = "";
+    List<String> bookedSeats = new ArrayList<>();
 
 // Tổng tiền vé
 grossAmount = grossAmount.add(
@@ -170,6 +179,10 @@ System.out.println("ORDER ID = " + order.getOrderId());
         ticket.setTicketCode(code);
         ticket.setQrCode(code);
 
+        if (firstTicketCode.isBlank()) {
+        firstTicketCode = code;
+        }   
+
         ticket = ticketRepository.save(ticket);
 
         OrderDetail detail = new OrderDetail();
@@ -182,6 +195,7 @@ System.out.println("ORDER ID = " + order.getOrderId());
         detail.setSubtotal(showtime.getTicketPrice());
 
         orderDetailRepository.save(detail);
+        bookedSeats.add(seatCode);
     }
 System.out.println("SAVE TICKET OK");
 // =========================
@@ -250,8 +264,96 @@ if (request.getFnb() != null && !request.getFnb().isEmpty()) {
     payment.setOrder(order);
 System.out.println("SAVE PAYMENT");
     paymentTransactionRepository.save(payment);
+try {
+    String customerName = customer.getFullname();
+
+    String email = request.getEmail();
+    if (email == null || email.isBlank()) {
+        email = customer.getEmail();
+    }
+
+    String movieName = showtime.getMovie() != null
+            ? showtime.getMovie().getTitle()
+            : request.getMovieName();
+
+    String showtimeText = showtime.getStartTime() != null
+            ? showtime.getStartTime().toString()
+            : "Không xác định";
+
+    String seatsText = String.join(", ", request.getSeats());
+
+String totalAmount = order.getFinalAmount() != null
+        ? String.format("%,.0f", order.getFinalAmount())
+        : "0";
+
+    String ticketCode = firstTicketCode != null && !firstTicketCode.isBlank()
+            ? firstTicketCode
+            : order.getOrderCode();
+
+    // Logo là ảnh tĩnh trong project
+    String logoPath = "img/las_logo.png";
+
+    // Poster lấy từ DB movie.mainposter_url
+    String posterPath = "";
+
+    if (showtime.getMovie() != null && showtime.getMovie().getMainposterUrl() != null) {
+        posterPath = showtime.getMovie().getMainposterUrl();
+    }
+
+    // QR code chứa thông tin vé
+    String qrData = "LAS-CINEMA|ORDER=" + order.getOrderCode() + "|TICKET=" + ticketCode;
+
+    String html = emailService.buildTicketEmailHtml(
+            customerName,
+            order.getOrderCode(),
+            movieName,
+            showtimeText,
+            seatsText,
+            totalAmount,
+            ticketCode,
+            qrData
+    );
+
+    emailService.sendTicketHtmlEmailWithImages(
+            email,
+            "LAS Cinema - Vé xem phim " + order.getOrderCode(),
+            html,
+            logoPath,
+            posterPath
+    );
+
+    System.out.println("ĐÃ GỬI EMAIL HTML VÉ TỚI: " + email);
+    System.out.println("LOGO PATH = " + logoPath);
+    System.out.println("POSTER PATH = " + posterPath);
+
+} catch (Exception e) {
+    e.printStackTrace();
+    System.out.println("GỬI EMAIL HTML VÉ THẤT BẠI: " + e.getMessage());
+}
+
 System.out.println("DONE");
-    return order;
+return order;
+}
+
+private String toPublicImageUrl(String imagePath) {
+    if (imagePath == null || imagePath.isBlank()) {
+        return "";
+    }
+
+    imagePath = imagePath.trim();
+
+    // Nếu đã là URL online rồi thì giữ nguyên
+    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+        return imagePath;
+    }
+
+    // Xóa dấu / đầu nếu có
+    while (imagePath.startsWith("/")) {
+        imagePath = imagePath.substring(1);
+    }
+
+    // Ghép với public URL
+    return publicUrl + "/" + imagePath;
 }
 }
 
