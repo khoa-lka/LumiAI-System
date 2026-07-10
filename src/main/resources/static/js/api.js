@@ -136,6 +136,21 @@ const API = {
     body: JSON.stringify(data)
   }).then(handleResponse),
   deleteFnbItem: (id) => fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then(res => res.ok ? true : Promise.reject(res)),
+  updateUserRole: (userId, newRoleId) =>
+  fetch(`${BASE_URL}/admin/users/update-role/${userId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(newRoleId),
+  }).then(handleResponse),
+  getUnreadNotifications: (accountId) =>
+  fetch(`${BASE_URL}/notifications/unread/${accountId}`).then(handleResponse),
+
+markNotificationAsRead: (notificationId) =>
+  fetch(`${BASE_URL}/notifications/read/${notificationId}`, {
+    method: "PUT",
+  }).then(handleResponse),
   
   // 🎟️ QUẢN LÝ VOUCHER CHIẾN DỊCH (MANAGER)
   getManagerVouchers: () => 

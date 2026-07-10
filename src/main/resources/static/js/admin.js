@@ -31,24 +31,42 @@ let _admBanUsersCache = [];
 
 // Dữ liệu mẫu - CHỈ dùng để xem trước giao diện khi API chưa sẵn sàng
 // hoặc chưa có tài khoản nào trong DB. Khi API thật trả về dữ liệu, phần này sẽ không được dùng.
-const ADM_BAN_MOCK_USERS = [
-  { accountId: "USR-001", email: "hoang.nguyen@las.vn", roleId: 1, status: "Active" },
-  { accountId: "USR-002", email: "nhanvien1@las.vn", roleId: 3, status: "Active" },
-  { accountId: "USR-003", email: "khachhang_scam@gmail.com", roleId: 3, status: "Banned" },
-  { accountId: "USR-004", email: "tranthi.b@las.vn", roleId: 3, status: "Active" },
-  { accountId: "USR-005", email: "admin2@las.vn", roleId: 2, status: "Active" },
-];
+
 
 function renderAdminBanList() {
   const tbody = document.getElementById("admin-ban-tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="5"
+          style="text-align:center; color:var(--adm-muted); padding:24px;">
+        Đang tải danh sách tài khoản...
+      </td>
+    </tr>
+  `;
+
   API.getAdminUsers()
     .then((users) => {
-      _admBanUsersCache = (users && users.length) ? users : ADM_BAN_MOCK_USERS;
-      renderAdminBanRows(_admBanUsersCache, !users || !users.length);
+      _admBanUsersCache = Array.isArray(users) ? users : [];
+
+      // Giữ nguyên hàm render cũ
+      renderAdminBanRows(_admBanUsersCache);
     })
-    .catch(() => {
-      _admBanUsersCache = ADM_BAN_MOCK_USERS;
-      renderAdminBanRows(_admBanUsersCache, true);
+    .catch((err) => {
+      console.error("Lỗi tải tài khoản:", err);
+
+      _admBanUsersCache = [];
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5"
+              style="text-align:center; color:#ff4742; padding:24px;">
+            Không tải được tài khoản từ database:
+            ${err.message || "Lỗi kết nối API"}
+          </td>
+        </tr>
+      `;
     });
 }
 
@@ -75,11 +93,31 @@ function renderAdminBanRows(users, isMock) {
           <td>${u.accountId}</td>
           <td>${u.email}</td>
           <td>
-            <select onchange="changeRoleAction('${u.accountId}', this.value)">
-                <option value="2" ${u.roleId === 2 ? 'selected' : ''}>Admin</option>
-                <option value="1" ${u.roleId === 1 ? 'selected' : ''}>Manager</option>
-                <option value="3" ${u.roleId === 3 ? 'selected' : ''}>Member</option>
-            </select>
+            <select
+  data-old-role="${u.roleId}"
+  onchange="changeRoleAction(
+    '${u.accountId}',
+    this.value,
+    this.dataset.oldRole,
+    this
+  )"
+>
+  <option value="4" ${Number(u.roleId) === 4 ? "selected" : ""}>
+    Admin
+  </option>
+
+  <option value="1" ${Number(u.roleId) === 1 ? "selected" : ""}>
+    Manager
+  </option>
+
+  <option value="2" ${Number(u.roleId) === 2 ? "selected" : ""}>
+    Staff
+  </option>
+
+  <option value="3" ${Number(u.roleId) === 3 ? "selected" : ""}>
+    Member
+  </option>
+</select>
           </td>
           <td>${badge}</td>
           <td>
@@ -109,26 +147,155 @@ function filterAdminBanList() {
 }
 
 // Hàm xử lý sự kiện
-function changeRoleAction(userId, roleId) {
-    API.updateUserRole(userId, parseInt(roleId))
-        .then(() => { alert("Đã đổi quyền!"); renderAdminBanList(); })
-        .catch(err => alert(err.message));
+function changeRoleAction(userId, roleId, oldRoleId, selectElement) {
+  const newRoleId = Number(roleId);
+  const previousRoleId = Number(oldRoleId);
+
+  if (newRoleId === previousRoleId) {
+    return;
+  }
+
+  API.updateUserRole(userId, newRoleId)
+    .then((result) => {
+      showAdminRoleSuccessPopup(
+        result.oldRoleName,
+        result.newRoleName
+      );
+
+      // Ghi nhận role mới để lần thay đổi tiếp theo không dùng role cũ
+      if (selectElement) {
+        selectElement.dataset.oldRole = String(newRoleId);
+      }
+
+      // Tải lại dữ liệu thật từ database
+      renderAdminBanList();
+    })
+    .catch((err) => {
+      // API lỗi thì trả select về quyền ban đầu
+      if (selectElement) {
+        selectElement.value = String(previousRoleId);
+      }
+
+      alert("Không thể cập nhật quyền: " + err.message);
+    });
 }
 
 
-
 // (Tuỳ chọn) Hàm hỗ trợ khi Admin bấm nút Khóa tài khoản
-function banUserAction(userId) {
-  if (confirm(`Bạn có chắc chắn muốn khóa tài khoản ID: ${userId}?`)) {
-    if (typeof API !== "undefined" && API.banUser) {
-      API.banUser(userId)
-        .then((res) => {
-          alert("Đã khóa tài khoản thành công!");
-          renderAdminBanList(); // Tải lại bảng
-        })
-        .catch((err) => alert("Lỗi khi khóa: " + err.message));
-    }
+let banPopupConfirmCallback = null;
+
+function showBanPopup(type, title, message, onConfirm) {
+  const popup = document.getElementById("ban-popup");
+  const icon = document.getElementById("ban-popup-icon");
+  const titleElement = document.getElementById("ban-popup-title");
+  const messageElement = document.getElementById("ban-popup-message");
+  const cancelButton = document.getElementById("ban-popup-cancel");
+  const confirmButton = document.getElementById("ban-popup-confirm");
+
+  popup.classList.remove("confirm", "success", "error");
+  popup.classList.add(type);
+
+  if (type === "success") {
+    icon.textContent = "✓";
+  } else if (type === "error") {
+    icon.textContent = "!";
+  } else {
+    icon.textContent = "?";
   }
+
+  titleElement.textContent = title;
+  messageElement.textContent = message;
+
+  banPopupConfirmCallback =
+    typeof onConfirm === "function" ? onConfirm : null;
+
+  if (banPopupConfirmCallback) {
+    confirmButton.style.display = "inline-block";
+    cancelButton.textContent = "Hủy";
+  } else {
+    confirmButton.style.display = "none";
+    cancelButton.textContent = "Đóng";
+  }
+
+  popup.classList.add("open");
+}
+
+function closeBanPopup() {
+  const popup = document.getElementById("ban-popup");
+
+  if (popup) {
+    popup.classList.remove("open");
+  }
+
+  banPopupConfirmCallback = null;
+}
+
+function confirmBanPopup() {
+  const callback = banPopupConfirmCallback;
+
+  closeBanPopup();
+
+  if (callback) {
+    callback();
+  }
+}
+
+function banUserAction(userId) {
+  const currentUser = _admBanUsersCache.find(
+    (user) => String(user.accountId) === String(userId)
+  );
+
+  const isBanned =
+    currentUser && currentUser.status === "Banned";
+
+  const actionText = isBanned ? "mở khóa" : "khóa";
+
+  showBanPopup(
+    "confirm",
+    isBanned ? "XÁC NHẬN MỞ KHÓA" : "XÁC NHẬN KHÓA",
+    `Bạn có chắc chắn muốn ${actionText} tài khoản ID: ${userId}?`,
+    function () {
+      if (
+        typeof API === "undefined" ||
+        typeof API.banUser !== "function"
+      ) {
+        showBanPopup(
+          "error",
+          "KHÔNG THỂ THỰC HIỆN",
+          "Chức năng khóa tài khoản chưa được kết nối API."
+        );
+
+        return;
+      }
+
+     API.banUser(userId)
+  .then((result) => {
+    const newStatus = result.status;
+
+    const successMessage =
+      newStatus === "Banned"
+        ? `Đã khóa tài khoản ID: ${userId} thành công.`
+        : `Đã mở khóa tài khoản ID: ${userId} thành công.`;
+
+    // Hiện popup thành công giống popup cập nhật role
+    showBanPopup(
+      "success",
+      "CẬP NHẬT THÀNH CÔNG",
+      successMessage
+    );
+
+    // Lấy lại danh sách để chuyển trạng thái ngay
+    renderAdminBanList();
+  })
+  .catch((error) => {
+    showBanPopup(
+      "error",
+      "CẬP NHẬT THẤT BẠI",
+      error.message || "Không thể cập nhật trạng thái tài khoản."
+    );
+  });
+    }
+  );
 }
 
 // ---------------------------------------------------------
@@ -200,5 +367,30 @@ function createManualBackupAction() {
       .catch((err) => alert("Lỗi khi tạo bản sao lưu: " + err.message));
   } else {
     alert("Chức năng tạo bản sao lưu chưa được kết nối API thật (đang ở chế độ xem trước giao diện).");
+  }
+}
+function showAdminRoleSuccessPopup(oldRoleName, newRoleName) {
+  const popup = document.getElementById("admin-role-success-popup");
+  const message = document.getElementById("admin-role-success-message");
+
+  if (message) {
+    message.innerHTML = `
+      Đã đổi quyền tài khoản từ
+      <b>${oldRoleName || "Không xác định"}</b>
+      sang
+      <b>${newRoleName || "Không xác định"}</b>.
+    `;
+  }
+
+  if (popup) {
+    popup.classList.add("open");
+  }
+}
+
+function closeAdminRoleSuccessPopup() {
+  const popup = document.getElementById("admin-role-success-popup");
+
+  if (popup) {
+    popup.classList.remove("open");
   }
 }

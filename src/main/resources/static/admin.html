@@ -513,10 +513,54 @@ function exitAdminRoleToCustomerView() {
 <script src="js/admin-dashboard.js?v=1"></script>
 <script src="js/admin-syslog.js?v=1"></script>
 <script src="js/admin-webhook.js?v=1"></script>
-<script src="js/home.js?v=12"></script>
+
     
   
+<div id="admin-role-success-popup" class="admin-role-popup-overlay">
+  <div class="admin-role-popup-box">
+    <div class="admin-role-popup-icon">✓</div>
 
-  
+    <h3>CẬP NHẬT THÀNH CÔNG</h3>
+
+    <p id="admin-role-success-message">
+      Quyền tài khoản đã được cập nhật.
+    </p>
+
+    <button type="button" onclick="closeAdminRoleSuccessPopup()">
+      Đóng
+    </button>
+  </div>
+</div>
+  <div id="ban-popup" class="ban-popup-overlay confirm">
+    <div class="ban-popup-box">
+        <div id="ban-popup-icon" class="ban-popup-icon">?</div>
+
+        <h3 id="ban-popup-title">
+            XÁC NHẬN
+        </h3>
+
+        <p id="ban-popup-message"></p>
+
+        <div class="ban-popup-buttons">
+            <button
+                id="ban-popup-cancel"
+                type="button"
+                class="ban-popup-button cancel"
+                onclick="closeBanPopup()"
+            >
+                Hủy
+            </button>
+
+            <button
+                id="ban-popup-confirm"
+                type="button"
+                class="ban-popup-button confirm"
+                onclick="confirmBanPopup()"
+            >
+                Xác nhận
+            </button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

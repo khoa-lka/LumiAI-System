@@ -288,10 +288,11 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // 🌟 KHÓA TRÌ HOÃN 150MS: Đợi các file JS khác nạp xong giao diện mặc định rồi mới khôi phục Đăng Nhập
   setTimeout(() => {
-    window.syncUserLoginSession();
+  window.syncUserLoginSession();
 
-    // ĐÓN KẾT QUẢ VNPAY-CALLBACK TRẢ VỀ ĐỂ ĐIỀU HƯỚNG BƯỚC 4
-  }, 150);
+  // Lấy thông báo đổi quyền của tài khoản đang đăng nhập
+  window.loadAccountRoleNotifications();
+}, 150);
 });
 
 function generateRandomCaptcha(length = 6) {
@@ -328,7 +329,11 @@ function openAuthModal() {
   generateNewRegisterCaptcha();
 }
 function closeAuthModal() {
-  document.getElementById("auth-modal").remove("open");
+  const modal = document.getElementById("auth-modal");
+
+  if (modal) {
+    modal.classList.remove("open");
+  }
 }
 
 function renderFnbMenu() {
@@ -975,20 +980,7 @@ function closeHistoryDetailModal() {
 let _feedbackRating = 0;
 let _feedbackInvoiceId = null;
 
-// function openFeedbackModal(invoiceId) {
-//   _feedbackInvoiceId = invoiceId || null;
-//   _feedbackRating = 0;
-//   const inv = userPastInvoices.find((i) => i.id === invoiceId);
-//   const refEl = document.getElementById("feedback-invoice-ref");
-//   if (refEl)
-//     refEl.innerText = inv
-//       ? `Phim: ${inv.showtime.movie.title} • Mã vé: ${inv.orderCode}`
-//       : "Chia sẻ trải nghiệm của bạn";
-//   const txt = document.getElementById("feedback-text");
-//   if (txt) txt.value = "";
-//   setFeedbackStars(0);
-//   document.getElementById("feedback-modal").classList.add("open");
-// }
+
 
 function setFeedbackStars(n) {
   _feedbackRating = n;
@@ -998,37 +990,7 @@ function setFeedbackStars(n) {
   });
 }
 
-// function submitFeedback() {
-//   const txt = document.getElementById("feedback-text").value.trim();
-//   if (_feedbackRating === 0) {
-//     alert("Vui lòng chọn số sao đánh giá!");
-//     return;
-//   }
-//   if (!txt) {
-//     alert("Vui lòng nhập nội dung feedback!");
-//     return;
-//   }
-//   const entry = {
-//     invoiceId: _feedbackInvoiceId,
-//     rating: _feedbackRating,
-//     content: txt,
-//     at: new Date().toISOString(),
-//   };
-//   try {
-//     const list = JSON.parse(localStorage.getItem("las_feedbacks") || "[]");
-//     list.unshift(entry);
-//     localStorage.setItem("las_feedbacks", JSON.stringify(list));
-//   } catch (e) { }
 
-//   closeFeedbackModal();
-//   const toast = document.getElementById("feedback-toast");
-//   if (toast) {
-//     toast.classList.add("show");
-//     setTimeout(() => toast.classList.remove("show"), 2600);
-//   } else {
-//     alert("Cảm ơn bạn đã gửi feedback! 🧡");
-//   }
-// }
 
 window.closeFeedbackModal = function () {
 
@@ -1122,9 +1084,16 @@ function submitCgvLogin() {
 
         // 🌟 ĐIỀU HƯỚNG: Tất cả vai trò đều vào HOME sau đăng nhập.
         // Manager(1) & Admin(4) truy cập Dashboard chủ động qua tab "TRUY CẬP DASHBOARD".
-        alert(`Chào mừng ${uData.fullName} đăng nhập thành công!`);
-        closeAuthModal();
+       //alert(`Chào mừng ${uData.fullName} đăng nhập thành công!`);
 
+        closeAuthModal();
+switchCgvTab("panel-profile");
+
+setTimeout(() => {
+  window.loadAccountRoleNotifications(
+    uData.accountId || uData.account_id
+  );
+}, 100);
         const authLinkBox = document.getElementById("top-bar-auth-link");
         authLinkBox.onclick = () => switchCgvTab("panel-profile");
         authLinkBox.style.cursor = "pointer";
@@ -1138,6 +1107,7 @@ function submitCgvLogin() {
         let roleString = "Khách hàng thành viên";
         if (uData.roleId === 1) roleString = "Quản lý (MANAGER)";
         if (uData.roleId === 2) roleString = "Nhân viên cụm rạp (STAFF)";
+         if (uData.roleId === 3) roleString = "Khách Hàng (MEMBER)";
         if (uData.roleId === 4) roleString = "Quản trị viên (ADMIN)";
 
         if (document.getElementById("profile-summary-avatar")) {
@@ -1151,7 +1121,7 @@ function submitCgvLogin() {
         const starRoleBox = document.getElementById("profile-star-role");
         if (starRoleBox)
           starRoleBox.innerText =
-            uData.roleId === 1 ? "MANAGER / ADMIN" : "MEMBER";
+            uData.roleId === 1 || uData.roleId === 4 ? "MANAGER / ADMIN" : "MEMBER";
 
         document.getElementById("profile-field-name").value = uData.fullName;
         document.getElementById("profile-field-phone").value =
@@ -1161,8 +1131,18 @@ function submitCgvLogin() {
           document.getElementById("profile-field-role").value = roleString;
         }
 
-        if (window.refreshDashboardTab) window.refreshDashboardTab();
-        switchCgvTab("panel-profile");
+        if (window.refreshDashboardTab) {
+  window.refreshDashboardTab(uData.roleId);
+}
+
+switchCgvTab("panel-profile");
+
+// Kiểm tra thông báo đổi quyền ngay sau khi đăng nhập
+setTimeout(() => {
+  if (typeof window.loadAccountRoleNotifications === "function") {
+    window.loadAccountRoleNotifications(uData.accountId || uData.account_id);
+  }
+}, 100);
         // 🌟 GHIM LẠI LÊN Ổ CỨNG TRÌNH DUYỆT:
         localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
         localStorage.setItem(
@@ -2892,3 +2872,143 @@ window.sendChatMessageToServer = sendChatMessageToServer;
 window.toggleLasChatbox = toggleLasChatbox;
 window.checkChatSendMessageKey = checkChatSendMessageKey;
 window.formatGeminiResponseToHtml = formatGeminiResponseToHtml;
+
+let currentAccountNotificationId = null;
+let accountNotificationQueue = [];
+
+function loadAccountRoleNotifications(loginAccountId = null) {
+  let accountId = loginAccountId;
+
+  if (!accountId) {
+    const rawUser =
+      localStorage.getItem("las_logged_in_user");
+
+    if (!rawUser || typeof API === "undefined") {
+      return;
+    }
+
+    try {
+      const user = JSON.parse(rawUser);
+
+      accountId =
+        user.accountId ||
+        user.account_id;
+    } catch (error) {
+      console.error(
+        "Không đọc được tài khoản đăng nhập:",
+        error
+      );
+      return;
+    }
+  }
+
+  if (!accountId || typeof API === "undefined") {
+    return;
+  }
+
+  API.getUnreadNotifications(accountId)
+    .then((notifications) => {
+      if (
+        !Array.isArray(notifications) ||
+        notifications.length === 0
+      ) {
+        return;
+      }
+
+      accountNotificationQueue =
+        [...notifications].reverse();
+
+      showNextAccountNotification();
+    })
+    .catch((error) => {
+      console.error(
+        "Lỗi tải thông báo tài khoản:",
+        error
+      );
+    });
+}
+
+function showNextAccountNotification() {
+  if (
+    !accountNotificationQueue ||
+    accountNotificationQueue.length === 0
+  ) {
+    return;
+  }
+
+  const notification =
+    accountNotificationQueue.shift();
+
+  currentAccountNotificationId =
+    notification.notificationId ||
+    notification.notification_id;
+
+  const titleBox =
+    document.getElementById(
+      "account-notification-title"
+    );
+
+  const messageBox =
+    document.getElementById(
+      "account-notification-message"
+    );
+
+  const popup =
+    document.getElementById(
+      "account-notification-popup"
+    );
+
+  if (titleBox) {
+    titleBox.textContent =
+      notification.title ||
+      "Thay đổi quyền tài khoản";
+  }
+
+  if (messageBox) {
+    messageBox.textContent =
+      notification.message ||
+      "Quyền tài khoản của bạn vừa được cập nhật.";
+  }
+
+  if (popup) {
+    popup.classList.add("open");
+  }
+}
+
+function closeAccountNotificationPopup() {
+  const popup =
+    document.getElementById(
+      "account-notification-popup"
+    );
+
+  if (popup) {
+    popup.classList.remove("open");
+  }
+
+  const notificationId =
+    currentAccountNotificationId;
+
+  currentAccountNotificationId = null;
+
+  if (!notificationId) {
+    showNextAccountNotification();
+    return;
+  }
+
+  API.markNotificationAsRead(notificationId)
+    .catch((error) => {
+      console.error(
+        "Không đánh dấu được thông báo đã đọc:",
+        error
+      );
+    })
+    .finally(() => {
+      showNextAccountNotification();
+    });
+}
+
+window.loadAccountRoleNotifications =
+  loadAccountRoleNotifications;
+
+window.closeAccountNotificationPopup =
+  closeAccountNotificationPopup;
