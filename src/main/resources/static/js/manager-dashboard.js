@@ -249,22 +249,22 @@ function renderManagerDashboard() {
       // Execute 1: Vẽ 4 thẻ metric bằng dữ liệu thật bốc từ DB
       metricsHost.innerHTML = `
         <div class="md-metric-card">
-          <div class="md-metric-top"><div class="md-metric-icon">💰</div><span class="md-badge md-badge-up">↗ Live</span></div>
+          <div class="md-metric-top"><div class="md-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div><span class="md-badge md-badge-up">↗ Live</span></div>
           <div class="md-metric-label">Doanh thu hôm nay</div>
           <div class="md-metric-value">${(data.todayRevenue || 0).toLocaleString("vi-VN")}đ</div>
         </div>
         <div class="md-metric-card">
-          <div class="md-metric-top"><div class="md-metric-icon">🎟️</div><span class="md-badge md-badge-up">↗ Live</span></div>
+          <div class="md-metric-top"><div class="md-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4Z"></path><line x1="13" y1="5" x2="13" y2="19" stroke-dasharray="2,2"></line></svg></div><span class="md-badge md-badge-up">↗ Live</span></div>
           <div class="md-metric-label">Vé đã bán hôm nay</div>
           <div class="md-metric-value">${(data.todayTicketsSold || 0).toLocaleString("vi-VN")} vé</div>
         </div>
         <div class="md-metric-card">
-          <div class="md-metric-top"><div class="md-metric-icon">🎬</div><span class="md-badge md-badge-up">Active</span></div>
+          <div class="md-metric-top"><div class="md-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2" ry="2"></rect><line x1="7" y1="3" x2="7" y2="21"></line><line x1="17" y1="3" x2="17" y2="21"></line><line x1="2" y1="8" x2="7" y2="8"></line><line x1="2" y1="16" x2="7" y2="16"></line><line x1="17" y1="8" x2="22" y2="8"></line><line x1="17" y1="16" x2="22" y2="16"></line></svg></div><span class="md-badge md-badge-up">Active</span></div>
           <div class="md-metric-label">Phim đang hoạt động</div>
           <div class="md-metric-value">${data.activeMoviesCount || 0} phim</div>
         </div>
         <div class="md-metric-card">
-          <div class="md-metric-top"><div class="md-metric-icon">🍿</div><span class="md-badge md-badge-down">Kho an toàn</span></div>
+          <div class="md-metric-top"><div class="md-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8"></path><path d="M3.27 6.96 12 12l8.73-5.04"></path><path d="M12 22V12"></path><path d="M3.29 7 12 2l8.71 5"></path></svg></div><span class="md-badge md-badge-down">Kho an toàn</span></div>
           <div class="md-metric-label">Tồn kho bắp nước</div>
           <div class="md-metric-value">Ổn định</div>
         </div>

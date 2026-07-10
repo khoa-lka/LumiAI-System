@@ -253,9 +253,9 @@ function renderMoviesTable(movies) {
           <td>${m.releaseDate || "N/A"}</td>
           <td>
               <div class="mp-table-actions">
-                  <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết">👁️</button>
-                  <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa">✏️</button>
-                  <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
+                  <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                  <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
               </div>
           </td>
       </tr>
@@ -337,9 +337,9 @@ function loadManagerMovies() {
                 <td>${m.releaseDate || "N/A"}</td>
                 <td>
                     <div class="mp-table-actions">
-                        <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết">👁️</button>
-                        <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa">✏️</button>
-                        <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
+                        <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                        <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                        <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
                     </div>
                 </td>
             </tr>
@@ -772,8 +772,8 @@ function renderFnbRow(item, index) {
         </td>
         <td>
             <div class="mp-table-actions">
-                <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" title="Sửa thông tin">✏️</button>
-                <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" title="Xóa">🗑️</button>
+                <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" title="Sửa thông tin"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" title="Xóa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
             </div>
         </td>
     </tr>
@@ -1112,8 +1112,8 @@ function renderMatrixMovieList(movies) {
         <td>${m.releaseDate || "N/A"}</td>
         <td>
           <div class="mp-table-actions">
-            <button class="mp-action-btn" onclick="openMatrixViewMovie(${m.movieId})" title="Xem chi tiết suất chiếu">👁️</button>
-            <button class="mp-action-btn" onclick="openMatrixEditMovie(${m.movieId})" title="Sửa">✏️</button>
+            <button class="mp-action-btn" onclick="openMatrixViewMovie(${m.movieId})" title="Xem chi tiết suất chiếu"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="mp-action-btn" onclick="openMatrixEditMovie(${m.movieId})" title="Sửa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
           </div>
         </td>
       </tr>
@@ -1435,43 +1435,16 @@ window.loadManagerVouchers = function() {
   const tbody = document.getElementById("mp-promo-tbody");
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Đang quét danh sách chiến dịch khuyến mãi...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:15px;">Đang quét danh sách chiến dịch khuyến mãi...</td></tr>';
 
   API.getManagerVouchers()
     .then((vouchers) => {
-      tbody.innerHTML = "";
       window.vouchersList = vouchers;
-
-      if (!vouchers || vouchers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Chưa có chiến dịch khuyến mãi nào được tạo!</td></tr>';
-        return;
-      }
-
-      vouchers.forEach((v, index) => {
-        let expiryDate = v.expiredDate ? new Date(v.expiredDate).toLocaleDateString("vi-VN") : "Vô thời hạn";
-        let discountText = v.discountType === "PERCENT" ? `${v.discountValue}%` : `${v.discountValue.toLocaleString("vi-VN")} đ`;
-        
-        tbody.innerHTML += `
-          <tr>
-              <td style="text-align: center; font-weight: bold;">${index + 1}</td>
-              <td><span class="mp-badge-code" style="background:#e8f5e9; color:#2e7d32; font-weight:bold; padding:4px 8px; border-radius:4px;">${v.voucherCode}</span></td>
-              <td>${v.discountType === "PERCENT" ? "Giảm theo phần禅 (%)" : "Giảm tiền mặt trực tiếp"}</td>
-              <td style="text-align: right; font-weight: bold; color: #b71c1c;">${discountText}</td>
-              <td style="text-align: center;">${v.usageLimit} lượt</td>
-              <td style="text-align: center;">${expiryDate}</td>
-              <td style="text-align: center;">
-                  <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
-                      <button class="mp-action-btn" onclick="openEditVoucherModal(${v.voucherId})" style="cursor:pointer;">✏️ Sửa</button>
-                      <button class="mp-action-btn" onclick="submitDeleteVoucher(${v.voucherId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;">🗑️ Xóa</button>
-                  </div>
-              </td>
-          </tr>
-        `;
-      });
+      renderVoucherRows(vouchers);
     })
     .catch((err) => {
       console.error(err);
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Lỗi kết nối danh mục Voucher: ${err.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Lỗi kết nối danh mục Voucher: ${err.message}</td></tr>`;
     });
 };
 
@@ -1485,6 +1458,7 @@ window.openAddVoucherModal = function() {
   document.getElementById("v-min").value = "0";
   document.getElementById("v-limit").value = "100";
   document.getElementById("v-expired").value = "";
+  document.getElementById("v-status").value = "ACTIVE";
 
   document.getElementById("mp-promo-modal-title").innerText = "Thêm Mới Chiến Dịch Khuyến Mãi";
   window.openCreatePromoModal();
@@ -1506,6 +1480,7 @@ window.openEditVoucherModal = function(id) {
   if (v.expiredDate) {
     document.getElementById("v-expired").value = v.expiredDate.substring(0, 16);
   }
+  document.getElementById("v-status").value = v.status || "ACTIVE";
 
   document.getElementById("mp-promo-modal-title").innerText = "Cập Nhật Chiến Dịch Khuyến Mãi";
   window.openCreatePromoModal();
@@ -1521,6 +1496,7 @@ window.submitVoucherForm = function() {
   const min = parseFloat(document.getElementById("v-min").value) || 0;
   const limit = parseInt(document.getElementById("v-limit").value) || 0;
   const expired = document.getElementById("v-expired").value;
+  const status = document.getElementById("v-status").value;
 
   if (!code) { alert("Vui lòng nhập mã Voucher!"); return; }
   if (value <= 0) { alert("Giá trị giảm phải lớn hơn 0!"); return; }
@@ -1533,6 +1509,7 @@ window.submitVoucherForm = function() {
     minimumOrder: min,
     usageLimit: limit,
     expiredDate: expired ? `${expired}:00` : null,
+    status: status,
     createdBy: parseInt(sessionStorage.getItem("roleId")) || 1,
     updatedBy: parseInt(sessionStorage.getItem("roleId")) || 1
   };
@@ -1547,6 +1524,62 @@ window.submitVoucherForm = function() {
     })
     .catch(err => alert("Lỗi xử lý Voucher: " + err.message));
 };
+
+// 6. Lọc/tìm kiếm danh sách voucher theo mã, loại giảm giá, trạng thái (client-side)
+window.filterManagerPromo = function() {
+  const tbody = document.getElementById("mp-promo-tbody");
+  if (!tbody || !window.vouchersList) return;
+
+  const keyword = (document.getElementById("mp-promo-search-input").value || "").trim().toUpperCase();
+  const typeFilter = document.getElementById("mp-promo-filter-type").value;
+  const statusFilter = document.getElementById("mp-promo-filter-status").value;
+
+  const filtered = window.vouchersList.filter((v) => {
+    const matchKeyword = !keyword || (v.voucherCode || "").toUpperCase().includes(keyword);
+    const matchType = typeFilter === "all" || v.discountType === typeFilter;
+    const matchStatus = statusFilter === "all" || (v.status || "ACTIVE") === statusFilter;
+    return matchKeyword && matchType && matchStatus;
+  });
+
+  renderVoucherRows(filtered);
+};
+
+// Tách phần render bảng ra hàm riêng để dùng chung cho load & filter
+function renderVoucherRows(vouchers) {
+  const tbody = document.getElementById("mp-promo-tbody");
+  tbody.innerHTML = "";
+
+  if (!vouchers || vouchers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888; padding:15px;">Không tìm thấy chiến dịch khuyến mãi phù hợp!</td></tr>';
+    return;
+  }
+
+  vouchers.forEach((v, index) => {
+    let expiryDate = v.expiredDate ? new Date(v.expiredDate).toLocaleDateString("vi-VN") : "Vô thời hạn";
+    let discountText = v.discountType === "PERCENT" ? `${v.discountValue}%` : `${v.discountValue.toLocaleString("vi-VN")} đ`;
+    let statusText = v.status === "INACTIVE"
+      ? '<span style="color:#9a9aa3;">Ngừng hoạt động</span>'
+      : '<span style="color:#2e7d32; font-weight:bold;">Đang hoạt động</span>';
+
+    tbody.innerHTML += `
+      <tr>
+          <td style="text-align: center; font-weight: bold;">${index + 1}</td>
+          <td><span class="mp-badge-code" style="background:#e8f5e9; color:#2e7d32; font-weight:bold; padding:4px 8px; border-radius:4px;">${v.voucherCode}</span></td>
+          <td>${v.discountType === "PERCENT" ? "Giảm theo phần trăm (%)" : "Giảm tiền mặt trực tiếp"}</td>
+          <td style="text-align: right; font-weight: bold; color: #b71c1c;">${discountText}</td>
+          <td style="text-align: center;">${v.usageLimit} lượt</td>
+          <td style="text-align: center;">${expiryDate}</td>
+          <td style="text-align: center;">${statusText}</td>
+          <td style="text-align: center;">
+              <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
+                  <button class="mp-action-btn" onclick="openEditVoucherModal(${v.voucherId})" style="cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Sửa</button>
+                  <button class="mp-action-btn" onclick="submitDeleteVoucher(${v.voucherId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Xóa</button>
+              </div>
+          </td>
+      </tr>
+    `;
+  });
+}
 
 // 5. Xử lý Xóa Voucher qua API tổng
 window.submitDeleteVoucher = function(id) {

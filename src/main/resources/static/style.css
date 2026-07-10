@@ -4451,6 +4451,10 @@ select.profile-readonly-input:not([disabled]) {
   background: rgba(255, 255, 255, 0.06);
   color: var(--muted);
 }
+.mp-status.expired {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
 .mp-status.available {
   background: var(--success-bg);
   color: var(--success-text);
@@ -4472,6 +4476,9 @@ select.profile-readonly-input:not([disabled]) {
   font-size: 16px;
   cursor: pointer;
   color: #9a9aa3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition:
     color 0.2s,
     transform 0.2s;
@@ -6073,10 +6080,14 @@ select.profile-readonly-input:not([disabled]) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 107, 53, 0.14);
-  color: #ff6b35;
+  background: rgba(255,255,255,0.06);
+  color: #fff;
   font-size: 16px;
   font-weight: 800;
+}
+.md-metric-icon svg {
+  width: 19px;
+  height: 19px;
 }
 .md-badge {
   font-size: 11px;
