@@ -157,33 +157,12 @@ window.syncUserLoginSession = function () {
   const emailField = document.getElementById("profile-field-email");
   if (emailField) emailField.value = uData.email;
 
-    // 🌟 Đồng bộ lại Avatar / Tên / Vai trò trên tab "Tài Khoản LAS"
-    // (bắt buộc phải làm lại ở đây vì khi RELOAD trang, hàm xử lý đăng nhập
-    //  gốc không chạy lại, nếu không phần này sẽ đứng yên ở giá trị mặc định)
-    if (document.getElementById("profile-summary-avatar")) {
-      document.getElementById("profile-summary-avatar").innerText =
-        getNameAvatarInitial(uData.fullName);
-    }
-    const welcomeNameBoxSync = document.getElementById("profile-welcome-name");
-    if (welcomeNameBoxSync) welcomeNameBoxSync.innerText = uData.fullName;
+  const roleField = document.getElementById("profile-field-role");
+  if (roleField) roleField.value = syncRoleString;
 
-    let syncRoleString = "Khách hàng thành viên";
-    if (uData.roleId === 1) syncRoleString = "Quản lý (MANAGER)";
-    if (uData.roleId === 2) syncRoleString = "Nhân viên cụm rạp (STAFF)";
-    if (uData.roleId === 4) syncRoleString = "Quản trị viên (ADMIN)";
-
-    if (document.getElementById("profile-field-name"))
-      document.getElementById("profile-field-name").value = uData.fullName;
-    if (document.getElementById("profile-field-phone"))
-      document.getElementById("profile-field-phone").value = uData.phoneNumber;
-    if (document.getElementById("profile-field-email"))
-      document.getElementById("profile-field-email").value = uData.email;
-    if (document.getElementById("profile-field-role"))
-      document.getElementById("profile-field-role").value = syncRoleString;
-
-    // 🌟 Khôi phục hiển thị tab "TRUY CẬP DASHBOARD" theo vai trò đã lưu
+  // 🌟 Khôi phục hiển thị tab "TRUY CẬP DASHBOARD" theo vai trò đã lưu
+  if (typeof window.refreshDashboardTab === "function")
     window.refreshDashboardTab(uData.roleId);
-  }
 
   // Không gọi /api/bookings/user nữa, vì API đó đang lỗi 500
   // Lịch sử giao dịch sẽ dùng API.getOrderHistory(accountId)
