@@ -4,13 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LAS Cinemas - Manager Portal</title>
-    <link rel="stylesheet" href="style.css?v=19" />
+    <link rel="stylesheet" href="style.css?v=21" />
   </head>
   <body>
     <div class="manager-pro-layout">
       <div class="mp-sidebar">
         <div class="mp-logo-zone">
-          CinemaManager Pro
+          QUẢN LÝ LAS CINEMA
         </div>
         <ul class="mp-nav-list">
           <li
@@ -18,6 +18,9 @@
             id="mp-nav-dashboard"
             onclick="switchMpTab('dashboard')"
           >
+            <span class="mp-nav-icon"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg
+            ></span>
             <div class="mp-nav-text">
               <strong>Dashboard</strong
               ><span class="mp-nav-subtext">Tổng quan</span>
@@ -28,7 +31,9 @@
             id="mp-nav-movies"
             onclick="switchMpTab('movies')"
           >
-            <span class="mp-nav-icon">🎞️</span>
+            <span class="mp-nav-icon"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg
+            ></span>
             <div class="mp-nav-text">
               Quản lý<span class="mp-nav-subtext">Danh mục Phim</span>
             </div>
@@ -38,13 +43,17 @@
             id="mp-nav-matrix"
             onclick="switchMpTab('matrix')"
           >
-            <span class="mp-nav-icon">📅</span>
+            <span class="mp-nav-icon"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="8" cy="14" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="16" cy="14" r="1"/></svg
+            ></span>
             <div class="mp-nav-text">
               Ma trận<span class="mp-nav-subtext">Lịch chiếu</span>
             </div>
           </li>
           <li class="mp-nav-item" id="mp-nav-fnb" onclick="switchMpTab('fnb')">
-            <span class="mp-nav-icon">🍿</span>
+            <span class="mp-nav-icon"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.59 2.59 20 10a2 2 0 0 1 0 2.83l-7.17 7.17a2 2 0 0 1-2.83 0L3 13V5a2 2 0 0 1 2-2h7.59Z"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/></svg
+            ></span>
             <div class="mp-nav-text">
               Kho &<span class="mp-nav-subtext">Dịch vụ F&B</span>
             </div>
@@ -54,7 +63,9 @@
             id="mp-nav-promo"
             onclick="switchMpTab('promo')"
           >
-            <span class="mp-nav-icon">🎟️</span>
+            <span class="mp-nav-icon"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a2 2 0 0 0 0 4v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a2 2 0 0 1 0-4V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z"/><path d="M9 5v14" stroke-dasharray="2 2"/></svg
+            ></span>
             <div class="mp-nav-text">
               Chiến dịch<span class="mp-nav-subtext">Khuyến mãi</span>
             </div>
@@ -64,7 +75,9 @@
             id="mp-nav-audit"
             onclick="switchMpTab('audit')"
           >
-            <span class="mp-nav-icon">📈</span>
+            <span class="mp-nav-icon"
+              ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg
+            ></span>
             <div class="mp-nav-text">
               Báo cáo &<span class="mp-nav-subtext">Kiểm toán</span>
             </div>
@@ -277,7 +290,7 @@
               <!-- Thay thế date picker tĩnh bằng ô input date động -->
               <input type="date" id="mp-matrix-date-input" class="mp-filter-select" style="width: 160px; font-weight: bold;" onchange="loadManagerMatrix()" />
               <button class="mp-btn-add" onclick="openAddShowtimeModal()">Tạo suất chiếu mới</button>
-              <button class="mp-btn-outline" onclick="loadManagerMatrix()">🔄 Làm mới</button>
+              <button class="mp-btn-outline" onclick="loadManagerMatrix()">Làm mới</button>
             </div>
           </div>
           
@@ -329,7 +342,6 @@
                     <th>Movie</th>
                     <th>Genre</th>
                     <th>Duration</th>
-                    <th>Rating</th>
                     <th>Status</th>
                     <th>Release Date</th>
                     <th style="text-align: center">Actions</th>
@@ -337,7 +349,7 @@
                 </thead>
                 <tbody id="mp-matrix-movies-tbody">
                   <tr>
-                    <td colspan="7" style="text-align: center; padding: 20px; color: #888">
+                    <td colspan="6" style="text-align: center; padding: 20px; color: #888">
                       Đang tải danh sách phim...
                     </td>
                   </tr>
@@ -361,7 +373,6 @@
             </div>
             <div class="mp-fnb-bottom-row">
               <div class="mp-search-box">
-                <span class="mp-search-icon">🔍</span>
                 <input type="text" id="mp-fnb-search-input" placeholder="Tìm tên bắp nước, combo..." oninput="filterManagerFnb()" />
               </div>
               <div class="mp-filters">
@@ -408,7 +419,7 @@
         <div id="mp-tab-promo" class="mp-tab-section" style="display: none;">
           <div class="mp-action-bar">
             <button class="mp-btn-add" onclick="openAddVoucherModal()">
-              ➕ Tạo Chiến Dịch Mới
+              Tạo Chiến Dịch Mới
             </button>
             <div class="mp-filters">
               <div class="mp-search-box">
@@ -461,59 +472,65 @@
             <select class="mp-select-sm">
               <option>Doanh thu/Đối soát</option>
             </select>
-            <select class="mp-select-sm">
-              <option>DatePicker</option>
-            </select>
-            <button class="mp-btn-report mp-btn-export">
-              Xuất báo cáo (PDF/Excel)
+  
+            <input type="date" id="mp-audit-date-input" class="mp-select-sm" style="font-weight: bold; padding: 4px 10px;" onchange="window.loadManagerAudit()" />
+  
+            <button class="mp-btn-report mp-btn-export" 
+              onclick="alert('Đang xuất báo cáo PDF/Excel...')">Xuất báo cáo (PDF/Excel)
             </button>
-            <button class="mp-btn-report mp-btn-audit">Đối soát Ngay</button>
+            <button class="mp-btn-report mp-btn-audit" 
+              onclick="window.triggerReconciliation()">Đối soát Ngay</button>
           </div>
 
-          <div class="mp-report-grid">
-            <div class="mp-report-card">
-              Doanh thu hôm nay<br /><strong style="font-size: 18px"
-                >125,000,000 VND</strong
-              >
+          <div class="md-metrics" id="aud-metrics"></div>
+
+          <div class="md-row-2">
+            <div class="md-box">
+              <div class="md-box-head">
+                <div>
+                  <h3 class="md-box-title">Tỷ Lệ Đối Soát Khớp Theo Ngày</h3>
+                  <span class="md-box-sub">7 ngày gần nhất</span>
+                </div>
+                <div class="aud-chart-legend">
+                  <span><i class="md-dot" style="background: #ff6b35"></i> Tốt nhất</span>
+                  <span><i class="md-dot" style="background: #f87171"></i> Cần chú ý (&lt;90%)</span>
+                </div>
+              </div>
+              <div class="md-chart-host" id="aud-bar-chart"></div>
             </div>
-            <div class="mp-report-card">
-              Tỷ lệ Lấp đầy<br /><strong style="font-size: 18px">78%</strong>
-            </div>
-            <div class="mp-report-card">
-              Hiệu suất F&B<br /><strong style="font-size: 18px">150</strong>
-            </div>
-            <div class="mp-report-card">
-              Đối soát (19/06)<br /><strong style="font-size: 14px"
-                >125,000,000 VND</strong
-              >
+
+            <div class="md-box">
+              <div class="md-box-head">
+                <div>
+                  <h3 class="md-box-title">Phân Bổ Nguồn Doanh Thu</h3>
+                  <span class="md-box-sub">Theo kênh thanh toán</span>
+                </div>
+              </div>
+              <div class="md-genre-wrap">
+                <div class="md-donut-host" id="aud-donut-chart"></div>
+                <div class="md-genre-legend" id="aud-donut-legend"></div>
+              </div>
             </div>
           </div>
 
-          <div class="mp-box">
-            <table class="mp-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>POS Revenue</th>
-                  <th>Cổng TTTT Revenue</th>
-                  <th>Chênh lệch</th>
-                  <th>Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>06/06/2026</td>
-                  <td>125,000,000 VND</td>
-                  <td>550,000 VND</td>
-                  <td style="color: red">-125,004</td>
-                  <td>
-                    <span class="mp-audit-status status-error"
-                      >Lỗi Chênh lệch</span
-                    >
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="md-box">
+            <div class="md-box-head">
+              <div>
+                <h3 class="md-box-title">Nhận Định &amp; Đề Xuất</h3>
+                <span class="md-box-sub">Tổng hợp từ dữ liệu đối soát tuần này</span>
+              </div>
+            </div>
+            <div class="aud-insight-list" id="aud-insights"></div>
+          </div>
+
+          <div class="md-box" style="padding: 0">
+            <div class="md-box-head" style="padding: 20px 22px 0">
+              <div>
+                <h3 class="md-box-title">Chi Tiết Đối Soát Doanh Thu</h3>
+                <span class="md-box-sub">So sánh doanh thu POS &amp; Cổng thanh toán trực tuyến</span>
+              </div>
+            </div>
+            <div id="aud-table"></div>
           </div>
         </div>
       </div>
@@ -1285,92 +1302,19 @@
     </div>
 
     <script src="js/state.js?v=19"></script>
-    <script src="js/api.js?v=19"></script>
+    <script src="js/api.js?v=20"></script>
+    <script src="js/manager-dashboard.js?v=20"></script>
+    <script src="js/manager-audit.js?v=19"></script>
     <script src="js/manager.js?v=19"></script>
-    <script src="js/manager-dashboard.js?v=19"></script>
     <script src="js/admin.js?v=19"></script>
 
     <script>
-      // HÀM CHUYỂN TAB MẠNH MẼ (KHÔNG BỊ LỖI CHẶN)
-      window.switchMpTab = function (tabId) {
-        console.log("Đang chuyển sang tab:", tabId);
+      // =========================================================================
+      // 🎯 HÀM CHUYỂN TAB TRUNG GIAN (Gọi trực tiếp "nhà mới" trong manager.js)
+      // =========================================================================
+      
 
-        // Ép ẩn toàn bộ thẻ và xóa active
-        document.querySelectorAll(".mp-tab-section").forEach((tab) => {
-          tab.classList.remove("active");
-          tab.style.display = "none";
-        });
-        document.querySelectorAll(".mp-nav-item").forEach((nav) => {
-          nav.classList.remove("active");
-        });
-
-        // Ép hiện thẻ được gọi
-        const targetTab = document.getElementById("mp-tab-" + tabId);
-        const targetNav = document.getElementById("mp-nav-" + tabId);
-
-        if (targetTab) {
-          targetTab.classList.add("active");
-          targetTab.style.display = "block";
-        }
-        if (targetNav) {
-          targetNav.classList.add("active");
-        }
-
-        // Đổi tiêu đề Header
-        const titles = {
-          dashboard: "Tổng quan hoạt động rạp",
-          movies: "Quản lý Danh mục Phim",
-          matrix: "Ma trận Lịch chiếu",
-          fnb: "F&B Services & Inventory Control",
-          promo: "Chiến dịch Khuyến mãi",
-          audit: "Báo cáo & Kiểm toán",
-        };
-        const titleEl = document.getElementById("mp-dynamic-title");
-        if (titleEl) titleEl.innerText = titles[tabId] || "Manager Portal";
-
-        // 0. Vẽ lại Dashboard (dữ liệu tĩnh) mỗi khi quay lại Tab Dashboard
-        if (tabId === "dashboard" && typeof renderManagerDashboard === "function") {
-          try {
-            renderManagerDashboard();
-          } catch (err) {
-            console.error("Lỗi khi render Dashboard:", err);
-          }
-        }
-        // 1. Gọi API nạp dữ liệu phim khi qua Tab Movies
-        if (tabId === "movies" && typeof loadManagerMovies === "function") {
-          try {
-            loadManagerMovies();
-          } catch (err) {
-            console.error("Lỗi khi load danh sách phim:", err);
-          }
-        }
-        // 2. Tự động kích hoạt gọi API nạp bắp nước từ DB khi chuyển sang Tab F&B
-        if (tabId === "fnb" && typeof loadManagerFnb === "function") {
-          try {
-            loadManagerFnb();
-          } catch (err) {
-            console.error("Lỗi khi load danh sách F&B từ database:", err);
-          }
-        }
-        // 3. Tự động kích hoạt gọi ma trận lịch chiếu tổng hợp khi qua Tab Matrix
-        if (tabId === "matrix" && typeof loadManagerMatrix === "function") {
-          try {
-            loadManagerMatrix();
-          } catch (err) {
-            console.error("Lỗi khi load ma trận lịch chiếu:", err);
-          }
-        }
-        // 4. Tự động gọi API nạp voucher từ database khi chuyển sang Tab Promo
-        if (tabId === "promo" && typeof loadManagerVouchers === "function") {
-          try {
-            loadManagerVouchers();
-          } catch (err) {
-            console.error("Lỗi khi load danh sách Voucher từ database:", err);
-          }
-        }
-      };
-
-      // Các hàm Dropdown
+      // 🔔 Các hàm xử lý Dropdown tiện ích (Giữ nguyên logic giao diện)
       function toggleNotifDropdown() {
         document.getElementById("mp-notif-dropdown").classList.toggle("open");
       }

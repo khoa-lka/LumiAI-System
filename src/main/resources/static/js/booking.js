@@ -1198,7 +1198,12 @@ function executeFinalCheckout() {
   let currentMovie =
     document.getElementById("cgv-combo-movie")?.value?.trim() ||
     document.getElementById("detail-movie-title")?.innerText?.trim();
+const targetMovie = (typeof serverData !== 'undefined' && serverData.movies) 
+        ? serverData.movies.find(m => m.title === currentMovie) 
+        : null;
 
+    // 3. LẤY ID PHIM AN TOÀN
+    const movieId = targetMovie ? (targetMovie.movieId || targetMovie.movie_id) : null;
   if (!currentMovie || currentMovie === "-" || currentMovie === "—") {
     alert("Không xác định được phim!");
     return;
@@ -1277,6 +1282,7 @@ function executeFinalCheckout() {
   const checkoutPayload = {
     accountId: currentAccountId,
     movieName: currentMovie,
+    movieId: movieId,
     showtimeId: window.currentSelectedShowtimeId,
     seats: [...selectedSeats],
     email: currentEmail,
