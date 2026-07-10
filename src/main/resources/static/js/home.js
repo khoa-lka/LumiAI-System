@@ -942,6 +942,22 @@ function selectCgvBookingDate(dateStr) {
   window.renderCgvInterface();
 }
 
+// Toast thông báo thành công dùng chung (không chặn luồng như alert()).
+// Dùng cho các thông báo "xong việc" nhẹ nhàng, VD: đăng nhập thành công.
+function showCgvToast(message) {
+  const toast = document.getElementById("cgv-success-toast");
+  if (toast) {
+    toast.innerText = message;
+    toast.classList.add("show");
+    clearTimeout(window._cgvToastTimer);
+    window._cgvToastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+  } else {
+    // Dự phòng: nếu vì lý do gì đó không tìm thấy toast trong DOM
+    alert(message);
+  }
+}
+window.showCgvToast = showCgvToast;
+
 function handleCgvLogout(e) {
   e.stopPropagation();
   document.getElementById("logout-confirm-modal").classList.add("open");
@@ -950,7 +966,20 @@ function closeLogoutConfirmModal() {
   document.getElementById("logout-confirm-modal").classList.remove("open");
 }
 function confirmCgvLogoutAction() {
-  confirmLogoutAction();
+  // Người dùng đã xác nhận qua modal đẹp (#logout-confirm-modal) rồi,
+  // nên KHÔNG gọi lại confirmLogoutAction() (chứa confirm() gốc của trình
+  // duyệt) nữa để tránh hiện 2 popup chồng nhau. Thực hiện thẳng logic đăng xuất tại đây.
+  sessionStorage.clear();
+
+  localStorage.removeItem("las_logged_in_user");
+  localStorage.removeItem("las_user_invoices");
+  localStorage.removeItem("las_current_booking_cache");
+
+  window.currentLoggedInId = null;
+  isUserLoggedInState = false;
+
+  closeLogoutConfirmModal();
+  location.reload();
 }
 
 function handleTicketViewAccess() {

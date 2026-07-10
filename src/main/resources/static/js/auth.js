@@ -78,17 +78,19 @@ function submitCgvLogin(event) {
         //    Manager(1) và Admin(4) truy cập Dashboard CHỦ ĐỘNG qua tab
         //    "TRUY CẬP DASHBOARD" (Manager -> manager.html, Admin -> admin.html).
         {
-          alert(
-            `Chào mừng ${uData.fullName} đăng nhập thành công!`,
-          );
           closeAuthModal();
+          if (typeof showCgvToast === "function") {
+            showCgvToast(`Chào mừng ${uData.fullName} đăng nhập thành công!`);
+          } else {
+            alert(`Chào mừng ${uData.fullName} đăng nhập thành công!`);
+          }
 
           const authLinkBox = document.getElementById("top-bar-auth-link");
           authLinkBox.onclick = () => switchCgvTab("panel-profile");
           authLinkBox.style.cursor = "pointer";
           authLinkBox.innerHTML = `
               <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}! 
-              <span onclick="confirmLogoutAction(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+              <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
           `;
           document.getElementById("top-bar-ticket-link").innerHTML =
             `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;

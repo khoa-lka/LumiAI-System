@@ -2408,6 +2408,85 @@ select.profile-readonly-input:not([disabled]) {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ==========================================================================
+   MODAL XÁC NHẬN ĐĂNG XUẤT — GIAO DIỆN NÂNG CẤP
+   ========================================================================== */
+.cgv-logout-box {
+  width: 380px;
+  max-width: 90vw;
+  background: linear-gradient(180deg, #1c1c21 0%, #16161a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 34px 28px 28px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  animation: cgvLogoutPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes cgvLogoutPop {
+  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.cgv-logout-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cgv-red, #ff6b35), #e5502e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(255, 107, 53, 0.35);
+}
+.cgv-logout-icon svg {
+  width: 26px;
+  height: 26px;
+}
+.cgv-logout-title {
+  color: #f4f4f5;
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 10px;
+  letter-spacing: 0.2px;
+}
+.cgv-logout-desc {
+  font-size: 13.5px;
+  color: #9a9aa3;
+  line-height: 1.55;
+  margin: 0 0 26px;
+}
+.cgv-logout-actions {
+  display: flex;
+  gap: 12px;
+}
+.cgv-logout-btn {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.cgv-logout-btn-cancel {
+  background: transparent;
+  color: #d4d4d8;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+.cgv-logout-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.cgv-logout-btn-confirm {
+  background: linear-gradient(135deg, var(--cgv-red, #ff6b35), #e5502e);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(255, 107, 53, 0.3);
+}
+.cgv-logout-btn-confirm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(255, 107, 53, 0.42);
+}
+
 @media (max-width: 560px) {
   .history-card-item {
     flex-wrap: wrap;
@@ -4572,18 +4651,6 @@ select.profile-readonly-input:not([disabled]) {
   padding: 10px 0;
   border-bottom: 1px solid #333;
   font-size: 12px;
-}
-.mp-notif-icon {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.mp-notif-icon svg {
-  width: 20px;
-  height: 20px;
 }
 .mp-notif-item:last-child {
   border-bottom: none;
