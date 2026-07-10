@@ -38,20 +38,10 @@ function submitCgvLogin(event) {
   const currentLoginCaptcha =
     document.getElementById("login-captcha-text").innerText;
 
-  if (!user || !pass) {
-    return showCustomAlert(
-      "Vui lòng nhập đầy đủ tài khoản và mật khẩu!",
-      "warning",
-      "Thiếu thông tin",
-    );
-  }
-
+  if (!user || !pass)
+    return alert("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
   if (captchaInput.toUpperCase() !== currentLoginCaptcha.toUpperCase()) {
-    return showCustomAlert(
-      "Mã bảo vệ Captcha không chính xác!",
-      "error",
-      "Sai Captcha",
-    );
+    return alert("Mã bảo vệ Captcha không chính xác!");
   }
 
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
@@ -88,11 +78,6 @@ function submitCgvLogin(event) {
         //    Manager(1) và Admin(4) truy cập Dashboard CHỦ ĐỘNG qua tab
         //    "TRUY CẬP DASHBOARD" (Manager -> manager.html, Admin -> admin.html).
         {
-          showCustomAlert(
-            `Chào mừng ${uData.fullName} đăng nhập thành công!`,
-            "success",
-            "Đăng nhập thành công",
-          );
           closeAuthModal();
           if (typeof showCgvToast === "function") {
             showCgvToast(`Chào mừng ${uData.fullName} đăng nhập thành công!`);
@@ -123,7 +108,8 @@ function submitCgvLogin(event) {
           const welcomeNameBox = document.getElementById(
             "profile-welcome-name",
           );
-          if (welcomeNameBox) welcomeNameBox.innerText = uData.fullName;
+          if (welcomeNameBox)
+            welcomeNameBox.innerText = uData.fullName;
 
           const starRoleBox = document.getElementById("profile-star-role");
           if (starRoleBox) starRoleBox.innerText = "MEMBER";
@@ -167,20 +153,10 @@ function submitCgvLogin(event) {
           switchCgvTab("panel-profile");
         }
       } else {
-        showCustomAlert(
-          resData.message || "Đăng nhập thất bại!",
-          "error",
-          "Đăng nhập thất bại",
-        );
+        alert("Đăng nhập thất bại: " + resData.message);
       }
     })
-    .catch((err) =>
-      showCustomAlert(
-        err.message || "Không thể đăng nhập!",
-        "error",
-        "Lỗi đăng nhập",
-      ),
-    );
+    .catch((err) => alert("🚨 Lỗi đăng nhập: " + err.message));
 }
 
 function submitCgvRegister(event) {
@@ -206,18 +182,10 @@ function submitCgvRegister(event) {
     !birthMonth ||
     !birthYear
   ) {
-    return showCustomAlert(
-      "Vui lòng điền đầy đủ thông tin và chọn ngày sinh!",
-      "warning",
-      "Thiếu thông tin",
-    );
+    return alert("Vui lòng điền đầy đủ thông tin và chọn ngày sinh!");
   }
   if (captchaInput.toUpperCase() !== currentRegCaptcha.toUpperCase()) {
-    return showCustomAlert(
-      "Mã xác thực Captcha đăng ký không khớp!",
-      "error",
-      "Sai Captcha",
-    );
+    return alert("Mã xác thực Captcha đăng ký không khớp!");
   }
 
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
@@ -232,73 +200,40 @@ function submitCgvRegister(event) {
   })
     .then((resData) => {
       if (resData.status === "success") {
-        showCustomAlert(
-          resData.message + "\nVui lòng kiểm tra Gmail để lấy mã OTP.",
-          "success",
-          "Đăng ký thành công",
+        alert(
+          resData.message +
+            "\nHãy kiểm tra màn hình Console của Spring Boot để lấy mã OTP nhé!",
         );
         temporaryRegisterEmail = resData.email;
         closeAuthModal();
         openOtpModal();
       } else {
-        showCustomAlert(
-          resData.message || "Đăng ký thất bại!",
-          "error",
-          "Đăng ký thất bại",
-        );
+        alert("Đăng ký thất bại: " + resData.message);
       }
     })
-    .catch((err) =>
-      showCustomAlert(
-        err.message || "Không thể đăng ký!",
-        "error",
-        "Lỗi đăng ký",
-      ),
-    );
+    .catch((err) => alert("🚨 Lỗi đăng ký: " + err.message));
 }
 
 function submitOtpVerification() {
   const otpInput = document.getElementById("otp-input-field").value.trim();
 
-  if (!otpInput) {
-    return showCustomAlert(
-      "Vui lòng nhập mã OTP gồm 6 chữ số!",
-      "warning",
-      "Thiếu OTP",
-    );
-  }
-
-  if (!temporaryRegisterEmail) {
-    return showCustomAlert(
-      "Hệ thống không tìm thấy email đăng ký hợp lệ!",
-      "error",
-      "Lỗi xác thực",
-    );
-  }
+  if (!otpInput) return alert("Vui lòng nhập mã OTP gồm 6 chữ số!");
+  if (!temporaryRegisterEmail)
+    return alert("Hệ thống không tìm thấy email đăng ký hợp lệ!");
 
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
   API.verifyOtp({ email: temporaryRegisterEmail, otp: otpInput })
     .then((resData) => {
       if (resData.status === "success") {
-        showCustomAlert(resData.message, "success", "Xác thực thành công");
+        alert(resData.message);
         closeOtpModal();
         openAuthModal();
         toggleAuthTab("login");
       } else {
-        showCustomAlert(
-          resData.message || "Xác thực OTP thất bại!",
-          "error",
-          "Xác thực thất bại",
-        );
+        alert("Xác thực thất bại: " + resData.message);
       }
     })
-    .catch((err) =>
-      showCustomAlert(
-        err.message || "Không thể xác thực OTP!",
-        "error",
-        "Lỗi OTP",
-      ),
-    );
+    .catch((err) => alert("❌ Lỗi OTP: " + err.message));
 }
 
 // --- 3. QUẢN LÝ HỒ SƠ ---
@@ -330,8 +265,7 @@ function saveUpdatedProfileInformationData() {
           .querySelectorAll(".profile-readonly-input")
           .forEach((input) => {
             input.setAttribute("readonly", true);
-            if (input.tagName === "SELECT")
-              input.setAttribute("disabled", true);
+            if (input.tagName === "SELECT") input.setAttribute("disabled", true);
             input.style.border = "1px solid rgba(255,255,255,0.15)";
             input.style.background = "#1c1c21";
             input.style.color = "#f4f4f5";
@@ -456,50 +390,6 @@ function generateForgotCaptcha() {
   }
 }
 
-function showCustomAlert(message, type = "error", title = "Thông báo") {
-  const overlay = document.getElementById("custom-alert-overlay");
-  const box = document.querySelector(".custom-alert-box");
-  const icon = document.getElementById("custom-alert-icon");
-  const titleEl = document.getElementById("custom-alert-title");
-  const messageEl = document.getElementById("custom-alert-message");
-
-  if (!overlay || !box || !icon || !titleEl || !messageEl) {
-    alert(message);
-    return;
-  }
-
-  box.classList.remove("success", "warning", "error");
-
-  if (type === "success") {
-    box.classList.add("success");
-    icon.textContent = "✓";
-    titleEl.textContent = title || "Thành công";
-  } else if (type === "warning") {
-    box.classList.add("warning");
-    icon.textContent = "!";
-    titleEl.textContent = title || "Lưu ý";
-  } else {
-    box.classList.add("error");
-    icon.textContent = "!";
-    titleEl.textContent = title || "Có lỗi xảy ra";
-  }
-
-  messageEl.textContent = message;
-  overlay.classList.add("show");
-}
-
-function closeCustomAlert() {
-  const overlay = document.getElementById("custom-alert-overlay");
-  if (overlay) {
-    overlay.classList.remove("show");
-  }
-}
-
 // 🚀 ĐÃ THÊM: Ép trình duyệt đưa hàm ra phạm vi window tối cao, dẹp bỏ hoàn toàn lỗi undefined nút bấm
 window.generateNewLoginCaptcha = generateNewLoginCaptcha;
 window.generateNewRegisterCaptcha = generateNewRegisterCaptcha;
-window.showCustomAlert = showCustomAlert;
-window.closeCustomAlert = closeCustomAlert;
-window.alert = function (message) {
-  showCustomAlert(String(message), "error", "Thông báo");
-};

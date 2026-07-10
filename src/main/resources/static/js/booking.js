@@ -605,74 +605,32 @@ function processToPaymentGateway() {
 }
 
 function openQrPayment(finalTotal) {
-  _qrCheckoutDone = false;
-
   document.getElementById("qr-total-price").innerText =
     finalTotal.toLocaleString("vi-VN") + " đ";
 
+  const bankId = "ICB";
+  const accountNo = "101879388698";
+  const accountName = "NGUYEN BAO HOANG";
+  const qrData = "LAS CINEMAS THANH TOAN";
+
+  document.getElementById("bank-qr-img").src =
+    `https://img.vietqr.io/image/${bankId}-${accountNo}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(qrData)}&accountName=${encodeURIComponent(accountName)}`;
+
+  // Mở modal ở bước "Tạo mã QR" (chưa hiện mã)
   const genView = document.getElementById("vietqr-generate-view");
   const codeView = document.getElementById("vietqr-code-view");
-
   if (genView) genView.style.display = "";
   if (codeView) codeView.style.display = "none";
-
   stopVietQRTimer();
-  stopQrPaymentPolling();
 
   document.getElementById("payment-redirect-modal").classList.add("open");
-
-  API.createPayOSPayment(finalTotal)
-    .then((res) => {
-      console.log("PAYOS CREATE RESPONSE:", res);
-
-      if (res.code !== "00") {
-        alert("Không tạo được thanh toán payOS: " + res.desc);
-        return;
-      }
-
-      const data = res.data;
-
-      window.currentQrRef = String(data.orderCode);
-      window.currentPayOSOrderCode = data.orderCode;
-      window.currentPayOSPaymentLinkId = data.paymentLinkId;
-
-      const qrImg = document.getElementById("bank-qr-img");
-
-      qrImg.src =
-        "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=" +
-        encodeURIComponent(data.qrCode);
-
-      document.getElementById("qr-total-price").innerText =
-        Number(data.amount).toLocaleString("vi-VN") + " đ";
-
-      if (genView) genView.style.display = "none";
-      if (codeView) codeView.style.display = "";
-
-      generateVietQR();
-      startQrPaymentPolling();
-    })
-    .catch((err) => {
-      console.error("Lỗi tạo thanh toán payOS:", err);
-      alert("Lỗi tạo thanh toán payOS!");
-    });
 }
 
 let _vietqrTimerId = null;
-let _qrPaymentPollId = null;
-let _qrCheckoutDone = false;
-window.currentQrRef = null;
-
 function stopVietQRTimer() {
   if (_vietqrTimerId) {
     clearInterval(_vietqrTimerId);
     _vietqrTimerId = null;
-  }
-}
-
-function stopQrPaymentPolling() {
-  if (_qrPaymentPollId) {
-    clearInterval(_qrPaymentPollId);
-    _qrPaymentPollId = null;
   }
 }
 
@@ -693,7 +651,6 @@ function generateVietQR() {
     if (timerEl) timerEl.innerText = `${m}:${s < 10 ? "0" : ""}${s}`;
   };
   render();
-  startQrPaymentPolling();
   _vietqrTimerId = setInterval(() => {
     remaining--;
     if (remaining <= 0) {
@@ -709,54 +666,6 @@ function generateVietQR() {
 }
 window.generateVietQR = generateVietQR;
 window.stopVietQRTimer = stopVietQRTimer;
-
-function startQrPaymentPolling() {
-  stopQrPaymentPolling();
-
-  if (!window.currentQrRef) {
-    console.warn("Chưa có currentQrRef nên không thể kiểm tra thanh toán");
-    return;
-  }
-
-  const statusText = document.getElementById("vietqr-payment-status-text");
-
-  _qrPaymentPollId = setInterval(() => {
-    API.getQrPaymentStatus(window.currentQrRef)
-      .then((data) => {
-        console.log("QR PAYMENT STATUS:", data);
-
-        if (statusText) {
-          statusText.innerText =
-            data.paymentStatus === "SUCCESS"
-              ? "Thanh toán thành công!"
-              : "Đang chờ thanh toán...";
-        }
-
-        if (data.paymentStatus === "SUCCESS") {
-          if (_qrCheckoutDone) return;
-
-          _qrCheckoutDone = true;
-
-          stopQrPaymentPolling();
-          stopVietQRTimer();
-
-          document
-            .getElementById("payment-redirect-modal")
-            .classList.remove("open");
-
-          executeFinalCheckout();
-        }
-
-        if (data.paymentStatus === "CANCELLED") {
-          stopQrPaymentPolling();
-          stopVietQRTimer();
-        }
-      })
-      .catch((err) => {
-        console.error("Lỗi kiểm tra trạng thái QR:", err);
-      });
-  }, 3000);
-}
 
 function openVnpayPayment(finalTotal) {
   const safeAmount = Math.round(finalTotal);
@@ -922,31 +831,9 @@ function backToPaymentSelection() {
 }
 
 function closePaymentModal() {
-  cancelQrPayment();
+  document.getElementById("payment-redirect-modal").classList.remove("open");
+  if (typeof stopVietQRTimer === "function") stopVietQRTimer();
 }
-
-function cancelQrPayment() {
-  stopVietQRTimer();
-  stopQrPaymentPolling();
-
-  const qrRef = window.currentQrRef;
-
-  if (qrRef && typeof API.cancelQrPayment === "function") {
-    API.cancelQrPayment(qrRef).catch((err) => {
-      console.error("Lỗi hủy QR payment:", err);
-    });
-  }
-
-  window.currentQrRef = null;
-
-  const modal = document.getElementById("payment-redirect-modal");
-  if (modal) modal.classList.remove("open");
-
-  // Quay lại bước 3
-  goToBookingStep(3);
-}
-
-window.cancelQrPayment = cancelQrPayment;
 
 function executeFinalCheckout() {
   // 🛡️ LỚP CHẶN CUỐI CÙNG (TUYỆT ĐỐI): đây là nơi duy nhất thực sự gọi API
@@ -1018,20 +905,7 @@ const targetMovie = (typeof serverData !== 'undefined' && serverData.movies)
     isUserLoggedInState,
     email: currentEmail,
   });
-  let currentAccountId = Number(sessionStorage.getItem("accountId"));
-
-  if (!currentAccountId) {
-    const cachedUser = localStorage.getItem("las_logged_in_user");
-
-    if (cachedUser) {
-      try {
-        const u = JSON.parse(cachedUser);
-        currentAccountId = Number(u.accountId || u.account_id);
-      } catch (e) {
-        console.error("Không đọc được las_logged_in_user:", e);
-      }
-    }
-  }
+  const currentAccountId = Number(sessionStorage.getItem("accountId"));
 
   console.log("Account ID:", currentAccountId);
 
@@ -1202,12 +1076,6 @@ const targetMovie = (typeof serverData !== 'undefined' && serverData.movies)
           finalResultDiv.innerHTML = beautifulTicketHTML;
           // Chuyển sang Bước 4 (Xem vé)
           console.log("Đang chuyển sang bước 4...");
-
-          if (typeof stopQrPaymentPolling === "function")
-            stopQrPaymentPolling();
-          if (typeof stopVietQRTimer === "function") stopVietQRTimer();
-          _qrCheckoutDone = true;
-
           goToBookingStep(4);
           window.isVnpayReturn = false;
           console.log("Đã gọi goToBookingStep(4)");

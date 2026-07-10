@@ -46,21 +46,6 @@ if ("Banned".equalsIgnoreCase(account.getStatus())) {
         "message", "Tài khoản của bạn đã bị khóa bởi Quản trị viên!"
     ));
 }
-
-if ("PENDING".equalsIgnoreCase(account.getStatus())) {
-    return ResponseEntity.status(403).body(Map.of(
-            "status", "fail",
-            "message", "Tài khoản chưa được kích hoạt. Vui lòng kiểm tra Gmail và nhập OTP."
-    ));
-}
-
-if (!"ACTIVE".equalsIgnoreCase(account.getStatus())) {
-    return ResponseEntity.status(403).body(Map.of(
-            "status", "fail",
-            "message", "Trạng thái tài khoản không hợp lệ!"
-    ));
-}
-
         // So sánh mật khẩu thô trực tiếp
         if (!account.getPasswordHash().equals(password)) {
             return ResponseEntity.status(401).body(Map.of(
