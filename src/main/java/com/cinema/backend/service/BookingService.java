@@ -104,4 +104,3 @@ if(request.getVoucherCode()!=null &&
     return booking;
 }
 }
-

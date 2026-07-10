@@ -509,10 +509,14 @@ function handleMainAction() {
   }
 
   if (!isUserLoggedInState) {
-    alert(
-      "Bạn phải đăng nhập tài khoản thành viên mới có thể tiến hành đặt vé!",
-    );
-    openAuthModal();
+    if (typeof window.showLoginRequiredModal === "function") {
+      window.showLoginRequiredModal();
+    } else {
+      alert(
+        "Bạn phải đăng nhập tài khoản thành viên mới có thể tiến hành đặt vé!",
+      );
+      openAuthModal();
+    }
     return;
   }
 

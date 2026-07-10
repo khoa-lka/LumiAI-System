@@ -1244,6 +1244,25 @@ function closeBookingRestrictedModal() {
 window.showBookingRestrictedModal = showBookingRestrictedModal;
 window.closeBookingRestrictedModal = closeBookingRestrictedModal;
 
+// 🌟 POPUP YÊU CẦU ĐĂNG NHẬP (thay cho alert() mặc định của trình duyệt)
+function showLoginRequiredModal() {
+  const modal = document.getElementById("login-required-modal");
+  if (modal) {
+    modal.classList.add("open");
+  } else {
+    // Dự phòng: nếu vì lý do gì đó modal chưa có trong DOM, vẫn đảm bảo có cảnh báo
+    alert("Bạn phải đăng nhập tài khoản thành viên mới có thể tiến hành đặt vé!");
+    if (typeof openAuthModal === "function") openAuthModal();
+  }
+}
+function closeLoginRequiredModal() {
+  const modal = document.getElementById("login-required-modal");
+  if (modal) modal.classList.remove("open");
+  if (typeof openAuthModal === "function") openAuthModal();
+}
+window.showLoginRequiredModal = showLoginRequiredModal;
+window.closeLoginRequiredModal = closeLoginRequiredModal;
+
 function switchCgvTab(panelId, filterType = "now_showing") {
   // 🌟 CHẶN NGAY TỪ CỔNG VÀO DUY NHẤT CỦA TOÀN BỘ LUỒNG ĐẶT VÉ (kể cả chọn ghế),
   // vì mọi con đường dẫn tới panel-booking trong toàn bộ code (booking.js/home.js)
