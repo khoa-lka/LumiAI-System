@@ -6387,3 +6387,99 @@ select.profile-readonly-input:not([disabled]) {
     opacity: 1;
   }
 }
+
+.cancel-payment-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  z-index: 99999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.cancel-payment-confirm-box {
+  width: 430px;
+  max-width: 100%;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 28px 26px 24px;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+  animation: cancelPaymentPopupIn 0.22s ease;
+}
+
+.cancel-payment-confirm-icon {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.cancel-payment-confirm-title {
+  margin: 0 0 10px;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.cancel-payment-confirm-message {
+  margin: 0;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.cancel-payment-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.cancel-payment-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.cancel-payment-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.keep-payment-btn {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.confirm-cancel-payment-btn {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+@keyframes cancelPaymentPopupIn {
+  from {
+    transform: translateY(8px) scale(0.96);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}

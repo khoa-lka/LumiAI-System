@@ -562,7 +562,7 @@
             </div>
 
             <div class="countdown-timer" id="hold-timer" style="background: #fff3cd; color: #856404; padding: 12px 18px; border: 1px solid #ffeeba; font-weight: bold; margin-bottom: 20px; border-radius: 4px; display: none; justify-content: space-between; align-items: center; font-size: 13.5px;">
-                <span>⚠️ Ghế đang được giữ tạm thời trong: <strong id="timer-string" style="font-size: 16px; color: #e71a0f; margin-left: 5px;">05:00</strong></span>
+                <span>⚠️ Ghế đang được giữ tạm thời trong: <strong id="timer-string" style="font-size: 16px; color: #e71a0f; margin-left: 5px;">10:00</strong></span>
             </div>
 
             <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px; color:#f4f4f5; text-align: left; text-transform: uppercase;">4. Chọn Ghế Ngồi Phòng Chiếu</div>
@@ -1578,7 +1578,7 @@
           </div>
 
           <div class="vietqr-timer" id="vietqr-timer-box">
-            <span>⏱</span> Mã QR hết hạn sau <strong id="vietqr-timer">10:00</strong>
+          <span>⏱</span> Thời gian thanh toán còn lại <strong id="vietqr-timer">10:00</strong>
           </div>
 
           <div class="vietqr-steps">
@@ -1603,12 +1603,7 @@
              </span>
           </p>
 
-          <button
-              class="vietqr-done-btn"
-              onclick="cancelQrPayment()"
-              >
-                    Hủy thanh toán
-          </button>
+          <button class="vietqr-done-btn" onclick="closePaymentModal()">Hủy thanh toán</button>
         </div>
       </div>
     </div>

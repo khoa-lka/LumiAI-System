@@ -72,7 +72,7 @@ public class AuthOtpController {
                 .findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Email không tồn tại"));
 
-        account.setPassword(request.getNewPassword());
+        account.setPasswordHash(request.getNewPassword());
 
         accountRepository.save(account);
 
