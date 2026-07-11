@@ -107,8 +107,7 @@ function submitCgvLogin(event) {
           const welcomeNameBox = document.getElementById(
             "profile-welcome-name",
           );
-          if (welcomeNameBox)
-            welcomeNameBox.innerText = uData.fullName;
+          if (welcomeNameBox) welcomeNameBox.innerText = uData.fullName;
 
           const starRoleBox = document.getElementById("profile-star-role");
           if (starRoleBox) starRoleBox.innerText = "MEMBER";
@@ -225,15 +224,25 @@ function submitOtpVerification() {
   API.verifyOtp({ email: temporaryRegisterEmail, otp: otpInput })
     .then((resData) => {
       if (resData.status === "success") {
-        window.showCgvToast(resData.message, "success");
+        showCustomAlert(resData.message, "success", "Xác thực thành công");
         closeOtpModal();
         openAuthModal();
         toggleAuthTab("login");
       } else {
-        window.showCgvToast("Xác thực thất bại: " + resData.message, "error");
+        showCustomAlert(
+          resData.message || "Xác thực OTP thất bại!",
+          "error",
+          "Xác thực thất bại",
+        );
       }
     })
-    .catch((err) => window.showCgvToast("Lỗi OTP: " + err.message, "error"));
+    .catch((err) =>
+      showCustomAlert(
+        err.message || "Không thể xác thực OTP!",
+        "error",
+        "Lỗi OTP",
+      ),
+    );
 }
 
 // --- 3. QUẢN LÝ HỒ SƠ ---
@@ -265,7 +274,8 @@ function saveUpdatedProfileInformationData() {
           .querySelectorAll(".profile-readonly-input")
           .forEach((input) => {
             input.setAttribute("readonly", true);
-            if (input.tagName === "SELECT") input.setAttribute("disabled", true);
+            if (input.tagName === "SELECT")
+              input.setAttribute("disabled", true);
             input.style.border = "1px solid rgba(255,255,255,0.15)";
             input.style.background = "#1c1c21";
             input.style.color = "#f4f4f5";
@@ -390,6 +400,50 @@ function generateForgotCaptcha() {
   }
 }
 
+function showCustomAlert(message, type = "error", title = "Thông báo") {
+  const overlay = document.getElementById("custom-alert-overlay");
+  const box = document.querySelector(".custom-alert-box");
+  const icon = document.getElementById("custom-alert-icon");
+  const titleEl = document.getElementById("custom-alert-title");
+  const messageEl = document.getElementById("custom-alert-message");
+
+  if (!overlay || !box || !icon || !titleEl || !messageEl) {
+    alert(message);
+    return;
+  }
+
+  box.classList.remove("success", "warning", "error");
+
+  if (type === "success") {
+    box.classList.add("success");
+    icon.textContent = "✓";
+    titleEl.textContent = title || "Thành công";
+  } else if (type === "warning") {
+    box.classList.add("warning");
+    icon.textContent = "!";
+    titleEl.textContent = title || "Lưu ý";
+  } else {
+    box.classList.add("error");
+    icon.textContent = "!";
+    titleEl.textContent = title || "Có lỗi xảy ra";
+  }
+
+  messageEl.textContent = message;
+  overlay.classList.add("show");
+}
+
+function closeCustomAlert() {
+  const overlay = document.getElementById("custom-alert-overlay");
+  if (overlay) {
+    overlay.classList.remove("show");
+  }
+}
+
 // 🚀 ĐÃ THÊM: Ép trình duyệt đưa hàm ra phạm vi window tối cao, dẹp bỏ hoàn toàn lỗi undefined nút bấm
 window.generateNewLoginCaptcha = generateNewLoginCaptcha;
 window.generateNewRegisterCaptcha = generateNewRegisterCaptcha;
+window.showCustomAlert = showCustomAlert;
+window.closeCustomAlert = closeCustomAlert;
+window.alert = function (message) {
+  showCustomAlert(String(message), "error", "Thông báo");
+};

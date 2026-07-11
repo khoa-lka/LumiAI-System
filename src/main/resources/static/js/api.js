@@ -102,6 +102,28 @@ const API = {
       body: JSON.stringify(showtimeData),
     }).then(handleResponse),
 
+  // Payment API QR
+
+  createQrPayment: (amount) =>
+    fetch(`${BASE_URL}/payment/qr/create?amount=${amount}`).then(
+      handleResponse,
+    ),
+
+  getQrPaymentStatus: (qrRef) =>
+    fetch(`${BASE_URL}/payment/qr/status/${qrRef}`).then(handleResponse),
+
+  cancelQrPayment: (qrRef) =>
+    fetch(`${BASE_URL}/payment/qr/cancel/${qrRef}`, {
+      method: "POST",
+    }).then(handleResponse),
+
+  createPayOSPayment: (amount) =>
+    fetch(`${BASE_URL}/payment/payos/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount }),
+    }).then(handleResponse),
+
   // 5. ADMIN/MANAGER
   getAdminUsers: () => fetch(`${BASE_URL}/admin/users`).then(handleResponse),
   getSysLogs: () => fetch(`${BASE_URL}/admin/syslogs`).then(handleResponse),
@@ -125,34 +147,39 @@ const API = {
     fetch(`${BASE_URL}/manager/dashboard`).then(handleResponse),
 
   getFnbItems: () => fetch(`${BASE_URL}/fnb`).then(handleResponse),
-  addFnbItem: (data) => fetch(`${BASE_URL}/fnb`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  }).then(handleResponse),
-  updateFnbItem: (id, data) => fetch(`${BASE_URL}/fnb/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  }).then(handleResponse),
-  deleteFnbItem: (id) => fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then(res => res.ok ? true : Promise.reject(res)),
-  
+  addFnbItem: (data) =>
+    fetch(`${BASE_URL}/fnb`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then(handleResponse),
+  updateFnbItem: (id, data) =>
+    fetch(`${BASE_URL}/fnb/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then(handleResponse),
+  deleteFnbItem: (id) =>
+    fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then((res) =>
+      res.ok ? true : Promise.reject(res),
+    ),
+
   // 🎟️ QUẢN LÝ VOUCHER CHIẾN DỊCH (MANAGER)
-  getManagerVouchers: () => 
+  getManagerVouchers: () =>
     fetch(`${BASE_URL}/vouchers/manager/all`).then(handleResponse),
 
-  addVoucher: (voucherData) => 
+  addVoucher: (voucherData) =>
     fetch(`${BASE_URL}/vouchers/manager/add`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(voucherData)
+      body: JSON.stringify(voucherData),
     }).then(handleResponse),
 
-  updateVoucher: (id, voucherData) => 
+  updateVoucher: (id, voucherData) =>
     fetch(`${BASE_URL}/vouchers/manager/update/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(voucherData)
+      body: JSON.stringify(voucherData),
     }).then(handleResponse),
 
   deleteVoucher: (id) => 
@@ -162,5 +189,9 @@ const API = {
   
     // 📊 PHÂN HỆ DASHBOARD TỔNG QUAN (MANAGER)
   getDashboardOverviewData: () => 
-    fetch(`${BASE_URL}/dashboard/overview`).then(handleResponse)
+    fetch(`${BASE_URL}/dashboard/overview`).then(handleResponse),
+
+  // 📈 PHÂN HỆ BÁO CÁO & KIỂM TOÁN TÀI CHÍNH ĐỘNG (🎯 BỔ SUNG ĐỂ SỬA LỖI TRÊN ẢNH LOG)
+  getAuditReportData: (dateStr) => 
+    fetch(`${BASE_URL}/audit/report?date=${dateStr}`).then(handleResponse)
 };
