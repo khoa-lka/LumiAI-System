@@ -2,6 +2,100 @@
 // MÃ NGUỒN XỬ LÝ GIAO DIỆN QUẢN LÝ RẠP (MANAGER)
 // File: js/manager.js
 // ==========================================================================
+
+// ==========================================================================
+// 🔔 HỆ THỐNG THÔNG BÁO TOAST (thay thế hộp thoại alert() xấu xí của trình duyệt)
+// - Tự động ẩn sau 5 giây (có thể bấm ✕ để tắt sớm).
+// - Tự nhận diện loại thông báo (thành công / lỗi / cảnh báo / thông tin) dựa
+//   trên từ khóa trong nội dung để tô màu phù hợp, không cần sửa từng chỗ gọi.
+// - Ghi đè window.alert => MỌI lời gọi alert("...") trong toàn bộ project
+//   (kể cả các file JS khác) sẽ tự động hiển thị dưới dạng toast này.
+// - confirm() KHÔNG bị ảnh hưởng, vẫn dùng hộp thoại gốc của trình duyệt vì
+//   cần giá trị trả về đồng bộ (xác nhận Có/Không) để code xử lý tiếp.
+// ==========================================================================
+function ensureToastContainer() {
+  let container = document.getElementById("toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toast-container";
+    container.style.cssText = `
+      position: fixed; top: 20px; right: 20px; z-index: 99999;
+      display: flex; flex-direction: column; gap: 10px;
+      pointer-events: none;
+    `;
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+function detectToastType(message) {
+  const text = String(message).toLowerCase();
+  if (
+    text.includes("không thể") ||
+    text.includes("thất bại") ||
+    text.includes("lỗi")
+  )
+    return "error";
+  if (text.includes("cảnh báo") || text.includes("vui lòng")) return "warning";
+  if (text.includes("thành công")) return "success";
+  return "info";
+}
+
+const TOAST_ICONS = { success: "✅", error: "⛔", warning: "⚠️", info: "ℹ️" };
+const TOAST_BORDER_COLORS = {
+  success: "#4ade80",
+  error: "#f87171",
+  warning: "#f59e0b",
+  info: "#60a5fa",
+};
+
+function dismissToast(toast) {
+  if (!toast || !toast.parentElement) return;
+  clearTimeout(toast._toastTimer);
+  toast.style.opacity = "0";
+  toast.style.transform = "translateX(30px)";
+  setTimeout(() => toast.remove(), 250);
+}
+
+function showToast(message, type, duration = 5000) {
+  const container = ensureToastContainer();
+  const finalType = type || detectToastType(message);
+  const borderColor = TOAST_BORDER_COLORS[finalType] || TOAST_BORDER_COLORS.info;
+
+  const toast = document.createElement("div");
+  toast.style.cssText = `
+    min-width: 280px; max-width: 380px;
+    background: #141417; border: 1px solid rgba(255,255,255,0.12);
+    border-left: 4px solid ${borderColor};
+    border-radius: 10px; padding: 14px 16px; color: #f4f4f5;
+    font-size: 13.5px; line-height: 1.5; font-family: inherit;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    display: flex; align-items: flex-start; gap: 10px;
+    pointer-events: auto; opacity: 0; transform: translateX(30px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    white-space: pre-line;
+  `;
+  toast.innerHTML = `
+    <span style="flex:1;">${String(message).replace(/\n/g, "<br>")}</span>
+    <span style="cursor:pointer; opacity:0.6; font-size:14px; flex-shrink:0;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6" onclick="dismissToast(this.parentElement)">✕</span>
+  `;
+  container.appendChild(toast);
+
+  // Kích hoạt animation trượt vào
+  requestAnimationFrame(() => {
+    toast.style.opacity = "1";
+    toast.style.transform = "translateX(0)";
+  });
+
+  // Tự động ẩn sau `duration` ms (mặc định 5 giây)
+  toast._toastTimer = setTimeout(() => dismissToast(toast), duration);
+}
+
+// Ghi đè alert() gốc của trình duyệt bằng toast — áp dụng toàn cục cho mọi file JS
+window.alert = function (message) {
+  showToast(message);
+};
+
 window.addEventListener("DOMContentLoaded", () => {
   // Xác định vai trò: ưu tiên localStorage (bền vững), dự phòng sessionStorage
   function resolveRoleAndName() {
@@ -33,18 +127,40 @@ window.addEventListener("DOMContentLoaded", () => {
   // Nếu không phải Manager -> Đuổi về trang chủ
   if (ALLOWED_ROLES.indexOf(info.roleId) === -1) {
     alert("CẢNH BÁO: Khu vực nội bộ! Bạn không có quyền truy cập.");
-    window.location.href = "index.html";
+    // Toast không chặn luồng như alert() gốc nên cần đợi 1 chút để người dùng
+    // kịp đọc thông báo trước khi bị điều hướng về trang chủ.
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 1800);
     return;
   }
 
   // Nếu hợp lệ, tự động load danh sách phim + dashboard analytics
   const titleEl = document.getElementById("mp-dynamic-title");
   if (titleEl) titleEl.innerText = `Xin chào Manager: ${info.fullName}`;
+
+  // 🚀 Cập nhật tên/quyền/avatar ở góc phải header theo đúng tài khoản đang đăng nhập
+  // (trước đây các thẻ này bị viết cứng "Nguyễn Văn Viên" / "Quản lý")
+  updateManagerProfileHeader(info.fullName);
+
   loadManagerMovies();
   if (typeof window.loadManagerPromo === "function") window.loadManagerPromo();
   if (typeof window.loadManagerDashboard === "function")
     window.loadManagerDashboard();
 });
+
+// --- CẬP NHẬT TÊN/QUYỀN/AVATAR TRÊN HEADER THEO TÀI KHOẢN ĐANG ĐĂNG NHẬP ---
+function updateManagerProfileHeader(fullName) {
+  var nameBox = document.getElementById("mp-user-name-text");
+  var headerBox = document.getElementById("mp-user-dropdown-header");
+
+  if (nameBox) nameBox.innerText = fullName;
+  if (headerBox) headerBox.innerText = "Chào, " + fullName;
+  // Avatar & mũi tên (▾) giờ là icon SVG cố định (đồng bộ theo ảnh mẫu),
+  // không cần cập nhật động theo tên tài khoản nữa.
+  // Vai trò (mp-user-role) hiện cố định là "Quản lý" vì manager.html chỉ cho
+  // phép roleId === 1 truy cập (xem ALLOWED_ROLES ở trên), nên không cần đổi.
+}
 
 // --- THOÁT VAI TRÒ MANAGER, QUAY VỀ GIAO DIỆN CUSTOMER (index.html) ---
 // Lưu ý: KHÔNG xóa localStorage "las_logged_in_user" / sessionStorage đăng nhập
@@ -279,9 +395,9 @@ function renderMoviesTable(movies) {
           <td>${m.releaseDate || "N/A"}</td>
           <td>
               <div class="mp-table-actions">
-                  <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết">👁️</button>
-                  <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa">✏️</button>
-                  <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
+                  <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                  <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
               </div>
           </td>
       </tr>
@@ -363,9 +479,9 @@ function loadManagerMovies() {
                 <td>${m.releaseDate || "N/A"}</td>
                 <td>
                     <div class="mp-table-actions">
-                        <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết">👁️</button>
-                        <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa">✏️</button>
-                        <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa">🗑️</button>
+                        <button class="mp-action-btn" onclick="openViewMovie(${m.movieId})" title="Xem chi tiết"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                        <button class="mp-action-btn" onclick="openUpdateMovie(${m.movieId})" title="Sửa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                        <button class="mp-action-btn" onclick="openMpDeleteModal(${m.movieId})" title="Xóa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
                     </div>
                 </td>
             </tr>
@@ -425,7 +541,7 @@ window.submitAddMovie = function () {
 
   API.addMovie(movieData)
     .then(() => {
-      alert("✅ Thêm phim thành công!");
+      alert("Thêm phim thành công!");
       closeAddMovie();
       loadManagerMovies();
     })
@@ -604,7 +720,7 @@ window.submitMatrixEditMovie = function () {
 
   API.updateMovie(movieData)
     .then(() => {
-      alert("✅ Cập nhật thành công!");
+      alert("Cập nhật thành công!");
       closeMatrixEditMovie();
       loadManagerMovies();
       if (typeof window.loadManagerMatrix === "function") window.loadManagerMatrix();
@@ -667,7 +783,7 @@ window.submitUpdateMovie = function () {
 
   API.updateMovie(movieData)
     .then(() => {
-      alert("✅ Cập nhật phim thành công!");
+      alert("Cập nhật phim thành công!");
       closeUpdateMovie();
       loadManagerMovies();
     })
@@ -695,7 +811,7 @@ window.submitDeleteMovie = function () {
 
   API.deleteMovie(movieId)
     .then(() => {
-      alert("✅ Hệ thống đã gỡ phim thành công!");
+      alert("Hệ thống đã gỡ phim thành công!");
       closeMpDeleteModal();
       loadManagerMovies();
     })
@@ -703,7 +819,7 @@ window.submitDeleteMovie = function () {
 };
 
 // ==========================================================================
-// --- LOGIC XỬ LÝ XEM CHI TIẾT PHIM (CON MẮT 👁️) ---
+// --- LOGIC XỬ LÝ XEM CHI TIẾT PHIM (CON MẮT 👁) ---
 // ==========================================================================
 window.openViewMovie = function (id) {
   const movie = window.moviesList.find((item) => item.movieId === id);
@@ -755,7 +871,7 @@ function displayCurrentDate() {
   const year = today.getFullYear();
 
   const formattedDate = `${day}/${month}/${year}`;
-  const dateBadge = document.getElementById("mp-current-date");
+  const dateBadge = document.getElementById("mp-current-date-text");
   if (dateBadge) {
     dateBadge.innerText = formattedDate;
   }
@@ -798,8 +914,8 @@ function renderFnbRow(item, index) {
         </td>
         <td>
             <div class="mp-table-actions">
-                <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" title="Sửa thông tin">✏️</button>
-                <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" title="Xóa">🗑️</button>
+                <button class="mp-action-btn" onclick="openEditFnbModal(${item.foodItemId})" title="Sửa thông tin"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                <button class="mp-action-btn" onclick="submitDeleteFnb(${item.foodItemId})" title="Xóa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
             </div>
         </td>
     </tr>
@@ -877,7 +993,7 @@ window.submitFnbForm = function() {
     // Nếu có ID -> Gọi API cập nhật thông tin sản phẩm
     API.updateFnbItem(id, fnbData)
       .then(() => {
-        alert("✅ Đã cập nhật sản phẩm F&B thành công!");
+        alert("Đã cập nhật sản phẩm F&B thành công!");
         closeFnbModal();
         loadManagerFnb();
       })
@@ -886,7 +1002,7 @@ window.submitFnbForm = function() {
     // Nếu ID trống -> Gọi API thêm sản phẩm mới vào DB
     API.addFnbItem(fnbData)
       .then(() => {
-        alert("✅ Đã thêm sản phẩm mới vào kho thành công!");
+        alert("Đã thêm sản phẩm mới vào kho thành công!");
         closeFnbModal();
         loadManagerFnb();
       })
@@ -920,7 +1036,7 @@ window.confirmDeleteFnb = function() {
 
   API.deleteFnbItem(id)
     .then(() => {
-      alert("✅ Đã xóa sản phẩm khỏi kho thành công!");
+      alert("Đã xóa sản phẩm khỏi kho thành công!");
       closeFnbDeleteModal();
       loadManagerFnb();
     })
@@ -1003,7 +1119,7 @@ window.handleAutoReplenish = function() {
   const lowStockItems = window.fnbItemsList.filter(item => item.stockQuantity <= 30);
 
   if (lowStockItems.length === 0) {
-    alert("✨ Tất cả sản phẩm trong kho đều đang ở mức an toàn (>30 ly). Không cần tái cung ứng!");
+    alert("Tất cả sản phẩm trong kho đều đang ở mức an toàn (>30 ly). Không cần tái cung ứng!");
     return;
   }
 
@@ -1022,12 +1138,12 @@ window.handleAutoReplenish = function() {
     // Chờ tất cả API cập nhật xong xuôi
     Promise.all(updatePromises)
       .then(() => {
-        alert("✅ Chiến dịch tái cung ứng hoàn tất! Toàn bộ sản phẩm tồn thấp đã được đưa về mức an toàn.");
+        alert("Chiến dịch tái cung ứng hoàn tất! Toàn bộ sản phẩm tồn thấp đã được đưa về mức an toàn.");
         loadManagerFnb(); // Tải lại bảng để cập nhật số lượng mới
       })
       .catch(err => {
         console.error("Lỗi tái cung ứng:", err);
-        alert("🚨 Có lỗi xảy ra trong quá trình cập nhật kho hàng: " + err.message);
+        alert("Có lỗi xảy ra trong quá trình cập nhật kho hàng: " + err.message);
       });
   }
 };
@@ -1067,7 +1183,7 @@ window.submitRestockForm = function() {
   const select = document.getElementById("restock-product-select");
   const item = window.fnbItemsList.find((x) => String(x.foodItemId) === String(select.value));
   if (!item) {
-    alert("❌ Vui lòng chọn sản phẩm cần nhập hàng!");
+    alert("Vui lòng chọn sản phẩm cần nhập hàng!");
     return;
   }
 
@@ -1085,7 +1201,7 @@ window.submitRestockForm = function() {
 
   API.updateFnbItem(item.foodItemId, fnbData)
     .then(() => {
-      alert(`✅ Nhập hàng thành công! Đã cộng thêm ${addQty} đơn vị vào sản phẩm ${item.itemName}.`);
+      alert(`Nhập hàng thành công! Đã cộng thêm ${addQty} đơn vị vào sản phẩm ${item.itemName}.`);
       closeRestockModal();
       loadManagerFnb();
     })
@@ -1169,136 +1285,220 @@ window.loadManagerMatrix = function() {
   trackRoom1.innerHTML = '<p style="color:#777;font-size:12px;padding:15px;">Đang quét phòng 1...</p>';
   trackRoom2.innerHTML = '<p style="color:#777;font-size:12px;padding:15px;">Đang quét phòng 2...</p>';
 
-  // 2. Chặn lỗi: Nếu danh sách phim trống, gọi nạp phim trước rồi chạy lại
-  if (!window.moviesList || window.moviesList.length === 0) {
-    API.getMovies()
-      .then((movies) => {
-        window.moviesList = movies;
-        window.loadManagerMatrix();
-      })
-      .catch((err) => {
-        trackRoom1.innerHTML = trackRoom2.innerHTML = `<span style="color:red;">Lỗi tải phim: ${err.message}</span>`;
-      });
+  if (!movies || movies.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #888;">Chưa có dữ liệu phim.</td></tr>`;
     return;
   }
 
-  // 3. THUẬT TOÁN QUÉT ĐA LUỒNG PROMISE: Gom suất chiếu của TẤT CẢ các phim trong ngày
-  const fetchPromises = window.moviesList.map((movie) => {
-    return API.getShowtimes(movie.movieId, selectedDate)
-      .then((resData) => {
-        const rawShowtimes = resData.showtimes || [];
-        // Đính kèm tên phim vào từng suất chiếu để UI hiển thị được tiêu đề
-        return rawShowtimes.map(st => ({
-          ...st,
-          movieTitle: movie.title
-        }));
-      })
-      .catch(() => []); // Bọc lỗi phòng trường hợp có phim chưa được xếp lịch
-  });
+  tbody.innerHTML = "";
+  movies.forEach((m) => {
+    const posterUrl = m.mainposter_url ? m.mainposter_url : "img/default-poster.jpg";
+    const statusClass = m.status === "now_showing" ? "active" : m.status === "coming_soon" ? "coming" : "inactive";
+    const statusText = m.status === "now_showing" ? "Now Showing" : m.status === "coming_soon" ? "Coming Soon" : "Ngừng chiếu";
+    const genres = (m.genre || "Chưa cập nhật")
+      .split(/[,/|]/)
+      .map((g) => g.trim())
+      .filter(Boolean);
 
-  Promise.all(fetchPromises)
-    .then((allResults) => {
-      // Gộp tất cả các mảng suất chiếu riêng lẻ thành 1 mảng tổng duy nhất
-      let globalShowtimes = allResults.flat();
-
-      // 4. THUẬT TOÁN TỰ ĐỘNG KIỂM TRA XUNG ĐỘT (CONFLICT DETECTOR)
-      // Hàm chuyển đổi chuỗi "HH:mm" ra số phút tuyệt đối trong ngày để so sánh toán học
-      const timeToMinutes = (timeStr) => {
-        const [h, m] = timeStr.split(":").map(Number);
-        return h * 60 + m;
-      };
-
-      globalShowtimes.forEach((currentSt) => {
-        currentSt.isConflict = false; // Mặc định ban đầu là không trùng
-        
-        const currentStart = timeToMinutes(currentSt.startTime);
-        const currentEnd = timeToMinutes(currentSt.endTime);
-
-        globalShowtimes.forEach((otherSt) => {
-          // Chỉ check nếu trùng phòng chiếu công vật lý và không phải là chính nó
-          if (currentSt.showtimeId !== otherSt.showtimeId && currentSt.roomId === otherSt.roomId) {
-            const otherStart = timeToMinutes(otherSt.startTime);
-            const otherEnd = timeToMinutes(otherSt.endTime);
-
-            // Công thức kiểm tra khoảng thời gian giao nhau đè lên nhau
-            if (currentStart < otherEnd && currentEnd > otherStart) {
-              currentSt.isConflict = true;
-            }
-          }
-        });
-      });
-
-      // 5. TIẾN HÀNH VẼ GIAO DIỆN (RENDER TRACK BLOCKS)
-      trackRoom1.innerHTML = "";
-      trackRoom2.innerHTML = "";
-
-      // 5b. Vẽ luôn bảng "Danh Sách Phim" tham khảo bên dưới ma trận
-      renderMatrixMovieList(window.moviesList);
-
-      if (globalShowtimes.length === 0) {
-        trackRoom1.innerHTML = trackRoom2.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#999;font-size:12px;text-align:center;">Trống lịch. Chưa xếp suất chiếu nào trong ngày này!</div>';
-        return;
-      }
-
-      // Tổng số phút từ 08:00 đến 23:00 là 15 tiếng = 900 phút (Mốc 100% chiều rộng)
-      const TIMELINE_START_MINUTES = 8 * 60; // 480 phút
-      const TIMELINE_TOTAL_MINUTES = 15 * 60; // 900 phút
-
-      globalShowtimes.forEach((st) => {
-        const startMin = timeToMinutes(st.startTime);
-        const endMin = timeToMinutes(st.endTime);
-        const durationMin = endMin - startMin;
-
-        // Tính tọa độ vị trí bắt đầu (Left) và độ dài khối phim (Width) theo tỉ lệ %
-        let leftPercent = ((startMin - TIMELINE_START_MINUTES) / TIMELINE_TOTAL_MINUTES) * 100;
-        let widthPercent = (durationMin / TIMELINE_TOTAL_MINUTES) * 100;
-
-        // Bọc lót an toàn nếu suất chiếu nằm ngoài khung 08:00 - 23:00
-        if (leftPercent < 0) leftPercent = 0;
-        if (leftPercent + widthPercent > 100) widthPercent = 100 - leftPercent;
-
-        // Xác định màu sắc: Nếu conflict -> đỏ lòm, phòng 2 IMAX -> vàng, phòng 1 Standard -> xanh dương
-        let blockClass = st.roomId === 2 ? "mp-bg-yellow" : "mp-bg-blue";
-        let conflictHTML = "";
-
-        if (st.isConflict) {
-          blockClass = "mp-bg-red mp-conflict-box";
-          conflictHTML = `
-            <div class="mp-conflict-tooltip">
-                <div class="mp-icon-error">!</div>
-                <div>
-                  <strong>Xung đột lịch chiếu!</strong><br />
-                  <span style="font-weight: normal; color: #ffcdd2">Trùng giờ với suất khác trong phòng!</span>
-                </div>
+    tbody.innerHTML += `
+      <tr>
+        <td>
+          <div class="mp-movie-info">
+            <img src="${posterUrl}" class="mp-movie-poster" alt="${m.title}">
+            <div>
+              <div class="mp-movie-title">${m.title}</div>
+              <div style="font-size:11px;color:var(--muted,#9a9aa3);">Dir. ${m.director || "Chưa cập nhật"}</div>
             </div>
-          `;
-        }
-
-        const blockHTML = `
-          <div class="mp-track-block ${blockClass}" style="left: ${leftPercent}%; width: ${widthPercent}%; min-width: 50px;" title="${st.movieTitle} (${st.startTime} - ${st.endTime})">
-              ${conflictHTML}
-              <strong>${st.movieTitle}</strong><br />
-              <span style="font-size:11px; opacity:0.92;">${st.startTime} - ${st.endTime}</span>
           </div>
-        `;
+        </td>
+        <td>
+          <div class="mp-genre-pill-group">
+            ${genres.map((g) => `<span class="mp-genre-pill">${g}</span>`).join("")}
+          </div>
+        </td>
+        <td><span class="mp-duration-chip">⏱ ${m.duration} min</span></td>
+        <td><span class="mp-status ${statusClass}">${statusText}</span></td>
+        <td>${m.releaseDate || "N/A"}</td>
+        <td>
+          <div class="mp-table-actions">
+            <button class="mp-action-btn" onclick="openMatrixViewMovie(${m.movieId})" title="Xem chi tiết suất chiếu"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="mp-action-btn" onclick="openMatrixEditMovie(${m.movieId})" title="Sửa"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+}
+window.renderMatrixMovieList = renderMatrixMovieList;
 
-        // Phân phối khối HTML về đúng hàng phòng chiếu
-        if (st.roomId === 2) {
-          trackRoom2.innerHTML += blockHTML;
-        } else {
-          trackRoom1.innerHTML += blockHTML;
+// ==========================================================================
+// 📅 LỊCH CHIẾU KIỂU GOOGLE CALENDAR (Ngày / Tuần / Tháng) — màu theo phim
+//    Giữ conflict detector (cùng phòng + trùng giờ) và bảng phim tham khảo.
+// ==========================================================================
+window.mpCalView = window.mpCalView || "week";
+window.mpCalCursor = window.mpCalCursor || new Date();
+const MPCAL_HOUR_H = 48;
+const MPCAL_PALETTE = ["#4f7cff","#e0457b","#8b5cf6","#ef8a3c","#22b8a6","#eab308","#f43f5e","#38bdf8","#a855f7","#10b981","#f59e0b","#ec4899"];
+function mpCalColor(t){ t=t||""; let h=0; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))>>>0; return MPCAL_PALETTE[h % MPCAL_PALETTE.length]; }
+function mpCalYMD(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0"); return `${y}-${m}-${dd}`; }
+function mpCalToMin(t){ const[a,b]=(t||"0:0").split(":").map(Number); return a*60+(b||0); }
+function mpCalFmtH(t){ let[h,m]=(t||"0:0").split(":").map(Number); const ap=h<12?"am":"pm"; let hh=h%12; if(hh===0)hh=12; return `${hh}:${String(m||0).padStart(2,"0")}${ap}`; }
+function mpCalSameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+function mpCalStartOfWeek(d){ const x=new Date(d); x.setDate(x.getDate()-x.getDay()); x.setHours(0,0,0,0); return x; }
+function mpCalRoomLabel(r){ return r===2 ? "Screen 2 · IMAX" : "Screen 1 · Standard"; }
+function mpCalRoomShort(r){ return `P${r}`; }
+const MPCAL_DOW = ["CN","T2","T3","T4","T5","T6","T7"];
+
+// Tải suất chiếu của 1 ngày (mọi phim) + gắn tên phim + phát hiện xung đột
+function mpCalFetchDate(dateStr){
+  return Promise.all((window.moviesList||[]).map(movie =>
+    API.getShowtimes(movie.movieId, dateStr)
+      .then(res => (res.showtimes||[]).map(st => ({ ...st, movieTitle: movie.title })))
+      .catch(()=>[])
+  )).then(arr => {
+    const list = arr.flat();
+    list.forEach(cur => {
+      cur.isConflict = false;
+      const cs=mpCalToMin(cur.startTime), ce=mpCalToMin(cur.endTime);
+      list.forEach(o => {
+        if (cur.showtimeId !== o.showtimeId && cur.roomId === o.roomId) {
+          const os=mpCalToMin(o.startTime), oe=mpCalToMin(o.endTime);
+          if (cs < oe && ce > os) cur.isConflict = true;
         }
       });
-
-      // Nếu có hàng nào trống sau khi phân phối thì ghi chữ trống lịch cho đẹp
-      if (trackRoom1.innerHTML === "") trackRoom1.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#bbb;">Trống lịch phòng 1</div>';
-      if (trackRoom2.innerHTML === "") trackRoom2.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#bbb;">Trống lịch phòng 2</div>';
-    })
-    .catch((err) => {
-      console.error("🚨 Lỗi vẽ ma trận lịch chiếu:", err);
-      trackRoom1.innerHTML = trackRoom2.innerHTML = `<span style="color:red;padding:10px;display:block;">Lỗi đồng bộ lịch chiếu: ${err.message}</span>`;
     });
+    return list;
+  });
+}
+
+function mpCalEventHTML(st, col, cols){
+  const c = mpCalColor(st.movieTitle);
+  const top = mpCalToMin(st.startTime)/60*MPCAL_HOUR_H;
+  const h = Math.max(20, (mpCalToMin(st.endTime)-mpCalToMin(st.startTime))/60*MPCAL_HOUR_H - 3);
+  const cf = st.isConflict ? " mpcal-evt-conflict" : "";
+  const badge = st.isConflict ? '<span class="mpcal-evt-warn" title="Xung đột lịch chiếu!">!</span>' : '';
+  const n = cols || 1;
+  const w = 100 / n;
+  const left = (col || 0) * w;
+  const compact = n > 1 ? " mpcal-evt-compact" : "";
+  return `<div class="mpcal-evt${cf}${compact}" style="top:${top}px;height:${h}px;left:calc(${left}% + 2px);width:calc(${w}% - 4px);background:${c}22;border-left-color:${c};"
+      title="${st.movieTitle} (${st.startTime} - ${st.endTime}) · ${mpCalRoomLabel(st.roomId)}">
+      ${badge}
+      <div class="mpcal-evt-t">${st.movieTitle}</div>
+      <div class="mpcal-evt-h">${mpCalFmtH(st.startTime)} – ${mpCalFmtH(st.endTime)} · <b class="mpcal-evt-room-tag">${mpCalRoomShort(st.roomId)}</b></div>
+      <div class="mpcal-evt-r">${mpCalRoomLabel(st.roomId)}</div>
+    </div>`;
+}
+
+// Xếp các suất CHỒNG GIỜ nằm cạnh nhau (chia cột con như Google Calendar)
+function mpCalLayout(list){
+  const evs = (list||[]).map(st => ({ st, s:mpCalToMin(st.startTime), e:mpCalToMin(st.endTime), col:0, cols:1 }));
+  evs.sort((a,b)=> a.s-b.s || a.e-b.e);
+  let cluster=[], clusterEnd=-1;
+  const flush=()=>{
+    if(!cluster.length) return;
+    const colsArr=[];
+    cluster.forEach(ev=>{
+      let placed=false;
+      for(let i=0;i<colsArr.length;i++){
+        if(colsArr[i][colsArr[i].length-1].e <= ev.s){ colsArr[i].push(ev); ev.col=i; placed=true; break; }
+      }
+      if(!placed){ ev.col=colsArr.length; colsArr.push([ev]); }
+    });
+    cluster.forEach(ev=> ev.cols=colsArr.length);
+    cluster=[]; clusterEnd=-1;
+  };
+  evs.forEach(ev=>{
+    if(cluster.length && ev.s>=clusterEnd) flush();
+    cluster.push(ev); clusterEnd=Math.max(clusterEnd, ev.e);
+  });
+  flush();
+  return evs;
+}
+
+function mpCalRenderTimeGrid(days, byDate){
+  const today=new Date();
+  const gc=`56px repeat(${days.length},1fr)`;
+  let head=`<div class="mpcal-head" style="grid-template-columns:${gc}"><div></div>`;
+  days.forEach(d=>{ const t=mpCalSameDay(d,today)?"today":""; head+=`<div class="mpcal-dayhead ${t}"><div class="dow">${MPCAL_DOW[d.getDay()]}</div><div class="dnum">${d.getDate()}</div></div>`; });
+  head+=`</div>`;
+  let cols=`<div class="mpcal-cols" style="grid-template-columns:${gc}"><div class="mpcal-timecol">`;
+  for(let h=0;h<24;h++){ const lbl=h===0?"":(h<12?`${h} AM`:(h===12?"12 PM":`${h-12} PM`)); cols+=`<div class="mpcal-hour"><span class="mpcal-tlabel">${lbl}</span></div>`; }
+  cols+=`</div>`;
+  days.forEach(d=>{ cols+=`<div class="mpcal-daycol">`; for(let h=0;h<24;h++) cols+=`<div class="mpcal-hour"></div>`; mpCalLayout(byDate[mpCalYMD(d)]||[]).forEach(o=> cols+=mpCalEventHTML(o.st, o.col, o.cols)); cols+=`</div>`; });
+  cols+=`</div>`;
+  return `<div class="mpcal-grid">${head}<div class="mpcal-body">${cols}</div></div>`;
+}
+
+function mpCalRenderMonth(byDate){
+  const today=new Date();
+  const first=new Date(window.mpCalCursor.getFullYear(), window.mpCalCursor.getMonth(), 1);
+  const start=mpCalStartOfWeek(first);
+  let html=`<div class="mpcal-month"><div class="mpcal-mdow">`+MPCAL_DOW.map(x=>`<span>${x}</span>`).join("")+`</div><div class="mpcal-mgrid">`;
+  for(let i=0;i<42;i++){
+    const d=new Date(start); d.setDate(start.getDate()+i);
+    const other=d.getMonth()!==window.mpCalCursor.getMonth()?"other":"";
+    const t=mpCalSameDay(d,today)?"today":"";
+    const evs=(byDate[mpCalYMD(d)]||[]).slice().sort((a,b)=>mpCalToMin(a.startTime)-mpCalToMin(b.startTime));
+    let chips=evs.slice(0,3).map(st=>{ const c=mpCalColor(st.movieTitle); const cf=st.isConflict?" mpcal-chip-conflict":""; return `<div class="mpcal-chip${cf}" style="background:${c}22;border-left-color:${c};" title="${st.movieTitle} ${st.startTime} · ${mpCalRoomLabel(st.roomId)}">${st.startTime} ${st.movieTitle} · ${mpCalRoomShort(st.roomId)}</div>`; }).join("");
+    if(evs.length>3) chips+=`<div class="mpcal-more">+${evs.length-3} suất nữa</div>`;
+    html+=`<div class="mpcal-cell ${other} ${t}"><div class="dn">${d.getDate()}</div>${chips}</div>`;
+  }
+  html+=`</div></div>`;
+  return html;
+}
+
+function mpCalFmtTitle(){
+  const c=window.mpCalCursor, mm=c.getMonth()+1, yy=c.getFullYear();
+  if(window.mpCalView==="day") return `Ngày ${c.getDate()}/${mm}/${yy}`;
+  if(window.mpCalView==="week"){ const s=mpCalStartOfWeek(c); const e=new Date(s); e.setDate(s.getDate()+6); return `${s.getDate()}/${s.getMonth()+1} – ${e.getDate()}/${e.getMonth()+1}, ${yy}`; }
+  return `Tháng ${mm}, ${yy}`;
+}
+
+window.loadManagerMatrix = function(){
+  const area=document.getElementById("mp-cal-area");
+  if(!area) return;
+  const dateInput=document.getElementById("mp-matrix-date-input");
+  if(dateInput){
+    if(!dateInput.value){ dateInput.value=mpCalYMD(window.mpCalCursor); }
+    else { const p=dateInput.value.split("-").map(Number); window.mpCalCursor=new Date(p[0],p[1]-1,p[2]); }
+  }
+  const titleEl=document.getElementById("mpcal-title"); if(titleEl) titleEl.innerText=mpCalFmtTitle();
+  document.querySelectorAll("#mpcal-views button").forEach(b=> b.classList.toggle("active", b.dataset.v===window.mpCalView));
+
+  if(!window.moviesList || window.moviesList.length===0){
+    area.innerHTML='<p style="color:#777;padding:15px;">Đang tải phim...</p>';
+    API.getMovies().then(m=>{ window.moviesList=m; window.loadManagerMatrix(); }).catch(e=>{ area.innerHTML=`<span style="color:red;padding:10px;">Lỗi tải phim: ${e.message}</span>`; });
+    return;
+  }
+
+  let days=[];
+  if(window.mpCalView==="day") days=[new Date(window.mpCalCursor)];
+  else if(window.mpCalView==="week"){ const s=mpCalStartOfWeek(window.mpCalCursor); for(let i=0;i<7;i++){ const d=new Date(s); d.setDate(s.getDate()+i); days.push(d);} }
+  else { const first=new Date(window.mpCalCursor.getFullYear(),window.mpCalCursor.getMonth(),1); const s=mpCalStartOfWeek(first); for(let i=0;i<42;i++){ const d=new Date(s); d.setDate(s.getDate()+i); days.push(d);} }
+
+  area.innerHTML='<p style="color:#777;padding:15px;">Đang quét lịch chiếu...</p>';
+  Promise.all(days.map(d=> mpCalFetchDate(mpCalYMD(d)).then(list=>[mpCalYMD(d),list])))
+    .then(pairs=>{
+      const byDate={}; pairs.forEach(([k,v])=> byDate[k]=v);
+      if(window.mpCalView==="month") area.innerHTML=mpCalRenderMonth(byDate);
+      else { area.innerHTML=mpCalRenderTimeGrid(days,byDate); const body=area.querySelector(".mpcal-body"); if(body) body.scrollTop=7*MPCAL_HOUR_H; }
+      if(typeof renderMatrixMovieList==="function") renderMatrixMovieList(window.moviesList);
+    })
+    .catch(err=>{ area.innerHTML=`<span style="color:red;padding:10px;display:block;">Lỗi đồng bộ lịch: ${err.message}</span>`; });
 };
+
+window.mpCalSetView=function(v){ window.mpCalView=v; window.loadManagerMatrix(); };
+window.mpCalToday=function(){ window.mpCalCursor=new Date(); const di=document.getElementById("mp-matrix-date-input"); if(di) di.value=mpCalYMD(window.mpCalCursor); window.loadManagerMatrix(); };
+window.mpCalNav=function(dir){
+  const c=window.mpCalCursor;
+  if(window.mpCalView==="month") c.setMonth(c.getMonth()+dir);
+  else if(window.mpCalView==="week") c.setDate(c.getDate()+7*dir);
+  else c.setDate(c.getDate()+dir);
+  const di=document.getElementById("mp-matrix-date-input"); if(di) di.value=mpCalYMD(c);
+  window.loadManagerMatrix();
+};
+
 
 // ==========================================================================
 // 🚀 LOGIC ĐIỀU KHIỂN FORM TẠO MỚI SUẤT CHIẾU ĐỘNG
@@ -1380,7 +1580,7 @@ window.submitAddShowtimeForm = function() {
   console.log("🚀 Payload gửi lên Spring Boot tạo suất chiếu:", payload);
 
   // ==========================================================================
-  // 🚨 POPUP CHẶN TRÙNG LỊCH (BẰNG DATA ĐỘNG - KHÔNG XÀI DOM - GIỮ NGUYÊN CẤU TRÚC CỦA KHOA)
+  // POPUP CHẶN TRÙNG LỊCH (BẰNG DATA ĐỘNG - KHÔNG XÀI DOM - GIỮ NGUYÊN CẤU TRÚC CỦA KHOA)
   // ==========================================================================
   const timeToMinutes = (timeStr) => {
     const [h, m] = timeStr.split(":").map(Number);
@@ -1419,25 +1619,25 @@ window.submitAddShowtimeForm = function() {
       }
 
       if (isTimeConflict) {
-        alert(`❌ KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`);
+        alert(`KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`);
         return; // Chặn đứng tại đây, không cho gọi API add
       }
 
       // Nếu an toàn, thực hiện gọi API lưu xuống database y như cũ của em
       API.addShowtime(payload)
         .then(() => {
-          alert("✅ Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.");
+          alert("Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.");
           closeAddShowtimeModal();
           loadManagerMatrix();
         })
         .catch((err) => {
           console.error(err);
-          alert("🚨 Thêm suất chiếu thất bại: " + err.message);
+          alert("Thêm suất chiếu thất bại: " + err.message);
         });
     })
     .catch((err) => {
       console.error("Lỗi khi kiểm tra trùng lịch:", err);
-      alert("🚨 Không thể xác thực trùng lịch do lỗi kết nối!");
+      alert("Không thể xác thực trùng lịch do lỗi kết nối!");
     });
 };
 
@@ -1461,43 +1661,16 @@ window.loadManagerVouchers = function() {
   const tbody = document.getElementById("mp-promo-tbody");
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Đang quét danh sách chiến dịch khuyến mãi...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:15px;">Đang quét danh sách chiến dịch khuyến mãi...</td></tr>';
 
   API.getManagerVouchers()
     .then((vouchers) => {
-      tbody.innerHTML = "";
       window.vouchersList = vouchers;
-
-      if (!vouchers || vouchers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Chưa có chiến dịch khuyến mãi nào được tạo!</td></tr>';
-        return;
-      }
-
-      vouchers.forEach((v, index) => {
-        let expiryDate = v.expiredDate ? new Date(v.expiredDate).toLocaleDateString("vi-VN") : "Vô thời hạn";
-        let discountText = v.discountType === "PERCENT" ? `${v.discountValue}%` : `${v.discountValue.toLocaleString("vi-VN")} đ`;
-        
-        tbody.innerHTML += `
-          <tr>
-              <td style="text-align: center; font-weight: bold;">${index + 1}</td>
-              <td><span class="mp-badge-code" style="background:#e8f5e9; color:#2e7d32; font-weight:bold; padding:4px 8px; border-radius:4px;">${v.voucherCode}</span></td>
-              <td>${v.discountType === "PERCENT" ? "Giảm theo phần禅 (%)" : "Giảm tiền mặt trực tiếp"}</td>
-              <td style="text-align: right; font-weight: bold; color: #b71c1c;">${discountText}</td>
-              <td style="text-align: center;">${v.usageLimit} lượt</td>
-              <td style="text-align: center;">${expiryDate}</td>
-              <td style="text-align: center;">
-                  <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
-                      <button class="mp-action-btn" onclick="openEditVoucherModal(${v.voucherId})" style="cursor:pointer;">✏️ Sửa</button>
-                      <button class="mp-action-btn" onclick="submitDeleteVoucher(${v.voucherId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;">🗑️ Xóa</button>
-                  </div>
-              </td>
-          </tr>
-        `;
-      });
+      renderVoucherRows(vouchers);
     })
     .catch((err) => {
       console.error(err);
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Lỗi kết nối danh mục Voucher: ${err.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Lỗi kết nối danh mục Voucher: ${err.message}</td></tr>`;
     });
 };
 
@@ -1511,6 +1684,7 @@ window.openAddVoucherModal = function() {
   document.getElementById("v-min").value = "0";
   document.getElementById("v-limit").value = "100";
   document.getElementById("v-expired").value = "";
+  document.getElementById("v-status").value = "ACTIVE";
 
   document.getElementById("mp-promo-modal-title").innerText = "Thêm Mới Chiến Dịch Khuyến Mãi";
   window.openCreatePromoModal();
@@ -1532,6 +1706,7 @@ window.openEditVoucherModal = function(id) {
   if (v.expiredDate) {
     document.getElementById("v-expired").value = v.expiredDate.substring(0, 16);
   }
+  document.getElementById("v-status").value = v.status || "ACTIVE";
 
   document.getElementById("mp-promo-modal-title").innerText = "Cập Nhật Chiến Dịch Khuyến Mãi";
   window.openCreatePromoModal();
@@ -1547,6 +1722,7 @@ window.submitVoucherForm = function() {
   const min = parseFloat(document.getElementById("v-min").value) || 0;
   const limit = parseInt(document.getElementById("v-limit").value) || 0;
   const expired = document.getElementById("v-expired").value;
+  const status = document.getElementById("v-status").value;
 
   if (!code) { alert("Vui lòng nhập mã Voucher!"); return; }
   if (value <= 0) { alert("Giá trị giảm phải lớn hơn 0!"); return; }
@@ -1559,6 +1735,7 @@ window.submitVoucherForm = function() {
     minimumOrder: min,
     usageLimit: limit,
     expiredDate: expired ? `${expired}:00` : null,
+    status: status,
     createdBy: parseInt(sessionStorage.getItem("roleId")) || 1,
     updatedBy: parseInt(sessionStorage.getItem("roleId")) || 1
   };
@@ -1567,19 +1744,75 @@ window.submitVoucherForm = function() {
 
   apiCall
     .then(() => {
-      alert(id ? "✅ Cập nhật chiến dịch thành công!" : "✅ Tạo mã Voucher khuyến mãi mới thành công!");
+      alert(id ? "Cập nhật chiến dịch thành công!" : "Tạo mã Voucher khuyến mãi mới thành công!");
       window.closeCreatePromoModal();
       loadManagerVouchers();
     })
     .catch(err => alert("Lỗi xử lý Voucher: " + err.message));
 };
 
+// 6. Lọc/tìm kiếm danh sách voucher theo mã, loại giảm giá, trạng thái (client-side)
+window.filterManagerPromo = function() {
+  const tbody = document.getElementById("mp-promo-tbody");
+  if (!tbody || !window.vouchersList) return;
+
+  const keyword = (document.getElementById("mp-promo-search-input").value || "").trim().toUpperCase();
+  const typeFilter = document.getElementById("mp-promo-filter-type").value;
+  const statusFilter = document.getElementById("mp-promo-filter-status").value;
+
+  const filtered = window.vouchersList.filter((v) => {
+    const matchKeyword = !keyword || (v.voucherCode || "").toUpperCase().includes(keyword);
+    const matchType = typeFilter === "all" || v.discountType === typeFilter;
+    const matchStatus = statusFilter === "all" || (v.status || "ACTIVE") === statusFilter;
+    return matchKeyword && matchType && matchStatus;
+  });
+
+  renderVoucherRows(filtered);
+};
+
+// Tách phần render bảng ra hàm riêng để dùng chung cho load & filter
+function renderVoucherRows(vouchers) {
+  const tbody = document.getElementById("mp-promo-tbody");
+  tbody.innerHTML = "";
+
+  if (!vouchers || vouchers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888; padding:15px;">Không tìm thấy chiến dịch khuyến mãi phù hợp!</td></tr>';
+    return;
+  }
+
+  vouchers.forEach((v, index) => {
+    let expiryDate = v.expiredDate ? new Date(v.expiredDate).toLocaleDateString("vi-VN") : "Vô thời hạn";
+    let discountText = v.discountType === "PERCENT" ? `${v.discountValue}%` : `${v.discountValue.toLocaleString("vi-VN")} đ`;
+    let statusText = v.status === "INACTIVE"
+      ? '<span style="color:#9a9aa3;">Ngừng hoạt động</span>'
+      : '<span style="color:#4ade80; font-weight:bold;">Đang hoạt động</span>';
+
+    tbody.innerHTML += `
+      <tr>
+          <td style="text-align: center; font-weight: bold;">${index + 1}</td>
+          <td style="text-align: left;"><span class="mp-badge-code">${v.voucherCode}</span></td>
+          <td style="text-align: left;">${v.discountType === "PERCENT" ? "Giảm theo phần trăm (%)" : "Giảm tiền mặt trực tiếp"}</td>
+          <td style="text-align: right; font-weight: bold; color: #ff6b6b;">${discountText}</td>
+          <td style="text-align: center;">${v.usageLimit} lượt</td>
+          <td style="text-align: center;">${expiryDate}</td>
+          <td style="text-align: center;">${statusText}</td>
+          <td style="text-align: center;">
+              <div class="mp-table-actions" style="display:flex; gap:14px; justify-content:center;">
+                  <button class="mp-action-btn" onclick="openEditVoucherModal(${v.voucherId})" style="cursor:pointer;" title="Sửa"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                  <button class="mp-action-btn mp-action-btn-danger" onclick="submitDeleteVoucher(${v.voucherId})" style="cursor:pointer;" title="Xóa"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
+              </div>
+          </td>
+      </tr>
+    `;
+  });
+}
+
 // 5. Xử lý Xóa Voucher qua API tổng
 window.submitDeleteVoucher = function(id) {
-  if (confirm("⚠️ Bạn có chắc chắn muốn gỡ bỏ hoàn toàn mã Voucher này khỏi hệ thống không?")) {
+  if (confirm("Bạn có chắc chắn muốn gỡ bỏ hoàn toàn mã Voucher này khỏi hệ thống không?")) {
     API.deleteVoucher(id)
       .then(() => {
-        alert("✅ Đã gỡ chiến dịch khuyến mãi thành công!");
+        alert("Đã gỡ chiến dịch khuyến mãi thành công!");
         loadManagerVouchers();
       })
       .catch(err => alert("Lỗi khi xóa voucher: " + err.message));

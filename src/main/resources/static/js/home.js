@@ -26,11 +26,10 @@ temporaryRegisterEmail = "";
 // ==========================================================================
 // 🌟 THẦN CHÚ KHÔI PHỤC SESSION: Ép tài khoản luôn luôn đăng nhập khi Reload
 // ==========================================================================
-// 🌟 HIỂN THỊ/ẨN TAB "TRUY CẬP DASHBOARD" THEO VAI TRÒ (role 1 = Manager, role 4 = Admin)
+// 🌟 HIỂN THỊ/ẨN TAB "TRUY CẬP DASHBOARD" + "LỊCH SỬ GIAO DỊCH" THEO VAI TRÒ
+// (role 1 = Manager, role 4 = Admin). Lịch sử giao dịch bị ẩn luôn với 2 vai trò
+// này vì họ không được phép đặt vé nên tab đó chắc chắn luôn trống, gây thừa.
 window.refreshDashboardTab = function (roleId) {
-  const btn = document.getElementById("pro-subtab-btn-dashboard");
-  if (!btn) return;
-
   let rid = roleId;
   if (rid === undefined || rid === null || rid === "") {
     rid = sessionStorage.getItem("roleId");
@@ -48,10 +47,29 @@ window.refreshDashboardTab = function (roleId) {
   rid = parseInt(rid, 10);
   window.currentUserRoleId = rid;
 
-  if (rid === 1 || rid === 4) {
-    btn.style.display = "flex";
-  } else {
-    btn.style.display = "none";
+  const isManagerOrAdmin = rid === 1 || rid === 4;
+
+  const dashboardBtn = document.getElementById("pro-subtab-btn-dashboard");
+  if (dashboardBtn) {
+    dashboardBtn.style.display = isManagerOrAdmin ? "flex" : "none";
+  }
+
+  // Tab "LỊCH SỬ GIAO DỊCH" trong sidebar Tài Khoản LAS
+  const historyBtn = document.getElementById("pro-subtab-btn-lichsu");
+  if (historyBtn) {
+    historyBtn.style.display = isManagerOrAdmin ? "none" : "flex";
+    // Nếu đang đứng ở đúng tab Lịch sử mà bị ẩn đi, tự chuyển về tab Thông tin chung
+    if (isManagerOrAdmin && historyBtn.classList.contains("active")) {
+      if (typeof window.switchProfileSubTab === "function") {
+        window.switchProfileSubTab("chung");
+      }
+    }
+  }
+
+  // Link "LỊCH SỬ GIAO DỊCH" ở thanh điều hướng trên cùng
+  const topTicketLink = document.getElementById("top-bar-ticket-link");
+  if (topTicketLink) {
+    topTicketLink.style.display = isManagerOrAdmin ? "none" : "inline-block";
   }
 };
 
@@ -119,30 +137,31 @@ window.syncUserLoginSession = function () {
     ticketLink.innerHTML = `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
   }
 
-  const avatar = document.getElementById("profile-summary-avatar");
-  if (avatar) avatar.innerText = getNameAvatarInitial(uData.fullName);
+    // 🌟 Đồng bộ lại Avatar / Tên / Vai trò trên tab "Tài Khoản LAS"
+    // (bắt buộc phải làm lại ở đây vì khi RELOAD trang, hàm xử lý đăng nhập
+    //  gốc không chạy lại, nếu không phần này sẽ đứng yên ở giá trị mặc định)
+    if (document.getElementById("profile-summary-avatar")) {
+      document.getElementById("profile-summary-avatar").innerText =
+        getNameAvatarInitial(uData.fullName);
+    }
+    const welcomeNameBoxSync = document.getElementById("profile-welcome-name");
+    if (welcomeNameBoxSync) welcomeNameBoxSync.innerText = uData.fullName;
 
-  const welcomeNameBoxSync = document.getElementById("profile-welcome-name");
-  if (welcomeNameBoxSync) welcomeNameBoxSync.innerText = uData.fullName;
+    let syncRoleString = "Khách hàng thành viên";
+    if (uData.roleId === 1) syncRoleString = "Quản lý (MANAGER)";
+    if (uData.roleId === 2) syncRoleString = "Nhân viên cụm rạp (STAFF)";
+    if (uData.roleId === 4) syncRoleString = "Quản trị viên (ADMIN)";
 
-  let syncRoleString = "Khách hàng thành viên";
-  if (uData.roleId === 1) syncRoleString = "Quản lý (MANAGER)";
-  if (uData.roleId === 2) syncRoleString = "Nhân viên cụm rạp (STAFF)";
-  if (uData.roleId === 4) syncRoleString = "Quản trị viên (ADMIN)";
+    if (document.getElementById("profile-field-name"))
+      document.getElementById("profile-field-name").value = uData.fullName;
+    if (document.getElementById("profile-field-phone"))
+      document.getElementById("profile-field-phone").value = uData.phoneNumber;
+    if (document.getElementById("profile-field-email"))
+      document.getElementById("profile-field-email").value = uData.email;
+    if (document.getElementById("profile-field-role"))
+      document.getElementById("profile-field-role").value = syncRoleString;
 
-  const nameField = document.getElementById("profile-field-name");
-  if (nameField) nameField.value = uData.fullName;
-
-  const phoneField = document.getElementById("profile-field-phone");
-  if (phoneField) phoneField.value = uData.phoneNumber;
-
-  const emailField = document.getElementById("profile-field-email");
-  if (emailField) emailField.value = uData.email;
-
-  const roleField = document.getElementById("profile-field-role");
-  if (roleField) roleField.value = syncRoleString;
-
-  if (window.refreshDashboardTab) {
+    // 🌟 Khôi phục hiển thị tab "TRUY CẬP DASHBOARD" theo vai trò đã lưu
     window.refreshDashboardTab(uData.roleId);
   }
 
@@ -1059,6 +1078,46 @@ function selectCgvBookingDate(dateStr) {
   window.renderCgvInterface();
 }
 
+// Toast thông báo thành công dùng chung (không chặn luồng như alert()).
+// Dùng cho các thông báo "xong việc" nhẹ nhàng, VD: đăng nhập thành công.
+function showCgvToast(message, type = "success") {
+  const toast = document.getElementById("cgv-success-toast");
+  if (toast) {
+    // 🎨 Nền cam theo đúng tông chủ đạo của web (giống nút CTA/logo),
+    // chỉ đổi sắc độ + icon để vẫn phân biệt được thành công / lỗi.
+    // Set inline style trực tiếp để không phụ thuộc phải sửa style.css.
+    const THEME = {
+      success: {
+        icon: "✅",
+        background: "linear-gradient(135deg, #ff6b35, #e5a93b)",
+        border: "#e5a93b",
+      },
+      error: {
+        icon: "⚠️",
+        background: "linear-gradient(135deg, #e5502e, #ff6b35)",
+        border: "#c73f1f",
+      },
+    };
+    const theme = THEME[type] || THEME.success;
+
+    toast.innerHTML = `<span style="margin-right:8px;">${theme.icon}</span>${String(
+      message,
+    ).replace(/\n/g, "<br>")}`;
+    toast.style.background = theme.background;
+    toast.style.borderLeft = `4px solid ${theme.border}`;
+    toast.style.color = "#ffffff";
+
+    toast.classList.add("show");
+    clearTimeout(window._cgvToastTimer);
+    // ⏱️ Tự động tắt sau 5 giây (yêu cầu chuyển toàn bộ alert() thành popup 5s)
+    window._cgvToastTimer = setTimeout(() => toast.classList.remove("show"), 5000);
+  } else {
+    // Dự phòng: nếu vì lý do gì đó không tìm thấy toast trong DOM
+    alert(message);
+  }
+}
+window.showCgvToast = showCgvToast;
+
 function handleCgvLogout(e) {
   e.stopPropagation();
   document.getElementById("logout-confirm-modal").classList.add("open");
@@ -1067,13 +1126,35 @@ function closeLogoutConfirmModal() {
   document.getElementById("logout-confirm-modal").classList.remove("open");
 }
 function confirmCgvLogoutAction() {
-  confirmLogoutAction();
+  // Người dùng đã xác nhận qua modal đẹp (#logout-confirm-modal) rồi,
+  // nên KHÔNG gọi lại confirmLogoutAction() (chứa confirm() gốc của trình
+  // duyệt) nữa để tránh hiện 2 popup chồng nhau. Thực hiện thẳng logic đăng xuất tại đây.
+  sessionStorage.clear();
+
+  localStorage.removeItem("las_logged_in_user");
+  localStorage.removeItem("las_user_invoices");
+  localStorage.removeItem("las_current_booking_cache");
+
+  window.currentLoggedInId = null;
+  isUserLoggedInState = false;
+
+  closeLogoutConfirmModal();
+  location.reload();
 }
 
 function handleTicketViewAccess() {
   if (!isUserLoggedInState) {
-    alert("Vui lòng đăng nhập hệ thống!");
-    openAuthModal();
+    if (typeof window.showLoginRequiredModal === "function") {
+      window.showLoginRequiredModal();
+    } else {
+      alert("Vui lòng đăng nhập hệ thống!");
+      openAuthModal();
+    }
+  } else if (typeof window.isBookingRestrictedRole === "function" && window.isBookingRestrictedRole()) {
+    // Tài khoản Manager/Admin không có lịch sử mua vé (vì không được phép đặt vé)
+    if (typeof window.showBookingRestrictedModal === "function") {
+      window.showBookingRestrictedModal();
+    }
   } else {
     switchCgvTab("panel-profile");
     switchProfileSubTab("lichsu");
@@ -1280,7 +1361,81 @@ function onMovieOrTimeChange() {
   // window.renderCgvInterface();
 }
 
+// 🌟 CHẶN MANAGER (roleId 1) & ADMIN (roleId 4) KHỎI TOÀN BỘ LUỒNG ĐẶT VÉ
+// Dùng đúng logic lấy role đã có ở refreshDashboardTab() để đảm bảo đồng bộ,
+// không phụ thuộc việc refreshDashboardTab() đã từng chạy hay chưa.
+function getCurrentUserRoleIdSafe() {
+  let rid = window.currentUserRoleId;
+  if (rid === undefined || rid === null || isNaN(rid)) {
+    rid = sessionStorage.getItem("roleId");
+  }
+  if (rid === undefined || rid === null || rid === "") {
+    const cached = localStorage.getItem("las_logged_in_user");
+    if (cached) {
+      try {
+        rid = JSON.parse(cached).roleId;
+      } catch (e) {
+        rid = null;
+      }
+    }
+  }
+  return parseInt(rid, 10);
+}
+window.getCurrentUserRoleIdSafe = getCurrentUserRoleIdSafe;
+
+function isBookingRestrictedRole() {
+  const rid = getCurrentUserRoleIdSafe();
+  return rid === 1 || rid === 4; // 1 = MANAGER, 4 = ADMIN
+}
+window.isBookingRestrictedRole = isBookingRestrictedRole;
+
+// 🌟 POPUP THÔNG BÁO CHẶN ĐẶT VÉ (thay cho alert() mặc định của trình duyệt)
+function showBookingRestrictedModal() {
+  const modal = document.getElementById("booking-restricted-modal");
+  if (modal) {
+    modal.classList.add("open");
+  } else {
+    // Dự phòng: nếu vì lý do gì đó modal chưa có trong DOM, vẫn đảm bảo có cảnh báo
+    alert(
+      "🚫 Tài khoản Quản lý / Quản trị viên không được phép đặt vé trên hệ thống.",
+    );
+  }
+}
+function closeBookingRestrictedModal() {
+  const modal = document.getElementById("booking-restricted-modal");
+  if (modal) modal.classList.remove("open");
+}
+window.showBookingRestrictedModal = showBookingRestrictedModal;
+window.closeBookingRestrictedModal = closeBookingRestrictedModal;
+
+// 🌟 POPUP YÊU CẦU ĐĂNG NHẬP (thay cho alert() mặc định của trình duyệt)
+function showLoginRequiredModal() {
+  const modal = document.getElementById("login-required-modal");
+  if (modal) {
+    modal.classList.add("open");
+  } else {
+    // Dự phòng: nếu vì lý do gì đó modal chưa có trong DOM, vẫn đảm bảo có cảnh báo
+    alert("Bạn phải đăng nhập tài khoản thành viên mới có thể tiến hành đặt vé!");
+    if (typeof openAuthModal === "function") openAuthModal();
+  }
+}
+function closeLoginRequiredModal() {
+  const modal = document.getElementById("login-required-modal");
+  if (modal) modal.classList.remove("open");
+  if (typeof openAuthModal === "function") openAuthModal();
+}
+window.showLoginRequiredModal = showLoginRequiredModal;
+window.closeLoginRequiredModal = closeLoginRequiredModal;
+
 function switchCgvTab(panelId, filterType = "now_showing") {
+  // 🌟 CHẶN NGAY TỪ CỔNG VÀO DUY NHẤT CỦA TOÀN BỘ LUỒNG ĐẶT VÉ (kể cả chọn ghế),
+  // vì mọi con đường dẫn tới panel-booking trong toàn bộ code (booking.js/home.js)
+  // đều phải đi qua hàm switchCgvTab() này.
+  if (panelId === "panel-booking" && isBookingRestrictedRole()) {
+    showBookingRestrictedModal();
+    return;
+  }
+
   if (cgvNavigationHistory[cgvNavigationHistory.length - 1] !== panelId) {
     cgvNavigationHistory.push(panelId);
   }
@@ -1335,6 +1490,11 @@ function switchCgvTab(panelId, filterType = "now_showing") {
     if (parentBc) parentBc.innerText = "Thành Viên";
     if (currentBc) currentBc.innerText = "Tài Khoản LAS";
     switchProfileSubTab("chung");
+    // 🌟 Phòng thủ thêm: mỗi lần mở trang Tài Khoản LAS đều tự chấm lại quyền
+    // hiển thị tab Dashboard / Lịch sử giao dịch, không chỉ phụ thuộc lúc đăng nhập
+    if (typeof window.refreshDashboardTab === "function") {
+      window.refreshDashboardTab();
+    }
   }
   window.renderCgvInterface();
 }
@@ -1680,11 +1840,15 @@ window.handleMainAction = function () {
 
     // 🌟 ÉP BUỘC ĐĂNG NHẬP: Nếu chưa đăng nhập thì chặn đứng tiến trình và mở bảng Login lập tức
     if (!isUserLoggedInState) {
-      alert(
-        "Vui lòng đăng nhập tài khoản thành viên LAS Cinemas trước khi tiến hành chọn bắp nước và đặt vé!",
-      );
-      if (typeof window.handleAuthModalAccess === "function") {
-        window.handleAuthModalAccess(); // Mở bảng đăng nhập/đăng ký
+      if (typeof window.showLoginRequiredModal === "function") {
+        window.showLoginRequiredModal();
+      } else {
+        alert(
+          "Vui lòng đăng nhập tài khoản thành viên LAS Cinemas trước khi tiến hành chọn bắp nước và đặt vé!",
+        );
+        if (typeof window.handleAuthModalAccess === "function") {
+          window.handleAuthModalAccess(); // Mở bảng đăng nhập/đăng ký
+        }
       }
       return;
     }

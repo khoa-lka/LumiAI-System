@@ -9,10 +9,10 @@
 
 /* --- 1. 4 THẺ CHỈ SỐ TỔNG QUAN --- */
 const ADM_WEBHOOK_METRICS = [
-  { icon: "#️⃣", bg: "rgba(59,130,246,0.16)", fg: "#60a5fa", label: "Tổng webhook", value: "1.024", pct: "" },
-  { icon: "✅", bg: "rgba(34,197,94,0.16)", fg: "#4ade80", label: "Thành công", value: "892", pct: "87.1%" },
-  { icon: "⛔", bg: "rgba(239,68,68,0.16)", fg: "#f87171", label: "Thất bại", value: "132", pct: "12.9%" },
-  { icon: "🔗", bg: "rgba(59,130,246,0.16)", fg: "#60a5fa", label: "Endpoint đang hoạt động", value: "8", pct: "" },
+  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/></svg>', bg: "rgba(59,130,246,0.16)", fg: "#60a5fa", label: "Tổng webhook", value: "1.024", pct: "" },
+  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.5 2.5 4.7-5"/></svg>', bg: "rgba(34,197,94,0.16)", fg: "#4ade80", label: "Thành công", value: "892", pct: "87.1%" },
+  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>', bg: "rgba(239,68,68,0.16)", fg: "#f87171", label: "Thất bại", value: "132", pct: "12.9%" },
+  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 13.5 14.5 8.5"/><path d="M11 6.5l1.2-1.2a3.5 3.5 0 0 1 5 5L16 11.5"/><path d="M13 17.5l-1.2 1.2a3.5 3.5 0 0 1-5-5L8 12.5"/></svg>', bg: "rgba(59,130,246,0.16)", fg: "#60a5fa", label: "Endpoint đang hoạt động", value: "8", pct: "" },
 ];
 
 /* --- 2. DANH SÁCH WEBHOOK MẪU (đại diện, phân trang & lọc hoạt động thật trên tập này) --- */
@@ -105,7 +105,7 @@ function renderAdminWebhookMetrics() {
     return `
     <div class="ad-metric-card">
       <div class="ad-metric-top">
-        <div class="ad-metric-icon" style="background:${m.bg}; color:${m.fg};">${m.icon}</div>
+        <div class="ad-metric-icon" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.14); color:#fff;">${m.icon}</div>
       </div>
       <div class="ad-metric-label">${m.label}</div>
       <div class="ad-metric-value">${m.value}${pctHtml}</div>
@@ -168,7 +168,7 @@ function renderAdminWebhookTable() {
           <td>${w.responseMs.toLocaleString("vi-VN")} ms</td>
           <td>${w.sizeKb.toFixed(2)} KB</td>
           <td>
-            <span title="Xem chi tiết" style="cursor:pointer; margin-right:10px;" onclick="viewAdminWebhookDetail(${globalIdx})">👁️</span>
+            <span title="Xem chi tiết" style="cursor:pointer; margin-right:10px;" onclick="viewAdminWebhookDetail(${globalIdx})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
             <span title="Xem payload" style="cursor:pointer;" onclick="viewAdminWebhookPayload(${globalIdx})">&lt;/&gt;</span>
           </td>
         </tr>`;
