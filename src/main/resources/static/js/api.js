@@ -162,5 +162,9 @@ const API = {
   
     // 📊 PHÂN HỆ DASHBOARD TỔNG QUAN (MANAGER)
   getDashboardOverviewData: () => 
-    fetch(`${BASE_URL}/dashboard/overview`).then(handleResponse)
+    fetch(`${BASE_URL}/dashboard/overview`).then(handleResponse),
+
+  // 📈 PHÂN HỆ BÁO CÁO & KIỂM TOÁN TÀI CHÍNH ĐỘNG (🎯 BỔ SUNG ĐỂ SỬA LỖI TRÊN ẢNH LOG)
+  getAuditReportData: (dateStr) => 
+    fetch(`${BASE_URL}/audit/report?date=${dateStr}`).then(handleResponse)
 };

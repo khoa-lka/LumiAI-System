@@ -112,24 +112,50 @@ window.getNameAvatarInitial = getNameAvatarInitial;
 
 window.syncUserLoginSession = function () {
   const cachedUser = localStorage.getItem("las_logged_in_user");
-  if (cachedUser) {
-    isUserLoggedInState = true;
-    const uData = JSON.parse(cachedUser);
+  if (!cachedUser) return;
 
-    // Điền thông tin giao diện thanh điều hướng (Giữ nguyên logic UI)
-    const authLinkBox = document.getElementById("top-bar-auth-link");
-    if (authLinkBox) {
-      authLinkBox.onclick = () => switchCgvTab("panel-profile");
-      authLinkBox.style.cursor = "pointer";
-      authLinkBox.innerHTML = `
-          <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
-          <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
-      `;
-    }
-    if (document.getElementById("top-bar-ticket-link")) {
-      document.getElementById("top-bar-ticket-link").innerHTML =
-        `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
-    }
+  isUserLoggedInState = true;
+  const uData = JSON.parse(cachedUser);
+
+  const accountId = uData.account_id || uData.accountId;
+  if (accountId) {
+    sessionStorage.setItem("accountId", accountId);
+  }
+
+  const authLinkBox = document.getElementById("top-bar-auth-link");
+  if (authLinkBox) {
+    authLinkBox.onclick = () => switchCgvTab("panel-profile");
+    authLinkBox.style.cursor = "pointer";
+    authLinkBox.innerHTML = `
+      <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
+      <span onclick="handleCgvLogout(event)" style="color:#5b9dff;margin-left:8px;cursor:pointer;text-decoration:underline;font-weight:bold;">THOÁT</span>
+    `;
+  }
+
+  const ticketLink = document.getElementById("top-bar-ticket-link");
+  if (ticketLink) {
+    ticketLink.innerHTML = `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
+  }
+
+  const avatar = document.getElementById("profile-summary-avatar");
+  if (avatar) avatar.innerText = getNameAvatarInitial(uData.fullName);
+
+  const welcomeNameBoxSync = document.getElementById("profile-welcome-name");
+  if (welcomeNameBoxSync) welcomeNameBoxSync.innerText = uData.fullName;
+
+  let syncRoleString = "Khách hàng thành viên";
+  if (uData.roleId === 1) syncRoleString = "Quản lý (MANAGER)";
+  if (uData.roleId === 2) syncRoleString = "Nhân viên cụm rạp (STAFF)";
+  if (uData.roleId === 4) syncRoleString = "Quản trị viên (ADMIN)";
+
+  const nameField = document.getElementById("profile-field-name");
+  if (nameField) nameField.value = uData.fullName;
+
+  const phoneField = document.getElementById("profile-field-phone");
+  if (phoneField) phoneField.value = uData.phoneNumber;
+
+  const emailField = document.getElementById("profile-field-email");
+  if (emailField) emailField.value = uData.email;
 
     // 🌟 Đồng bộ lại Avatar / Tên / Vai trò trên tab "Tài Khoản LAS"
     // (bắt buộc phải làm lại ở đây vì khi RELOAD trang, hàm xử lý đăng nhập
@@ -157,43 +183,12 @@ window.syncUserLoginSession = function () {
 
     // 🌟 Khôi phục hiển thị tab "TRUY CẬP DASHBOARD" theo vai trò đã lưu
     window.refreshDashboardTab(uData.roleId);
+  }
 
-    // 🚀 ĐỒNG BỘ DỮ LIỆU ĐÃ ĐƯỢC CHUẨN HÓA TỪ DATABASE
-    const accountId = uData.account_id || uData.accountId;
-    if (accountId) {
-      fetch(`http://localhost:8080/api/bookings/user/${accountId}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Thất bại khi lấy dữ liệu từ DB");
-          return res.json();
-        })
-        .then((dbBookings) => {
-          // Map chính xác các thuộc tính sạch từ backend trả về
-          window.userPastInvoices = dbBookings.map((b) => ({
-            id: "BK-" + b.bookingId,
-            movie: b.movieTitle, // Lấy từ kết quả JOIN movie
-            date: new Date(b.bookingDate).toLocaleDateString("vi-VN"), // Ngày đặt thực tế trong DB
-            time: b.showStartTime, // Giờ chiếu thực tế lấy từ bảng showtime chứ không lấy biến tạm b.js
-            seats: b.reservedSeats ? b.reservedSeats.split(", ") : [], // Mảng ghế thật trích từ ticket + seat
-            fnb: [], // Có thể bổ sung orderdetail food sau nếu cần
-            total: b.totalMoney,
-            status:
-              b.paymentStatus === "SUCCESS" || b.paymentStatus === "COMPLETELY"
-                ? "Đã thanh toán"
-                : "Chờ xử lý",
-          }));
-
-          // Gọi hàm render hiển thị giao diện lịch sử trong Profile
-          if (typeof renderTransactionHistory === "function") {
-            renderTransactionHistory();
-          }
-        })
-        .catch((err) =>
-          console.error(
-            "🚨 Lỗi nghiêm trọng khi đồng bộ phiên làm việc từ DB:",
-            err,
-          ),
-        );
-    }
+  // Không gọi /api/bookings/user nữa, vì API đó đang lỗi 500
+  // Lịch sử giao dịch sẽ dùng API.getOrderHistory(accountId)
+  if (accountId && typeof renderTransactionHistory === "function") {
+    renderTransactionHistory();
   }
 };
 
@@ -431,7 +426,155 @@ function toggleAuthTab(type) {
     document.getElementById("form-register-panel").classList.add("active");
   }
 }
+window.currentFeedbackMovieId = null;
+function openFeedbackModal(movieId, invoiceId = null) {
 
+  window.currentFeedbackMovieId = movieId;
+
+  _feedbackInvoiceId = invoiceId;
+
+  _feedbackRating = 0;
+
+  document.getElementById("feedback-text").value = "";
+
+  setFeedbackStars(0);
+
+  document.getElementById("feedback-modal").style.display = "flex";
+
+}
+window.openFeedbackFromHistory = function (invoiceId) {
+
+const inv = window.orderHistoryCache.find(o => o.orderId == invoiceId);
+    if (!inv) {
+        alert("Không tìm thấy hóa đơn!");
+        return;
+    }
+    if (inv.ticketStatus !== "Đã sử dụng") {
+  alert("Chỉ vé đã sử dụng mới được gửi feedback!");
+  return;
+}
+
+    const movie = inv.showtime?.movie;
+
+    if (!movie) {
+        alert("Không tìm thấy phim!");
+        return;
+    }
+
+    const movieId = movie.movieId || movie.movie_id;
+
+   
+
+    openFeedbackModal(movieId, invoiceId);
+};
+
+// Hàm gửi Feedback lên server
+window.submitFeedbackForm = function () {
+
+  const title = "Đánh giá phim";
+  const content = document.getElementById("feedback-text").value.trim();
+  const rating = _feedbackRating;
+  const movieId = window.currentFeedbackMovieId;
+
+  const cachedUser = localStorage.getItem("las_logged_in_user");
+  const accId = cachedUser ? JSON.parse(cachedUser).accountId : 1;
+  console.log("===== FEEDBACK SUBMIT =====");
+  console.log("movieId =", movieId, typeof movieId);
+  console.log("accountStaffId =", accId, typeof accId);
+  console.log("rating =", rating);
+  console.log("content =", content);
+  console.log("invoiceId =", _feedbackInvoiceId);
+  if (!content) {
+    alert("Vui lòng nhập nội dung!");
+    return;
+  }
+
+  if (rating === 0) {
+    alert("Vui lòng chọn số sao!");
+    return;
+  }
+
+  fetch("http://localhost:8080/api/feedback/submit", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      title,
+      content,
+      ratingStars: rating,
+      movieId,
+      accountStaffId: accId,
+      orderId: _feedbackInvoiceId,
+      ticketStatus: "Đã sử dụng"
+    })
+  })
+    .then(res => res.json())
+    .then(data => {
+
+      if (data.success) {
+
+        closeFeedbackModal();
+
+        loadFeedbacksForMovie(movieId);
+
+        alert("Cảm ơn bạn đã đánh giá!");
+
+      } else {
+
+        alert(data.message);
+
+      }
+
+    })
+    .catch(console.error);
+
+}
+
+window.loadFeedbacksForMovie = function (movieId) {
+  const container = document.getElementById("feedback-list-container");
+  const avgBox = document.getElementById("feedback-average-box");
+  if (!container) return;
+
+  fetch(`http://localhost:8080/api/feedback/movie/${movieId}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data || data.length === 0) {
+        container.innerHTML = "Chưa có đánh giá nào.";
+        if (avgBox) avgBox.innerHTML = "⭐ 0 / 5";
+        return;
+      }
+
+      const total = data.reduce((sum, fb) => sum + Number(fb.ratingStars || 0), 0);
+      const avg = (total / data.length).toFixed(1);
+
+      if (avgBox) {
+        avgBox.innerHTML = `⭐ ${avg} / 5`;
+      }
+
+      container.innerHTML = `
+  <div class="feedback-scroll-row">
+    ${data.map(fb => {
+      const time = new Date(fb.createdAt).toLocaleString("vi-VN");
+
+      return `
+        <div class="fb-item">
+          <div class="fb-card-top">
+            <strong>${fb.accountName}</strong>
+            <span class="fb-rating-badge">⭐ ${fb.ratingStars}</span>
+          </div>
+
+          <div class="fb-time">${time}</div>
+
+          <p class="fb-content">${fb.content}</p>
+        </div>
+      `;
+    }).join("")}
+  </div>
+`;
+    })
+    .catch(err => console.error("Lỗi load feedback:", err));
+};
 function viewMovieDetailText(title, genre) {
   document.getElementById("detail-movie-title").innerText = title;
   document.getElementById("detail-movie-genre").innerText = genre;
@@ -440,9 +583,10 @@ function viewMovieDetailText(title, genre) {
     alert("Dự án đang tải dữ liệu phim từ SQL Server, vui lòng đợi vài giây!");
     return;
   }
-
   const targetMovie = serverData.movies.find((m) => m.title === title);
   if (targetMovie) {
+    const mId = targetMovie.movieId || targetMovie.movie_id;
+    window.currentFeedbackMovieId = mId;
     if (document.getElementById("detail-movie-duration")) {
       document.getElementById("detail-movie-duration").innerText =
         targetMovie.duration || "-";
@@ -487,6 +631,9 @@ function viewMovieDetailText(title, genre) {
       synopsisBox.innerText =
         targetMovie.synopsis || "Chưa có tóm tắt cho bộ phim điện ảnh này.";
     }
+    if (mId) {
+      window.loadFeedbacksForMovie(mId);
+    }
   }
 
   const bookBtn = document.getElementById("btn-detail-book-now");
@@ -495,8 +642,11 @@ function viewMovieDetailText(title, genre) {
       quickBookMovie(title);
     };
   }
+
   switchCgvTab("panel-movie-detail");
 }
+
+
 
 function openCheckoutReview() {
   const currentMovie = document.getElementById("cgv-combo-movie").value;
@@ -568,7 +718,7 @@ function getPosterByMovieName(name) {
       return (
         m.mainposter_url || m.mainposterUrl || m.mainposterurl || m.img || ""
       );
-  } catch (e) {}
+  } catch (e) { }
   return "";
 }
 
@@ -683,13 +833,13 @@ function renderTransactionHistory() {
 
                       </button>
 
-                      <button
-                          class="history-card-btn ghost"
-                          onclick="openFeedbackModal(${order.orderId})">
-
-                          💬 Gửi Feedback
-
-                      </button>
+                      ${status === "Đã sử dụng" ? `
+  <button
+    class="history-card-btn ghost"
+    onclick="openFeedbackFromHistory(${order.orderId})">
+    💬 Gửi Feedback
+  </button>
+` : ""}
 
                   </div>
 
@@ -842,7 +992,7 @@ function viewHistoryDetail(invoiceId) {
 
                 <button
                     class="hist-feedback-btn"
-                    onclick="openFeedbackModal(${inv.orderId})">
+                    onclick="openFeedbackFromHistory(${inv.orderId})">
 
                     💬 Gửi Feedback
 
@@ -864,20 +1014,20 @@ function closeHistoryDetailModal() {
 let _feedbackRating = 0;
 let _feedbackInvoiceId = null;
 
-function openFeedbackModal(invoiceId) {
-  _feedbackInvoiceId = invoiceId || null;
-  _feedbackRating = 0;
-  const inv = userPastInvoices.find((i) => i.id === invoiceId);
-  const refEl = document.getElementById("feedback-invoice-ref");
-  if (refEl)
-    refEl.innerText = inv
-      ? `Phim: ${inv.showtime.movie.title} • Mã vé: ${inv.orderCode}`
-      : "Chia sẻ trải nghiệm của bạn";
-  const txt = document.getElementById("feedback-text");
-  if (txt) txt.value = "";
-  setFeedbackStars(0);
-  document.getElementById("feedback-modal").classList.add("open");
-}
+// function openFeedbackModal(invoiceId) {
+//   _feedbackInvoiceId = invoiceId || null;
+//   _feedbackRating = 0;
+//   const inv = userPastInvoices.find((i) => i.id === invoiceId);
+//   const refEl = document.getElementById("feedback-invoice-ref");
+//   if (refEl)
+//     refEl.innerText = inv
+//       ? `Phim: ${inv.showtime.movie.title} • Mã vé: ${inv.orderCode}`
+//       : "Chia sẻ trải nghiệm của bạn";
+//   const txt = document.getElementById("feedback-text");
+//   if (txt) txt.value = "";
+//   setFeedbackStars(0);
+//   document.getElementById("feedback-modal").classList.add("open");
+// }
 
 function setFeedbackStars(n) {
   _feedbackRating = n;
@@ -887,45 +1037,51 @@ function setFeedbackStars(n) {
   });
 }
 
-function submitFeedback() {
-  const txt = document.getElementById("feedback-text").value.trim();
-  if (_feedbackRating === 0) {
-    alert("Vui lòng chọn số sao đánh giá!");
-    return;
-  }
-  if (!txt) {
-    alert("Vui lòng nhập nội dung feedback!");
-    return;
-  }
-  const entry = {
-    invoiceId: _feedbackInvoiceId,
-    rating: _feedbackRating,
-    content: txt,
-    at: new Date().toISOString(),
-  };
-  try {
-    const list = JSON.parse(localStorage.getItem("las_feedbacks") || "[]");
-    list.unshift(entry);
-    localStorage.setItem("las_feedbacks", JSON.stringify(list));
-  } catch (e) {}
+// function submitFeedback() {
+//   const txt = document.getElementById("feedback-text").value.trim();
+//   if (_feedbackRating === 0) {
+//     alert("Vui lòng chọn số sao đánh giá!");
+//     return;
+//   }
+//   if (!txt) {
+//     alert("Vui lòng nhập nội dung feedback!");
+//     return;
+//   }
+//   const entry = {
+//     invoiceId: _feedbackInvoiceId,
+//     rating: _feedbackRating,
+//     content: txt,
+//     at: new Date().toISOString(),
+//   };
+//   try {
+//     const list = JSON.parse(localStorage.getItem("las_feedbacks") || "[]");
+//     list.unshift(entry);
+//     localStorage.setItem("las_feedbacks", JSON.stringify(list));
+//   } catch (e) { }
 
-  closeFeedbackModal();
-  const toast = document.getElementById("feedback-toast");
-  if (toast) {
-    toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 2600);
-  } else {
-    alert("Cảm ơn bạn đã gửi feedback! 🧡");
-  }
-}
+//   closeFeedbackModal();
+//   const toast = document.getElementById("feedback-toast");
+//   if (toast) {
+//     toast.classList.add("show");
+//     setTimeout(() => toast.classList.remove("show"), 2600);
+//   } else {
+//     alert("Cảm ơn bạn đã gửi feedback! 🧡");
+//   }
+// }
 
-function closeFeedbackModal() {
-  document.getElementById("feedback-modal").classList.remove("open");
+window.closeFeedbackModal = function () {
+
+  document.getElementById("feedback-modal").style.display = "none";
+
+  document.getElementById("feedback-text").value = "";
+
+  _feedbackRating = 0;
+
 }
 window.openFeedbackModal = openFeedbackModal;
 window.setFeedbackStars = setFeedbackStars;
-window.submitFeedback = submitFeedback;
 window.closeFeedbackModal = closeFeedbackModal;
+
 
 function executeMovieRealTimeSearch() {
   const inputField = document.getElementById("movie-search-input");
@@ -1171,7 +1327,7 @@ function submitCgvRegister() {
       if (resData.status === "success") {
         alert(
           resData.message +
-            "\nHãy kiểm tra màn hình Console của Spring Boot để lấy mã OTP nhé!",
+          "\nHãy kiểm tra màn hình Console của Spring Boot để lấy mã OTP nhé!",
         );
         temporaryRegisterEmail = resData.email;
         closeAuthModal();
@@ -1378,7 +1534,7 @@ window.renderCgvInterface = function () {
 
   let activeMovieTitle = selectCombo
     ? selectCombo.value ||
-      (selectCombo.options[0] ? selectCombo.options[0].value : "")
+    (selectCombo.options[0] ? selectCombo.options[0].value : "")
     : "";
   const safeMovies = (serverData && serverData.movies) || [];
   const targetMovieObj = safeMovies.find((m) => m.title === activeMovieTitle);
@@ -1484,9 +1640,9 @@ window.renderCgvInterface = function () {
             "https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png";
           let displayAge =
             m.age_rating === 0 ||
-            m.ageRating === 0 ||
-            m.age_rating === "0" ||
-            m.ageRating === "0"
+              m.ageRating === 0 ||
+              m.age_rating === "0" ||
+              m.ageRating === "0"
               ? "P"
               : `T${m.age_rating || m.ageRating || "16"}`;
 
@@ -1514,8 +1670,8 @@ window.renderCgvInterface = function () {
     });
     console.log(
       "👉 Đã vẽ thành công " +
-        (rankCounter - 1) +
-        " bộ phim lên màn hình giao diện trang chủ!",
+      (rankCounter - 1) +
+      " bộ phim lên màn hình giao diện trang chủ!",
     );
   }
 
@@ -1952,9 +2108,16 @@ window.executeFinalCheckout = function () {
       const lasTicketId = "LAS-" + Math.floor(100000 + Math.random() * 900000);
       console.log("currentPriceTotal =", currentPriceTotal);
       console.log("appliedVoucherDiscount =", appliedVoucherDiscount);
+      const targetMovie = serverData.movies.find(  m => m.title === currentMovie );
+
+      const movieId = targetMovie
+        ? (targetMovie.movieId || targetMovie.movie_id)
+        : null;
       const invoiceObj = {
         id: lasTicketId,
+        movieId: movieId,
         movie: currentMovie,
+
         date: ticketDate,
         time: ticketShowtime,
         seats: [...ticketSeats],
@@ -2193,8 +2356,8 @@ window.renderLasPromoGrid = function () {
         // 🚀 THẦN CHÚ BẮN THẺ <IMG> TRỰC TIẾP: Triệt tiêu hoàn toàn lỗi sập co rúm khung hình của thẻ div cũ
         let imgHTML =
           validImg.startsWith("http") ||
-          validImg.includes("/") ||
-          validImg.includes(".")
+            validImg.includes("/") ||
+            validImg.includes(".")
             ? `<img src="${validImg}" class="news-card-img-holder" style="width: 100%; height: 200px; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png';">`
             : `<div class="news-card-img-holder" style="background: #a1dbf1; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0c6291; font-size: 14px; height: 200px; width: 100%; text-align: center; padding: 0 10px; box-sizing: border-box;">${validImg || "LAS CINEMA"}</div>`;
         // Tạo cấu trúc thẻ card chuẩn chỉ ăn khớp layout hai phân vùng
