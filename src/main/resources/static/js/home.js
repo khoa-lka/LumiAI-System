@@ -676,7 +676,7 @@ function renderTransactionHistory() {
 
                       <button
                           class="history-card-btn ghost"
-                          onclick="openFeedbackModal(${order.orderId})">
+                          onclick="openFeedbackFromHistory(${order.orderId})">
 
                           💬 Gửi Feedback
 
@@ -833,7 +833,7 @@ function viewHistoryDetail(invoiceId) {
 
                 <button
                     class="hist-feedback-btn"
-                    onclick="openFeedbackModal(${inv.orderId})">
+                    onclick="openFeedbackFromHistory(${inv.orderId})">
 
                     💬 Gửi Feedback
 
@@ -854,21 +854,38 @@ function closeHistoryDetailModal() {
 /* ---------- FEEDBACK ---------- */
 let _feedbackRating = 0;
 let _feedbackInvoiceId = null;
+window.currentFeedbackMovieId = null;
 
-function openFeedbackModal(invoiceId) {
-  _feedbackInvoiceId = invoiceId || null;
+function openFeedbackModal(movieId, invoiceId = null) {
+  window.currentFeedbackMovieId = movieId;
+  _feedbackInvoiceId = invoiceId;
   _feedbackRating = 0;
-  const inv = userPastInvoices.find((i) => i.id === invoiceId);
-  const refEl = document.getElementById("feedback-invoice-ref");
-  if (refEl)
-    refEl.innerText = inv
-      ? `Phim: ${inv.showtime.movie.title} • Mã vé: ${inv.orderCode}`
-      : "Chia sẻ trải nghiệm của bạn";
   const txt = document.getElementById("feedback-text");
   if (txt) txt.value = "";
   setFeedbackStars(0);
   document.getElementById("feedback-modal").classList.add("open");
 }
+
+window.openFeedbackFromHistory = function (invoiceId) {
+  const inv = window.orderHistoryCache.find((o) => o.orderId == invoiceId);
+  if (!inv) {
+    alert("Không tìm thấy hóa đơn!");
+    return;
+  }
+  if (inv.ticketStatus !== "Đã sử dụng") {
+    alert("Chỉ vé đã sử dụng mới được gửi feedback!");
+    return;
+  }
+
+  const movie = inv.showtime?.movie;
+  if (!movie) {
+    alert("Không tìm thấy phim!");
+    return;
+  }
+
+  const movieId = movie.movieId || movie.movie_id;
+  openFeedbackModal(movieId, invoiceId);
+};
 
 function setFeedbackStars(n) {
   _feedbackRating = n;
@@ -878,44 +895,106 @@ function setFeedbackStars(n) {
   });
 }
 
-function submitFeedback() {
-  const txt = document.getElementById("feedback-text").value.trim();
-  if (_feedbackRating === 0) {
+// Hàm gửi Feedback lên server
+window.submitFeedbackForm = function () {
+  const title = "Đánh giá phim";
+  const content = document.getElementById("feedback-text").value.trim();
+  const rating = _feedbackRating;
+  const movieId = window.currentFeedbackMovieId;
+
+  const cachedUser = localStorage.getItem("las_logged_in_user");
+  const accId = cachedUser ? JSON.parse(cachedUser).accountId : 1;
+
+  if (!content) {
+    alert("Vui lòng nhập nội dung!");
+    return;
+  }
+  if (rating === 0) {
     alert("Vui lòng chọn số sao đánh giá!");
     return;
   }
-  if (!txt) {
-    alert("Vui lòng nhập nội dung feedback!");
-    return;
-  }
-  const entry = {
-    invoiceId: _feedbackInvoiceId,
-    rating: _feedbackRating,
-    content: txt,
-    at: new Date().toISOString(),
-  };
-  try {
-    const list = JSON.parse(localStorage.getItem("las_feedbacks") || "[]");
-    list.unshift(entry);
-    localStorage.setItem("las_feedbacks", JSON.stringify(list));
-  } catch (e) {}
 
-  closeFeedbackModal();
-  const toast = document.getElementById("feedback-toast");
-  if (toast) {
-    toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 2600);
-  } else {
-    alert("Cảm ơn bạn đã gửi feedback! 🧡");
-  }
-}
+  fetch("http://localhost:8080/api/feedback/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title,
+      content,
+      ratingStars: rating,
+      movieId,
+      accountStaffId: accId,
+      orderId: _feedbackInvoiceId,
+      ticketStatus: "Đã sử dụng",
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success) {
+        closeFeedbackModal();
+        loadFeedbacksForMovie(movieId);
+        const toast = document.getElementById("feedback-toast");
+        if (toast) {
+          toast.classList.add("show");
+          setTimeout(() => toast.classList.remove("show"), 2600);
+        } else {
+          alert("Cảm ơn bạn đã đánh giá!");
+        }
+      } else {
+        alert(data.message);
+      }
+    })
+    .catch((err) => {
+      console.error("Lỗi gửi feedback:", err);
+      alert("Đã xảy ra lỗi khi gửi feedback, vui lòng thử lại!");
+    });
+};
+
+window.loadFeedbacksForMovie = function (movieId) {
+  const container = document.getElementById("feedback-list-container");
+  const avgBox = document.getElementById("feedback-average-box");
+  if (!container) return;
+
+  fetch(`http://localhost:8080/api/feedback/movie/${movieId}`)
+    .then((res) => res.json())
+    .then((data) => {
+      if (!data || data.length === 0) {
+        container.innerHTML = "Chưa có đánh giá nào.";
+        if (avgBox) avgBox.innerHTML = "⭐ 0 / 5";
+        return;
+      }
+
+      const total = data.reduce((sum, fb) => sum + Number(fb.ratingStars || 0), 0);
+      const avg = (total / data.length).toFixed(1);
+      if (avgBox) avgBox.innerHTML = `⭐ ${avg} / 5`;
+
+      container.innerHTML = `
+  <div class="feedback-scroll-row">
+    ${data
+      .map((fb) => {
+        const time = new Date(fb.createdAt).toLocaleString("vi-VN");
+        return `
+        <div class="fb-item">
+          <div class="fb-card-top">
+            <strong>${fb.accountName}</strong>
+            <span class="fb-rating-badge">⭐ ${fb.ratingStars}</span>
+          </div>
+          <div class="fb-time">${time}</div>
+          <p class="fb-content">${fb.content}</p>
+        </div>
+      `;
+      })
+      .join("")}
+  </div>
+`;
+    })
+    .catch((err) => console.error("Lỗi load feedback:", err));
+};
 
 function closeFeedbackModal() {
   document.getElementById("feedback-modal").classList.remove("open");
 }
 window.openFeedbackModal = openFeedbackModal;
 window.setFeedbackStars = setFeedbackStars;
-window.submitFeedback = submitFeedback;
 window.closeFeedbackModal = closeFeedbackModal;
 
 function executeMovieRealTimeSearch() {
