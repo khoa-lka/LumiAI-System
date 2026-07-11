@@ -325,7 +325,7 @@
                             <span>🔍</span>
                             <input type="text" id="adm-syslog-search" placeholder="Tìm kiếm log..." oninput="filterAdminSysLogTable()" />
                         </div>
-                        <button class="btn-admin-action edit" onclick="renderAdminSysLogPage()">↻ Làm mới</button>
+                        <button class="btn-admin-action edit" onclick="loadAdminSysLogs()">↻ Làm mới</button>
                         <button class="adm-primary-btn" onclick="exportAdminSysLogCsv()">⭳ Xuất CSV</button>
                     </div>
                 </div>
@@ -561,6 +561,82 @@ function exitAdminRoleToCustomerView() {
             </button>
         </div>
     </div>
+</div>
+<!-- POPUP XEM CHI TIẾT LOG -->
+<div
+  id="syslog-detail-popup"
+  class="syslog-detail-overlay"
+  onclick="closeSysLogDetailByOverlay(event)"
+>
+  <div class="syslog-detail-box">
+
+    <div class="syslog-detail-header">
+      <div class="syslog-detail-heading">
+        <div class="syslog-detail-icon">📋</div>
+
+        <div>
+          <h3>CHI TIẾT LOG</h3>
+          <p>Thông tin hoạt động trong hệ thống</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="syslog-detail-close"
+        onclick="closeAdminSysLogDetail()"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="syslog-detail-content">
+
+      <div class="syslog-detail-row">
+        <span class="syslog-detail-label">Thời gian</span>
+        <strong id="syslog-detail-time"></strong>
+      </div>
+
+      <div class="syslog-detail-row">
+        <span class="syslog-detail-label">Mức độ</span>
+        <span
+          id="syslog-detail-level"
+          class="log-level-badge"
+        ></span>
+      </div>
+
+      <div class="syslog-detail-row">
+        <span class="syslog-detail-label">Hành động</span>
+        <strong id="syslog-detail-action"></strong>
+      </div>
+
+      <div class="syslog-detail-row">
+        <span class="syslog-detail-label">Người thực hiện</span>
+        <strong id="syslog-detail-user"></strong>
+      </div>
+
+      <div class="syslog-detail-row">
+        <span class="syslog-detail-label">Địa chỉ IP</span>
+        <strong id="syslog-detail-ip"></strong>
+      </div>
+
+      <div class="syslog-detail-description">
+        <span class="syslog-detail-label">Nội dung chi tiết</span>
+        <p id="syslog-detail-description"></p>
+      </div>
+
+    </div>
+
+    <div class="syslog-detail-footer">
+      <button
+        type="button"
+        class="syslog-detail-button"
+        onclick="closeAdminSysLogDetail()"
+      >
+        Đóng
+      </button>
+    </div>
+
+  </div>
 </div>
 </body>
 </html>

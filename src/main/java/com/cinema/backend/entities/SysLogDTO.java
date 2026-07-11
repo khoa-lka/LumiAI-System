@@ -26,4 +26,12 @@ public class SysLogDTO {
 
     @Column(name = "status")
     private String status;
+    @Column(name = "level_name")
+    private String level;
+
+    @Column(name = "ip_address")
+    private String ip;
+
+    @Column(name = "detail")
+    private String detail;
 }

@@ -22,7 +22,7 @@ function switchAdminTab(tabName) {
   // Gọi hàm load dữ liệu tương ứng khi chuyển tab
   if (tabName === "dashboard") renderAdminDashboard();
   if (tabName === "ban") renderAdminBanList();
-  if (tabName === "syslog") renderAdminSysLogPage();
+  if (tabName === "syslog") loadAdminSysLogs();
   if (tabName === "webhook") renderAdminWebhookPage();
   if (tabName === "db") renderAdminDbBackups();
 }
