@@ -538,24 +538,15 @@ function cancelCurrentTransaction() {
   if (
     confirm("Bạn có chắc chắn muốn hủy giao dịch và bỏ giữ các ghế này không?")
   ) {
-    const currentMovie = document.getElementById("cgv-combo-movie").value;
-    fetch("http://localhost:8080/api/seats/cancel", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        movie: currentMovie,
-        showtime: selectedShowtime,
-        seats: selectedSeats,
-      }),
-    }).then(() => {
-      resetHoldState();
-      selectedSeats = [];
-      window.fnbMenu.forEach((i) => (i.qty = 0));
-      renderFnbMenu();
-      calculateCgvCart();
-      window.renderCgvInterface();
-      alert("Đã hủy giao dịch và giải phóng ghế!");
-    });
+    // 🚀 ĐÃ SỬA: Backend chưa có endpoint /api/seats/cancel (chưa có cơ chế
+    // giữ ghế ở server), nên bỏ lệnh gọi API — chỉ cần dọn state phía client.
+    resetHoldState();
+    selectedSeats = [];
+    window.fnbMenu.forEach((i) => (i.qty = 0));
+    renderFnbMenu();
+    calculateCgvCart();
+    window.renderCgvInterface();
+    alert("Đã hủy giao dịch và giải phóng ghế!");
   }
 }
 

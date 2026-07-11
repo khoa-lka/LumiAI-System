@@ -1366,103 +1366,10 @@
     <script src="js/admin.js?v=19"></script>
 
     <script>
-      // HÀM CHUYỂN TAB MẠNH MẼ (KHÔNG BỊ LỖI CHẶN)
-      window.switchMpTab = function (tabId) {
-        console.log("Đang chuyển sang tab:", tabId);
-
-        // Ép ẩn toàn bộ thẻ và xóa active
-        document.querySelectorAll(".mp-tab-section").forEach((tab) => {
-          tab.classList.remove("active");
-          tab.style.display = "none";
-        });
-        document.querySelectorAll(".mp-nav-item").forEach((nav) => {
-          nav.classList.remove("active");
-        });
-
-        // Ép hiện thẻ được gọi
-        const targetTab = document.getElementById("mp-tab-" + tabId);
-        const targetNav = document.getElementById("mp-nav-" + tabId);
-
-        if (targetTab) {
-          targetTab.classList.add("active");
-          targetTab.style.display = "block";
-        }
-        if (targetNav) {
-          targetNav.classList.add("active");
-        }
-
-        // Đổi tiêu đề Header
-        const titles = {
-          dashboard: "Tổng quan hoạt động rạp",
-          movies: "Quản lý Danh mục Phim",
-          matrix: "Ma trận Lịch chiếu",
-          fnb: "F&B Services & Inventory Control",
-          promo: "Chiến dịch Khuyến mãi",
-          events: "Sự kiện và Ưu đãi",
-          audit: "Báo cáo & Kiểm toán",
-        };
-        const titleEl = document.getElementById("mp-dynamic-title");
-        if (titleEl) titleEl.innerText = titles[tabId] || "Manager Portal";
-
-        // 0. Vẽ lại Dashboard (dữ liệu tĩnh) mỗi khi quay lại Tab Dashboard
-        if (tabId === "dashboard" && typeof renderManagerDashboard === "function") {
-          try {
-            renderManagerDashboard();
-          } catch (err) {
-            console.error("Lỗi khi render Dashboard:", err);
-          }
-        }
-        // 1. Gọi API nạp dữ liệu phim khi qua Tab Movies
-        if (tabId === "movies" && typeof loadManagerMovies === "function") {
-          try {
-            loadManagerMovies();
-          } catch (err) {
-            console.error("Lỗi khi load danh sách phim:", err);
-          }
-        }
-        // 2. Tự động kích hoạt gọi API nạp bắp nước từ DB khi chuyển sang Tab F&B
-        if (tabId === "fnb" && typeof loadManagerFnb === "function") {
-          try {
-            loadManagerFnb();
-          } catch (err) {
-            console.error("Lỗi khi load danh sách F&B từ database:", err);
-          }
-        }
-        // 3. Tự động kích hoạt gọi ma trận lịch chiếu tổng hợp khi qua Tab Matrix
-        if (tabId === "matrix" && typeof loadManagerMatrix === "function") {
-          try {
-            loadManagerMatrix();
-          } catch (err) {
-            console.error("Lỗi khi load ma trận lịch chiếu:", err);
-          }
-        }
-        // 4. Tự động gọi API nạp voucher từ database khi chuyển sang Tab Promo
-        if (tabId === "promo" && typeof loadManagerVouchers === "function") {
-          try {
-            loadManagerVouchers();
-          } catch (err) {
-            console.error("Lỗi khi load danh sách Voucher từ database:", err);
-          }
-        }
-        // 5. Vẽ lại Báo cáo & Kiểm toán mỗi khi vào Tab Audit
-        if (tabId === "audit" && typeof renderAuditReport === "function") {
-          try {
-            renderAuditReport();
-          } catch (err) {
-            console.error("Lỗi khi render Báo cáo & Kiểm toán:", err);
-          }
-        }
-        // 6. Tự động nạp danh sách Sự kiện & Ưu đãi khi chuyển sang Tab Events
-        if (tabId === "events" && typeof loadManagerEvents === "function") {
-          try {
-            loadManagerEvents();
-          } catch (err) {
-            console.error("Lỗi khi load danh sách Sự kiện & Ưu đãi:", err);
-          }
-        }
-      };
-
-      // Các hàm Dropdown
+      // 🚀 ĐÃ DỌN: hàm switchMpTab() trước đây bị định nghĩa TRÙNG ở đây, đè lên
+      // bản trong js/manager.js (vì script inline luôn load sau cùng, thắng bản
+      // trong file .js). Giờ chỉ còn đúng 1 nguồn duy nhất tại js/manager.js —
+      // xem chi tiết ghi chú tại đó. Ở đây chỉ giữ lại 2 hàm dropdown tiện ích.
       function toggleNotifDropdown() {
         document.getElementById("mp-notif-dropdown").classList.toggle("open");
       }

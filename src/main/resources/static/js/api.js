@@ -116,8 +116,9 @@ const API = {
   getOrderHistory: (accountId) =>
     fetch(`${BASE_URL}/orders/history/${accountId}`).then(handleResponse),
   // Voucher
+  // 🚀 ĐÃ SỬA: backend thật là /vouchers/{code} (số nhiều), không phải /voucher/{code}
   checkVoucher: (code) =>
-    fetch(`${BASE_URL}/voucher/${code}`).then(handleResponse),
+    fetch(`${BASE_URL}/vouchers/${code}`).then(handleResponse),
 
   // 🍿 Kho F&B
   // Manager Dashboard analytics (TỔNG HỢP) — backend cần trả về JSON theo spec.
@@ -162,5 +163,30 @@ const API = {
   
     // 📊 PHÂN HỆ DASHBOARD TỔNG QUAN (MANAGER)
   getDashboardOverviewData: () => 
-    fetch(`${BASE_URL}/dashboard/overview`).then(handleResponse)
+    fetch(`${BASE_URL}/dashboard/overview`).then(handleResponse),
+
+  // 💳 THANH TOÁN QR / PayOS (🎯 BỔ SUNG — khớp PaymentController.java thật)
+  createQrPayment: (amount) =>
+    fetch(`${BASE_URL}/payment/qr/create?amount=${amount}`).then(
+      handleResponse,
+    ),
+
+  getQrPaymentStatus: (qrRef) =>
+    fetch(`${BASE_URL}/payment/qr/status/${qrRef}`).then(handleResponse),
+
+  cancelQrPayment: (qrRef) =>
+    fetch(`${BASE_URL}/payment/qr/cancel/${qrRef}`, {
+      method: "POST",
+    }).then(handleResponse),
+
+  createPayOSPayment: (amount) =>
+    fetch(`${BASE_URL}/payment/payos/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount }),
+    }).then(handleResponse),
+
+  // 📈 PHÂN HỆ BÁO CÁO & KIỂM TOÁN TÀI CHÍNH ĐỘNG (🎯 BỔ SUNG — khớp AuditController.java thật)
+  getAuditReportData: (dateStr) => 
+    fetch(`${BASE_URL}/audit/report?date=${dateStr}`).then(handleResponse)
 };
