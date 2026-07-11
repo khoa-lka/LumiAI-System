@@ -2,6 +2,100 @@
 // MÃ NGUỒN XỬ LÝ GIAO DIỆN QUẢN LÝ RẠP (MANAGER)
 // File: js/manager.js
 // ==========================================================================
+
+// ==========================================================================
+// 🔔 HỆ THỐNG THÔNG BÁO TOAST (thay thế hộp thoại alert() xấu xí của trình duyệt)
+// - Tự động ẩn sau 5 giây (có thể bấm ✕ để tắt sớm).
+// - Tự nhận diện loại thông báo (thành công / lỗi / cảnh báo / thông tin) dựa
+//   trên từ khóa trong nội dung để tô màu phù hợp, không cần sửa từng chỗ gọi.
+// - Ghi đè window.alert => MỌI lời gọi alert("...") trong toàn bộ project
+//   (kể cả các file JS khác) sẽ tự động hiển thị dưới dạng toast này.
+// - confirm() KHÔNG bị ảnh hưởng, vẫn dùng hộp thoại gốc của trình duyệt vì
+//   cần giá trị trả về đồng bộ (xác nhận Có/Không) để code xử lý tiếp.
+// ==========================================================================
+function ensureToastContainer() {
+  let container = document.getElementById("toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toast-container";
+    container.style.cssText = `
+      position: fixed; top: 20px; right: 20px; z-index: 99999;
+      display: flex; flex-direction: column; gap: 10px;
+      pointer-events: none;
+    `;
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+function detectToastType(message) {
+  const text = String(message).toLowerCase();
+  if (
+    text.includes("không thể") ||
+    text.includes("thất bại") ||
+    text.includes("lỗi")
+  )
+    return "error";
+  if (text.includes("cảnh báo") || text.includes("vui lòng")) return "warning";
+  if (text.includes("thành công")) return "success";
+  return "info";
+}
+
+const TOAST_ICONS = { success: "✅", error: "⛔", warning: "⚠️", info: "ℹ️" };
+const TOAST_BORDER_COLORS = {
+  success: "#4ade80",
+  error: "#f87171",
+  warning: "#f59e0b",
+  info: "#60a5fa",
+};
+
+function dismissToast(toast) {
+  if (!toast || !toast.parentElement) return;
+  clearTimeout(toast._toastTimer);
+  toast.style.opacity = "0";
+  toast.style.transform = "translateX(30px)";
+  setTimeout(() => toast.remove(), 250);
+}
+
+function showToast(message, type, duration = 5000) {
+  const container = ensureToastContainer();
+  const finalType = type || detectToastType(message);
+  const borderColor = TOAST_BORDER_COLORS[finalType] || TOAST_BORDER_COLORS.info;
+
+  const toast = document.createElement("div");
+  toast.style.cssText = `
+    min-width: 280px; max-width: 380px;
+    background: #141417; border: 1px solid rgba(255,255,255,0.12);
+    border-left: 4px solid ${borderColor};
+    border-radius: 10px; padding: 14px 16px; color: #f4f4f5;
+    font-size: 13.5px; line-height: 1.5; font-family: inherit;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    display: flex; align-items: flex-start; gap: 10px;
+    pointer-events: auto; opacity: 0; transform: translateX(30px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    white-space: pre-line;
+  `;
+  toast.innerHTML = `
+    <span style="flex:1;">${String(message).replace(/\n/g, "<br>")}</span>
+    <span style="cursor:pointer; opacity:0.6; font-size:14px; flex-shrink:0;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6" onclick="dismissToast(this.parentElement)">✕</span>
+  `;
+  container.appendChild(toast);
+
+  // Kích hoạt animation trượt vào
+  requestAnimationFrame(() => {
+    toast.style.opacity = "1";
+    toast.style.transform = "translateX(0)";
+  });
+
+  // Tự động ẩn sau `duration` ms (mặc định 5 giây)
+  toast._toastTimer = setTimeout(() => dismissToast(toast), duration);
+}
+
+// Ghi đè alert() gốc của trình duyệt bằng toast — áp dụng toàn cục cho mọi file JS
+window.alert = function (message) {
+  showToast(message);
+};
+
 window.addEventListener("DOMContentLoaded", () => {
   // Xác định vai trò: ưu tiên localStorage (bền vững), dự phòng sessionStorage
   function resolveRoleAndName() {
@@ -33,7 +127,11 @@ window.addEventListener("DOMContentLoaded", () => {
   // Nếu không phải Manager -> Đuổi về trang chủ
   if (ALLOWED_ROLES.indexOf(info.roleId) === -1) {
     alert("CẢNH BÁO: Khu vực nội bộ! Bạn không có quyền truy cập.");
-    window.location.href = "index.html";
+    // Toast không chặn luồng như alert() gốc nên cần đợi 1 chút để người dùng
+    // kịp đọc thông báo trước khi bị điều hướng về trang chủ.
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 1800);
     return;
   }
 
@@ -1559,21 +1657,21 @@ function renderVoucherRows(vouchers) {
     let discountText = v.discountType === "PERCENT" ? `${v.discountValue}%` : `${v.discountValue.toLocaleString("vi-VN")} đ`;
     let statusText = v.status === "INACTIVE"
       ? '<span style="color:#9a9aa3;">Ngừng hoạt động</span>'
-      : '<span style="color:#2e7d32; font-weight:bold;">Đang hoạt động</span>';
+      : '<span style="color:#4ade80; font-weight:bold;">Đang hoạt động</span>';
 
     tbody.innerHTML += `
       <tr>
           <td style="text-align: center; font-weight: bold;">${index + 1}</td>
-          <td><span class="mp-badge-code" style="background:#e8f5e9; color:#2e7d32; font-weight:bold; padding:4px 8px; border-radius:4px;">${v.voucherCode}</span></td>
-          <td>${v.discountType === "PERCENT" ? "Giảm theo phần trăm (%)" : "Giảm tiền mặt trực tiếp"}</td>
-          <td style="text-align: right; font-weight: bold; color: #b71c1c;">${discountText}</td>
+          <td style="text-align: left;"><span class="mp-badge-code">${v.voucherCode}</span></td>
+          <td style="text-align: left;">${v.discountType === "PERCENT" ? "Giảm theo phần trăm (%)" : "Giảm tiền mặt trực tiếp"}</td>
+          <td style="text-align: right; font-weight: bold; color: #ff6b6b;">${discountText}</td>
           <td style="text-align: center;">${v.usageLimit} lượt</td>
           <td style="text-align: center;">${expiryDate}</td>
           <td style="text-align: center;">${statusText}</td>
           <td style="text-align: center;">
-              <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
-                  <button class="mp-action-btn" onclick="openEditVoucherModal(${v.voucherId})" style="cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Sửa</button>
-                  <button class="mp-action-btn" onclick="submitDeleteVoucher(${v.voucherId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> Xóa</button>
+              <div class="mp-table-actions" style="display:flex; gap:14px; justify-content:center;">
+                  <button class="mp-action-btn" onclick="openEditVoucherModal(${v.voucherId})" style="cursor:pointer;" title="Sửa"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                  <button class="mp-action-btn mp-action-btn-danger" onclick="submitDeleteVoucher(${v.voucherId})" style="cursor:pointer;" title="Xóa"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
               </div>
           </td>
       </tr>

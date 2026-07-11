@@ -59,7 +59,7 @@ function initDatabaseMovies() {
       }
     })
     .catch((err) =>
-      console.error("🚨 Lỗi khởi tạo danh sách phim từ DB:", err),
+      console.error("Lỗi khởi tạo danh sách phim từ DB:", err),
     );
 }
 
@@ -131,7 +131,7 @@ async function switchCgvTab(panelId, filterType = "now_showing") {
           }
         })
         .catch((err) =>
-          console.error("🚨 Lỗi tự động đồng bộ dữ liệu hồ sơ cá nhân:", err),
+          console.error("Lỗi tự động đồng bộ dữ liệu hồ sơ cá nhân:", err),
         );
     }
   }
@@ -187,7 +187,7 @@ function loadEventsFromDatabase() {
         `;
       });
     })
-    .catch((err) => console.error("🚨 Lỗi khi tải sự kiện từ Database: ", err));
+    .catch((err) => console.error("Lỗi khi tải sự kiện từ Database: ", err));
 }
 
 function loadBannersFromDatabase() {
@@ -208,7 +208,7 @@ function loadBannersFromDatabase() {
 
       carousel.innerHTML = htmlContent;
     })
-    .catch((err) => console.error("🚨 Lỗi khi tải banner từ DB: ", err));
+    .catch((err) => console.error("Lỗi khi tải banner từ DB: ", err));
 }
 
 // ==========================================================================

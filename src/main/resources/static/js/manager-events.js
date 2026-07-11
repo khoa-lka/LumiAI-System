@@ -215,9 +215,11 @@ function submitEventForm() {
   if (idVal) {
     const idx = _mgEventsData.findIndex((e) => e.id === Number(idVal));
     if (idx !== -1) _mgEventsData[idx] = { ..._mgEventsData[idx], ...payload };
+    alert("Cập nhật sự kiện khuyến mãi thành công!");
   } else {
     const newId = _mgEventsData.length ? Math.max(..._mgEventsData.map((e) => e.id)) + 1 : 1;
     _mgEventsData.push({ id: newId, ...payload });
+    alert("Đã tạo sự kiện khuyến mãi mới thành công!");
   }
 
   closeEventModal();
@@ -247,6 +249,7 @@ function confirmDeleteEvent() {
   _mgEventsData = _mgEventsData.filter((e) => e.id !== _mgEventDeleteTargetId);
   closeDeleteEventModal();
   filterManagerEvents();
+  alert("Đã xóa sự kiện khuyến mãi thành công!");
 }
 window.confirmDeleteEvent = confirmDeleteEvent;
 

@@ -944,13 +944,37 @@ function selectCgvBookingDate(dateStr) {
 
 // Toast thông báo thành công dùng chung (không chặn luồng như alert()).
 // Dùng cho các thông báo "xong việc" nhẹ nhàng, VD: đăng nhập thành công.
-function showCgvToast(message) {
+function showCgvToast(message, type = "success") {
   const toast = document.getElementById("cgv-success-toast");
   if (toast) {
-    toast.innerText = message;
+    // 🎨 Nền cam theo đúng tông chủ đạo của web (giống nút CTA/logo),
+    // chỉ đổi sắc độ + icon để vẫn phân biệt được thành công / lỗi.
+    // Set inline style trực tiếp để không phụ thuộc phải sửa style.css.
+    const THEME = {
+      success: {
+        icon: "✅",
+        background: "linear-gradient(135deg, #ff6b35, #e5a93b)",
+        border: "#e5a93b",
+      },
+      error: {
+        icon: "⚠️",
+        background: "linear-gradient(135deg, #e5502e, #ff6b35)",
+        border: "#c73f1f",
+      },
+    };
+    const theme = THEME[type] || THEME.success;
+
+    toast.innerHTML = `<span style="margin-right:8px;">${theme.icon}</span>${String(
+      message,
+    ).replace(/\n/g, "<br>")}`;
+    toast.style.background = theme.background;
+    toast.style.borderLeft = `4px solid ${theme.border}`;
+    toast.style.color = "#ffffff";
+
     toast.classList.add("show");
     clearTimeout(window._cgvToastTimer);
-    window._cgvToastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+    // ⏱️ Tự động tắt sau 5 giây (yêu cầu chuyển toàn bộ alert() thành popup 5s)
+    window._cgvToastTimer = setTimeout(() => toast.classList.remove("show"), 5000);
   } else {
     // Dự phòng: nếu vì lý do gì đó không tìm thấy toast trong DOM
     alert(message);
