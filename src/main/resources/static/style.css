@@ -6725,3 +6725,58 @@ select.profile-readonly-input:not([disabled]) {
   .ad-metrics { grid-template-columns: repeat(2, 1fr); }
   .ad-summary-grid { grid-template-columns: 1fr; }
 }
+/* ========================================================================
+   📅 LỊCH CHIẾU KIỂU GOOGLE CALENDAR (Manager - Ma trận lịch chiếu)
+   ======================================================================== */
+.mpcal-toolbar{display:flex;align-items:center;gap:10px;margin:14px 0;flex-wrap:wrap;}
+.mpcal-nav-btn{background:#151517;border:1px solid rgba(255,255,255,0.14);color:#e6e6ea;
+  height:34px;min-width:34px;padding:0 12px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;transition:.15s;}
+.mpcal-nav-btn:hover{border-color:#ff6b35;color:#fff;}
+.mpcal-title{font-size:17px;font-weight:800;color:#fff;margin-left:6px;}
+.mpcal-views{display:flex;background:#151517;border:1px solid rgba(255,255,255,0.14);border-radius:10px;overflow:hidden;}
+.mpcal-views button{background:transparent;border:0;color:#8a8a93;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700;}
+.mpcal-views button.active{background:#ff6b35;color:#fff;}
+
+.mpcal-grid{background:#141417;border:1px solid rgba(255,255,255,0.12);border-radius:14px;overflow:hidden;}
+.mpcal-head{display:grid;border-bottom:1px solid rgba(255,255,255,0.12);}
+.mpcal-dayhead{padding:9px 6px 11px;text-align:center;border-left:1px solid rgba(255,255,255,0.07);}
+.mpcal-dayhead .dow{font-size:11px;font-weight:700;letter-spacing:1px;color:#8a8a93;text-transform:uppercase;}
+.mpcal-dayhead .dnum{font-size:20px;font-weight:700;margin-top:3px;color:#e6e6ea;line-height:1.1;}
+.mpcal-dayhead.today .dow{color:#93b4ff;}
+.mpcal-dayhead.today .dnum{background:#3b82f6;color:#fff;width:36px;height:36px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;margin-top:1px;}
+
+.mpcal-body{position:relative;height:560px;overflow-y:auto;}
+.mpcal-cols{display:grid;position:relative;min-height:100%;}
+.mpcal-timecol{width:56px;}
+.mpcal-hour{height:48px;position:relative;border-top:1px solid rgba(255,255,255,0.07);}
+.mpcal-timecol .mpcal-hour{border-top:0;}
+.mpcal-tlabel{position:absolute;top:-8px;right:8px;font-size:11px;color:#8a8a93;}
+.mpcal-daycol{position:relative;border-left:1px solid rgba(255,255,255,0.07);}
+
+.mpcal-evt{position:absolute;border-radius:8px;padding:4px 8px;overflow:hidden;
+  font-size:12px;line-height:1.25;border-left:3px solid rgba(255,255,255,.55);box-shadow:0 1px 3px rgba(0,0,0,.3);}
+.mpcal-evt-compact{padding:3px 5px;}
+.mpcal-evt-compact .mpcal-evt-r{display:none;}
+.mpcal-evt-compact .mpcal-evt-h{font-size:10px;}
+.mpcal-evt-compact .mpcal-evt-t{font-size:11px;}
+.mpcal-evt-t{font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mpcal-evt-h{color:#e6e6ea;opacity:.92;font-size:11px;margin-top:1px;}
+.mpcal-evt-r{color:#cfcfd6;opacity:.78;font-size:10px;margin-top:1px;}
+.mpcal-evt-room-tag{color:#fff;opacity:1;font-weight:800;}
+.mpcal-evt-conflict{outline:2px solid #ff4d4f;outline-offset:-2px;}
+.mpcal-evt-warn{position:absolute;top:4px;right:5px;width:15px;height:15px;border-radius:50%;background:#ff4d4f;color:#fff;
+  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+
+.mpcal-month{background:#141417;border:1px solid rgba(255,255,255,0.12);border-radius:14px;overflow:hidden;}
+.mpcal-mdow{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid rgba(255,255,255,0.12);}
+.mpcal-mdow span{padding:8px;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;color:#8a8a93;text-transform:uppercase;}
+.mpcal-mgrid{display:grid;grid-template-columns:repeat(7,1fr);}
+.mpcal-cell{min-height:104px;border-left:1px solid rgba(255,255,255,0.07);border-top:1px solid rgba(255,255,255,0.07);padding:6px;overflow:hidden;}
+.mpcal-cell .dn{font-size:13px;font-weight:700;margin-bottom:4px;color:#8a8a93;}
+.mpcal-cell.today .dn{background:#3b82f6;color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;}
+.mpcal-cell.other{opacity:.35;}
+.mpcal-chip{font-size:10.5px;color:#fff;padding:2px 6px;border-radius:5px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid rgba(255,255,255,.5);}
+.mpcal-chip-conflict{outline:1.5px solid #ff4d4f;outline-offset:-1px;}
+.mpcal-more{font-size:10px;color:#8a8a93;margin-top:1px;}

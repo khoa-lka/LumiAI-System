@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LAS Cinemas - Manager Portal</title>
-    <link rel="stylesheet" href="style.css?v=21" />
+    <link rel="stylesheet" href="style.css?v=22" />
   </head>
   <body>
     <div class="manager-pro-layout">
@@ -343,39 +343,20 @@
             </div>
           </div>
           
-          <div class="mp-matrix-container">
-            <div class="mp-matrix-header">
-              <div class="mp-matrix-room-col">Phòng</div>
-              <div class="mp-matrix-timeline">
-                <span>08:00</span><span>09:00</span><span>10:00</span><span>11:00</span>
-                <span>12:00</span><span>13:00</span><span>14:00</span><span>15:00</span>
-                <span>16:00</span><span>17:00</span><span>18:00</span><span>19:00</span>
-                <span>20:00</span><span>21:00</span><span>22:00</span><span>23:00</span>
-              </div>
-            </div>
-            
-            <!-- Hàng của Phòng chiếu số 1 -->
-            <div class="mp-matrix-row">
-              <div class="mp-matrix-room-col">
-                <span class="mp-matrix-room-name">Screen 1</span>
-                <span style="font-size:10px;color:var(--muted, #9a9aa3);display:block;">Standard</span>
-              </div>
-              <div class="mp-matrix-tracks" id="matrix-track-room-1">
-                <!-- Suất chiếu động của phòng 1 tự đổ vào đây -->
-              </div>
-            </div>
-            
-            <!-- Hàng của Phòng chiếu số 2 -->
-            <div class="mp-matrix-row">
-              <div class="mp-matrix-room-col">
-                <span class="mp-matrix-room-name">Screen 2</span>
-                <span style="font-size:10px;color:var(--cgv-red, #ff6b35);display:block;">IMAX</span>
-              </div>
-              <div class="mp-matrix-tracks" id="matrix-track-room-2">
-                <!-- Suất chiếu động của phòng 2 tự đổ vào đây -->
-              </div>
+          <!-- 📅 LỊCH CHIẾU KIỂU GOOGLE CALENDAR -->
+          <div class="mpcal-toolbar">
+            <button class="mpcal-nav-btn" onclick="mpCalToday()">Hôm nay</button>
+            <button class="mpcal-nav-btn" onclick="mpCalNav(-1)">‹</button>
+            <button class="mpcal-nav-btn" onclick="mpCalNav(1)">›</button>
+            <div class="mpcal-title" id="mpcal-title"></div>
+            <div style="flex:1"></div>
+            <div class="mpcal-views" id="mpcal-views">
+              <button data-v="day" onclick="mpCalSetView('day')">Ngày</button>
+              <button data-v="week" class="active" onclick="mpCalSetView('week')">Tuần</button>
+              <button data-v="month" onclick="mpCalSetView('month')">Tháng</button>
             </div>
           </div>
+          <div id="mp-cal-area"></div>
 
           <!-- ========================================== -->
           <!-- 🎬 BẢNG DANH SÁCH PHIM (THAM KHẢO) BÊN DƯỚI MA TRẬN -->
@@ -1378,7 +1359,7 @@
 
     <script src="js/state.js?v=19"></script>
     <script src="js/api.js?v=19"></script>
-    <script src="js/manager.js?v=20"></script>
+    <script src="js/manager.js?v=22"></script>
     <script src="js/manager-dashboard.js?v=20"></script>
     <script src="js/manager-audit.js?v=1"></script>
     <script src="js/manager-events.js?v=2"></script>

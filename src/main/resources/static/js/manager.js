@@ -1220,157 +1220,174 @@ function renderMatrixMovieList(movies) {
 }
 window.renderMatrixMovieList = renderMatrixMovieList;
 
-window.loadManagerMatrix = function() {
-  const dateInput = document.getElementById("mp-matrix-date-input");
-  const trackRoom1 = document.getElementById("matrix-track-room-1");
-  const trackRoom2 = document.getElementById("matrix-track-room-2");
+// ==========================================================================
+// 📅 LỊCH CHIẾU KIỂU GOOGLE CALENDAR (Ngày / Tuần / Tháng) — màu theo phim
+//    Giữ conflict detector (cùng phòng + trùng giờ) và bảng phim tham khảo.
+// ==========================================================================
+window.mpCalView = window.mpCalView || "week";
+window.mpCalCursor = window.mpCalCursor || new Date();
+const MPCAL_HOUR_H = 48;
+const MPCAL_PALETTE = ["#4f7cff","#e0457b","#8b5cf6","#ef8a3c","#22b8a6","#eab308","#f43f5e","#38bdf8","#a855f7","#10b981","#f59e0b","#ec4899"];
+function mpCalColor(t){ t=t||""; let h=0; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))>>>0; return MPCAL_PALETTE[h % MPCAL_PALETTE.length]; }
+function mpCalYMD(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0"); return `${y}-${m}-${dd}`; }
+function mpCalToMin(t){ const[a,b]=(t||"0:0").split(":").map(Number); return a*60+(b||0); }
+function mpCalFmtH(t){ let[h,m]=(t||"0:0").split(":").map(Number); const ap=h<12?"am":"pm"; let hh=h%12; if(hh===0)hh=12; return `${hh}:${String(m||0).padStart(2,"0")}${ap}`; }
+function mpCalSameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+function mpCalStartOfWeek(d){ const x=new Date(d); x.setDate(x.getDate()-x.getDay()); x.setHours(0,0,0,0); return x; }
+function mpCalRoomLabel(r){ return r===2 ? "Screen 2 · IMAX" : "Screen 1 · Standard"; }
+function mpCalRoomShort(r){ return `P${r}`; }
+const MPCAL_DOW = ["CN","T2","T3","T4","T5","T6","T7"];
 
-  if (!trackRoom1 || !trackRoom2) return;
-
-  // 1. Tự động mồi ngày hôm nay nếu Manager chưa chọn ngày cụ thể
-  if (dateInput && !dateInput.value) {
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, "0");
-    const d = String(today.getDate()).padStart(2, "0");
-    dateInput.value = `${y}-${m}-${d}`;
-  }
-
-  const selectedDate = dateInput.value;
-  window.matrixSelectedDate = selectedDate;
-  trackRoom1.innerHTML = '<p style="color:#777;font-size:12px;padding:15px;">Đang quét phòng 1...</p>';
-  trackRoom2.innerHTML = '<p style="color:#777;font-size:12px;padding:15px;">Đang quét phòng 2...</p>';
-
-  // 2. Chặn lỗi: Nếu danh sách phim trống, gọi nạp phim trước rồi chạy lại
-  if (!window.moviesList || window.moviesList.length === 0) {
-    API.getMovies()
-      .then((movies) => {
-        window.moviesList = movies;
-        window.loadManagerMatrix();
-      })
-      .catch((err) => {
-        trackRoom1.innerHTML = trackRoom2.innerHTML = `<span style="color:red;">Lỗi tải phim: ${err.message}</span>`;
+// Tải suất chiếu của 1 ngày (mọi phim) + gắn tên phim + phát hiện xung đột
+function mpCalFetchDate(dateStr){
+  return Promise.all((window.moviesList||[]).map(movie =>
+    API.getShowtimes(movie.movieId, dateStr)
+      .then(res => (res.showtimes||[]).map(st => ({ ...st, movieTitle: movie.title })))
+      .catch(()=>[])
+  )).then(arr => {
+    const list = arr.flat();
+    list.forEach(cur => {
+      cur.isConflict = false;
+      const cs=mpCalToMin(cur.startTime), ce=mpCalToMin(cur.endTime);
+      list.forEach(o => {
+        if (cur.showtimeId !== o.showtimeId && cur.roomId === o.roomId) {
+          const os=mpCalToMin(o.startTime), oe=mpCalToMin(o.endTime);
+          if (cs < oe && ce > os) cur.isConflict = true;
+        }
       });
+    });
+    return list;
+  });
+}
+
+function mpCalEventHTML(st, col, cols){
+  const c = mpCalColor(st.movieTitle);
+  const top = mpCalToMin(st.startTime)/60*MPCAL_HOUR_H;
+  const h = Math.max(20, (mpCalToMin(st.endTime)-mpCalToMin(st.startTime))/60*MPCAL_HOUR_H - 3);
+  const cf = st.isConflict ? " mpcal-evt-conflict" : "";
+  const badge = st.isConflict ? '<span class="mpcal-evt-warn" title="Xung đột lịch chiếu!">!</span>' : '';
+  const n = cols || 1;
+  const w = 100 / n;
+  const left = (col || 0) * w;
+  const compact = n > 1 ? " mpcal-evt-compact" : "";
+  return `<div class="mpcal-evt${cf}${compact}" style="top:${top}px;height:${h}px;left:calc(${left}% + 2px);width:calc(${w}% - 4px);background:${c}22;border-left-color:${c};"
+      title="${st.movieTitle} (${st.startTime} - ${st.endTime}) · ${mpCalRoomLabel(st.roomId)}">
+      ${badge}
+      <div class="mpcal-evt-t">${st.movieTitle}</div>
+      <div class="mpcal-evt-h">${mpCalFmtH(st.startTime)} – ${mpCalFmtH(st.endTime)} · <b class="mpcal-evt-room-tag">${mpCalRoomShort(st.roomId)}</b></div>
+      <div class="mpcal-evt-r">${mpCalRoomLabel(st.roomId)}</div>
+    </div>`;
+}
+
+// Xếp các suất CHỒNG GIỜ nằm cạnh nhau (chia cột con như Google Calendar)
+function mpCalLayout(list){
+  const evs = (list||[]).map(st => ({ st, s:mpCalToMin(st.startTime), e:mpCalToMin(st.endTime), col:0, cols:1 }));
+  evs.sort((a,b)=> a.s-b.s || a.e-b.e);
+  let cluster=[], clusterEnd=-1;
+  const flush=()=>{
+    if(!cluster.length) return;
+    const colsArr=[];
+    cluster.forEach(ev=>{
+      let placed=false;
+      for(let i=0;i<colsArr.length;i++){
+        if(colsArr[i][colsArr[i].length-1].e <= ev.s){ colsArr[i].push(ev); ev.col=i; placed=true; break; }
+      }
+      if(!placed){ ev.col=colsArr.length; colsArr.push([ev]); }
+    });
+    cluster.forEach(ev=> ev.cols=colsArr.length);
+    cluster=[]; clusterEnd=-1;
+  };
+  evs.forEach(ev=>{
+    if(cluster.length && ev.s>=clusterEnd) flush();
+    cluster.push(ev); clusterEnd=Math.max(clusterEnd, ev.e);
+  });
+  flush();
+  return evs;
+}
+
+function mpCalRenderTimeGrid(days, byDate){
+  const today=new Date();
+  const gc=`56px repeat(${days.length},1fr)`;
+  let head=`<div class="mpcal-head" style="grid-template-columns:${gc}"><div></div>`;
+  days.forEach(d=>{ const t=mpCalSameDay(d,today)?"today":""; head+=`<div class="mpcal-dayhead ${t}"><div class="dow">${MPCAL_DOW[d.getDay()]}</div><div class="dnum">${d.getDate()}</div></div>`; });
+  head+=`</div>`;
+  let cols=`<div class="mpcal-cols" style="grid-template-columns:${gc}"><div class="mpcal-timecol">`;
+  for(let h=0;h<24;h++){ const lbl=h===0?"":(h<12?`${h} AM`:(h===12?"12 PM":`${h-12} PM`)); cols+=`<div class="mpcal-hour"><span class="mpcal-tlabel">${lbl}</span></div>`; }
+  cols+=`</div>`;
+  days.forEach(d=>{ cols+=`<div class="mpcal-daycol">`; for(let h=0;h<24;h++) cols+=`<div class="mpcal-hour"></div>`; mpCalLayout(byDate[mpCalYMD(d)]||[]).forEach(o=> cols+=mpCalEventHTML(o.st, o.col, o.cols)); cols+=`</div>`; });
+  cols+=`</div>`;
+  return `<div class="mpcal-grid">${head}<div class="mpcal-body">${cols}</div></div>`;
+}
+
+function mpCalRenderMonth(byDate){
+  const today=new Date();
+  const first=new Date(window.mpCalCursor.getFullYear(), window.mpCalCursor.getMonth(), 1);
+  const start=mpCalStartOfWeek(first);
+  let html=`<div class="mpcal-month"><div class="mpcal-mdow">`+MPCAL_DOW.map(x=>`<span>${x}</span>`).join("")+`</div><div class="mpcal-mgrid">`;
+  for(let i=0;i<42;i++){
+    const d=new Date(start); d.setDate(start.getDate()+i);
+    const other=d.getMonth()!==window.mpCalCursor.getMonth()?"other":"";
+    const t=mpCalSameDay(d,today)?"today":"";
+    const evs=(byDate[mpCalYMD(d)]||[]).slice().sort((a,b)=>mpCalToMin(a.startTime)-mpCalToMin(b.startTime));
+    let chips=evs.slice(0,3).map(st=>{ const c=mpCalColor(st.movieTitle); const cf=st.isConflict?" mpcal-chip-conflict":""; return `<div class="mpcal-chip${cf}" style="background:${c}22;border-left-color:${c};" title="${st.movieTitle} ${st.startTime} · ${mpCalRoomLabel(st.roomId)}">${st.startTime} ${st.movieTitle} · ${mpCalRoomShort(st.roomId)}</div>`; }).join("");
+    if(evs.length>3) chips+=`<div class="mpcal-more">+${evs.length-3} suất nữa</div>`;
+    html+=`<div class="mpcal-cell ${other} ${t}"><div class="dn">${d.getDate()}</div>${chips}</div>`;
+  }
+  html+=`</div></div>`;
+  return html;
+}
+
+function mpCalFmtTitle(){
+  const c=window.mpCalCursor, mm=c.getMonth()+1, yy=c.getFullYear();
+  if(window.mpCalView==="day") return `Ngày ${c.getDate()}/${mm}/${yy}`;
+  if(window.mpCalView==="week"){ const s=mpCalStartOfWeek(c); const e=new Date(s); e.setDate(s.getDate()+6); return `${s.getDate()}/${s.getMonth()+1} – ${e.getDate()}/${e.getMonth()+1}, ${yy}`; }
+  return `Tháng ${mm}, ${yy}`;
+}
+
+window.loadManagerMatrix = function(){
+  const area=document.getElementById("mp-cal-area");
+  if(!area) return;
+  const dateInput=document.getElementById("mp-matrix-date-input");
+  if(dateInput){
+    if(!dateInput.value){ dateInput.value=mpCalYMD(window.mpCalCursor); }
+    else { const p=dateInput.value.split("-").map(Number); window.mpCalCursor=new Date(p[0],p[1]-1,p[2]); }
+  }
+  const titleEl=document.getElementById("mpcal-title"); if(titleEl) titleEl.innerText=mpCalFmtTitle();
+  document.querySelectorAll("#mpcal-views button").forEach(b=> b.classList.toggle("active", b.dataset.v===window.mpCalView));
+
+  if(!window.moviesList || window.moviesList.length===0){
+    area.innerHTML='<p style="color:#777;padding:15px;">Đang tải phim...</p>';
+    API.getMovies().then(m=>{ window.moviesList=m; window.loadManagerMatrix(); }).catch(e=>{ area.innerHTML=`<span style="color:red;padding:10px;">Lỗi tải phim: ${e.message}</span>`; });
     return;
   }
 
-  // 3. THUẬT TOÁN QUÉT ĐA LUỒNG PROMISE: Gom suất chiếu của TẤT CẢ các phim trong ngày
-  const fetchPromises = window.moviesList.map((movie) => {
-    return API.getShowtimes(movie.movieId, selectedDate)
-      .then((resData) => {
-        const rawShowtimes = resData.showtimes || [];
-        // Đính kèm tên phim vào từng suất chiếu để UI hiển thị được tiêu đề
-        return rawShowtimes.map(st => ({
-          ...st,
-          movieTitle: movie.title
-        }));
-      })
-      .catch(() => []); // Bọc lỗi phòng trường hợp có phim chưa được xếp lịch
-  });
+  let days=[];
+  if(window.mpCalView==="day") days=[new Date(window.mpCalCursor)];
+  else if(window.mpCalView==="week"){ const s=mpCalStartOfWeek(window.mpCalCursor); for(let i=0;i<7;i++){ const d=new Date(s); d.setDate(s.getDate()+i); days.push(d);} }
+  else { const first=new Date(window.mpCalCursor.getFullYear(),window.mpCalCursor.getMonth(),1); const s=mpCalStartOfWeek(first); for(let i=0;i<42;i++){ const d=new Date(s); d.setDate(s.getDate()+i); days.push(d);} }
 
-  Promise.all(fetchPromises)
-    .then((allResults) => {
-      // Gộp tất cả các mảng suất chiếu riêng lẻ thành 1 mảng tổng duy nhất
-      let globalShowtimes = allResults.flat();
-
-      // 4. THUẬT TOÁN TỰ ĐỘNG KIỂM TRA XUNG ĐỘT (CONFLICT DETECTOR)
-      // Hàm chuyển đổi chuỗi "HH:mm" ra số phút tuyệt đối trong ngày để so sánh toán học
-      const timeToMinutes = (timeStr) => {
-        const [h, m] = timeStr.split(":").map(Number);
-        return h * 60 + m;
-      };
-
-      globalShowtimes.forEach((currentSt) => {
-        currentSt.isConflict = false; // Mặc định ban đầu là không trùng
-        
-        const currentStart = timeToMinutes(currentSt.startTime);
-        const currentEnd = timeToMinutes(currentSt.endTime);
-
-        globalShowtimes.forEach((otherSt) => {
-          // Chỉ check nếu trùng phòng chiếu công vật lý và không phải là chính nó
-          if (currentSt.showtimeId !== otherSt.showtimeId && currentSt.roomId === otherSt.roomId) {
-            const otherStart = timeToMinutes(otherSt.startTime);
-            const otherEnd = timeToMinutes(otherSt.endTime);
-
-            // Công thức kiểm tra khoảng thời gian giao nhau đè lên nhau
-            if (currentStart < otherEnd && currentEnd > otherStart) {
-              currentSt.isConflict = true;
-            }
-          }
-        });
-      });
-
-      // 5. TIẾN HÀNH VẼ GIAO DIỆN (RENDER TRACK BLOCKS)
-      trackRoom1.innerHTML = "";
-      trackRoom2.innerHTML = "";
-
-      // 5b. Vẽ luôn bảng "Danh Sách Phim" tham khảo bên dưới ma trận
-      renderMatrixMovieList(window.moviesList);
-
-      if (globalShowtimes.length === 0) {
-        trackRoom1.innerHTML = trackRoom2.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#999;font-size:12px;text-align:center;">Trống lịch. Chưa xếp suất chiếu nào trong ngày này!</div>';
-        return;
-      }
-
-      // Tổng số phút từ 08:00 đến 23:00 là 15 tiếng = 900 phút (Mốc 100% chiều rộng)
-      const TIMELINE_START_MINUTES = 8 * 60; // 480 phút
-      const TIMELINE_TOTAL_MINUTES = 15 * 60; // 900 phút
-
-      globalShowtimes.forEach((st) => {
-        const startMin = timeToMinutes(st.startTime);
-        const endMin = timeToMinutes(st.endTime);
-        const durationMin = endMin - startMin;
-
-        // Tính tọa độ vị trí bắt đầu (Left) và độ dài khối phim (Width) theo tỉ lệ %
-        let leftPercent = ((startMin - TIMELINE_START_MINUTES) / TIMELINE_TOTAL_MINUTES) * 100;
-        let widthPercent = (durationMin / TIMELINE_TOTAL_MINUTES) * 100;
-
-        // Bọc lót an toàn nếu suất chiếu nằm ngoài khung 08:00 - 23:00
-        if (leftPercent < 0) leftPercent = 0;
-        if (leftPercent + widthPercent > 100) widthPercent = 100 - leftPercent;
-
-        // Xác định màu sắc: Nếu conflict -> đỏ lòm, phòng 2 IMAX -> vàng, phòng 1 Standard -> xanh dương
-        let blockClass = st.roomId === 2 ? "mp-bg-yellow" : "mp-bg-blue";
-        let conflictHTML = "";
-
-        if (st.isConflict) {
-          blockClass = "mp-bg-red mp-conflict-box";
-          conflictHTML = `
-            <div class="mp-conflict-tooltip">
-                <div class="mp-icon-error">!</div>
-                <div>
-                  <strong>Xung đột lịch chiếu!</strong><br />
-                  <span style="font-weight: normal; color: #ffcdd2">Trùng giờ với suất khác trong phòng!</span>
-                </div>
-            </div>
-          `;
-        }
-
-        const blockHTML = `
-          <div class="mp-track-block ${blockClass}" style="left: ${leftPercent}%; width: ${widthPercent}%; min-width: 50px;" title="${st.movieTitle} (${st.startTime} - ${st.endTime})">
-              ${conflictHTML}
-              <strong>${st.movieTitle}</strong><br />
-              <span style="font-size:11px; opacity:0.92;">${st.startTime} - ${st.endTime}</span>
-          </div>
-        `;
-
-        // Phân phối khối HTML về đúng hàng phòng chiếu
-        if (st.roomId === 2) {
-          trackRoom2.innerHTML += blockHTML;
-        } else {
-          trackRoom1.innerHTML += blockHTML;
-        }
-      });
-
-      // Nếu có hàng nào trống sau khi phân phối thì ghi chữ trống lịch cho đẹp
-      if (trackRoom1.innerHTML === "") trackRoom1.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#bbb;">Trống lịch phòng 1</div>';
-      if (trackRoom2.innerHTML === "") trackRoom2.innerHTML = '<div class="mp-gap-text" style="position:static;padding:15px;color:#bbb;">Trống lịch phòng 2</div>';
+  area.innerHTML='<p style="color:#777;padding:15px;">Đang quét lịch chiếu...</p>';
+  Promise.all(days.map(d=> mpCalFetchDate(mpCalYMD(d)).then(list=>[mpCalYMD(d),list])))
+    .then(pairs=>{
+      const byDate={}; pairs.forEach(([k,v])=> byDate[k]=v);
+      if(window.mpCalView==="month") area.innerHTML=mpCalRenderMonth(byDate);
+      else { area.innerHTML=mpCalRenderTimeGrid(days,byDate); const body=area.querySelector(".mpcal-body"); if(body) body.scrollTop=7*MPCAL_HOUR_H; }
+      if(typeof renderMatrixMovieList==="function") renderMatrixMovieList(window.moviesList);
     })
-    .catch((err) => {
-      console.error("Lỗi vẽ ma trận lịch chiếu:", err);
-      trackRoom1.innerHTML = trackRoom2.innerHTML = `<span style="color:red;padding:10px;display:block;">Lỗi đồng bộ lịch chiếu: ${err.message}</span>`;
-    });
+    .catch(err=>{ area.innerHTML=`<span style="color:red;padding:10px;display:block;">Lỗi đồng bộ lịch: ${err.message}</span>`; });
 };
+
+window.mpCalSetView=function(v){ window.mpCalView=v; window.loadManagerMatrix(); };
+window.mpCalToday=function(){ window.mpCalCursor=new Date(); const di=document.getElementById("mp-matrix-date-input"); if(di) di.value=mpCalYMD(window.mpCalCursor); window.loadManagerMatrix(); };
+window.mpCalNav=function(dir){
+  const c=window.mpCalCursor;
+  if(window.mpCalView==="month") c.setMonth(c.getMonth()+dir);
+  else if(window.mpCalView==="week") c.setDate(c.getDate()+7*dir);
+  else c.setDate(c.getDate()+dir);
+  const di=document.getElementById("mp-matrix-date-input"); if(di) di.value=mpCalYMD(c);
+  window.loadManagerMatrix();
+};
+
 
 // ==========================================================================
 // 🚀 LOGIC ĐIỀU KHIỂN FORM TẠO MỚI SUẤT CHIẾU ĐỘNG
