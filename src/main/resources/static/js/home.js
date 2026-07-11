@@ -1554,6 +1554,9 @@ window.renderCgvInterface = function () {
   }
 };
 
+// Biến toàn cục lưu trữ thông tin voucher tự động đang được áp dụng
+let selectedVoucherCode = "";
+
 window.calculateCgvCart = function () {
   const sumSeatsEl = document.getElementById("sum-seats");
   if (sumSeatsEl)
@@ -1581,7 +1584,10 @@ window.calculateCgvCart = function () {
   if (sumFnbEl) sumFnbEl.innerText = totalFnbItems + " Combo";
 
   currentPriceTotal = total;
-  let finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
+  
+  // Tính toán số tiền thực tế sau khi đã áp dụng giảm giá phần trăm hoặc tiền mặt
+  let finalTotal = currentPriceTotal - appliedVoucherDiscount;
+  if (finalTotal < 0) finalTotal = 0;
 
   const sumTotalEl = document.getElementById("sum-total");
   if (sumTotalEl)
@@ -1620,6 +1626,7 @@ window.goToBookingStep = function (step) {
       backBtn.setAttribute("onclick", "window.goToBookingStep(1)");
     }
   } else if (step === 3) {
+    window.autoTriggerSystemPromotion();
     if (mainBtn) {
       mainBtn.innerText = "Thanh Toán Ngay";
       mainBtn.style.background = "#10B981";
@@ -1760,19 +1767,66 @@ window.selectPaymentGatewayType = function (type, element) {
 };
 
 window.applyVoucher = function () {
-  const code = document
-    .getElementById("voucher-input")
-    .value.trim()
-    .toUpperCase();
-  if (code === "LAS20") {
-    appliedVoucherDiscount = 0.2;
-    alert("Áp dụng thành công Voucher giảm giá 20% tổng hóa đơn vé!");
-  } else {
-    appliedVoucherDiscount = 0;
-    alert("Mã Voucher không chính xác hoặc đã hết thời gian áp dụng!");
+  const code = document.getElementById("voucher-input").value.trim().toUpperCase();
+  
+  if (!code) {
+    alert("Vui lòng điền mã Voucher!");
+    return;
   }
-  window.calculateCgvCart();
-  window.goToBookingStep(3); // Cập nhật hiển thị số tiền mới ngoài hóa đơn
+
+  // Gọi cổng API check mã nhập tay công khai của Customer đã nâng cấp ở Controller[cite: 12]
+  fetch(`http://localhost:8080/api/vouchers/${code}`)
+    .then((res) => {
+      if (!res.ok) return res.text().then(text => { throw new Error(text) });
+      return res.json();
+    })
+    .then((voucher) => {
+      selectedVoucherCode = voucher.voucherCode;
+      
+      // Tính toán giá trị giảm dựa trên loại giảm giá (PERCENT hoặc MONEY)[cite: 4]
+      if (voucher.discountType === "PERCENT") {
+        appliedVoucherDiscount = (currentPriceTotal * voucher.discountValue) / 100;
+      } else {
+        appliedVoucherDiscount = voucher.discountValue;
+      }
+
+      alert(`✅ Áp dụng thành công mã giảm giá ${code}!`);
+      window.calculateCgvCart();
+      window.goToBookingStep(3); // Đẩy qua bước review hóa đơn mới[cite: 13]
+    })
+    .catch((err) => {
+      appliedVoucherDiscount = 0;
+      selectedVoucherCode = "";
+      alert("🚨 " + err.message);
+      window.calculateCgvCart();
+    });
+};
+
+// 🌟 TÍNH NĂNG ĐỘNG LẤY ĐIỂM 10: Tự động kích hoạt ưu đãi ngày đặc biệt (Thứ 4 vui vẻ)
+window.autoTriggerSystemPromotion = function() {
+  // Gọi API quét ngầm voucher tự động dựa trên tổng tiền hóa đơn hiện tại[cite: 10]
+  fetch(`http://localhost:8080/api/vouchers/check-auto?grossAmount=${currentPriceTotal}`)
+    .then(res => res.json())
+    .then(autoVoucher => {
+      if (autoVoucher) {
+        selectedVoucherCode = autoVoucher.voucherCode;
+        if (autoVoucher.discountType === "PERCENT") {
+          appliedVoucherDiscount = (currentPriceTotal * autoVoucher.discountValue) / 100;
+        } else {
+          appliedVoucherDiscount = autoVoucher.discountValue;
+        }
+        console.log(`✨ Hệ thống tự động kích hoạt ưu đãi: ${autoVoucher.voucherCode}`);
+        
+        // Cập nhật thông báo lên giao diện cho khách vui vẻ
+        const voucherInput = document.getElementById("voucher-input");
+        if (voucherInput) {
+          voucherInput.value = autoVoucher.voucherCode;
+          voucherInput.setAttribute("disabled", "true");
+        }
+        window.calculateCgvCart();
+      }
+    })
+    .catch(err => console.error("Lỗi quét voucher tự động: ", err));
 };
 
 // --- 7. TÍCH HỢP CỔNG THANH TOÁN VIETQR VÀ XUẤT VÉ ĐIỆN TỬ ---
@@ -2151,7 +2205,8 @@ window.lasPromoList = [
 // Hàm tự động vẽ danh sách ưu đãi động ra ngoài trang chủ
 window.renderLasPromoGrid = function () {
   const promoNewsContainer = document.getElementById("cgv-event-grid-news");
-  // 🚀 Cào dữ liệu động trực tiếp từ Database SQL Server qua Spring Boot
+  
+  // Cào dữ liệu động qua API công khai public của Customer (Chỉ lấy ACTIVE và còn hạn)[cite: 7, 9]
   fetch("http://localhost:8080/api/promos")
     .then((res) => {
       if (!res.ok) throw new Error("Không thể kết nối API ưu đãi");
@@ -2160,23 +2215,17 @@ window.renderLasPromoGrid = function () {
     .then((promosList) => {
       console.log("🎁 Đã nhận danh sách ưu đãi động từ Database:", promosList);
       window.lasPromoList = promosList;
-      // Xóa rỗng phân vùng chứa của Tab Tin tức trước khi vẽ động
+      
       if (promoNewsContainer) promoNewsContainer.innerHTML = "";
+      
       window.lasPromoList.forEach((item) => {
-        // Quét sạch các trường hợp đặt tên cột từ Spring Boot đẩy lên Frontend
-        let validImg =
-          item.imageUrl || item.image_url || item.image || item.img || "";
-        validImg = validImg.trim();
-        // Định dạng chuỗi hiển thị khoảng thời gian diễn ra sự kiện
-        let dateString = `${item.startDate || item.start_date || "05/06/2026"} - ${item.endDate || item.end_date || "12/06/2026"}`;
-        // 🚀 THẦN CHÚ BẮN THẺ <IMG> TRỰC TIẾP: Triệt tiêu hoàn toàn lỗi sập co rúm khung hình của thẻ div cũ
-        let imgHTML =
-          validImg.startsWith("http") ||
-            validImg.includes("/") ||
-            validImg.includes(".")
+        let validImg = item.imageUrl || item.image_url || "";
+        let dateString = `${new Date(item.startDate).toLocaleDateString("vi-VN")} - ${new Date(item.endDate).toLocaleDateString("vi-VN")}`;
+        
+        let imgHTML = (validImg.startsWith("http") || validImg.includes("/") || validImg.includes("."))
             ? `<img src="${validImg}" class="news-card-img-holder" style="width: 100%; height: 200px; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png';">`
             : `<div class="news-card-img-holder" style="background: #a1dbf1; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0c6291; font-size: 14px; height: 200px; width: 100%; text-align: center; padding: 0 10px; box-sizing: border-box;">${validImg || "LAS CINEMA"}</div>`;
-        // Tạo cấu trúc thẻ card chuẩn chỉ ăn khớp layout hai phân vùng
+            
         let cardHTML = `
           <div class="news-promo-card" onclick="window.viewPromoDetailText('${item.id}')" style="cursor: pointer; background: #17171b; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; overflow: hidden; transition: transform 0.2s; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
               ${imgHTML}
@@ -2191,7 +2240,7 @@ window.renderLasPromoGrid = function () {
       });
     })
     .catch((err) =>
-      console.error("🚨 Lỗi khi kéo dữ liệu ưu đãi từ SQL Server: ", err),
+      console.error("🚨 Lỗi khi kéo dữ liệu ưu đãi từ SQL Server: ", err)
     );
 };
 

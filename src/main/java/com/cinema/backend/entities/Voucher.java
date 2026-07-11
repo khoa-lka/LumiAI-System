@@ -43,6 +43,18 @@ public class Voucher {
     @Column(name = "minimum_order")
     private Integer minimumOrder;
 
+    @Column(name = "status")
+    private String status; // 🌟 Bổ sung để lưu trạng thái ACTIVE / INACTIVE
+
+    @Column(name = "apply_type")
+    private String applyType; // 🌟 Bổ sung: 'MANUAL' hoặc 'AUTO'
+
+    @Column(name = "condition_type")
+    private String conditionType; // 🌟 Bổ sung: 'DAY_OF_WEEK' hoặc 'LAST_DAY_OF_MONTH'
+
+    @Column(name = "condition_value")
+    private String conditionValue; // 🌟 Bổ sung: '3' (Thứ 4), 'TRUE'
+
     @Column(name = "created_by")
     private Integer createdBy;
 
@@ -52,12 +64,43 @@ public class Voucher {
     @JsonIgnore
     @OneToMany(mappedBy = "voucher")
     private List<Order1> orders;
-
-
     
     public Voucher() {
     }
 
+    // --- GETTERS VÀ SETTERS MỚI THÊM ---
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getApplyType() {
+        return applyType;
+    }
+
+    public void setApplyType(String applyType) {
+        this.applyType = applyType;
+    }
+
+    public String getConditionType() {
+        return conditionType;
+    }
+
+    public void setConditionType(String conditionType) {
+        this.conditionType = conditionType;
+    }
+
+    public String getConditionValue() {
+        return conditionValue;
+    }
+
+    public void setConditionValue(String conditionValue) {
+        this.conditionValue = conditionValue;
+    }
+    
     public Integer getVoucherId() {
         return voucherId;
     }

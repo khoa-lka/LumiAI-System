@@ -1442,53 +1442,82 @@ window.submitAddShowtimeForm = function() {
 };
 
 // ==========================================================================
-// 🚀 BỘ CHỨC NĂNG QUẢN LÝ CHIẾN DỊCH VOUCHER / KHUYẾN MÃI (BẢO ĐẢM THÔNG NÚT 100%)
+// 🚀 BỘ CHỨC NĂNG QUẢN LÝ CHIẾN DỊCH VOUCHER & SỰ KIỆN TÍCH HỢP (HỢP NHẤT)
 // ==========================================================================
 
-// Hàm ẩn/hiện Modal gốc (🎯 ĐÃ SỬA: Khớp chuẩn đét ID mp-create-promo-modal bên HTML)
+// Hàm ẩn/hiện Modal tích hợp mới (Đã đổi ID khớp chuẩn đét với HTML mới)
 window.openCreatePromoModal = function() {
-  const modal = document.getElementById("mp-create-promo-modal");
+  const modal = document.getElementById("mp-integrated-promo-modal");
   if (modal) modal.style.display = "flex";
 };
 
 window.closeCreatePromoModal = function() {
-  const modal = document.getElementById("mp-create-promo-modal");
+  const modal = document.getElementById("mp-integrated-promo-modal");
   if (modal) modal.style.display = "none";
 };
 
-// 1. Tải danh sách Voucher từ database lên bảng Admin thông qua API tổng
+// 🌟 BỔ SUNG 1: Hàm điều khiển ẩn/hiện khối cấu hình Voucher ngầm theo Checkbox
+window.toggleVoucherConfigBlock = function() {
+  const hasVoucher = document.getElementById("v-has-voucher").checked;
+  const configBlock = document.getElementById("v-config-block");
+  if (configBlock) {
+    configBlock.style.display = hasVoucher ? "block" : "none";
+  }
+};
+
+// 🌟 BỔ SUNG 2: Hàm điều khiển ẩn/hiện ô nhập giá trị Thứ trong tuần
+window.toggleConditionValueInput = function() {
+  const condType = document.getElementById("v-condition-type").value;
+  const valueGroup = document.getElementById("v-condition-value-group");
+  if (valueGroup) {
+    valueGroup.style.display = (condType === "DAY_OF_WEEK") ? "block" : "none";
+  }
+};
+
+// 1. Tải danh sách Sự kiện tích hợp từ database hiển thị lên bảng quản trị của Manager
 window.loadManagerVouchers = function() {
   const tbody = document.getElementById("mp-promo-tbody");
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Đang quét danh sách chiến dịch khuyến mãi...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:15px;">Đang quét danh sách sự kiện và chiến dịch khuyến mãi...</td></tr>';
 
-  API.getManagerVouchers()
-    .then((vouchers) => {
+  // Gọi API lấy toàn bộ danh sách ưu đãi của Manager (đã cập nhật ở Controller Backend)
+  API.get("/api/promos/manager/all") 
+    .then((promotions) => {
       tbody.innerHTML = "";
-      window.vouchersList = vouchers;
+      window.promotionsList = promotions; // Lưu cache danh sách sự kiện toàn cục
 
-      if (!vouchers || vouchers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Chưa có chiến dịch khuyến mãi nào được tạo!</td></tr>';
+      if (!promotions || promotions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#888; padding:15px;">Chưa có sự kiện khuyến mãi nào được tạo!</td></tr>';
         return;
       }
 
-      vouchers.forEach((v, index) => {
-        let expiryDate = v.expiredDate ? new Date(v.expiredDate).toLocaleDateString("vi-VN") : "Vô thời hạn";
-        let discountText = v.discountType === "PERCENT" ? `${v.discountValue}%` : `${v.discountValue.toLocaleString("vi-VN")} đ`;
+      promotions.forEach((p, index) => {
+        let bannerImg = p.imageUrl ? `<img src="${p.imageUrl}" style="width:60px; height:40px; object-fit:cover; border-radius:4px;" />` : "🎟️";
+        let promoCodeText = p.promoCode ? `<span class="mp-badge-code" style="background:#e8f5e9; color:#2e7d32; font-weight:bold; padding:4px 8px; border-radius:4px;">${p.promoCode}</span>` : `<span style="color:#888; font-size:12px;">Không kèm mã</span>`;
+        let durationText = `${new Date(p.startDate).toLocaleDateString("vi-VN")} - ${new Date(p.endDate).toLocaleDateString("vi-VN")}`;
         
+        // Cấu hình nhãn trạng thái Đang - Ngừng (ACTIVE / INACTIVE) theo yêu cầu của Khoa
+        let statusClass = p.status === "ACTIVE" ? "active" : "inactive";
+        let statusText = p.status === "ACTIVE" ? "Đang chạy" : "Tạm ngừng";
+
         tbody.innerHTML += `
           <tr>
               <td style="text-align: center; font-weight: bold;">${index + 1}</td>
-              <td><span class="mp-badge-code" style="background:#e8f5e9; color:#2e7d32; font-weight:bold; padding:4px 8px; border-radius:4px;">${v.voucherCode}</span></td>
-              <td>${v.discountType === "PERCENT" ? "Giảm theo phần禅 (%)" : "Giảm tiền mặt trực tiếp"}</td>
-              <td style="text-align: right; font-weight: bold; color: #b71c1c;">${discountText}</td>
-              <td style="text-align: center;">${v.usageLimit} lượt</td>
-              <td style="text-align: center;">${expiryDate}</td>
+              <td style="text-align: center;">${bannerImg}</td>
+              <td>
+                <div style="font-weight:bold; color:var(--text-light);">${p.title}</div>
+                <div style="margin-top:4px;">${promoCodeText}</div>
+              </td>
+              <td><span style="font-size:12px; color:#a8a8b3;">Tự động qua cấu hình hệ thống</span></td>
+              <td style="text-align: right; font-weight: bold; color: #b71c1c;">Xem khi thanh toán</td>
+              <td style="text-align: center; font-size:12px;">${durationText}</td>
+              <td><div style="max-width:180px; font-size:11px; color:#a8a8b3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.content}</div></td>
+              <td style="text-align: center;"><span class="mp-status ${statusClass}">${statusText}</span></td>
               <td style="text-align: center;">
                   <div class="mp-table-actions" style="display:flex; gap:5px; justify-content:center;">
-                      <button class="mp-action-btn" onclick="openEditVoucherModal(${v.voucherId})" style="cursor:pointer;">✏️ Sửa</button>
-                      <button class="mp-action-btn" onclick="submitDeleteVoucher(${v.voucherId})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;">🗑️ Xóa</button>
+                      <button class="mp-action-btn" onclick="openEditIntegratedPromoModal(${p.id})" style="cursor:pointer;">✏️ Sửa</button>
+                      <button class="mp-action-btn" onclick="submitDeletePromotion(${p.id})" style="cursor:pointer; background:#fff0f0; color:#d32f2f;">🗑️ Xóa</button>
                   </div>
               </td>
           </tr>
@@ -1497,91 +1526,172 @@ window.loadManagerVouchers = function() {
     })
     .catch((err) => {
       console.error(err);
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Lỗi kết nối danh mục Voucher: ${err.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Lỗi kết nối danh mục Khuyến mãi: ${err.message}</td></tr>`;
     });
 };
 
-// 2. Mở modal để THÊM MỚI Voucher (Xóa sạch dữ liệu cũ trong form)
+// 2. Mở modal để THÊM MỚI Sự kiện & Voucher (Xóa sạch dữ liệu form)[cite: 12]
 window.openAddVoucherModal = function() {
   document.getElementById("v-id").value = "";
+  document.getElementById("p-title").value = "";
+  document.getElementById("p-image-url").value = "";
+  document.getElementById("p-content").value = "";
+  document.getElementById("p-date-start").value = "";
+  document.getElementById("p-date-end").value = "";
+  document.getElementById("p-status").value = "ACTIVE";
+  
+  document.getElementById("v-has-voucher").checked = false;
   document.getElementById("v-code").value = "";
-  document.getElementById("v-type").value = "PERCENT";
+  document.getElementById("v-condition-type").value = "DAY_OF_WEEK";
+  document.getElementById("v-condition-value").value = "";
+  document.getElementById("v-type").value = "MONEY";
   document.getElementById("v-value").value = "";
-  document.getElementById("v-max").value = "0";
   document.getElementById("v-min").value = "0";
-  document.getElementById("v-limit").value = "100";
-  document.getElementById("v-expired").value = "";
+  document.getElementById("v-limit").value = "9999";
 
-  document.getElementById("mp-promo-modal-title").innerText = "Thêm Mới Chiến Dịch Khuyến Mãi";
+  window.toggleVoucherConfigBlock();
+  window.toggleConditionValueInput();
+  document.getElementById("mp-promo-modal-title").innerText = "Tạo Chiến Dịch & Sự Kiện Ưu Đãi Mới";
   window.openCreatePromoModal();
 };
 
-// 3. Mở modal để CHỈNH SỬA Voucher đã có
-window.openEditVoucherModal = function(id) {
-  const v = window.vouchersList.find(x => x.voucherId === id);
-  if (!v) return;
+// 3. Mở modal để CHỈNH SỬA Sự kiện tích hợp đã có[cite: 12]
+window.openEditIntegratedPromoModal = function(id) {
+  const p = window.promotionsList.find(x => x.id === id);
+  if (!p) return;
 
-  document.getElementById("v-id").value = v.voucherId;
-  document.getElementById("v-code").value = v.voucherCode;
-  document.getElementById("v-type").value = v.discountType;
-  document.getElementById("v-value").value = v.discountValue;
-  document.getElementById("v-max").value = v.maxDiscount || 0;
-  document.getElementById("v-min").value = v.minimumOrder || 0;
-  document.getElementById("v-limit").value = v.usageLimit;
-  
-  if (v.expiredDate) {
-    document.getElementById("v-expired").value = v.expiredDate.substring(0, 16);
+  document.getElementById("v-id").value = p.id;
+  document.getElementById("p-title").value = p.title || "";
+  document.getElementById("p-image-url").value = p.imageUrl || "";
+  document.getElementById("p-content").value = p.content || "";
+  document.getElementById("p-date-start").value = p.startDate || "";
+  document.getElementById("p-date-end").value = p.endDate || "";
+  document.getElementById("p-status").value = p.status || "ACTIVE";
+
+  // Nếu sự kiện có kèm mã giảm giá chạy ngầm
+  if (p.promoCode) {
+    document.getElementById("v-has-voucher").checked = true;
+    document.getElementById("v-code").value = p.promoCode;
+    
+    // Gọi API quét ngược từ database lấy cấu hình thuật toán của chiếc Voucher đó lên Form
+    API.get(`/api/vouchers/${p.promoCode}`)
+      .then(v => {
+        document.getElementById("v-condition-type").value = v.conditionType || "DAY_OF_WEEK";
+        document.getElementById("v-condition-value").value = v.conditionValue || "";
+        document.getElementById("v-type").value = v.discountType || "MONEY";
+        document.getElementById("v-value").value = v.discountValue || "";
+        document.getElementById("v-min").value = v.minimumOrder || 0;
+        document.getElementById("v-limit").value = v.usageLimit || 9999;
+        
+        window.toggleVoucherConfigBlock();
+        window.toggleConditionValueInput();
+      })
+      .catch(() => {
+        // Dự phòng nếu voucher bị xóa trước đó
+        document.getElementById("v-has-voucher").checked = false;
+        window.toggleVoucherConfigBlock();
+      });
+  } else {
+    document.getElementById("v-has-voucher").checked = false;
+    window.toggleVoucherConfigBlock();
   }
 
-  document.getElementById("mp-promo-modal-title").innerText = "Cập Nhật Chiến Dịch Khuyến Mãi";
+  document.getElementById("mp-promo-modal-title").innerText = "Cập Nhật Chiến Dịch & Sự Kiện Khuyến Mãi";
   window.openCreatePromoModal();
 };
 
-// 4. Xử lý bấm nút "Lưu chiến dịch" (Form Submit)
-window.submitVoucherForm = function() {
-  const id = document.getElementById("v-id").value;
-  const code = document.getElementById("v-code").value.trim().toUpperCase();
-  const type = document.getElementById("v-type").value;
-  const value = parseFloat(document.getElementById("v-value").value) || 0;
-  const max = parseFloat(document.getElementById("v-max").value) || 0;
-  const min = parseFloat(document.getElementById("v-min").value) || 0;
-  const limit = parseInt(document.getElementById("v-limit").value) || 0;
-  const expired = document.getElementById("v-expired").value;
+// 4. 🌟 HÀM MỚI XỬ LÝ SUBMIT TÍCH HỢP 2 TRONG 1: LƯU ĐỒNG THỜI PROMOTION VÀ VOUCHER
+window.submitIntegratedPromoForm = function() {
+  const id = document.getElementById("v-id").value; // ID của Promotion nếu là cập nhật
+  const title = document.getElementById("p-title").value.trim();
+  const imageUrl = document.getElementById("p-image-url").value.trim();
+  const content = document.getElementById("p-content").value.trim();
+  const startDate = document.getElementById("p-date-start").value;
+  const endDate = document.getElementById("p-date-end").value;
+  const status = document.getElementById("p-status").value;
 
-  if (!code) { alert("Vui lòng nhập mã Voucher!"); return; }
-  if (value <= 0) { alert("Giá trị giảm phải lớn hơn 0!"); return; }
+  const hasVoucher = document.getElementById("v-has-voucher").checked;
+  const voucherCode = document.getElementById("v-code").value.trim().toUpperCase();
 
-  const voucherData = {
-    voucherCode: code,
-    discountType: type,
-    discountValue: value,
-    maxDiscount: max,
-    minimumOrder: min,
-    usageLimit: limit,
-    expiredDate: expired ? `${expired}:00` : null,
-    createdBy: parseInt(sessionStorage.getItem("roleId")) || 1,
-    updatedBy: parseInt(sessionStorage.getItem("roleId")) || 1
+  if (!title || !startDate || !endDate) {
+    alert("Vui lòng điền đầy đủ Tiêu đề và Thời gian diễn ra sự kiện!");
+    return;
+  }
+
+  // Khai báo Object đóng gói dữ liệu của bảng Promotion
+  const promotionPayload = {
+    title: title,
+    imageUrl: imageUrl,
+    content: content,
+    startDate: startDate,
+    endDate: endDate,
+    status: status,
+    promoCode: hasVoucher ? voucherCode : null
   };
 
-  const apiCall = id ? API.updateVoucher(id, voucherData) : API.addVoucher(voucherData);
+  // Nếu người dùng tích chọn có kèm theo thuật toán giảm giá chạy ngầm
+  if (hasVoucher) {
+    if (!voucherCode) { alert("Vui lòng nhập Mã định danh ưu đãi!"); return; }
+    
+    const condType = document.getElementById("v-condition-type").value;
+    const condValue = document.getElementById("v-condition-value").value.trim();
+    const discType = document.getElementById("v-type").value;
+    const discValue = parseFloat(document.getElementById("v-value").value) || 0;
+    const minOrder = parseInt(document.getElementById("v-min").value) || 0;
+    const usageLimit = parseInt(document.getElementById("v-limit").value) || 9999;
 
-  apiCall
-    .then(() => {
-      alert(id ? "✅ Cập nhật chiến dịch thành công!" : "✅ Tạo mã Voucher khuyến mãi mới thành công!");
-      window.closeCreatePromoModal();
-      loadManagerVouchers();
-    })
-    .catch(err => alert("Lỗi xử lý Voucher: " + err.message));
-};
+    if (discValue <= 0) { alert("Giá trị giảm giá của thuật toán phải lớn hơn 0!"); return; }
 
-// 5. Xử lý Xóa Voucher qua API tổng
-window.submitDeleteVoucher = function(id) {
-  if (confirm("⚠️ Bạn có chắc chắn muốn gỡ bỏ hoàn toàn mã Voucher này khỏi hệ thống không?")) {
-    API.deleteVoucher(id)
+    // Khai báo Object đóng gói dữ liệu của bảng Voucher
+    const voucherPayload = {
+      voucherCode: voucherCode,
+      discountType: discType,
+      discountValue: discValue,
+      minimumOrder: minOrder,
+      usageLimit: usageLimit,
+      applyType: "AUTO", // Khóa chết kiểu AUTO để hệ thống tự quét ngầm khi tính tiền
+      conditionType: condType,
+      conditionValue: condType === "LAST_DAY_OF_MONTH" ? "TRUE" : condValue,
+      status: status, // Đồng bộ trạng thái ACTIVE/INACTIVE từ sự kiện xuống mã luôn
+      expiredDate: `${endDate}T23:59:59` // Đồng bộ ngày hết hạn của voucher khớp với ngày kết thúc sự kiện
+    };
+
+    // 🚀 THUẬT TOÁN KÉP: Gọi API lưu Voucher trước, thành công mới lưu tiếp Promotion
+    API.post("/api/vouchers/manager/add", voucherPayload)
       .then(() => {
-        alert("✅ Đã gỡ chiến dịch khuyến mãi thành công!");
+        // Voucher lưu êm đẹp -> Tiến hành lưu tiếp bảng Promotion
+        const promoApiCall = id ? API.put(`/api/promos/manager/update/${id}`, promotionPayload) : API.post("/api/promos/manager/add", promotionPayload);
+        return promoApiCall;
+      })
+      .then(() => {
+        alert("✅ Hệ thống đã thiết lập đồng bộ Sự kiện và Thuật toán Voucher tự động thành công!");
+        window.closeCreatePromoModal();
         loadManagerVouchers();
       })
-      .catch(err => alert("Lỗi khi xóa voucher: " + err.message));
+      .catch(err => alert("🚨 Lỗi lưu chuỗi dữ liệu tích hợp: " + err.message));
+
+  } else {
+    // Nếu sự kiện thuần túy không kèm mã giảm giá -> Chỉ đẩy API lưu bảng Promotion
+    const promoApiCall = id ? API.put(`/api/promos/manager/update/${id}`, promotionPayload) : API.post("/api/promos/manager/add", promotionPayload);
+    
+    promoApiCall
+      .then(() => {
+        alert("✅ Lưu sự kiện ưu đãi thuần túy thành công!");
+        window.closeCreatePromoModal();
+        loadManagerVouchers();
+      })
+      .catch(err => alert("Lỗi lưu sự kiện: " + err.message));
+  }
+};
+
+// 5. Xử lý Xóa Sự kiện thông qua API[cite: 12]
+window.submitDeletePromotion = function(id) {
+  if (confirm("⚠️ Bạn có chắc chắn muốn gỡ bỏ hoàn toàn Sự kiện này khỏi hệ thống không?\nHành động này không xóa mã voucher chạy ngầm để tránh gãy hóa đơn cũ.")) {
+    API.delete(`/api/promos/manager/delete/${id}`)
+      .then(() => {
+        alert("✅ Đã gỡ sự kiện thành công!");
+        loadManagerVouchers();
+      })
+      .catch(err => alert("Lỗi khi xóa sự kiện: " + err.message));
   }
 };

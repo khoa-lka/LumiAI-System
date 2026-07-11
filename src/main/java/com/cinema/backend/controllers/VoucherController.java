@@ -3,7 +3,6 @@ package com.cinema.backend.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import com.cinema.backend.entities.Voucher;
 import com.cinema.backend.service.VoucherService;
 
@@ -15,32 +14,40 @@ public class VoucherController {
     @Autowired
     private VoucherService voucherService;
     
+    // 1. Check Voucher nhập tay (MANUAL)[cite: 12]
     @GetMapping("/{code}")
     public ResponseEntity<?> checkVoucher(@PathVariable String code) {
-
         Voucher voucher = voucherService.checkVoucher(code);
 
         if (voucher == null) {
-            return ResponseEntity.badRequest().body("Voucher không tồn tại");
+            return ResponseEntity.badRequest().body("Voucher không tồn tại hoặc đã bị ngừng kích hoạt");
         }
-
         if (voucher.getUsageLimit() <= 0) {
             return ResponseEntity.badRequest().body("Voucher đã hết lượt sử dụng");
         }
-
-        if (voucher.getExpiredDate().isBefore(java.time.LocalDateTime.now())) {
+        if (voucher.getExpiredDate() != null && voucher.getExpiredDate().isBefore(java.time.LocalDateTime.now())) {
             return ResponseEntity.badRequest().body("Voucher đã hết hạn");
         }
-
         return ResponseEntity.ok(voucher);
     }
-    // 🚀 API 1: Lấy toàn bộ danh sách Voucher cho bảng quản trị của Manager
+
+    // 🌟 API MỚI BỔ SUNG: Kiểm tra xem hôm nay có Voucher tự động (AUTO) nào phù hợp với tổng tiền đơn hàng hay không
+    @GetMapping("/check-auto")
+    public ResponseEntity<?> checkAutoVoucher(@RequestParam Double grossAmount) {
+        Voucher autoVoucher = voucherService.checkAutoVoucher(grossAmount);
+        if (autoVoucher == null) {
+            return ResponseEntity.ok().body(null); // Trả về trống nếu ngày hôm nay không có ưu đãi tự động
+        }
+        return ResponseEntity.ok(autoVoucher);
+    }
+
+    // 🚀 API Lấy toàn bộ danh sách Voucher cho bảng quản trị của Manager[cite: 12]
     @GetMapping("/manager/all")
     public ResponseEntity<?> getAllVouchersForManager() {
         return ResponseEntity.ok(voucherService.getAllVouchers());
     }
 
-    // 🚀 API 2: Thêm mới Voucher chiến dịch
+    // 🚀 API Thêm mới Voucher chiến dịch[cite: 12]
     @PostMapping("/manager/add")
     public ResponseEntity<?> createVoucher(@RequestBody Voucher voucher) {
         try {
@@ -51,8 +58,8 @@ public class VoucherController {
         }
     }
 
-    // 🚀 API 3: Cập nhật thông tin sửa đổi Voucher
-    @PutMapping("/manager/update/{id}") // 🎯 Đã rút gọn sạch đẹp
+    // 🚀 API Cập nhật thông tin sửa đổi Voucher[cite: 12]
+    @PutMapping("/manager/update/{id}") 
     public ResponseEntity<?> updateVoucher(@PathVariable Integer id, @RequestBody Voucher voucherDetails) {
         try {
             Voucher updatedVoucher = voucherService.updateVoucher(id, voucherDetails);
@@ -62,8 +69,8 @@ public class VoucherController {
         }
     }
 
-    // 🚀 API 4: Xóa Voucher vật lý khỏi hệ thống
-    @DeleteMapping("/manager/delete/{id}") // 🎯 Đã rút gọn sạch đẹp
+    // 🚀 API Xóa Voucher vật lý khỏi hệ thống[cite: 12]
+    @DeleteMapping("/manager/delete/{id}") 
     public ResponseEntity<?> deleteVoucher(@PathVariable Integer id) {
         try {
             voucherService.deleteVoucher(id);
