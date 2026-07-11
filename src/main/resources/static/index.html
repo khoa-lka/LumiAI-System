@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>LAS Cinemas Vietnam - Official Premium Interface</title>
-    <link rel="stylesheet" href="style.css?v=20" />
+    <link rel="stylesheet" href="style.css?v=16" />
   </head>
   <body>
     <div class="global-viewport-container">
@@ -339,18 +339,18 @@
                     style="font-size: 16px; color: #e71a0f; margin-left: 5px;">05:00</strong></span>
               </div>
 
-            <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px; color:#f4f4f5; text-align: left; text-transform: uppercase;">4. Chọn Ghế Ngồi Phòng Chiếu</div>
-            <div class="cinema-room">
-                <div class="screen-curve">MÀN HÌNH CHÍNH (SCREEN)</div>
+              <div
+                style="font-size: 14px; font-weight: bold; margin-bottom: 15px; color:#f4f4f5; text-align: left; text-transform: uppercase;">
+                4. Chọn Ghế Ngồi Phòng Chiếu</div>
+              <div class="cinema-room"
+                style="background: #0b0b0e; border: 1px solid rgba(255,255,255,0.12); padding: 30px 20px; border-radius: 6px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                <div class="screen-curve"
+                  style="width: 85%; height: 25px; background: #222222; color: #ffffff; margin: 0 auto 35px auto; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border-radius: 0 0 20px 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); letter-spacing: 2px;">
+                  MÀN HÌNH CHÍNH (SCREEN)
+                </div>
 
-                <div class="seat-grid" id="cgv-seat-grid"></div>
-                
-                <div class="seat-legend">
-                    <div class="legend-item"><div class="legend-box" style="background:#666;"></div> Standard</div>
-                    <div class="legend-item"><div class="legend-box" style="background:#e0551f;"></div> Ghế VIP</div>
-                    <div class="legend-item"><div class="legend-box" style="background:#e25b8b;"></div> Sweetbox</div>
-                    <div class="legend-item"><div class="legend-box" style="background:#232326; display:flex; align-items:center; justify-content:center; color:#6a6a70; font-weight:900; font-size:10px;">✕</div> Đã bán</div>
-                    <div class="legend-item"><div class="legend-box" style="background:#22c55e;"></div> Ghế chọn</div>
+                <div class="seat-grid" id="cgv-seat-grid"
+                  style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 10px; max-width: 540px; margin: 0 auto;">
                 </div>
 
                 <div class="seat-legend"
@@ -397,15 +397,17 @@
                 style="line-height: 1.7; font-size: 14px; margin-bottom: 20px; text-align: left; background: #17171b; padding: 15px; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px;">
               </div>
 
-    <div class="payment-selection-block" style="text-align: left;">
-        <div class="payment-selection-title" style="font-weight: bold; font-size: 14px; color: #f4f4f5; margin-bottom: 12px; text-transform: uppercase;">Hình thức thanh toán cổng trực tuyến</div> 
-        
-        <div class="payment-selection-body pay-methods">
-            <div class="payment-option-row active" onclick="window.selectPaymentGatewayType('qr', this)">
-                <span class="option-check-circle"></span>
-                <div class="method-info-texts">
-                    <div class="method-main-name">Chuyển khoản / QR Quốc Gia VietQR</div>
-                    <div class="method-sub-name">Quét mã QR bằng ứng dụng ngân hàng bất kỳ</div>
+              <div
+                style="background: #0b0b0e; padding: 18px; margin-bottom: 25px; border: 1px dashed #bba; text-align: left; border-radius: 6px;">
+                <strong style="color: #e4e4e7; font-size: 13.5px;">Mã Voucher ưu đãi (Nhập <span
+                    style="color:#ff6b35; font-weight:bold;">LAS20</span> để nhận giảm giá 20%):</strong>
+                <div style="display: flex; gap: 10px; margin-top: 8px;">
+                  <input type="text" id="voucher-input" class="cgv-input-text"
+                    style="flex:1; padding: 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; outline: none; font-size: 13px; color:#e4e4e7;"
+                    placeholder="Ví dụ: LAS20">
+                  <button onclick="applyVoucher()" class="btn-cgv-submit"
+                    style="width: auto; margin-top: 0; padding: 0 20px; font-weight: bold; background: #111; color:#fff; border:none; border-radius:4px; cursor:pointer;">ÁP
+                    DỤNG</button>
                 </div>
               </div>
 
@@ -435,11 +437,6 @@
                     <span class="method-badge-icon badge-vnpay">VNPAY</span>
                   </div>
 
-            <div class="payment-option-row" onclick="window.selectPaymentGatewayType('vnpay', this)">
-                <span class="option-check-circle"></span>
-                <div class="method-info-texts">
-                    <div class="method-main-name">Cổng Thanh Toán VNPAY-QR</div>
-                    <div class="method-sub-name">Mobile Banking quét mã QR nhanh chóng, an toàn</div>
                 </div>
               </div>
             </div>
@@ -452,26 +449,38 @@
           <div class="right-invoice-sticky-column"
             style="width: 340px; background: #222222; border-radius: 8px; padding: 22px; color: #ffffff; position: sticky; top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); box-sizing: border-box;">
 
-    <div class="right-invoice-sticky-column" style="width: 340px; background: #222222; border-radius: 8px; padding: 22px; color: #ffffff; position: sticky; top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); box-sizing: border-box;">
-        
-        <div class="invoice-info-card" style="text-align: left; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 15px 0; font-size: 15px; border-bottom: 2px solid #ff6b35; padding-bottom: 8px; color:#e5a93b; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">THÔNG TIN ĐƠN VÉ</h3>
-            <p style="margin: 11px 0; font-size: 13.5px; line-height: 1.4;"><svg class="sum-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l1.3-4a1 1 0 011-.7l13 2.3a1 1 0 01.8 1.2L18.5 10"/><rect x="3" y="10" width="18" height="9" rx="1.3"/><path d="M6.3 6.3l2 3.7M11 5.3l2 3.7M15.7 4.6l2 3.7"/></svg>Phim: <strong id="sum-movie-title" style="color:#ffffff; margin-left: 5px;">-</strong></p>
-            <p style="margin: 11px 0; font-size: 13.5px; line-height: 1.4;"><svg class="sum-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Suất: <strong id="sum-showtime" style="color: #cca23b; margin-left: 5px;">-</strong></p>
-            <p style="margin: 11px 0; font-size: 13.5px; line-height: 1.4;"><svg class="sum-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13V6a1.5 1.5 0 013 0v6"/><path d="M15 13V6a1.5 1.5 0 013 0v6"/><path d="M5 13h14v3a2 2 0 01-2 2H7a2 2 0 01-2-2v-3z"/><path d="M7 18v2M17 18v2"/></svg>Ghế: <strong id="sum-seats" style="color: #cca23b; margin-left: 5px;">Chưa chọn</strong></p>
-            <p style="margin: 11px 0; font-size: 13.5px; line-height: 1.4;"><svg class="sum-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l1.2 11a1.2 1.2 0 001.2 1.1h5.2a1.2 1.2 0 001.2-1.1L17 9"/><path d="M5.5 9a2.3 2.3 0 012-3.6 2.3 2.3 0 014-1.4 2.3 2.3 0 014 1.4 2.3 2.3 0 012 3.6z"/></svg>F&B: <strong id="sum-fnb" style="color:#ffffff; margin-left: 5px;">0 Combo</strong></p>
-        </div>
-        
-        <div class="invoice-total-card" style="text-align: left; margin-bottom: 25px;">
-            <span style="font-size: 11px; font-weight: bold; color: #aaaaaa; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">TỔNG CHI PHÍ HOÁ ĐƠN</span>
-            <div id="sum-total" style="font-size: 30px; font-weight: 900; color: #ff6b35; font-family: monospace; letter-spacing: -0.5px;">0 đ</div>
-        </div>
-        
-        <div class="action-flow-buttons-row" style="display: flex; gap: 12px; width: 100%;">
-            <button class="btn-flow-back" onclick="goHomeFromBc()" style="flex: 0 0 46px; width: 46px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; white-space: nowrap; background: #333; color: #fff; border: none; border-radius: 8px; font-weight: bold; font-size: 20px; line-height: 1; cursor: pointer; transition: background 0.2s;">←</button>
-            <button class="btn-flow-next" id="btn-main-action" onclick="handleMainAction()" style="flex: 1; height: 42px; background: #ff6b35; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; transition: background 0.2s;">Tiếp tục</button>
-        </div>
-    </div>
+            <div class="invoice-info-card"
+              style="text-align: left; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 20px;">
+              <h3
+                style="margin: 0 0 15px 0; font-size: 15px; border-bottom: 2px solid #ff6b35; padding-bottom: 8px; color:#e5a93b; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">
+                THÔNG TIN ĐƠN VÉ</h3>
+              <p style="margin: 11px 0; font-size: 13.5px; line-height: 1.4;">🎬 Phim: <strong id="sum-movie-title"
+                  style="color:#ffffff; margin-left: 5px;">-</strong></p>
+              <p style="margin: 11px 0; font-size: 13.5px; line-height: 1.4;">🕒 Suất: <strong id="sum-showtime"
+                  style="color: #cca23b; margin-left: 5px;">-</strong></p>
+              <p style="margin: 11px 0; font-size: 13.5px; line-height: 1.4;">💺 Ghế: <strong id="sum-seats"
+                  style="color: #cca23b; margin-left: 5px;">Chưa chọn</strong></p>
+              <p style="margin: 11px 0; font-size: 13.5px; line-height: 1.4;">🍿 F&B: <strong id="sum-fnb"
+                  style="color:#ffffff; margin-left: 5px;">0 Combo</strong></p>
+            </div>
+
+            <div class="invoice-total-card" style="text-align: left; margin-bottom: 25px;">
+              <span
+                style="font-size: 11px; font-weight: bold; color: #aaaaaa; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">TỔNG
+                CHI PHÍ HOÁ ĐƠN</span>
+              <div id="sum-total"
+                style="font-size: 30px; font-weight: 900; color: #ff6b35; font-family: monospace; letter-spacing: -0.5px;">
+                0 đ</div>
+            </div>
+
+            <div class="action-flow-buttons-row" style="display: flex; gap: 12px; width: 100%;">
+              <button class="btn-flow-back" onclick="goHomeFromBc()"
+                style="flex: 0 0 46px; width: 46px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; white-space: nowrap; background: #333; color: #fff; border: none; border-radius: 8px; font-weight: bold; font-size: 20px; line-height: 1; cursor: pointer; transition: background 0.2s;">←</button>
+              <button class="btn-flow-next" id="btn-main-action" onclick="handleMainAction()"
+                style="flex: 1; height: 42px; background: #ff6b35; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; transition: background 0.2s;">Tiếp
+                tục</button>
+            </div>
+          </div>
 
         </div>
       </div>
@@ -1452,27 +1461,35 @@
     </div>
   </div>
 
-    <div class="cgv-modal-overlay" id="logout-confirm-modal">
-      <div class="cgv-logout-box">
-        <div class="cgv-logout-icon">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5C3.9 21 3 20.1 3 19V5C3 3.9 3.9 3 5 3H9"/>
-            <path d="M16 17L21 12L16 7"/>
-            <path d="M21 12H9"/>
-          </svg>
-        </div>
-        <h3 class="cgv-logout-title">Cảnh báo đăng xuất</h3>
-        <p class="cgv-logout-desc">
-          Bạn có chắc chắn muốn đăng xuất khỏi LAS Cinemas không?
-        </p>
-        <div class="cgv-logout-actions">
-          <button class="cgv-logout-btn cgv-logout-btn-cancel" onclick="closeLogoutConfirmModal()">
-            Hủy bỏ
-          </button>
-          <button class="cgv-logout-btn cgv-logout-btn-confirm" onclick="confirmCgvLogoutAction()">
-            Đồng ý thoát
-          </button>
-        </div>
+  <div class="cgv-modal-overlay" id="logout-confirm-modal">
+    <div class="cgv-auth-split-box" style="
+          width: 420px;
+          flex-direction: column;
+          padding: 25px;
+          background: #1c1c21;
+          text-align: center;
+          border: 2px solid #222;
+          border-radius: 4px;
+        ">
+      <h3 style="color: #ff6b35; margin: 0 0 12px 0; font-weight: bold">
+        CẢNH BÁO ĐĂNG XUẤT
+      </h3>
+      <p style="
+            font-size: 14px;
+            color: #e4e4e7;
+            margin-bottom: 25px;
+            line-height: 1.4;
+          ">
+        Bạn có chắc chắn muốn đăng xuất thoát phiên làm việc an toàn này khỏi
+        LAS Cinemas không?
+      </p>
+      <div style="display: flex; gap: 15px">
+        <button class="btn-cgv-submit" style="background: #777; margin: 0" onclick="closeLogoutConfirmModal()">
+          HỦY BỎ
+        </button>
+        <button class="btn-cgv-submit" style="background: #ff6b35; margin: 0" onclick="confirmCgvLogoutAction()">
+          ĐỒNG Ý THOÁT
+        </button>
       </div>
     </div>
   </div>
@@ -1587,29 +1604,16 @@
         </button>
       </div>
 
-        <div class="vietqr-head">
-          <h2 class="vietqr-title">Chuyển khoản QR Quốc Gia</h2>
-          <p class="vietqr-sub">Thanh toán an toàn qua VietQR - Napas 247</p>
+      <!-- Bước 2: đã tạo mã QR -->
+      <div id="vietqr-code-view" class="vietqr-code-view" style="display: none;">
+        <div class="vietqr-qr-frame">
+          <img id="bank-qr-img" src="" alt="Mã QR VietQR" />
+          <div class="vietqr-qr-caption">Mã QR VietQR — Napas 247</div>
         </div>
 
-        <!-- Bước 1: chưa tạo mã -->
-        <div id="vietqr-generate-view" class="vietqr-generate-view">
-          <div class="vietqr-glow-circle">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="36" height="36">
-              <rect x="3" y="3" width="7" height="7" rx="1"/>
-              <rect x="14" y="3" width="7" height="7" rx="1"/>
-              <rect x="3" y="14" width="7" height="7" rx="1"/>
-              <path d="M14 14H17.5V17.5"/>
-              <path d="M21 14V17"/>
-              <path d="M14 21H17"/>
-              <path d="M21 21H18"/>
-            </svg>
-          </div>
-          <div class="vietqr-gen-title">Tạo mã QR thanh toán của bạn</div>
-          <p class="vietqr-gen-desc">Nhấn nút bên dưới để tạo mã QR VietQR an toàn cho ứng dụng ngân hàng của bạn</p>
-          <button class="vietqr-gen-btn" onclick="generateVietQR()">
-            <span></span> Tạo Mã QR
-          </button>
+        <div class="vietqr-amount-box">
+          <span class="vietqr-amount-label">Số tiền cần thanh toán</span>
+          <span class="vietqr-amount-value" id="qr-total-price">0 đ</span>
         </div>
 
         <div class="vietqr-banks">
@@ -1687,7 +1691,6 @@
   </div>
 
     <div id="feedback-toast" class="feedback-toast">✓ Cảm ơn bạn đã gửi feedback!</div>
-    <div id="cgv-success-toast" class="feedback-toast"></div>
 
     <!-- POPUP XÁC NHẬN CHUYỂN DASHBOARD (chỉ Manager/Admin) -->
     <div class="cgv-modal-overlay" id="dashboard-confirm-modal">
@@ -1703,41 +1706,6 @@
         </div>
       </div>
     </div>
-
-    <!-- POPUP THÔNG BÁO CHẶN ĐẶT VÉ (Manager/Admin) - thay cho alert() mặc định -->
-    <div class="cgv-modal-overlay" id="booking-restricted-modal">
-      <div class="dash-confirm-box">
-        <div class="dash-confirm-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/></svg>
-        </div>
-        <h3 class="dash-confirm-title">Không thể đặt vé</h3>
-        <p class="dash-confirm-text">
-          Tài khoản <b>Quản lý / Quản trị viên</b> không được phép đặt vé trên hệ thống.<br />
-          Vui lòng dùng tài khoản khách hàng để trải nghiệm chức năng này.
-        </p>
-        <div class="dash-confirm-actions">
-          <button class="dash-btn dash-btn-ok" style="flex: 1;" onclick="closeBookingRestrictedModal()">Đã hiểu</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- POPUP YÊU CẦU ĐĂNG NHẬP TRƯỚC KHI ĐẶT VÉ - thay cho alert() mặc định -->
-    <div class="cgv-modal-overlay" id="login-required-modal">
-      <div class="dash-confirm-box">
-        <div class="dash-confirm-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #ff6b35;"><rect x="5" y="11" width="14" height="10" rx="2.2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.4" fill="currentColor" stroke="none"/></svg>
-        </div>
-        <h3 class="dash-confirm-title">Yêu cầu đăng nhập</h3>
-        <p class="dash-confirm-text">
-          Bạn phải <b>đăng nhập tài khoản thành viên</b><br />
-          mới có thể tiến hành đặt vé!
-        </p>
-        <div class="dash-confirm-actions">
-          <button class="dash-btn dash-btn-ok" style="flex: 1;" onclick="closeLoginRequiredModal()">Đăng nhập ngay</button>
-        </div>
-      </div>
-    </div>
-
 
     <div id="las-chatbot-bubble" onclick="window.toggleLasChatbox()" style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background-color: #ff6b35; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4); z-index: 3000; transition: transform 0.2s;">
   💬
@@ -1790,19 +1758,19 @@
 </div>
 
 
-<script src="js/state.js?v=17"></script>
+<script src="js/state.js?v=16"></script>
 
   <!-- 2. Nhúng file trang chủ ngay sau state.js để dùng chung 'serverData' không bị trùng lặp -->
   <!-- Thêm đuôi ?v=... để diệt tận gốc lỗi dính cache file cũ của Chrome/Edge -->
-<script src="js/home.js?v=19"></script>
+<script src="js/home.js?v=16"></script>
 
   <!-- 3. Các file giao diện và tính năng chạy sau cùng omg omg omg omg  -->
-  <script src="js/api.js?v=17"></script>   
-  <script src="js/ui.js?v=18"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
-  <script src="js/auth.js?v=18"></script>
-  <script src="js/admin.js?v=17"></script>
-  <script src="js/booking.js?v=18"></script>
-  <script src="js/breadcrumb.js?v=17"></script>
-  <script src="js/dashboard-access.js?v=17"></script>
+  <script src="js/api.js?v=16"></script>   
+  <script src="js/ui.js?v=16"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
+  <script src="js/auth.js?v=16"></script>
+  <script src="js/admin.js?v=16"></script>
+  <script src="js/booking.js?v=16"></script>
+  <script src="js/breadcrumb.js?v=16"></script>
+  <script src="js/dashboard-access.js?v=16"></script>
   </body>
 </html>

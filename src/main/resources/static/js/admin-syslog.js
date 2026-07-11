@@ -8,10 +8,10 @@
 
 /* --- 1. 4 THẺ CHỈ SỐ TỔNG QUAN --- */
 const ADM_SYSLOG_METRICS = [
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>', bg: "rgba(34,197,94,0.16)", fg: "#4ade80", label: "Tổng log", value: "8.652", delta: "18.7%", trend: "up", sub: "so với 7 ngày trước" },
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>', bg: "rgba(59,130,246,0.16)", fg: "#60a5fa", label: "Thông tin", value: "6.125", delta: "15.3%", trend: "up", sub: "so với 7 ngày trước" },
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 19h18z"/><path d="M12 10v4M12 17h.01"/></svg>', bg: "rgba(245,158,11,0.16)", fg: "#f59e0b", label: "Cảnh báo", value: "1.842", delta: "8.9%", trend: "up", sub: "so với 7 ngày trước" },
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>', bg: "rgba(239,68,68,0.16)", fg: "#f87171", label: "Lỗi", value: "685", delta: "7.9%", trend: "down", sub: "so với 7 ngày trước" },
+  { icon: "📈", bg: "rgba(34,197,94,0.16)", fg: "#4ade80", label: "Tổng log", value: "8.652", delta: "18.7%", trend: "up", sub: "so với 7 ngày trước" },
+  { icon: "ℹ️", bg: "rgba(59,130,246,0.16)", fg: "#60a5fa", label: "Thông tin", value: "6.125", delta: "15.3%", trend: "up", sub: "so với 7 ngày trước" },
+  { icon: "⚠️", bg: "rgba(245,158,11,0.16)", fg: "#f59e0b", label: "Cảnh báo", value: "1.842", delta: "8.9%", trend: "up", sub: "so với 7 ngày trước" },
+  { icon: "⛔", bg: "rgba(239,68,68,0.16)", fg: "#f87171", label: "Lỗi", value: "685", delta: "7.9%", trend: "down", sub: "so với 7 ngày trước" },
 ];
 
 /* --- 2. DANH SÁCH LOG MẪU (đại diện, phân trang & lọc hoạt động thật trên tập này) --- */
@@ -97,7 +97,7 @@ function renderAdminSysLogMetrics() {
     return `
     <div class="ad-metric-card">
       <div class="ad-metric-top">
-        <div class="ad-metric-icon" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.14); color:#fff;">${m.icon}</div>
+        <div class="ad-metric-icon" style="background:${m.bg}; color:${m.fg};">${m.icon}</div>
       </div>
       <div class="ad-metric-label">${m.label}</div>
       <div class="ad-metric-value">${m.value}</div>
@@ -149,7 +149,7 @@ function renderAdminSysLogTable() {
           <td>${l.ip}</td>
           <td>
             ${l.detail}
-            <span title="Xem chi tiết" style="cursor:pointer; margin-left:8px; opacity:0.8;" onclick="viewAdminSysLogDetail(${globalIdx})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
+            <span title="Xem chi tiết" style="cursor:pointer; margin-left:8px; opacity:0.8;" onclick="viewAdminSysLogDetail(${globalIdx})">👁️</span>
           </td>
         </tr>`;
       })
