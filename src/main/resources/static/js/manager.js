@@ -173,58 +173,101 @@ function exitManagerRoleToCustomerView() {
 window.exitManagerRoleToCustomerView = exitManagerRoleToCustomerView;
 
 // --- 1. CHUYỂN TAB TRONG MANAGER DASHBOARD ---
-function switchMpTab(tabId) {
-  // Ẩn tất cả tab section
+// 🚀 ĐÃ HỢP NHẤT: trước đây hàm này bị định nghĩa 2 LẦN — 1 lần ở đây (manager.js,
+// load trước) và 1 lần trong <script> inline cuối manager.html (load sau, nên bản
+// ở HTML mới là bản THẬT SỰ đang chạy, bản ở đây chỉ là "xác chết" không ai gọi tới).
+// Giờ gộp lại thành đúng 1 nguồn duy nhất tại đây, giữ nguyên 100% hành vi đang chạy
+// (kể cả tab "events" mà bản cũ trong manager.js này từng thiếu), cộng thêm try/catch
+// phòng thủ để 1 tab lỗi không kéo sập luôn cả hàm chuyển tab.
+window.switchMpTab = function (tabId) {
   document.querySelectorAll(".mp-tab-section").forEach((tab) => {
-    tab.style.display = "none";
     tab.classList.remove("active");
+    tab.style.display = "none";
   });
-
-  // Gỡ active trên thanh điều hướng sidebar
   document.querySelectorAll(".mp-nav-item").forEach((nav) => {
     nav.classList.remove("active");
   });
 
-  // Bật tab được chọn
   const targetTab = document.getElementById("mp-tab-" + tabId);
   const targetNav = document.getElementById("mp-nav-" + tabId);
 
   if (targetTab) {
-    targetTab.style.display = "block";
     targetTab.classList.add("active");
+    targetTab.style.display = "block";
   }
   if (targetNav) targetNav.classList.add("active");
 
-  if (tabId === "dashboard" && typeof window.loadManagerDashboard === "function")
-    window.loadManagerDashboard();
+  const titles = {
+    dashboard: "Tổng quan hoạt động rạp",
+    movies: "Quản lý Danh mục Phim",
+    matrix: "Ma trận Lịch chiếu",
+    fnb: "Quản lý Kho F&B",
+    promo: "Quản lý Chiến dịch Khuyến mãi",
+    events: "Sự kiện và Ưu đãi",
+    audit: "Báo cáo và Kiểm toán Tài chính",
+  };
+  const titleEl = document.getElementById("mp-dynamic-title");
+  if (titleEl) titleEl.innerText = titles[tabId] || "Chức năng đang phát triển...";
 
-  // Cập nhật tiêu đề trang
-  const titleElement = document.getElementById("mp-dynamic-title");
-  if (titleElement) {
-    const titles = {
-      dashboard: "Tổng quan hoạt động rạp",
-      movies: "Quản lý Danh mục Phim",
-      matrix: "Ma trận Lịch chiếu",
-      fnb: "Quản lý Kho F&B",
-      promo: "Quản lý Chiến dịch Khuyến mãi",
-      audit: "Báo cáo và Kiểm toán Tài chính",
-    };
-    titleElement.innerText = titles[tabId] || "Chức năng đang phát triển...";
+  // 0. Vẽ lại Dashboard mỗi khi quay lại Tab Dashboard
+  if (tabId === "dashboard" && typeof renderManagerDashboard === "function") {
+    try {
+      renderManagerDashboard();
+    } catch (err) {
+      console.error("Lỗi khi render Dashboard:", err);
+    }
   }
-
-  // Nếu chuyển sang tab phim, tự động gọi API load danh sách phim
-  if (tabId === "movies") {
-    loadManagerMovies();
+  // 1. Gọi API nạp dữ liệu phim khi qua Tab Movies
+  if (tabId === "movies" && typeof loadManagerMovies === "function") {
+    try {
+      loadManagerMovies();
+    } catch (err) {
+      console.error("Lỗi khi load danh sách phim:", err);
+    }
   }
-  // Bổ sung vào cuối hàm switchMpTab của em:
-  if (tabId === "fnb") {
-    loadManagerFnb();
+  // 2. Tự động kích hoạt gọi API nạp bắp nước từ DB khi chuyển sang Tab F&B
+  if (tabId === "fnb" && typeof loadManagerFnb === "function") {
+    try {
+      loadManagerFnb();
+    } catch (err) {
+      console.error("Lỗi khi load danh sách F&B từ database:", err);
+    }
   }
-  // Tìm trong hàm switchMpTab, đắp thêm logic này vào cuối hàm:
-  if (tabId === "promo") {
-    loadManagerVouchers();
+  // 3. Tự động kích hoạt gọi ma trận lịch chiếu tổng hợp khi qua Tab Matrix
+  if (tabId === "matrix" && typeof loadManagerMatrix === "function") {
+    try {
+      loadManagerMatrix();
+    } catch (err) {
+      console.error("Lỗi khi load ma trận lịch chiếu:", err);
+    }
   }
-}
+  // 4. Tự động gọi API nạp voucher từ database khi chuyển sang Tab Promo
+  if (tabId === "promo" && typeof loadManagerVouchers === "function") {
+    try {
+      loadManagerVouchers();
+    } catch (err) {
+      console.error("Lỗi khi load danh sách Voucher từ database:", err);
+    }
+  }
+  // 5. Vẽ lại Báo cáo & Kiểm toán mỗi khi vào Tab Audit
+  // (hỗ trợ cả 2 tên hàm audit vì main/femoi hiện đặt tên khác nhau — sẽ chốt 1 khi xử lý manager-audit.js)
+  if (tabId === "audit") {
+    try {
+      if (typeof renderAuditReport === "function") renderAuditReport();
+      else if (typeof window.loadManagerAudit === "function") window.loadManagerAudit();
+    } catch (err) {
+      console.error("Lỗi khi render Báo cáo & Kiểm toán:", err);
+    }
+  }
+  // 6. Tự động nạp danh sách Sự kiện & Ưu đãi khi chuyển sang Tab Events
+  if (tabId === "events" && typeof loadManagerEvents === "function") {
+    try {
+      loadManagerEvents();
+    } catch (err) {
+      console.error("Lỗi khi load danh sách Sự kiện & Ưu đãi:", err);
+    }
+  }
+};
 
 // --- 2. QUẢN LÝ MODAL & POPUP (CÁC MODAL KHÁC) ---
 function openMpDeleteModal() {

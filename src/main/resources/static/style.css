@@ -2553,6 +2553,78 @@ select.profile-readonly-input:not([disabled]) {
   box-shadow: 0 10px 22px rgba(255, 107, 53, 0.42);
 }
 
+/* ==========================================================================
+   HỘP THOẠI XÁC NHẬN HUỶ THANH TOÁN (đồng bộ phong cách với modal đăng xuất)
+   ========================================================================== */
+.cancel-payment-confirm-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+.cancel-payment-confirm-box {
+  width: 380px;
+  max-width: 90vw;
+  background: linear-gradient(180deg, #1c1c21 0%, #16161a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 34px 28px 28px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  animation: cgvLogoutPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cancel-payment-confirm-icon {
+  width: 56px; height: 56px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cgv-red, #ff6b35), #e5502e);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 26px; font-weight: 800;
+  box-shadow: 0 8px 20px rgba(255, 107, 53, 0.35);
+}
+.cancel-payment-confirm-title {
+  color: #f4f4f5; font-size: 18px; font-weight: 800;
+  margin: 0 0 10px;
+}
+.cancel-payment-confirm-message {
+  font-size: 13.5px; color: #9a9aa3; line-height: 1.55;
+  margin: 0 0 26px;
+}
+.cancel-payment-confirm-actions {
+  display: flex; gap: 12px;
+}
+.cancel-payment-btn {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.keep-payment-btn {
+  background: linear-gradient(135deg, var(--cgv-red, #ff6b35), #e5502e);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(255, 107, 53, 0.3);
+}
+.keep-payment-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(255, 107, 53, 0.42);
+}
+.confirm-cancel-payment-btn {
+  background: transparent;
+  color: #d4d4d8;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+.confirm-cancel-payment-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
 @media (max-width: 560px) {
   .history-card-item {
     flex-wrap: wrap;

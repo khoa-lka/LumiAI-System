@@ -1017,7 +1017,7 @@
                     <strong>MST:</strong> 0303675393<br>
                     <strong>Địa chỉ:</strong> Lầu 2, Số 7/28, đường Thành Thái, Phường Diên Hồng, Thành phố Hồ Chí Minh, Việt Nam<br>
                     <strong>Điện thoại:</strong> 1900 6017<br>
-                    <strong>Email:</strong> hoidap@las.vn
+                    <strong>Email:</strong> lascinema.system@gmail.com
                 </div>
             </div>
         </div>
@@ -1156,7 +1156,7 @@
                 <span style="color: #d4d4d8; font-size: 13.5px; line-height: 1.6;">A: Nếu bạn đáp ứng điều kiện chức năng <strong>"Hoàn vé chủ động"</strong>, bạn có thể tự hủy suất chiếu trên Ứng dụng. Ngược lại, LAS Việt Nam chưa hỗ trợ dịch vụ hủy/thay đổi thủ công cho các vé đã thanh toán thành công.</span></p>
 
                 <p style="margin-bottom: 15px;"><strong>Q: Tài khoản ngân hàng đã bị trừ tiền nhưng không nhận được mã vé?</strong><br>
-                <span style="color: #d4d4d8; font-size: 13.5px; line-height: 1.6;">A: Vui lòng gọi Hotline <strong>1900 6017</strong> hoặc email <strong>hoidap@las.vn</strong> để đối soát. Nếu xác nhận giao dịch lỗi mạng, tiền sẽ được hoàn:<br>
+                <span style="color: #d4d4d8; font-size: 13.5px; line-height: 1.6;">A: Vui lòng gọi Hotline <strong>1900 6017</strong> hoặc email <strong>lascinema.system@gmail.com</strong> để đối soát. Nếu xác nhận giao dịch lỗi mạng, tiền sẽ được hoàn:<br>
                 - Thẻ ATM nội địa: 7 - 15 ngày làm việc.<br>
                 - Thẻ tín dụng VISA/Mastercard: 30 - 45 ngày làm việc.<br>
                 - Ví điện tử/VNPAY: 5 - 10 ngày làm việc (không tính Lễ, Tết, T7, CN).
@@ -1216,7 +1216,7 @@
                 <h4 class="las-footer-heading">Chăm sóc khách hàng</h4>
                 <p class="las-footer-text">Hotline: 1900 6017</p>
                 <p class="las-footer-text">Giờ làm việc: 8:00 - 22:00 (Tất cả các<br>ngày bao gồm cả Lễ Tết)</p>
-                <p class="las-footer-text">Email hỗ trợ: hoidap@las.vn</p>
+                <p class="las-footer-text">Email hỗ trợ: lascinema.system@gmail.com</p>
             </div>
         </div>
         <div class="las-footer-bottom">
@@ -1580,14 +1580,14 @@
           </div>
 
           <p class="vietqr-status">
-            Trạng thái: <span class="vietqr-status-wait">Đang chờ thanh toán...</span>
+            Trạng thái: <span id="vietqr-payment-status-text" class="vietqr-status-wait">Đang chờ thanh toán...</span>
           </p>
 
           <button
             class="vietqr-done-btn"
-            onclick="document.getElementById('payment-redirect-modal').classList.remove('open'); stopVietQRTimer(); executeFinalCheckout();"
+            onclick="closePaymentModal()"
           >
-            ✓ Đã Chuyển Khoản Thành Công
+            Hủy thanh toán
           </button>
         </div>
       </div>
