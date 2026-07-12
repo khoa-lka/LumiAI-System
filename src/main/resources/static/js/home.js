@@ -334,6 +334,11 @@ window.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     window.syncUserLoginSession();
 
+    // Lấy thông báo đổi quyền của tài khoản đang đăng nhập (từ nhánh admin)
+    if (typeof window.loadAccountRoleNotifications === "function") {
+      window.loadAccountRoleNotifications();
+    }
+
     // ĐÓN KẾT QUẢ VNPAY-CALLBACK TRẢ VỀ ĐỂ ĐIỀU HƯỚNG BƯỚC 4
   }, 150);
 });
@@ -1178,6 +1183,14 @@ function submitCgvLogin() {
 
         if (window.refreshDashboardTab) window.refreshDashboardTab();
         switchCgvTab("panel-profile");
+
+        // Kiểm tra thông báo đổi quyền ngay sau khi đăng nhập (từ nhánh admin)
+        setTimeout(() => {
+          if (typeof window.loadAccountRoleNotifications === "function") {
+            window.loadAccountRoleNotifications(uData.accountId || uData.account_id);
+          }
+        }, 100);
+
         // 🌟 GHIM LẠI LÊN Ổ CỨNG TRÌNH DUYỆT:
         localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
         localStorage.setItem(
@@ -2196,7 +2209,6 @@ window.resetBookingWizard = function () {
       step.classList.remove("active"); // Ẩn hoàn toàn các bước Combo, Thanh toán và Hóa Đơn Thành Công
     }
   });
-
   // 3. Đưa biến kiểm soát bước hiện tại của rạp phim về lại Step 1
   window.currentBookingStep = 1;
 
@@ -2983,3 +2995,142 @@ window.sendChatMessageToServer = sendChatMessageToServer;
 window.toggleLasChatbox = toggleLasChatbox;
 window.checkChatSendMessageKey = checkChatSendMessageKey;
 window.formatGeminiResponseToHtml = formatGeminiResponseToHtml;
+let currentAccountNotificationId = null;
+let accountNotificationQueue = [];
+
+function loadAccountRoleNotifications(loginAccountId = null) {
+  let accountId = loginAccountId;
+
+  if (!accountId) {
+    const rawUser =
+      localStorage.getItem("las_logged_in_user");
+
+    if (!rawUser || typeof API === "undefined") {
+      return;
+    }
+
+    try {
+      const user = JSON.parse(rawUser);
+
+      accountId =
+        user.accountId ||
+        user.account_id;
+    } catch (error) {
+      console.error(
+        "Không đọc được tài khoản đăng nhập:",
+        error
+      );
+      return;
+    }
+  }
+
+  if (!accountId || typeof API === "undefined") {
+    return;
+  }
+
+  API.getUnreadNotifications(accountId)
+    .then((notifications) => {
+      if (
+        !Array.isArray(notifications) ||
+        notifications.length === 0
+      ) {
+        return;
+      }
+
+      accountNotificationQueue =
+        [...notifications].reverse();
+
+      showNextAccountNotification();
+    })
+    .catch((error) => {
+      console.error(
+        "Lỗi tải thông báo tài khoản:",
+        error
+      );
+    });
+}
+
+function showNextAccountNotification() {
+  if (
+    !accountNotificationQueue ||
+    accountNotificationQueue.length === 0
+  ) {
+    return;
+  }
+
+  const notification =
+    accountNotificationQueue.shift();
+
+  currentAccountNotificationId =
+    notification.notificationId ||
+    notification.notification_id;
+
+  const titleBox =
+    document.getElementById(
+      "account-notification-title"
+    );
+
+  const messageBox =
+    document.getElementById(
+      "account-notification-message"
+    );
+
+  const popup =
+    document.getElementById(
+      "account-notification-popup"
+    );
+
+  if (titleBox) {
+    titleBox.textContent =
+      notification.title ||
+      "Thay đổi quyền tài khoản";
+  }
+
+  if (messageBox) {
+    messageBox.textContent =
+      notification.message ||
+      "Quyền tài khoản của bạn vừa được cập nhật.";
+  }
+
+  if (popup) {
+    popup.classList.add("open");
+  }
+}
+
+function closeAccountNotificationPopup() {
+  const popup =
+    document.getElementById(
+      "account-notification-popup"
+    );
+
+  if (popup) {
+    popup.classList.remove("open");
+  }
+
+  const notificationId =
+    currentAccountNotificationId;
+
+  currentAccountNotificationId = null;
+
+  if (!notificationId) {
+    showNextAccountNotification();
+    return;
+  }
+
+  API.markNotificationAsRead(notificationId)
+    .catch((error) => {
+      console.error(
+        "Không đánh dấu được thông báo đã đọc:",
+        error
+      );
+    })
+    .finally(() => {
+      showNextAccountNotification();
+    });
+}
+
+window.loadAccountRoleNotifications =
+  loadAccountRoleNotifications;
+
+window.closeAccountNotificationPopup =
+  closeAccountNotificationPopup;

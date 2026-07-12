@@ -447,8 +447,10 @@ function renderDynamicTransactions(orders) {
       </thead>
       <tbody>
         ${orders.map((o) => {
-          let statusStyle = o.orderStatus === "COMPLETELY" ? "color:#4ade80; background:rgba(74,222,128,0.1);" : "color:#ef5350; background:rgba(239,83,80,0.1);";
-          let statusText = o.orderStatus === "COMPLETELY" ? "Thành công" : "Hủy/Lỗi";
+          let isSuccess = o.orderStatus === "COMPLETELY" || o.orderStatus === "COMPLETED";
+
+          let statusStyle = isSuccess ? "color:#4ade80; background:rgba(74,222,128,0.1);" : "color:#ef5350; background:rgba(239,83,80,0.1);";
+          let statusText = isSuccess ? "Thành công" : "Hủy/Lỗi";
           return `
           <tr style="border-bottom:1px solid rgba(255,255,255,0.03); color:#d4d4d8;">
             <td style="padding:12px; font-weight:bold; color:#ff6b35;">${o.orderCode}</td>

@@ -20,10 +20,13 @@ function switchAdminTab(tabName) {
   if (activeTab) activeTab.style.display = "block";
 
   // Gọi hàm load dữ liệu tương ứng khi chuyển tab
-  if (tabName === "dashboard") renderAdminDashboard();
+  // Lưu ý: loadAdminSysLogs()/loadAdminWebhooks() mới thực sự gọi API và tự
+  // render lại; renderAdminSysLogPage()/renderAdminWebhookPage() chỉ vẽ lại
+  // dữ liệu đã có trong bộ nhớ (ban đầu rỗng), nên phải gọi hàm load.
+  if (tabName === "dashboard") loadAdminDashboard();
   if (tabName === "ban") renderAdminBanList();
-  if (tabName === "syslog") renderAdminSysLogPage();
-  if (tabName === "webhook") renderAdminWebhookPage();
+  if (tabName === "syslog") loadAdminSysLogs();
+  if (tabName === "webhook") loadAdminWebhooks();
   if (tabName === "db") renderAdminDbBackups();
 }
 
@@ -71,14 +74,19 @@ function renderAdminBanRows(users, isMock) {
           ? '<span class="status-badge">Hoạt động</span>'
           : '<span class="status-badge" style="background:#e71a0f;">Bị khóa</span>';
 
+      // Role ID chuẩn theo backend (AdminController.getRoleName): 1=Manager, 2=Staff, 3=Member, 4=Admin
       return `<tr>
           <td>${u.accountId}</td>
           <td>${u.email}</td>
           <td>
-            <select onchange="changeRoleAction('${u.accountId}', this.value)">
-                <option value="2" ${u.roleId === 2 ? 'selected' : ''}>Admin</option>
-                <option value="1" ${u.roleId === 1 ? 'selected' : ''}>Manager</option>
-                <option value="3" ${u.roleId === 3 ? 'selected' : ''}>Member</option>
+            <select
+              data-old-role="${u.roleId}"
+              onchange="changeRoleAction('${u.accountId}', this.value, this.dataset.oldRole, this)"
+            >
+                <option value="4" ${Number(u.roleId) === 4 ? 'selected' : ''}>Admin</option>
+                <option value="1" ${Number(u.roleId) === 1 ? 'selected' : ''}>Manager</option>
+                <option value="2" ${Number(u.roleId) === 2 ? 'selected' : ''}>Staff</option>
+                <option value="3" ${Number(u.roleId) === 3 ? 'selected' : ''}>Member</option>
             </select>
           </td>
           <td>${badge}</td>
@@ -108,27 +116,132 @@ function filterAdminBanList() {
   renderAdminBanRows(filtered);
 }
 
-// Hàm xử lý sự kiện
-function changeRoleAction(userId, roleId) {
-    API.updateUserRole(userId, parseInt(roleId))
-        .then(() => { alert("Đã đổi quyền!"); renderAdminBanList(); })
-        .catch(err => alert(err.message));
+// Hàm xử lý sự kiện đổi quyền — dùng popup thông báo thay vì alert(),
+// và tự trả select về giá trị cũ nếu API lỗi.
+function changeRoleAction(userId, roleId, oldRoleId, selectElement) {
+  const newRoleId = Number(roleId);
+  const previousRoleId = Number(oldRoleId);
+
+  if (newRoleId === previousRoleId) {
+    return;
+  }
+
+  API.updateUserRole(userId, newRoleId)
+    .then((result) => {
+      showAdminRoleSuccessPopup(
+        result.oldRoleName,
+        result.newRoleName
+      );
+
+      if (selectElement) {
+        selectElement.dataset.oldRole = String(newRoleId);
+      }
+
+      renderAdminBanList();
+    })
+    .catch((err) => {
+      if (selectElement) {
+        selectElement.value = String(previousRoleId);
+      }
+
+      alert("Không thể cập nhật quyền: " + err.message);
+    });
 }
 
+// Popup xác nhận khóa/mở khóa tài khoản (thay cho confirm()/alert() cũ)
+let banPopupConfirmCallback = null;
 
+function showBanPopup(type, title, message, onConfirm) {
+  const popup = document.getElementById("ban-popup");
+  const icon = document.getElementById("ban-popup-icon");
+  const titleElement = document.getElementById("ban-popup-title");
+  const messageElement = document.getElementById("ban-popup-message");
+  const cancelButton = document.getElementById("ban-popup-cancel");
+  const confirmButton = document.getElementById("ban-popup-confirm");
 
-// (Tuỳ chọn) Hàm hỗ trợ khi Admin bấm nút Khóa tài khoản
-function banUserAction(userId) {
-  if (confirm(`Bạn có chắc chắn muốn khóa tài khoản ID: ${userId}?`)) {
-    if (typeof API !== "undefined" && API.banUser) {
-      API.banUser(userId)
-        .then((res) => {
-          alert("Đã khóa tài khoản thành công!");
-          renderAdminBanList(); // Tải lại bảng
-        })
-        .catch((err) => alert("Lỗi khi khóa: " + err.message));
-    }
+  if (!popup) return;
+
+  popup.classList.remove("confirm", "success", "error");
+  popup.classList.add(type);
+
+  if (icon) icon.textContent = type === "success" ? "✓" : type === "error" ? "!" : "?";
+  if (titleElement) titleElement.textContent = title;
+  if (messageElement) messageElement.textContent = message;
+
+  banPopupConfirmCallback = typeof onConfirm === "function" ? onConfirm : null;
+
+  if (banPopupConfirmCallback) {
+    if (confirmButton) confirmButton.style.display = "inline-block";
+    if (cancelButton) cancelButton.textContent = "Hủy";
+  } else {
+    if (confirmButton) confirmButton.style.display = "none";
+    if (cancelButton) cancelButton.textContent = "Đóng";
   }
+
+  popup.classList.add("open");
+}
+
+function closeBanPopup() {
+  const popup = document.getElementById("ban-popup");
+  if (popup) popup.classList.remove("open");
+  banPopupConfirmCallback = null;
+}
+
+function confirmBanPopup() {
+  const callback = banPopupConfirmCallback;
+  closeBanPopup();
+  if (callback) callback();
+}
+
+function showAdminRoleSuccessPopup(oldRoleName, newRoleName) {
+  const popup = document.getElementById("admin-role-success-popup");
+  const message = document.getElementById("admin-role-success-message");
+
+  if (message) {
+    message.innerHTML = `Đã đổi quyền tài khoản từ <b>${oldRoleName || "Không xác định"}</b> sang <b>${newRoleName || "Không xác định"}</b>.`;
+  }
+
+  if (popup) popup.classList.add("open");
+}
+
+function closeAdminRoleSuccessPopup() {
+  const popup = document.getElementById("admin-role-success-popup");
+  if (popup) popup.classList.remove("open");
+}
+
+// (Tuỳ chọn) Hàm hỗ trợ khi Admin bấm nút Khóa/Mở khóa tài khoản
+function banUserAction(userId) {
+  const currentUser = _admBanUsersCache.find(
+    (user) => String(user.accountId) === String(userId)
+  );
+  const isBanned = currentUser && currentUser.status === "Banned";
+  const actionText = isBanned ? "mở khóa" : "khóa";
+
+  showBanPopup(
+    "confirm",
+    isBanned ? "XÁC NHẬN MỞ KHÓA" : "XÁC NHẬN KHÓA",
+    `Bạn có chắc chắn muốn ${actionText} tài khoản ID: ${userId}?`,
+    function () {
+      if (typeof API === "undefined" || typeof API.banUser !== "function") {
+        showBanPopup("error", "KHÔNG THỂ THỰC HIỆN", "Chức năng khóa tài khoản chưa được kết nối API.");
+        return;
+      }
+
+      API.banUser(userId)
+        .then((result) => {
+          const newStatus = result.status;
+          const successMessage = newStatus === "Banned"
+            ? `Đã khóa tài khoản ID: ${userId} thành công.`
+            : `Đã mở khóa tài khoản ID: ${userId} thành công.`;
+
+          showBanPopup("success", "CẬP NHẬT THÀNH CÔNG", successMessage);
+          renderAdminBanList();
+        })
+        .catch((error) => {
+          showBanPopup("error", "CẬP NHẬT THẤT BẠI", error.message || "Không thể cập nhật trạng thái tài khoản.");
+        });
+    }
+  );
 }
 
 // ---------------------------------------------------------

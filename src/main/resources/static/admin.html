@@ -403,9 +403,129 @@ function exitAdminRoleToCustomerView() {
 <script src="js/admin-syslog.js?v=3"></script>
 <script src="js/admin-webhook.js?v=3"></script>
 <script src="js/home.js?v=12"></script>
-    
-  
 
-  
+<!-- ===== Bổ sung từ nhánh admin: popup thông báo đổi quyền / xác nhận khóa TK / chi tiết log ===== -->
+<div id="admin-role-success-popup" class="admin-role-popup-overlay">
+  <div class="admin-role-popup-box">
+    <div class="admin-role-popup-icon">✓</div>
+
+    <h3>CẬP NHẬT THÀNH CÔNG</h3>
+
+    <p id="admin-role-success-message">
+      Quyền tài khoản đã được cập nhật.
+    </p>
+
+    <button type="button" onclick="closeAdminRoleSuccessPopup()">
+      Đóng
+    </button>
+  </div>
+</div>
+  <div id="ban-popup" class="ban-popup-overlay confirm">
+    <div class="ban-popup-box">
+        <div id="ban-popup-icon" class="ban-popup-icon">?</div>
+
+        <h3 id="ban-popup-title">
+            XÁC NHẬN
+        </h3>
+
+        <p id="ban-popup-message"></p>
+
+        <div class="ban-popup-buttons">
+            <button
+                id="ban-popup-cancel"
+                type="button"
+                class="ban-popup-button cancel"
+                onclick="closeBanPopup()"
+            >
+                Hủy
+            </button>
+
+            <button
+                id="ban-popup-confirm"
+                type="button"
+                class="ban-popup-button confirm"
+                onclick="confirmBanPopup()"
+            >
+                Xác nhận
+            </button>
+        </div>
+    </div>
+</div>
+<!-- POPUP XEM CHI TIẾT LOG -->
+<div
+  id="syslog-detail-popup"
+  class="syslog-detail-overlay"
+  onclick="closeSysLogDetailByOverlay(event)"
+>
+  <div class="syslog-detail-box">
+
+    <div class="syslog-detail-header">
+      <div class="syslog-detail-heading">
+        <div class="syslog-detail-icon">📋</div>
+
+        <div>
+          <h3>CHI TIẾT LOG</h3>
+          <p>Thông tin hoạt động trong hệ thống</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="syslog-detail-close"
+        onclick="closeAdminSysLogDetail()"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="syslog-detail-content">
+
+      <div class="syslog-detail-row">
+        <span class="syslog-detail-label">Thời gian</span>
+        <strong id="syslog-detail-time"></strong>
+      </div>
+
+      <div class="syslog-detail-row">
+        <span class="syslog-detail-label">Mức độ</span>
+        <span
+          id="syslog-detail-level"
+          class="log-level-badge"
+        ></span>
+      </div>
+
+      <div class="syslog-detail-row">
+        <span class="syslog-detail-label">Hành động</span>
+        <strong id="syslog-detail-action"></strong>
+      </div>
+
+      <div class="syslog-detail-row">
+        <span class="syslog-detail-label">Người thực hiện</span>
+        <strong id="syslog-detail-user"></strong>
+      </div>
+
+      <div class="syslog-detail-row">
+        <span class="syslog-detail-label">Địa chỉ IP</span>
+        <strong id="syslog-detail-ip"></strong>
+      </div>
+
+      <div class="syslog-detail-description">
+        <span class="syslog-detail-label">Nội dung chi tiết</span>
+        <p id="syslog-detail-description"></p>
+      </div>
+
+    </div>
+
+    <div class="syslog-detail-footer">
+      <button
+        type="button"
+        class="syslog-detail-button"
+        onclick="closeAdminSysLogDetail()"
+      >
+        Đóng
+      </button>
+    </div>
+
+  </div>
+</div>
 </body>
 </html>
