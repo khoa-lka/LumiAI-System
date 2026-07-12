@@ -181,5 +181,17 @@ markNotificationAsRead: (notificationId) =>
 
   // 📈 PHÂN HỆ BÁO CÁO & KIỂM TOÁN TÀI CHÍNH ĐỘNG (🎯 BỔ SUNG ĐỂ SỬA LỖI TRÊN ẢNH LOG)
   getAuditReportData: (dateStr) => 
-    fetch(`${BASE_URL}/audit/report?date=${dateStr}`).then(handleResponse)
+    fetch(`${BASE_URL}/audit/report?date=${dateStr}`).then(handleResponse),
+  createBackup: () =>
+  fetch(`${BASE_URL}/admin/backups`, {
+    method: "POST",
+  }).then(handleResponse),
+
+restoreBackup: (fileName) =>
+  fetch(
+    `${BASE_URL}/admin/backups/${encodeURIComponent(fileName)}/restore`,
+    {
+      method: "POST",
+    }
+  ).then(handleResponse),
 };

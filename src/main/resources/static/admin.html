@@ -389,7 +389,7 @@
                             <span>🔍</span>
                             <input type="text" id="adm-webhook-search" placeholder="Tìm kiếm..." oninput="filterAdminWebhookTable()" />
                         </div>
-                        <button class="btn-admin-action edit" onclick="renderAdminWebhookPage()">↻ Làm mới</button>
+                        <button class="btn-admin-action edit" onclick="loadAdminWebhooks()">↻ Làm mới</button>
                         <button class="adm-primary-btn" onclick="exportAdminWebhookCsv()">⭳ Xuất CSV</button>
                     </div>
                 </div>
@@ -485,7 +485,7 @@
     loadAdmProfile();
     // Tab "Dashboard" mặc định active ngay khi tải trang,
     // nên phải load data ngay từ đầu (không đợi người dùng click vào tab).
-    if (typeof renderAdminDashboard === "function") renderAdminDashboard();
+    if (typeof loadAdminDashboard  === "function") loadAdminDashboard();
   });
 })();
 

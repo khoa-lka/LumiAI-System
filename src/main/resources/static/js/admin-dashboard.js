@@ -6,80 +6,867 @@
    bằng dữ liệu fetch() từ server.
    ========================================================================= */
 
-/* --- 1. BỘ DỮ LIỆU TĨNH --- */
+/* =========================================================
+   DỮ LIỆU DASHBOARD ĐƯỢC LẤY TỪ API
+   ========================================================= */
 
 const AD_METRICS = [
-  { icon: "👥", bg: "rgba(99,102,241,0.16)", fg: "#818cf8", label: "Tổng người dùng", value: "1.248", delta: "+12.5%", sub: "so với tuần trước" },
-  { icon: "📈", bg: "rgba(20,184,166,0.16)", fg: "#2dd4bf", label: "Tài khoản mới", value: "142", delta: "+15.3%", sub: "so với tuần trước" },
-  { icon: "🔒", bg: "rgba(239,68,68,0.16)", fg: "#f87171", label: "Tài khoản bị khóa", value: "27", delta: "+3.1%", sub: "so với tuần trước" },
-  { icon: "📄", bg: "rgba(59,130,246,0.16)", fg: "#60a5fa", label: "Logs hệ thống", value: "8.652", delta: "+18.7%", sub: "so với tuần trước" },
-  { icon: "🔗", bg: "rgba(168,85,247,0.16)", fg: "#c084fc", label: "Webhook Logs", value: "1.024", delta: "+9.4%", sub: "so với tuần trước" },
-  { icon: "🛡️", bg: "rgba(20,184,166,0.16)", fg: "#2dd4bf", label: "Backup thành công", value: "7", delta: "100%", sub: "so với tuần trước" },
+  {
+    icon: "👥",
+    bg: "rgba(99,102,241,0.16)",
+    fg: "#818cf8",
+    label: "Tổng người dùng",
+    value: "0",
+    delta: "0.0%",
+    sub: "so với tuần trước"
+  },
+  {
+    icon: "📈",
+    bg: "rgba(20,184,166,0.16)",
+    fg: "#2dd4bf",
+    label: "Tài khoản mới",
+    value: "0",
+    delta: "0.0%",
+    sub: "so với tuần trước"
+  },
+  {
+    icon: "🔒",
+    bg: "rgba(239,68,68,0.16)",
+    fg: "#f87171",
+    label: "Tài khoản bị khóa",
+    value: "0",
+    delta: "0.0%",
+    sub: "so với tuần trước"
+  },
+  {
+    icon: "📄",
+    bg: "rgba(59,130,246,0.16)",
+    fg: "#60a5fa",
+    label: "Logs hệ thống",
+    value: "0",
+    delta: "0.0%",
+    sub: "so với tuần trước"
+  },
+  {
+    icon: "🔗",
+    bg: "rgba(168,85,247,0.16)",
+    fg: "#c084fc",
+    label: "Webhook Logs",
+    value: "0",
+    delta: "0.0%",
+    sub: "so với tuần trước"
+  },
+  {
+    icon: "🛡️",
+    bg: "rgba(20,184,166,0.16)",
+    fg: "#2dd4bf",
+    label: "Backup thành công",
+    value: "0",
+    delta: "0.0%",
+    sub: "so với tuần trước"
+  }
 ];
 
-// Biểu đồ tổng quan 7 ngày: Người dùng / Tài khoản mới / Tài khoản bị khóa
-const AD_TREND_7D = [
-  { label: "10/05", users: 1180, newAcc: 300, banned: 300 },
-  { label: "11/05", users: 1350, newAcc: 330, banned: 305 },
-  { label: "12/05", users: 1520, newAcc: 480, banned: 310 },
-  { label: "13/05", users: 1420, newAcc: 470, banned: 315 },
-  { label: "14/05", users: 1600, newAcc: 500, banned: 320 },
-  { label: "15/05", users: 1650, newAcc: 780, banned: 322 },
-  { label: "16/05", users: 1700, newAcc: 790, banned: 325 },
-];
-
-// Phân bố vai trò người dùng
-const AD_ROLES = [
-  { label: "Admin", pct: 8.7, count: 109, color: "#60a5fa" },
-  { label: "Editor", pct: 21.6, count: 269, color: "#4ade80" },
-  { label: "User", pct: 64.1, count: 800, color: "#a78bfa" },
-  { label: "Viewer", pct: 5.6, count: 70, color: "#f59e0b" },
-];
-
-// Hoạt động theo ngày: Logs hệ thống & Webhook Logs
-const AD_ACTIVITY_7D = [
-  { label: "10/05", logs: 1120, webhook: 760 },
-  { label: "11/05", logs: 1080, webhook: 810 },
-  { label: "12/05", logs: 1300, webhook: 790 },
-  { label: "13/05", logs: 1280, webhook: 800 },
-  { label: "14/05", logs: 1050, webhook: 720 },
-  { label: "15/05", logs: 1180, webhook: 760 },
-  { label: "16/05", logs: 1250, webhook: 640 },
-];
+const AD_TREND_7D = [];
+const AD_ROLES = [];
+const AD_ACTIVITY_7D = [];
 
 const AD_SYSTEM_STATUS = [
-  { icon: "🗄️", label: "API Server", ok: true },
-  { icon: "📄", label: "Database", ok: true },
-  { icon: "📦", label: "Storage", ok: true },
-  { icon: "🛡️", label: "Backup Service", ok: true },
+  { icon: "🗄️", label: "API Server", ok: false },
+  { icon: "📄", label: "Database", ok: false },
+  { icon: "📦", label: "Storage", ok: false },
+  { icon: "🛡️", label: "Backup Service", ok: false }
 ];
 
-const AD_LATEST_BACKUP = { time: "16/05/2026 02:30:15", type: "Toàn bộ hệ thống", size: "2.45 GB", ok: true };
+const AD_LATEST_BACKUP = {
+  time: "Chưa có dữ liệu",
+  type: "Không xác định",
+  size: "0 MB",
+  ok: false
+};
 
-const AD_WEBHOOK_SUMMARY = { total: 1024, success: 892, fail: 132 };
+const AD_WEBHOOK_SUMMARY = {
+  total: 0,
+  success: 0,
+  fail: 0
+};
 
-const AD_LOGS_SUMMARY = { total: 8652, info: 6125, warn: 1842, error: 685 };
+const AD_LOGS_SUMMARY = {
+  total: 0,
+  info: 0,
+  warn: 0,
+  error: 0
+};
 
-const AD_ROLE_BADGE_CLASS = { Admin: "ad-role-admin", Editor: "ad-role-editor", User: "ad-role-user", Viewer: "ad-role-viewer" };
+const AD_ROLE_BADGE_CLASS = {
+  Admin: "ad-role-admin",
+  Manager: "ad-role-editor",
+  Staff: "ad-role-viewer",
+  Customer: "ad-role-user"
+};
 
-const AD_NEW_ACCOUNTS = [
-  { name: "nguyenvana", email: "nguyenvana@example.com", role: "User", time: "16/05/2026 14:32", active: true },
-  { name: "tranthib", email: "tranthib@example.com", role: "Editor", time: "16/05/2026 14:18", active: true },
-  { name: "leminhc", email: "leminhc@example.com", role: "User", time: "16/05/2026 14:05", active: true },
-  { name: "phamduyd", email: "phamduyd@example.com", role: "User", time: "16/05/2026 13:47", active: true },
-  { name: "hoanganh", email: "hoanganh@example.com", role: "Viewer", time: "16/05/2026 13:21", active: true },
-];
-
-const AD_ACTIVITY_LOG = [
-  { icon: "🔑", color: "#4ade80", type: "Đăng nhập", content: "Đăng nhập thành công", time: "16/05/2026 14:32:21", user: "nguyenvana", ip: "192.168.1.10" },
-  { icon: "➕", color: "#60a5fa", type: "Tạo tài khoản", content: "Tạo tài khoản mới", time: "16/05/2026 14:18:09", user: "tranthib", ip: "192.168.1.11" },
-  { icon: "✏️", color: "#f59e0b", type: "Cập nhật", content: "Cập nhật thông tin người dùng", time: "16/05/2026 14:05:33", user: "leminhc", ip: "192.168.1.12" },
-  { icon: "🚪", color: "#c084fc", type: "Đăng xuất", content: "Đăng xuất", time: "16/05/2026 13:59:12", user: "phamduyd", ip: "192.168.1.13" },
-  { icon: "🔁", color: "#f87171", type: "Thay đổi vai trò", content: "Thay đổi vai trò người dùng", time: "16/05/2026 13:47:08", user: "hoanganh", ip: "192.168.1.14" },
-];
+const AD_NEW_ACCOUNTS = [];
+const AD_ACTIVITY_LOG = [];
 
 /* --- 2. HÀM TIỆN ÍCH --- */
+const AD_ROLE_NAMES = {
+  1: "Manager",
+  2: "Staff",
+  3: "Customer",
+  4: "Admin"
+};
 
+const AD_ROLE_COLORS = {
+  Admin: "#60a5fa",
+  Manager: "#4ade80",
+  Staff: "#f59e0b",
+  Customer: "#a78bfa"
+};
+
+function adParseDate(value) {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const text = String(value).trim();
+
+  // Xử lý ngày dạng dd/MM/yyyy HH:mm:ss của backup
+  const viDate = text.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/
+  );
+
+  if (viDate) {
+    return new Date(
+      Number(viDate[3]),
+      Number(viDate[2]) - 1,
+      Number(viDate[1]),
+      Number(viDate[4] || 0),
+      Number(viDate[5] || 0),
+      Number(viDate[6] || 0)
+    );
+  }
+
+  const date = new Date(text);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function adFormatDateTime(value) {
+  const date = adParseDate(value);
+
+  if (!date) return "Không xác định";
+
+  const pad = (number) =>
+    String(number).padStart(2, "0");
+
+  return (
+    `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/` +
+    `${date.getFullYear()} ` +
+    `${pad(date.getHours())}:${pad(date.getMinutes())}`
+  );
+}
+
+function adFormatShortDate(date) {
+  const pad = (number) =>
+    String(number).padStart(2, "0");
+
+  return (
+    `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`
+  );
+}
+
+function adStartOfDay(date) {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+function adEndOfDay(date) {
+  const result = new Date(date);
+  result.setHours(23, 59, 59, 999);
+  return result;
+}
+
+function adIsDateInRange(date, start, end) {
+  return date && date >= start && date <= end;
+}
+
+function adIsSameDay(date1, date2) {
+  if (!date1 || !date2) return false;
+
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
+
+function adCalculateDelta(currentValue, previousValue) {
+  if (previousValue === 0) {
+    return currentValue === 0
+      ? "0.0%"
+      : "+100.0%";
+  }
+
+  const percent =
+    ((currentValue - previousValue) / previousValue) * 100;
+
+  const prefix = percent > 0 ? "+" : "";
+
+  return `${prefix}${percent.toFixed(1)}%`;
+}
+
+function adNormalizeLogLevel(log) {
+  const level =
+    String(log.level || "").toLowerCase();
+
+  if (["info", "warning", "error"].includes(level)) {
+    return level;
+  }
+
+  return String(log.status || "").toUpperCase() === "FAILED"
+    ? "error"
+    : "info";
+}
+
+function adNormalizeAction(action) {
+  return String(action || "")
+    .toLowerCase()
+    .replaceAll("_", " ");
+}
+
+function adIsBanLog(log) {
+  const action = adNormalizeAction(log.action);
+
+  return (
+    action.includes("khóa") &&
+    action.includes("tài khoản") &&
+    !action.includes("mở khóa")
+  );
+}
+
+function adIsUnbanLog(log) {
+  const action = adNormalizeAction(log.action);
+
+  return (
+    action.includes("mở khóa") &&
+    action.includes("tài khoản")
+  );
+}
+
+function adGetLogDisplay(log) {
+  const level = adNormalizeLogLevel(log);
+  const action = String(log.action || "Hoạt động hệ thống");
+
+  if (level === "error") {
+    return {
+      icon: "❌",
+      color: "#f87171",
+      type: "Lỗi"
+    };
+  }
+
+  if (level === "warning") {
+    return {
+      icon: "⚠️",
+      color: "#f59e0b",
+      type: action
+    };
+  }
+
+  return {
+    icon: "📄",
+    color: "#60a5fa",
+    type: action
+  };
+}
+
+async function loadAdminDashboard() {
+  const metricsHost =
+    document.getElementById("ad-metrics");
+
+  if (metricsHost) {
+    metricsHost.innerHTML = `
+      <div class="ad-metric-card"
+           style="grid-column:1/-1; text-align:center; padding:30px;">
+        Đang tải dữ liệu Dashboard...
+      </div>
+    `;
+  }
+
+  const results = await Promise.allSettled([
+    API.getAdminUsers(),
+    API.getSysLogs(),
+    API.getWebhooks(),
+    API.getDbBackups()
+  ]);
+
+  const usersResult = results[0];
+  const logsResult = results[1];
+  const webhooksResult = results[2];
+  const backupsResult = results[3];
+
+  const users =
+    usersResult.status === "fulfilled" &&
+    Array.isArray(usersResult.value)
+      ? usersResult.value
+      : [];
+
+  const logs =
+    logsResult.status === "fulfilled" &&
+    Array.isArray(logsResult.value)
+      ? logsResult.value
+      : [];
+
+  const webhooks =
+    webhooksResult.status === "fulfilled" &&
+    Array.isArray(webhooksResult.value)
+      ? webhooksResult.value
+      : [];
+
+  const backups =
+    backupsResult.status === "fulfilled" &&
+    Array.isArray(backupsResult.value)
+      ? backupsResult.value
+      : [];
+
+  if (usersResult.status === "rejected") {
+    console.error("Lỗi tải users:", usersResult.reason);
+  }
+
+  if (logsResult.status === "rejected") {
+    console.error("Lỗi tải Syslogs:", logsResult.reason);
+  }
+
+  if (webhooksResult.status === "rejected") {
+    console.error(
+      "Lỗi tải Webhook Logs:",
+      webhooksResult.reason
+    );
+  }
+
+  if (backupsResult.status === "rejected") {
+    console.error(
+      "Lỗi tải Backups:",
+      backupsResult.reason
+    );
+  }
+
+  const now = new Date();
+
+  const currentStart = adStartOfDay(now);
+  currentStart.setDate(currentStart.getDate() - 6);
+
+  const previousStart = new Date(currentStart);
+  previousStart.setDate(previousStart.getDate() - 7);
+
+  const previousEnd = new Date(currentStart);
+  previousEnd.setMilliseconds(-1);
+
+  const normalizedUsers = users.map((user) => ({
+    ...user,
+    createdAt: adParseDate(user.createdDate)
+  }));
+
+  const normalizedLogs = logs.map((log) => ({
+    ...log,
+    level: adNormalizeLogLevel(log),
+    createdAt: adParseDate(log.time)
+  }));
+
+  const normalizedWebhooks = webhooks.map((item) => {
+    const code = Number(item.code) || 0;
+
+    return {
+      ...item,
+      code: code,
+      status:
+        String(item.status || "").toLowerCase() ||
+        (code >= 200 && code < 300
+          ? "success"
+          : "failed"),
+      createdAt: adParseDate(item.time)
+    };
+  });
+
+  const normalizedBackups = backups
+    .map((backup) => ({
+      ...backup,
+      createdAt: adParseDate(backup.date)
+    }))
+    .sort((a, b) => {
+      const timeA = a.createdAt
+        ? a.createdAt.getTime()
+        : 0;
+
+      const timeB = b.createdAt
+        ? b.createdAt.getTime()
+        : 0;
+
+      return timeB - timeA;
+    });
+
+  const currentLogs = normalizedLogs.filter((log) =>
+    adIsDateInRange(log.createdAt, currentStart, now)
+  );
+
+  const previousLogs = normalizedLogs.filter((log) =>
+    adIsDateInRange(
+      log.createdAt,
+      previousStart,
+      previousEnd
+    )
+  );
+
+  const currentWebhooks =
+    normalizedWebhooks.filter((item) =>
+      adIsDateInRange(
+        item.createdAt,
+        currentStart,
+        now
+      )
+    );
+
+  const previousWebhooks =
+    normalizedWebhooks.filter((item) =>
+      adIsDateInRange(
+        item.createdAt,
+        previousStart,
+        previousEnd
+      )
+    );
+
+  const currentBackups =
+    normalizedBackups.filter((backup) =>
+      adIsDateInRange(
+        backup.createdAt,
+        currentStart,
+        now
+      )
+    );
+
+  const previousBackups =
+    normalizedBackups.filter((backup) =>
+      adIsDateInRange(
+        backup.createdAt,
+        previousStart,
+        previousEnd
+      )
+    );
+
+  const currentNewAccounts =
+    normalizedUsers.filter((user) =>
+      adIsDateInRange(
+        user.createdAt,
+        currentStart,
+        now
+      )
+    );
+
+  const previousNewAccounts =
+    normalizedUsers.filter((user) =>
+      adIsDateInRange(
+        user.createdAt,
+        previousStart,
+        previousEnd
+      )
+    );
+
+  const bannedUsers = normalizedUsers.filter(
+    (user) =>
+      String(user.status || "").toLowerCase() ===
+      "banned"
+  );
+
+  const banEventsThisWeek =
+    currentLogs.filter(adIsBanLog).length;
+
+  const unbanEventsThisWeek =
+    currentLogs.filter(adIsUnbanLog).length;
+
+  const previousBannedCount = Math.max(
+    0,
+    bannedUsers.length -
+      banEventsThisWeek +
+      unbanEventsThisWeek
+  );
+
+  const usersBeforeWeek = normalizedUsers.filter(
+    (user) =>
+      !user.createdAt ||
+      user.createdAt < currentStart
+  ).length;
+
+  AD_METRICS[0].value =
+    normalizedUsers.length.toLocaleString("vi-VN");
+
+  AD_METRICS[0].delta =
+    adCalculateDelta(
+      normalizedUsers.length,
+      usersBeforeWeek
+    );
+
+  AD_METRICS[1].value =
+    currentNewAccounts.length.toLocaleString("vi-VN");
+
+  AD_METRICS[1].delta =
+    adCalculateDelta(
+      currentNewAccounts.length,
+      previousNewAccounts.length
+    );
+
+  AD_METRICS[2].value =
+    bannedUsers.length.toLocaleString("vi-VN");
+
+  AD_METRICS[2].delta =
+    adCalculateDelta(
+      bannedUsers.length,
+      previousBannedCount
+    );
+
+  AD_METRICS[3].value =
+    currentLogs.length.toLocaleString("vi-VN");
+
+  AD_METRICS[3].delta =
+    adCalculateDelta(
+      currentLogs.length,
+      previousLogs.length
+    );
+
+  AD_METRICS[4].value =
+    currentWebhooks.length.toLocaleString("vi-VN");
+
+  AD_METRICS[4].delta =
+    adCalculateDelta(
+      currentWebhooks.length,
+      previousWebhooks.length
+    );
+
+  AD_METRICS[5].value =
+    currentBackups.length.toLocaleString("vi-VN");
+
+  AD_METRICS[5].delta =
+    adCalculateDelta(
+      currentBackups.length,
+      previousBackups.length
+    );
+
+  // ---------------------------------------------------------
+  // Biểu đồ tổng quan 7 ngày
+  // ---------------------------------------------------------
+
+  const trendData = [];
+
+  for (let offset = 6; offset >= 0; offset--) {
+    const day = new Date(now);
+    day.setDate(day.getDate() - offset);
+
+    const start = adStartOfDay(day);
+    const end = adEndOfDay(day);
+
+    const totalUsersAtDay =
+      normalizedUsers.filter((user) =>
+        !user.createdAt || user.createdAt <= end
+      ).length;
+
+    const newAccountsAtDay =
+      normalizedUsers.filter((user) =>
+        adIsDateInRange(
+          user.createdAt,
+          start,
+          end
+        )
+      ).length;
+
+    const bannedAtDay =
+      normalizedLogs.filter(
+        (log) =>
+          adIsBanLog(log) &&
+          adIsDateInRange(
+            log.createdAt,
+            start,
+            end
+          )
+      ).length;
+
+    trendData.push({
+      label: adFormatShortDate(day),
+      users: totalUsersAtDay,
+      newAcc: newAccountsAtDay,
+      banned: bannedAtDay
+    });
+  }
+
+  AD_TREND_7D.splice(
+    0,
+    AD_TREND_7D.length,
+    ...trendData
+  );
+
+  // ---------------------------------------------------------
+  // Phân bố vai trò
+  // ---------------------------------------------------------
+
+  const roleOrder = [
+    "Admin",
+    "Manager",
+    "Staff",
+    "Customer"
+  ];
+
+  const roleData = roleOrder.map((roleName) => {
+    const roleId = Number(
+      Object.keys(AD_ROLE_NAMES).find(
+        (key) => AD_ROLE_NAMES[key] === roleName
+      )
+    );
+
+    const count = normalizedUsers.filter(
+      (user) => Number(user.roleId) === roleId
+    ).length;
+
+    const percent =
+      normalizedUsers.length === 0
+        ? 0
+        : (count / normalizedUsers.length) * 100;
+
+    return {
+      label: roleName,
+      pct: Number(percent.toFixed(1)),
+      count: count,
+      color: AD_ROLE_COLORS[roleName]
+    };
+  });
+
+  AD_ROLES.splice(
+    0,
+    AD_ROLES.length,
+    ...roleData
+  );
+
+  // ---------------------------------------------------------
+  // Logs và Webhooks theo ngày
+  // ---------------------------------------------------------
+
+  const activityData = [];
+
+  for (let offset = 6; offset >= 0; offset--) {
+    const day = new Date(now);
+    day.setDate(day.getDate() - offset);
+
+    const start = adStartOfDay(day);
+    const end = adEndOfDay(day);
+
+    activityData.push({
+      label: adFormatShortDate(day),
+
+      logs: normalizedLogs.filter((log) =>
+        adIsDateInRange(
+          log.createdAt,
+          start,
+          end
+        )
+      ).length,
+
+      webhook: normalizedWebhooks.filter((item) =>
+        adIsDateInRange(
+          item.createdAt,
+          start,
+          end
+        )
+      ).length
+    });
+  }
+
+  AD_ACTIVITY_7D.splice(
+    0,
+    AD_ACTIVITY_7D.length,
+    ...activityData
+  );
+
+  // ---------------------------------------------------------
+  // Trạng thái dịch vụ
+  // ---------------------------------------------------------
+
+  const apiOk = results.some(
+    (result) => result.status === "fulfilled"
+  );
+
+  AD_SYSTEM_STATUS[0].ok = apiOk;
+
+  AD_SYSTEM_STATUS[1].ok =
+    usersResult.status === "fulfilled" &&
+    logsResult.status === "fulfilled";
+
+  AD_SYSTEM_STATUS[2].ok =
+    backupsResult.status === "fulfilled";
+
+  AD_SYSTEM_STATUS[3].ok =
+    backupsResult.status === "fulfilled";
+
+  // ---------------------------------------------------------
+  // Backup gần nhất
+  // ---------------------------------------------------------
+
+  const latestBackup = normalizedBackups[0];
+
+  if (latestBackup) {
+    Object.assign(AD_LATEST_BACKUP, {
+      time:
+        latestBackup.date ||
+        adFormatDateTime(latestBackup.createdAt),
+
+      type:
+        latestBackup.type || "Thủ công",
+
+      size:
+        latestBackup.size || "Không xác định",
+
+      ok: true
+    });
+  } else {
+    Object.assign(AD_LATEST_BACKUP, {
+      time: "Chưa có bản sao lưu",
+      type: "Không xác định",
+      size: "0 MB",
+      ok: false
+    });
+  }
+
+  // ---------------------------------------------------------
+  // Tổng quan Webhook
+  // ---------------------------------------------------------
+
+  const webhookSuccess =
+    currentWebhooks.filter(
+      (item) =>
+        String(item.status).toLowerCase() ===
+        "success"
+    ).length;
+
+  Object.assign(AD_WEBHOOK_SUMMARY, {
+    total: currentWebhooks.length,
+    success: webhookSuccess,
+    fail: currentWebhooks.length - webhookSuccess
+  });
+
+  // ---------------------------------------------------------
+  // Tổng quan Syslogs
+  // ---------------------------------------------------------
+
+  Object.assign(AD_LOGS_SUMMARY, {
+    total: currentLogs.length,
+
+    info: currentLogs.filter(
+      (log) => log.level === "info"
+    ).length,
+
+    warn: currentLogs.filter(
+      (log) => log.level === "warning"
+    ).length,
+
+    error: currentLogs.filter(
+      (log) => log.level === "error"
+    ).length
+  });
+
+  // ---------------------------------------------------------
+  // 5 tài khoản mới nhất
+  // ---------------------------------------------------------
+
+  const newestAccounts = [...normalizedUsers]
+    .sort((a, b) => {
+      const timeA = a.createdAt
+        ? a.createdAt.getTime()
+        : 0;
+
+      const timeB = b.createdAt
+        ? b.createdAt.getTime()
+        : 0;
+
+      return timeB - timeA;
+    })
+    .slice(0, 5)
+    .map((user) => ({
+      name:
+        user.fullname ||
+        user.email?.split("@")[0] ||
+        "Không xác định",
+
+      email:
+        user.email || "Không xác định",
+
+      role:
+        AD_ROLE_NAMES[Number(user.roleId)] ||
+        "Không xác định",
+
+      time:
+        adFormatDateTime(user.createdAt),
+
+      active:
+        String(user.status || "").toLowerCase() ===
+        "active"
+    }));
+
+  AD_NEW_ACCOUNTS.splice(
+    0,
+    AD_NEW_ACCOUNTS.length,
+    ...newestAccounts
+  );
+
+  // ---------------------------------------------------------
+  // 5 hoạt động hệ thống gần nhất
+  // ---------------------------------------------------------
+
+  const newestLogs = [...normalizedLogs]
+    .sort((a, b) => {
+      const timeA = a.createdAt
+        ? a.createdAt.getTime()
+        : 0;
+
+      const timeB = b.createdAt
+        ? b.createdAt.getTime()
+        : 0;
+
+      return timeB - timeA;
+    })
+    .slice(0, 5)
+    .map((log) => {
+      const display = adGetLogDisplay(log);
+
+      return {
+        icon: display.icon,
+        color: display.color,
+        type: display.type,
+
+        content:
+          log.detail ||
+          log.action ||
+          "Không có nội dung",
+
+        time:
+          adFormatDateTime(log.createdAt),
+
+        user:
+          log.user || "system",
+
+        ip:
+          log.ip || "Không xác định"
+      };
+    });
+
+  AD_ACTIVITY_LOG.splice(
+    0,
+    AD_ACTIVITY_LOG.length,
+    ...newestLogs
+  );
+
+  renderAdminDashboard();
+}
+
+window.loadAdminDashboard = loadAdminDashboard;
 function adFormatNum(n) {
   return n.toLocaleString("vi-VN");
 }
@@ -111,8 +898,12 @@ function renderAdTrendChart() {
 
   const W = 640, H = 230, padL = 10, padR = 10, padT = 15, padB = 26;
   const innerW = W - padL - padR, innerH = H - padT - padB;
-  const maxVal = Math.max(...data.map((d) => Math.max(d.users, d.newAcc, d.banned))) * 1.15;
-  const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
+const maxVal = Math.max(
+  1,
+  ...data.map((d) =>
+    Math.max(d.users, d.newAcc, d.banned)
+  )
+) * 1.15;  const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
 
   const xAt = (i) => padL + stepX * i;
   const yAt = (v) => padT + innerH - (v / maxVal) * innerH;
@@ -209,8 +1000,12 @@ function renderAdRoleDonut() {
 function renderAdActivityBars() {
   const host = document.getElementById("ad-activity-bars");
   if (!host) return;
-  const maxVal = Math.max(...AD_ACTIVITY_7D.map((d) => Math.max(d.logs, d.webhook)));
-
+const maxVal = Math.max(
+  1,
+  ...AD_ACTIVITY_7D.map((d) =>
+    Math.max(d.logs, d.webhook)
+  )
+);
   host.innerHTML = `
     <div class="ad-bars">
       ${AD_ACTIVITY_7D.map((d) => {
@@ -257,8 +1052,15 @@ function renderAdWebhookBox() {
   const host = document.getElementById("ad-webhook-box");
   if (!host) return;
   const w = AD_WEBHOOK_SUMMARY;
-  const pct = ((w.success / w.total) * 100).toFixed(1);
-  const failPct = ((w.fail / w.total) * 100).toFixed(1);
+const pct =
+  w.total === 0
+    ? "0.0"
+    : ((w.success / w.total) * 100).toFixed(1);
+
+const failPct =
+  w.total === 0
+    ? "0.0"
+    : ((w.fail / w.total) * 100).toFixed(1);
   host.innerHTML = `
     <div class="ad-kv-row"><i class="ad-kv-icon">🔗</i><span class="ad-kv-label">Tổng số</span><span class="ad-kv-val">${adFormatNum(w.total)}</span></div>
     <div class="ad-kv-row"><i class="ad-kv-icon ad-kv-green">✅</i><span class="ad-kv-label">Thành công</span><span class="ad-kv-val">${adFormatNum(w.success)} (${pct}%)</span></div>
@@ -269,9 +1071,20 @@ function renderAdLogsBox() {
   const host = document.getElementById("ad-logs-box");
   if (!host) return;
   const l = AD_LOGS_SUMMARY;
-  const infoPct = ((l.info / l.total) * 100).toFixed(1);
-  const warnPct = ((l.warn / l.total) * 100).toFixed(1);
-  const errPct = ((l.error / l.total) * 100).toFixed(1);
+ const infoPct =
+  l.total === 0
+    ? "0.0"
+    : ((l.info / l.total) * 100).toFixed(1);
+
+const warnPct =
+  l.total === 0
+    ? "0.0"
+    : ((l.warn / l.total) * 100).toFixed(1);
+
+const errPct =
+  l.total === 0
+    ? "0.0"
+    : ((l.error / l.total) * 100).toFixed(1);
   host.innerHTML = `
     <div class="ad-kv-row"><i class="ad-kv-icon">📄</i><span class="ad-kv-label">Tổng số</span><span class="ad-kv-val">${adFormatNum(l.total)}</span></div>
     <div class="ad-kv-row"><i class="ad-kv-icon ad-kv-blue">🔵</i><span class="ad-kv-label">Thông báo</span><span class="ad-kv-val">${adFormatNum(l.info)} (${infoPct}%)</span></div>
@@ -297,8 +1110,11 @@ function renderAdNewAccountsTable() {
           <td>${a.email}</td>
           <td><span class="ad-role-badge ${AD_ROLE_BADGE_CLASS[a.role] || ""}">${a.role}</span></td>
           <td>${a.time}</td>
-          <td><span class="md-tx-status ok">Hoạt động</span></td>
-        </tr>`
+<td>
+  <span class="md-tx-status ${a.active ? "ok" : "failed"}">
+    ${a.active ? "Hoạt động" : "Bị khóa"}
+  </span>
+</td>        </tr>`
         ).join("")}
       </tbody>
     </table>`;

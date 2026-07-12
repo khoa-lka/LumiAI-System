@@ -20,10 +20,10 @@ function switchAdminTab(tabName) {
   if (activeTab) activeTab.style.display = "block";
 
   // Gọi hàm load dữ liệu tương ứng khi chuyển tab
-  if (tabName === "dashboard") renderAdminDashboard();
+  if (tabName === "dashboard") loadAdminDashboard();
   if (tabName === "ban") renderAdminBanList();
   if (tabName === "syslog") loadAdminSysLogs();
-  if (tabName === "webhook") renderAdminWebhookPage();
+  if (tabName === "webhook") loadAdminWebhooks();
   if (tabName === "db") renderAdminDbBackups();
 }
 
@@ -313,38 +313,234 @@ function banUserAction(userId) {
 // renderAdminWebhookPage() trong file js/admin-webhook.js — dùng dữ liệu tĩnh
 // theo đúng yêu cầu giao diện tham khảo (LumiAI).
 
-const ADM_DB_MOCK_BACKUPS = [
-  { ver: "LAS_DB_v1.0.2", date: "19/06/2026 23:59", size: "145.2 MB", type: "Tự động" },
-  { ver: "LAS_DB_v1.0.1", date: "18/06/2026 15:30", size: "144.8 MB", type: "Thủ công" },
-];
-
 function renderAdminDbBackups() {
   const tbody = document.getElementById("admin-db-tbody");
-  if (!tbody || typeof API === "undefined") return;
+
+  if (!tbody || typeof API === "undefined") {
+    return;
+  }
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="5"
+          style="text-align:center; padding:24px; color:var(--adm-muted);">
+        Đang tải danh sách bản sao lưu...
+      </td>
+    </tr>
+  `;
 
   API.getDbBackups()
     .then((backups) => {
-      renderAdminDbRows((backups && backups.length) ? backups : ADM_DB_MOCK_BACKUPS, !backups || !backups.length);
+      renderAdminDbRows(
+        Array.isArray(backups) ? backups : []
+      );
     })
-    .catch((err) => {
-      console.error("🚨 Lỗi tải Backups:", err);
-      renderAdminDbRows(ADM_DB_MOCK_BACKUPS, true);
+    .catch((error) => {
+      console.error("Lỗi tải backup:", error);
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5"
+              style="text-align:center; padding:24px; color:#ff4742;">
+            Không tải được danh sách backup:
+            ${error.message || "Lỗi kết nối API"}
+          </td>
+        </tr>
+      `;
     });
 }
 
-function renderAdminDbRows(backups, isMock) {
+function renderAdminDbRows(backups) {
   const tbody = document.getElementById("admin-db-tbody");
-  const mockNotice = isMock
-    ? `<tr><td colspan="5" style="text-align:center; color:var(--adm-gold); background:rgba(229,169,59,0.08); padding:10px; font-size:12px; font-style:italic;">
-         ⚠ Đang hiển thị DỮ LIỆU MẪU (chưa kết nối được API backups) - chỉ để xem trước giao diện.
-       </td></tr>`
-    : "";
 
-  tbody.innerHTML = mockNotice + backups
-    .map(
-      (b) =>
-        `<tr><td><b>${b.ver}</b></td><td>${b.date}</td><td>${b.size}</td><td>${b.type}</td><td><button class="btn-admin-action edit" onclick="restoreBackupAction('${b.ver}')">Phục hồi (Restore)</button></td></tr>`,
-    )
+  if (!tbody) return;
+
+  if (!backups.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5"
+            style="text-align:center; padding:28px; color:var(--adm-muted);">
+          Chưa có bản sao lưu nào.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = backups
+    .map((backup) => {
+      return `
+        <tr>
+          <td>
+            <b>${backup.ver}</b>
+          </td>
+
+          <td>${backup.date}</td>
+
+          <td>${backup.size}</td>
+
+          <td>${backup.type}</td>
+
+          <td>
+            <button
+              class="btn-admin-action edit"
+              onclick="restoreBackupAction('${backup.ver}')"
+            >
+              Phục hồi (Restore)
+            </button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function createManualBackupAction() {
+  if (
+    typeof API === "undefined" ||
+    typeof API.createBackup !== "function"
+  ) {
+    alert("Chức năng tạo backup chưa được kết nối API.");
+    return;
+  }
+
+  const button = event?.currentTarget;
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Đang tạo backup...";
+  }
+
+  API.createBackup()
+    .then((result) => {
+      alert(
+        result.message || "Tạo bản sao lưu thành công!"
+      );
+
+      renderAdminDbBackups();
+    })
+    .catch((error) => {
+      alert(
+        "Không thể tạo backup: "
+          + (error.message || "Lỗi không xác định")
+      );
+    })
+    .finally(() => {
+      if (button) {
+        button.disabled = false;
+        button.textContent =
+          "+ Tạo bản sao lưu thủ công";
+      }
+    });
+}
+
+function restoreBackupAction(fileName) {
+  const confirmed = confirm(
+    `Bạn có chắc chắn muốn phục hồi database từ bản:\n\n` +
+    `${fileName}\n\n` +
+    `Dữ liệu hiện tại sẽ bị ghi đè. Hệ thống sẽ tự tạo ` +
+    `một backup an toàn trước khi phục hồi.`
+  );
+
+  if (!confirmed) return;
+
+  if (
+    typeof API === "undefined" ||
+    typeof API.restoreBackup !== "function"
+  ) {
+    alert("Chức năng phục hồi chưa được kết nối API.");
+    return;
+  }
+
+  API.restoreBackup(fileName)
+    .then((result) => {
+      alert(
+        result.message ||
+        "Phục hồi database thành công. Hãy restart backend."
+      );
+    })
+    .catch((error) => {
+      alert(
+        "Không thể phục hồi database: "
+          + (error.message || "Lỗi không xác định")
+      );
+    });
+}
+
+function renderAdminDbBackups() {
+  const tbody = document.getElementById("admin-db-tbody");
+
+  if (!tbody || typeof API === "undefined") {
+    return;
+  }
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="5"
+          style="text-align:center; padding:24px; color:var(--adm-muted);">
+        Đang tải danh sách bản sao lưu...
+      </td>
+    </tr>
+  `;
+
+  API.getDbBackups()
+    .then((backups) => {
+      const backupList =
+        Array.isArray(backups) ? backups : [];
+
+      renderAdminDbRows(backupList);
+    })
+    .catch((error) => {
+      console.error("Lỗi tải Backups:", error);
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5"
+              style="text-align:center; padding:24px; color:#ff4742;">
+            Không tải được danh sách backup:
+            ${error.message || "Lỗi kết nối API"}
+          </td>
+        </tr>
+      `;
+    });
+}
+
+function renderAdminDbRows(backups) {
+  const tbody = document.getElementById("admin-db-tbody");
+
+  if (!tbody) return;
+
+  if (!backups.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5"
+            style="text-align:center; padding:28px; color:var(--adm-muted);">
+          Chưa có bản sao lưu nào.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = backups
+    .map((backup) => {
+      return `
+        <tr>
+          <td><b>${backup.ver}</b></td>
+          <td>${backup.date}</td>
+          <td>${backup.size}</td>
+          <td>${backup.type}</td>
+          <td>
+            <button
+              class="btn-admin-action edit"
+              onclick="restoreBackupAction('${backup.ver}')"
+            >
+              Phục hồi (Restore)
+            </button>
+          </td>
+        </tr>
+      `;
+    })
     .join("");
 }
 

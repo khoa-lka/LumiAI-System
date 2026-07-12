@@ -1,5 +1,5 @@
 package com.cinema.backend.controllers;
-
+import com.cinema.backend.service.DatabaseBackupService;
 import com.cinema.backend.entities.Account;
 import com.cinema.backend.entities.AccountNotification;
 import com.cinema.backend.entities.SysLogDTO;
@@ -20,7 +20,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+import com.cinema.backend.entities.WebhookLog;
+import com.cinema.backend.repositories.WebhookLogRepository;
 @RestController
 @RequestMapping("/api/admin")
 @CrossOrigin(origins = "*")
@@ -35,7 +36,10 @@ public class AdminController {
     @Autowired
     private AccountNotificationRepository notificationRepository;
 
-
+@Autowired
+private WebhookLogRepository webhookLogRepository;
+@Autowired
+private DatabaseBackupService databaseBackupService;
     // =========================================================
     // 1. LẤY DANH SÁCH TÀI KHOẢN
     // =========================================================
@@ -49,10 +53,12 @@ public class AdminController {
 
                     Map<String, Object> user = new LinkedHashMap<>();
 
-                    user.put("accountId", account.getAccountId());
-                    user.put("email", account.getEmail());
-                    user.put("roleId", account.getRoleId());
-                    user.put("status", account.getStatus());
+                   user.put("accountId", account.getAccountId());
+user.put("fullname", account.getFullname());
+user.put("email", account.getEmail());
+user.put("roleId", account.getRoleId());
+user.put("status", account.getStatus());
+user.put("createdDate", account.getCreatedDate());
 
                     return user;
                 })
@@ -327,4 +333,86 @@ public class AdminController {
 
         return request.getRemoteAddr();
     }
+    @GetMapping("/webhooks")
+public List<WebhookLog> getWebhookLogs() {
+    return webhookLogRepository.findAllByOrderByIdDesc();
+}
+// =========================================================
+// LẤY DANH SÁCH BACKUP
+// =========================================================
+
+@GetMapping("/backups")
+public ResponseEntity<?> getDatabaseBackups() {
+
+    try {
+        return ResponseEntity.ok(
+                databaseBackupService.getAllBackups()
+        );
+    } catch (Exception exception) {
+        return ResponseEntity.internalServerError().body(
+                Map.of(
+                        "message",
+                        "Không thể lấy danh sách backup: "
+                                + exception.getMessage()
+                )
+        );
+    }
+}
+
+
+// =========================================================
+// TẠO BACKUP THỦ CÔNG
+// =========================================================
+
+@PostMapping("/backups")
+public ResponseEntity<?> createDatabaseBackup() {
+
+    try {
+        Map<String, Object> backup =
+                databaseBackupService.createManualBackup();
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "success", true,
+                        "message", "Tạo bản sao lưu thành công",
+                        "backup", backup
+                )
+        );
+    } catch (Exception exception) {
+        return ResponseEntity.internalServerError().body(
+                Map.of(
+                        "success", false,
+                        "message",
+                        "Không thể tạo backup: "
+                                + exception.getMessage()
+                )
+        );
+    }
+}
+
+
+// =========================================================
+// PHỤC HỒI DATABASE
+// =========================================================
+
+@PostMapping("/backups/{fileName}/restore")
+public ResponseEntity<?> restoreDatabaseBackup(
+        @PathVariable String fileName
+) {
+
+    try {
+        return ResponseEntity.ok(
+                databaseBackupService.restoreBackup(fileName)
+        );
+    } catch (Exception exception) {
+        return ResponseEntity.internalServerError().body(
+                Map.of(
+                        "success", false,
+                        "message",
+                        "Không thể phục hồi database: "
+                                + exception.getMessage()
+                )
+        );
+    }
+}
 }
