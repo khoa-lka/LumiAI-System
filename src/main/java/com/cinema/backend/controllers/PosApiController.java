@@ -1,20 +1,12 @@
 package com.cinema.backend.controllers;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,10 +72,6 @@ public class PosApiController {
 
     @Autowired
     private OrderDetailRepository orderDetailRepository;
-
-    // Gọi Service VNPAY
-    @Autowired
-    private com.cinema.backend.Payment.VNPayService vnPayService;
 
     @GetMapping("/movies")
     public ResponseEntity<List<Movie>> getActiveMovies() {
@@ -227,6 +215,41 @@ public class PosApiController {
         }
     }
 
+    // Dùng cho Máy POS (Staff), tab "In vé": tra cứu đơn hàng/vé thật trong DB
+    // theo mã đơn (order_code, VD "ORD-...") hoặc mã vé (ticket_code, VD "TIX-...").
+    // Trước đây tab này chỉ so khớp với đơn vừa bán gần nhất lưu trong localStorage
+    // của trình duyệt (không tra được đơn cũ / đơn từ máy khác) — nay gọi thẳng DB
+    // nên tìm được mọi đơn đã tạo qua /checkout.
+    @GetMapping("/orders/search")
+    public ResponseEntity<?> searchOrder(@RequestParam String code) {
+        String trimmedCode = code == null ? "" : code.trim();
+        if (trimmedCode.isEmpty()) {
+            return ResponseEntity.badRequest().body("Vui lòng nhập mã vé hoặc mã đơn hàng.");
+        }
+
+        List<Map<String, Object>> rows = ticketRepository.findTicketsByOrderOrTicketCode(trimmedCode);
+        if (rows.isEmpty()) {
+            return ResponseEntity.badRequest().body("Không tìm thấy vé/đơn hàng với mã: " + trimmedCode);
+        }
+
+        Map<String, Object> first = rows.get(0);
+        List<String> seats = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            Object seatCode = row.get("seatCode");
+            if (seatCode != null) seats.add(String.valueOf(seatCode));
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("orderCode", first.get("orderCode"));
+        result.put("ticketCode", first.get("ticketCode"));
+        result.put("movie", first.get("movieTitle"));
+        result.put("date", first.get("showDate"));
+        result.put("showtime", first.get("showTime"));
+        result.put("seats", seats);
+        result.put("totalPaid", first.get("totalPaid"));
+        return ResponseEntity.ok(result);
+    }
+
     // API Kiểm tra và áp dụng mã giảm giá
     @GetMapping("/vouchers/validate")
     public ResponseEntity<?> validateVoucher(@RequestParam String code) {
@@ -237,100 +260,5 @@ public class PosApiController {
         }
 
         return ResponseEntity.badRequest().body("Mã giảm giá không tồn tại hoặc đã hết hạn.");
-    }
-
-    // ==========================================================
-    // API 1: TẠO LINK THANH TOÁN VNPAY (Để JS vẽ thành mã QR)
-    // ==========================================================
-    @GetMapping("/vnpay/create-url")
-    public ResponseEntity<String> createVNPayUrl(
-            @RequestParam int amount,
-            HttpServletRequest request) {
-
-        String url = vnPayService.createPaymentUrl(amount, "Thanh toan ve phim LumiAI", request);
-        return ResponseEntity.ok(url);
-    }
-
-    // ==========================================================
-    // API 2: NHẬN KẾT QUẢ TỪ VNPAY TRẢ VỀ (vnp_ReturnUrl)
-    // Trang này được mở ở TAB MỚI (do staff.js dùng window.open() thay vì
-    // redirect nguyên tab POS). Vì vậy sau khi có kết quả, trang tự động
-    // postMessage() về window.opener (chính là tab máy POS đang chờ) để
-    // POS tự nhảy tiếp bước hoàn tất đơn — không cần nhân viên tự bấm gì
-    // ngoài việc tab này tự đóng lại.
-    // ==========================================================
-    @GetMapping(value = "/vnpay-return", produces = MediaType.TEXT_HTML_VALUE)
-    public ResponseEntity<String> vnpayReturn(HttpServletRequest request) {
-        try {
-            Map<String, String> fields = new HashMap<>();
-            for (Enumeration<String> params = request.getParameterNames(); params.hasMoreElements();) {
-                String fieldName = params.nextElement();
-                String fieldValue = request.getParameter(fieldName);
-                if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                    fields.put(fieldName, fieldValue);
-                }
-            }
-
-            String vnp_SecureHash = request.getParameter("vnp_SecureHash");
-            if (fields.containsKey("vnp_SecureHashType")) fields.remove("vnp_SecureHashType");
-            if (fields.containsKey("vnp_SecureHash")) fields.remove("vnp_SecureHash");
-
-            List<String> fieldNames = new ArrayList<>(fields.keySet());
-            Collections.sort(fieldNames);
-            StringBuilder hashData = new StringBuilder();
-            Iterator<String> itr = fieldNames.iterator();
-            while (itr.hasNext()) {
-                String fieldName = itr.next();
-                String fieldValue = fields.get(fieldName);
-                if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                    hashData.append(fieldName).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-                    if (itr.hasNext()) {
-                        hashData.append('&');
-                    }
-                }
-            }
-
-            String signValue = com.cinema.backend.Payment.VnPayConfig.hmacSHA512(com.cinema.backend.Payment.VnPayConfig.vnp_SecretKey, hashData.toString());
-
-            if (signValue.equals(vnp_SecureHash)) {
-                if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
-                    return ResponseEntity.ok(buildVnpayResultPage(true,
-                            "GIAO DỊCH THÀNH CÔNG!",
-                            "Bạn đã thanh toán thành công. Đang quay lại máy POS..."));
-                } else {
-                    return ResponseEntity.badRequest().body(buildVnpayResultPage(false,
-                            "GIAO DỊCH THẤT BẠI",
-                            "Giao dịch đã bị hủy hoặc không thành công."));
-                }
-            } else {
-                return ResponseEntity.badRequest().body(buildVnpayResultPage(false,
-                        "LỖI BẢO MẬT",
-                        "Chữ ký không hợp lệ."));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(buildVnpayResultPage(false,
-                    "LỖI HỆ THỐNG",
-                    "Đã có lỗi xảy ra: " + e.getMessage()));
-        }
-    }
-
-    // Trang kết quả VNPAY dùng chung cho tab con: báo kết quả về tab POS (window.opener)
-    // qua postMessage rồi tự đóng tab. Nếu không có window.opener (ví dụ người dùng mở
-    // trực tiếp URL này) thì chỉ hiển thị kết quả, không làm gì thêm.
-    private String buildVnpayResultPage(boolean success, String title, String message) {
-        String color = success ? "#22c55e" : "#f87171";
-        return "<!DOCTYPE html><html lang=\"vi\"><head><meta charset=\"UTF-8\">"
-                + "<title>Kết quả thanh toán VNPAY</title>"
-                + "<style>body{font-family:Arial,sans-serif;background:#0e0e11;color:#fff;"
-                + "display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center}"
-                + ".box{padding:32px}h1{color:" + color + ";margin:0 0 10px}p{color:#9a9aa3;font-size:14px}</style>"
-                + "</head><body><div class=\"box\"><h1>" + title + "</h1><p>" + message + "</p></div>"
-                + "<script>"
-                + "try{if(window.opener&&!window.opener.closed){"
-                + "window.opener.postMessage({type:'VNPAY_POS_RESULT',success:" + success + "},'*');"
-                + "window.opener.focus();}}catch(e){}"
-                + "setTimeout(function(){window.close();},1200);"
-                + "</script>"
-                + "</body></html>";
     }
 }
