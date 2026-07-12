@@ -515,6 +515,15 @@
                   <span class="arrow-btn-icon"></span>
                   TRUY CẬP DASHBOARD
                 </button>
+                <button
+                  class="arrow-btn arrow-btn-dashboard"
+                  id="pro-subtab-btn-pos"
+                  onclick="openPosConfirm()"
+                  style="display: none"
+                >
+                  <span class="arrow-btn-icon"></span>
+                  MÁY POS
+                </button>
               </div>
             </div>
 
@@ -1457,6 +1466,21 @@
       </div>
     </div>
 
+    <!-- POPUP XÁC NHẬN CHUYỂN MÁY POS (chỉ Staff) -->
+    <div class="cgv-modal-overlay" id="pos-confirm-modal">
+      <div class="dash-confirm-box">
+        <h3 class="dash-confirm-title">Truy cập Máy POS</h3>
+        <p class="dash-confirm-text">
+          Bạn sắp rời giao diện khách hàng để chuyển sang <b>Máy POS bán vé tại quầy</b>.
+          Bạn có chắc chắn muốn tiếp tục?
+        </p>
+        <div class="dash-confirm-actions">
+          <button class="dash-btn dash-btn-cancel" onclick="closePosConfirm()">Hủy</button>
+          <button class="dash-btn dash-btn-ok" onclick="confirmGoPos()">Xác nhận</button>
+        </div>
+      </div>
+    </div>
+
     <!-- POPUP THÔNG BÁO CHẶN ĐẶT VÉ (Manager/Admin) - thay cho alert() mặc định -->
     <div class="cgv-modal-overlay" id="booking-restricted-modal">
       <div class="dash-confirm-box">
@@ -1530,11 +1554,11 @@
   <!-- 3. Các file giao diện và tính năng chạy sau cùng omg omg omg omg  -->
   <script src="js/api.js?v=17"></script>   
   <script src="js/ui.js?v=18"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
-  <script src="js/auth.js?v=18"></script>
+  <script src="js/auth.js?v=19"></script>
   <script src="js/admin.js?v=17"></script>
   <script src="js/booking.js?v=18"></script>
   <script src="js/breadcrumb.js?v=17"></script>
-  <script src="js/dashboard-access.js?v=17"></script>
+  <script src="js/dashboard-access.js?v=18"></script>
 
   <!-- ===== Bổ sung từ nhánh admin: popup thông báo tài khoản (VD: bị đổi quyền) ===== -->
   <div id="account-notification-popup" class="account-notification-overlay">

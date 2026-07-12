@@ -77,6 +77,20 @@ function submitCgvLogin(event) {
         sessionStorage.setItem("roleId", uData.roleId);
         window.currentLoggedInId = uData.accountId;
 
+        // STAFF (roleId = 2): đăng nhập xong vào thẳng Máy POS, không cần
+        // đi qua giao diện trang chủ như khách hàng/Manager/Admin.
+        if (Number(uData.roleId) === 2) {
+          closeAuthModal();
+          window.showCgvToast(
+            `Chào mừng ${uData.fullName}! Đang chuyển sang Máy POS...`,
+            "success",
+          );
+          setTimeout(() => {
+            window.location.href = "/staff.html";
+          }, 600);
+          return;
+        }
+
         // 2. ĐIỀU HƯỚNG: Tất cả vai trò đều vào HOME sau đăng nhập.
         //    Manager(1) và Admin(4) truy cập Dashboard CHỦ ĐỘNG qua tab
         //    "TRUY CẬP DASHBOARD" (Manager -> manager.html, Admin -> admin.html).
