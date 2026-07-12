@@ -7307,7 +7307,6 @@ select.profile-readonly-input:not([disabled]) {
   justify-content: flex-end;
   padding: 18px 24px 22px;
 }
-
 .syslog-detail-button {
   min-width: 110px;
   padding: 11px 22px;
