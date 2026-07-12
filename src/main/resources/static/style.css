@@ -4601,6 +4601,11 @@ select.profile-readonly-input:not([disabled]) {
   background: rgba(255, 255, 255, 0.06);
   color: var(--muted);
 }
+.mp-status.hidden {
+  background: rgba(138, 138, 147, 0.16);
+  color: #8a8a93;
+  border: 1px dashed rgba(138, 138, 147, 0.5);
+}
 .mp-status.available {
   background: var(--success-bg);
   color: var(--success-text);
@@ -6852,6 +6857,79 @@ select.profile-readonly-input:not([disabled]) {
 .mpcal-chip{font-size:10.5px;color:#fff;padding:2px 6px;border-radius:5px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid rgba(255,255,255,.5);}
 .mpcal-chip-conflict{outline:1.5px solid #ff4d4f;outline-offset:-1px;}
 .mpcal-more{font-size:10px;color:#8a8a93;margin-top:1px;}
+
+/* Sự kiện của phim đang ở trạng thái "Ẩn" — viền đứt để phân biệt trực quan */
+.mpcal-evt-hidden{border-style:dashed;opacity:.72;}
+.mpcal-chip-hidden{border-style:dashed;opacity:.7;}
+
+/* ========================================================================
+   🖱️ TƯƠNG TÁC TRỰC TIẾP TRÊN MA TRẬN: click / kéo-thả / resize / tạo nhanh
+   ======================================================================== */
+.mpcal-evt{cursor:grab;user-select:none;}
+.mpcal-evt-dragging{cursor:grabbing;box-shadow:0 6px 18px rgba(0,0,0,.5);z-index:50;}
+.mpcal-evt-resize{
+  position:absolute;left:0;right:0;bottom:0;height:6px;cursor:ns-resize;
+}
+.mpcal-daycol{cursor:pointer;}
+.mpcal-daycol:hover{background:rgba(255,255,255,0.02);}
+
+.mp-evt-popover{
+  display:none;position:absolute;z-index:2000;width:250px;
+  background:#1c1c21;border:1px solid rgba(255,255,255,0.16);border-radius:12px;
+  box-shadow:0 16px 40px rgba(0,0,0,.5);padding:14px;color:#e4e4e7;
+}
+.mp-evt-popover.open{display:block;}
+.mp-evt-pop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:14px;}
+.mp-evt-pop-close{cursor:pointer;color:#8a8a93;font-weight:bold;}
+.mp-evt-pop-close:hover{color:#ff6b35;}
+.mp-evt-pop-body{display:flex;flex-direction:column;gap:4px;}
+.mp-evt-pop-body label{font-size:11px;color:#9a9aa3;margin-top:6px;}
+.mp-evt-pop-body input,.mp-evt-pop-body select{
+  padding:7px 9px;border:1px solid rgba(255,255,255,0.14);border-radius:6px;
+  background:var(--surface-2,#151517);color:#e4e4e7;font-size:13px;outline:none;
+}
+.mp-evt-pop-actions{display:flex;gap:8px;margin-top:12px;}
+.mp-evt-pop-actions button{flex:1;padding:8px;border-radius:8px;font-size:12.5px;cursor:pointer;}
+
+/* ========================================================================
+   🔎 BỘ LỌC MULTI-SELECT TRÊN MA TRẬN LỊCH CHIẾU
+   (Trạng thái phim / Phòng chiếu / Phim — chọn nhiều giá trị cùng lúc)
+   ======================================================================== */
+.mp-msf-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;}
+.mp-msf{position:relative;}
+.mp-msf-btn{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 14px;border:1px solid rgba(255,255,255,0.14);border-radius:8px;
+  background:var(--surface-2,#151517);color:var(--text-dark,#e4e4e7);
+  font-size:13px;font-weight:600;cursor:pointer;transition:.15s;
+}
+.mp-msf-btn:hover{border-color:#ff6b35;}
+.mp-msf.open .mp-msf-btn{border-color:#ff6b35;color:#fff;}
+.mp-msf-count{
+  background:rgba(255,107,53,0.15);color:#ff6b35;
+  border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700;
+}
+.mp-msf-panel{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:500;
+  min-width:220px;max-height:280px;overflow-y:auto;
+  background:#1c1c21;border:1px solid rgba(255,255,255,0.14);border-radius:10px;
+  box-shadow:0 12px 30px rgba(0,0,0,0.45);padding:8px;
+}
+.mp-msf.open .mp-msf-panel{display:block;}
+.mp-msf-opt{
+  display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:6px;
+  cursor:pointer;font-size:13px;color:#d4d4d8;
+}
+.mp-msf-opt:hover{background:rgba(255,255,255,0.06);}
+.mp-msf-opt input[type="checkbox"]{width:15px;height:15px;accent-color:#ff6b35;cursor:pointer;}
+.mp-msf-opt .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.mp-msf-empty{padding:10px 8px;color:#8a8a93;font-size:12px;text-align:center;}
+.mp-msf-clear{
+  background:transparent;border:1px dashed rgba(255,255,255,0.25);color:#c4c4cc;
+  border-radius:8px;padding:8px 12px;font-size:12.5px;cursor:pointer;
+}
+.mp-msf-clear:hover{border-color:#ff6b35;color:#ff6b35;}
+
 /* ===== Bổ sung từ nhánh admin: popup xác nhận khóa TK / chi tiết log / thông báo đổi quyền ===== */
 .admin-role-popup-overlay {
     position: fixed;
