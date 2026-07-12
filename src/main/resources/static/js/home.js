@@ -1688,7 +1688,10 @@ window.calculateCgvCart = function () {
   if (sumFnbEl) sumFnbEl.innerText = totalFnbItems + " Combo";
 
   currentPriceTotal = total;
-  let finalTotal = currentPriceTotal * (1 - appliedVoucherDiscount);
+  
+  // 🌟 ĐÃ SỬA: Trừ đi số tiền giảm mặt thực tế (appliedVoucherDiscount mang giá trị VND)
+  let finalTotal = currentPriceTotal - appliedVoucherDiscount;
+  if (finalTotal < 0) finalTotal = 0;
 
   const sumTotalEl = document.getElementById("sum-total");
   if (sumTotalEl)
@@ -1727,6 +1730,7 @@ window.goToBookingStep = function (step) {
       backBtn.setAttribute("onclick", "window.goToBookingStep(1)");
     }
   } else if (step === 3) {
+    window.autoTriggerSystemPromotion();
     if (mainBtn) {
       mainBtn.innerText = "Thanh Toán Ngay";
       mainBtn.style.background = "#10B981";
@@ -1871,19 +1875,66 @@ window.selectPaymentGatewayType = function (type, element) {
 };
 
 window.applyVoucher = function () {
-  const code = document
-    .getElementById("voucher-input")
-    .value.trim()
-    .toUpperCase();
-  if (code === "LAS20") {
-    appliedVoucherDiscount = 0.2;
-    alert("Áp dụng thành công Voucher giảm giá 20% tổng hóa đơn vé!");
-  } else {
-    appliedVoucherDiscount = 0;
-    alert("Mã Voucher không chính xác hoặc đã hết thời gian áp dụng!");
+  const code = document.getElementById("voucher-input").value.trim().toUpperCase();
+  if (!code) {
+    alert("Vui lòng điền mã Voucher!");
+    return;
   }
-  window.calculateCgvCart();
-  window.goToBookingStep(3); // Cập nhật hiển thị số tiền mới ngoài hóa đơn
+
+  // Gọi cổng API check mã nhập tay công khai của Customer đã nâng cấp ở Controller
+  fetch(`http://localhost:8080/api/vouchers/${code}`)
+    .then((res) => {
+      if (!res.ok) return res.text().then(text => { throw new Error(text) });
+      return res.json();
+    })
+    .then((voucher) => {
+      window.selectedVoucherCode = voucher.voucherCode;
+      
+      // Tính toán giá trị giảm dựa trên loại giảm giá (PERCENT hoặc MONEY)
+      if (voucher.discountType === "PERCENT") {
+        appliedVoucherDiscount = (currentPriceTotal * voucher.discountValue) / 100;
+      } else {
+        appliedVoucherDiscount = voucher.discountValue;
+      }
+
+      alert(`Áp dụng thành công mã giảm giá ${code}!`);
+      window.calculateCgvCart();
+      window.goToBookingStep(3); // Cập nhật hiển thị số tiền mới ngoài hóa đơn
+    })
+    .catch((err) => {
+      appliedVoucherDiscount = 0;
+      window.selectedVoucherCode = "";
+      alert("🚨 " + err.message);
+      window.calculateCgvCart();
+    });
+};
+
+// 🌟 THÊM MỚI HÀM NÀY NGAY DƯỚI HÀM APPLYVOUCHER TRÊN:
+window.autoTriggerSystemPromotion = function() {
+  // Gọi API quét ngầm voucher tự động dựa trên tổng tiền hóa đơn hiện tại
+  fetch(`http://localhost:8080/api/vouchers/check-auto?grossAmount=${currentPriceTotal}`)
+    .then(res => {
+      if (!res.ok) return null;
+      return res.json();
+    })
+    .then(autoVoucher => {
+      if (autoVoucher) {
+        window.selectedVoucherCode = autoVoucher.voucherCode;
+        if (autoVoucher.discountType === "PERCENT") {
+          appliedVoucherDiscount = (currentPriceTotal * autoVoucher.discountValue) / 100;
+        } else {
+          appliedVoucherDiscount = autoVoucher.discountValue;
+        }
+        console.log(`✨ Hệ thống tự động kích hoạt ưu đãi: ${autoVoucher.voucherCode}`);
+        
+        const voucherInput = document.getElementById("voucher-input");
+        if (voucherInput) {
+          voucherInput.value = autoVoucher.voucherCode;
+        }
+        window.calculateCgvCart();
+      }
+    })
+    .catch(err => console.error("Lỗi quét voucher tự động: ", err));
 };
 
 // --- 7. TÍCH HỢP CỔNG THANH TOÁN VIETQR VÀ XUẤT VÉ ĐIỆN TỬ ---
@@ -2008,23 +2059,20 @@ window.executeFinalCheckout = function () {
 
     body: JSON.stringify({
       accountId: user.accountId,
-
-      showtimeId: window.currentSelectedShowtimeId, // ID của suất chiếu
-
+      showtimeId: window.currentSelectedShowtimeId || 1,
       movieName: currentMovie,
-
       seats: ticketSeats,
-
       email: currentEmail,
-
-      totalMoney: ticketTotal,
-
+      
+      // 🌟 ĐÃ SỬA 1: Tính toán số tiền thật an toàn trừ mệnh giá VND gửi đi
+      totalMoney: (currentPriceTotal - appliedVoucherDiscount < 0) ? 0 : (currentPriceTotal - appliedVoucherDiscount),
       paymentMethod: "VNPAY",
 
-      voucherCode: selectedVoucherCode,
+      // 🌟 ĐÃ SỬA 2: Gửi kèm mã Voucher đang áp dụng (Auto hoặc Nhập tay)
+      voucherCode: window.selectedVoucherCode || "",
 
       fnb: ticketFnb.map((i) => ({
-        foodItemId: i.id,
+        foodItemId: i.id || i.foodItemId,
         quantity: i.qty,
       })),
     }),

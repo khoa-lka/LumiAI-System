@@ -2066,10 +2066,10 @@ window.submitAddShowtimeForm = function() {
 };
 
 // ==========================================================================
-// 🚀 BỘ CHỨC NĂNG QUẢN LÝ CHIẾN DỊCH VOUCHER / KHUYẾN MÃI (BẢO ĐẢM THÔNG NÚT 100%)
+// 🚀 BỘ CHỨC NĂNG QUẢN LÝ CHIẾN DỊCH VOUCHER / KHUYẾN MÃI (TÁCH BIỆT)
 // ==========================================================================
 
-// Hàm ẩn/hiện Modal gốc (🎯 ĐÃ SỬA: Khớp chuẩn đét ID mp-create-promo-modal bên HTML)
+// Hàm ẩn/hiện Modal gốc
 window.openCreatePromoModal = function() {
   const modal = document.getElementById("mp-create-promo-modal");
   if (modal) modal.style.display = "flex";
@@ -2078,6 +2078,24 @@ window.openCreatePromoModal = function() {
 window.closeCreatePromoModal = function() {
   const modal = document.getElementById("mp-create-promo-modal");
   if (modal) modal.style.display = "none";
+};
+
+// 🌟 BỔ SUNG 1: Hàm co giãn khối điều kiện tự động ngầm khi Manager chọn AUTO
+window.toggleVoucherConditionFields = function() {
+  const applyType = document.getElementById("v-apply-type").value;
+  const conditionsBlock = document.getElementById("v-auto-conditions-block");
+  if (conditionsBlock) {
+    conditionsBlock.style.display = (applyType === "AUTO") ? "block" : "none";
+  }
+};
+
+// 🌟 BỔ SUNG 2: Hàm ẩn/hiện ô điền giá trị thứ trong tuần (Thứ 4 điền số 3)
+window.toggleConditionValueField = function() {
+  const condType = document.getElementById("v-condition-type").value;
+  const valueGroup = document.getElementById("v-condition-value-group");
+  if (valueGroup) {
+    valueGroup.style.display = (condType === "DAY_OF_WEEK") ? "block" : "none";
+  }
 };
 
 // 1. Tải danh sách Voucher từ database lên bảng Admin thông qua API tổng
@@ -2091,6 +2109,9 @@ window.loadManagerVouchers = function() {
     .then((vouchers) => {
       window.vouchersList = vouchers;
       renderVoucherRows(vouchers);
+      
+      // 🌟 TIỆN ÍCH KÈM THEO: Tự động nạp luôn dữ liệu vào select box của tab Chiến dịch (nếu tab này đang mở)
+      window.loadVouchersToSelectDropdown();
     })
     .catch((err) => {
       console.error(err);
@@ -2098,10 +2119,32 @@ window.loadManagerVouchers = function() {
     });
 };
 
+// 🌟 BỔ SUNG 3: Hàm bốc danh sách Voucher đổ vào select box của tab Chiến dịch/Events
+window.loadVouchersToSelectDropdown = function() {
+  const selectBox = document.getElementById("event-voucher-select");
+  if (!selectBox) return;
+
+  // Giữ lại option mặc định không chọn mã
+  let optionsHtml = `<option value="">-- Không kèm Voucher (Sự kiện tin tức thuần túy) --</option>`;
+
+  if (window.vouchersList && window.vouchersList.length > 0) {
+    // Chỉ nạp các voucher đang ACTIVE để liên kết chiến dịch truyền thông
+    const activeVouchers = window.vouchersList.filter(v => v.status === "ACTIVE" || v.status == null);
+    activeVouchers.forEach(v => {
+      let unit = v.discountType === "PERCENT" ? "%" : "đ";
+      optionsHtml += `<option value="${v.voucherId}">${v.voucherCode} (Giảm ${v.discountValue.toLocaleString("vi-VN")}${unit})</option>`;
+    });
+  }
+  selectBox.innerHTML = optionsHtml;
+};
+
 // 2. Mở modal để THÊM MỚI Voucher (Xóa sạch dữ liệu cũ trong form)
 window.openAddVoucherModal = function() {
   document.getElementById("v-id").value = "";
   document.getElementById("v-code").value = "";
+  document.getElementById("v-apply-type").value = "MANUAL";
+  document.getElementById("v-condition-type").value = "NONE";
+  document.getElementById("v-condition-value").value = "";
   document.getElementById("v-type").value = "PERCENT";
   document.getElementById("v-value").value = "";
   document.getElementById("v-max").value = "0";
@@ -2110,6 +2153,8 @@ window.openAddVoucherModal = function() {
   document.getElementById("v-expired").value = "";
   document.getElementById("v-status").value = "ACTIVE";
 
+  window.toggleVoucherConditionFields();
+  window.toggleConditionValueField();
   document.getElementById("mp-promo-modal-title").innerText = "Thêm Mới Chiến Dịch Khuyến Mãi";
   window.openCreatePromoModal();
 };
@@ -2121,6 +2166,9 @@ window.openEditVoucherModal = function(id) {
 
   document.getElementById("v-id").value = v.voucherId;
   document.getElementById("v-code").value = v.voucherCode;
+  document.getElementById("v-apply-type").value = v.applyType || "MANUAL";
+  document.getElementById("v-condition-type").value = v.conditionType || "NONE";
+  document.getElementById("v-condition-value").value = v.conditionValue || "";
   document.getElementById("v-type").value = v.discountType;
   document.getElementById("v-value").value = v.discountValue;
   document.getElementById("v-max").value = v.maxDiscount || 0;
@@ -2132,6 +2180,8 @@ window.openEditVoucherModal = function(id) {
   }
   document.getElementById("v-status").value = v.status || "ACTIVE";
 
+  window.toggleVoucherConditionFields();
+  window.toggleConditionValueField();
   document.getElementById("mp-promo-modal-title").innerText = "Cập Nhật Chiến Dịch Khuyến Mãi";
   window.openCreatePromoModal();
 };
@@ -2140,6 +2190,9 @@ window.openEditVoucherModal = function(id) {
 window.submitVoucherForm = function() {
   const id = document.getElementById("v-id").value;
   const code = document.getElementById("v-code").value.trim().toUpperCase();
+  const applyType = document.getElementById("v-apply-type").value;
+  const conditionType = document.getElementById("v-condition-type").value;
+  const conditionValue = document.getElementById("v-condition-value").value.trim();
   const type = document.getElementById("v-type").value;
   const value = parseFloat(document.getElementById("v-value").value) || 0;
   const max = parseFloat(document.getElementById("v-max").value) || 0;
@@ -2160,6 +2213,9 @@ window.submitVoucherForm = function() {
     usageLimit: limit,
     expiredDate: expired ? `${expired}:00` : null,
     status: status,
+    applyType: applyType,
+    conditionType: applyType === "AUTO" ? conditionType : "NONE",
+    conditionValue: (applyType === "AUTO" && conditionType === "DAY_OF_WEEK") ? conditionValue : "NONE",
     createdBy: parseInt(sessionStorage.getItem("roleId")) || 1,
     updatedBy: parseInt(sessionStorage.getItem("roleId")) || 1
   };
@@ -2175,7 +2231,7 @@ window.submitVoucherForm = function() {
     .catch(err => alert("Lỗi xử lý Voucher: " + err.message));
 };
 
-// 6. Lọc/tìm kiếm danh sách voucher theo mã, loại giảm giá, trạng thái (client-side)
+// 6. Lọc/tìm kiếm danh sách voucher theo mã, loại giảm giá, trạng thái
 window.filterManagerPromo = function() {
   const tbody = document.getElementById("mp-promo-tbody");
   if (!tbody || !window.vouchersList) return;
@@ -2194,7 +2250,6 @@ window.filterManagerPromo = function() {
   renderVoucherRows(filtered);
 };
 
-// Tách phần render bảng ra hàm riêng để dùng chung cho load & filter
 function renderVoucherRows(vouchers) {
   const tbody = document.getElementById("mp-promo-tbody");
   tbody.innerHTML = "";

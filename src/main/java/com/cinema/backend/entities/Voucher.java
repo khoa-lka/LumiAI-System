@@ -3,9 +3,7 @@ package com.cinema.backend.entities;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -43,6 +41,19 @@ public class Voucher {
     @Column(name = "minimum_order")
     private Integer minimumOrder;
 
+    @Column(name = "status")
+    private String status; // 🌟 Trạng thái đồng bộ: ACTIVE / INACTIVE
+
+    // 💡 3 trường bọc lót tính năng Auto quét ngày đặc biệt
+    @Column(name = "apply_type")
+    private String applyType; // 'MANUAL' hoặc 'AUTO'
+
+    @Column(name = "condition_type")
+    private String conditionType; // 'DAY_OF_WEEK', 'LAST_DAY_OF_MONTH', 'NONE'
+
+    @Column(name = "condition_value")
+    private String conditionValue; // '3' (Thứ 4), 'TRUE', 'NONE'
+
     @Column(name = "created_by")
     private Integer createdBy;
 
@@ -53,98 +64,53 @@ public class Voucher {
     @OneToMany(mappedBy = "voucher")
     private List<Order1> orders;
 
-
-    
     public Voucher() {
     }
 
-    public Integer getVoucherId() {
-        return voucherId;
-    }
+    // --- GETTERS & SETTERS CHO CÁC TRƯỜNG MỚI BỔ SUNG ---
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public void setVoucherId(Integer voucherId) {
-        this.voucherId = voucherId;
-    }
+    public String getApplyType() { return applyType; }
+    public void setApplyType(String applyType) { this.applyType = applyType; }
 
-    public String getVoucherCode() {
-        return voucherCode;
-    }
+    public String getConditionType() { return conditionType; }
+    public void setConditionType(String conditionType) { this.conditionType = conditionType; }
 
-    public void setVoucherCode(String voucherCode) {
-        this.voucherCode = voucherCode;
-    }
+    public String getConditionValue() { return conditionValue; }
+    public void setConditionValue(String conditionValue) { this.conditionValue = conditionValue; }
 
-    public Double getDiscountValue() {
-        return discountValue;
-    }
+    // --- GETTERS & SETTERS CŨ GIỮ NGUYÊN ---
+    public Integer getVoucherId() { return voucherId; }
+    public void setVoucherId(Integer voucherId) { this.voucherId = voucherId; }
 
-    public void setDiscountValue(Double discountValue) {
-        this.discountValue = discountValue;
-    }
+    public String getVoucherCode() { return voucherCode; }
+    public void setVoucherCode(String voucherCode) { this.voucherCode = voucherCode; }
 
-    public LocalDateTime getExpiredDate() {
-        return expiredDate;
-    }
+    public Double getDiscountValue() { return discountValue; }
+    public void setDiscountValue(Double discountValue) { this.discountValue = discountValue; }
 
-    public void setExpiredDate(LocalDateTime expiredDate) {
-        this.expiredDate = expiredDate;
-    }
+    public LocalDateTime getExpiredDate() { return expiredDate; }
+    public void setExpiredDate(LocalDateTime expiredDate) { this.expiredDate = expiredDate; }
 
-    public Integer getUsageLimit() {
-        return usageLimit;
-    }
+    public Integer getUsageLimit() { return usageLimit; }
+    public void setUsageLimit(Integer usageLimit) { this.usageLimit = usageLimit; }
 
-    public void setUsageLimit(Integer usageLimit) {
-        this.usageLimit = usageLimit;
-    }
+    public String getDiscountType() { return discountType; }
+    public void setDiscountType(String discountType) { this.discountType = discountType; }
 
-    public Integer getCreatedBy() {
-        return createdBy;
-    }
+    public BigDecimal getMaxDiscount() { return maxDiscount; }
+    public void setMaxDiscount(BigDecimal maxDiscount) { this.maxDiscount = maxDiscount; }
 
-    public void setCreatedBy(Integer createdBy) {
-        this.createdBy = createdBy;
-    }
+    public Integer getMinimumOrder() { return minimumOrder; }
+    public void setMinimumOrder(Integer minimumOrder) { this.minimumOrder = minimumOrder; }
 
-    public Integer getUpdatedBy() {
-        return updatedBy;
-    }
+    public Integer getCreatedBy() { return createdBy; }
+    public void setCreatedBy(Integer createdBy) { this.createdBy = createdBy; }
 
-    public void setUpdatedBy(Integer updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+    public Integer getUpdatedBy() { return updatedBy; }
+    public void setUpdatedBy(Integer updatedBy) { this.updatedBy = updatedBy; }
 
-    public String getDiscountType() {
-        return discountType;
-    }
-
-    public void setDiscountType(String discountType) {
-        this.discountType = discountType;
-    }
-
-    public BigDecimal getMaxDiscount() {
-        return maxDiscount;
-    }
-
-    public void setMaxDiscount(BigDecimal maxDiscount) {
-        this.maxDiscount = maxDiscount;
-    }
-
-    public Integer getMinimumOrder() {
-        return minimumOrder;
-    }
-
-    public void setMinimumOrder(Integer minimumOrder) {
-        this.minimumOrder = minimumOrder;
-    }
-
-    public List<Order1> getOrders() {
-        return orders;
-    }
-
-    public void setOrders(List<Order1> orders) {
-        this.orders = orders;
-    }
-
-    
+    public List<Order1> getOrders() { return orders; }
+    public void setOrders(List<Order1> orders) { this.orders = orders; }
 }

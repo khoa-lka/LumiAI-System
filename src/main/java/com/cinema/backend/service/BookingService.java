@@ -122,35 +122,73 @@ if (request.getFnb() != null) {
     }
 }
 
-
-
+    // ==========================================================
+    // 🌟 KHỞI TẠO VÀ TÍNH TOÁN HÓA ĐƠN AN TOÀN TRÊN SERVER (ĐÃ SỬA CHỐNG HACK)
+    // ==========================================================
     Order1 order = new Order1();
-
     order.setOrderCode("ORDER-" + System.currentTimeMillis());
     order.setCreatedDate(LocalDateTime.now());
-
     order.setGrossAmount(grossAmount);
-    order.setFinalAmount(request.getTotalMoney());
 
+    // Tính toán số tiền thực tế được giảm từ Voucher ngay trên Server dựa trên dữ liệu gốc
+    BigDecimal totalDiscount = BigDecimal.ZERO;
+    Voucher appliedVoucher = null;
+
+    // 1. Kiểm tra mã Voucher (Áp dụng cho cả luồng nhập tay MANUAL và tự động AUTO quét ngầm)
+    if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
+        Optional<Voucher> voucherOpt = voucherRepository.findByVoucherCode(request.getVoucherCode());
+        if (voucherOpt.isPresent()) {
+            Voucher v = voucherOpt.get();
+            
+            // Các chốt chặn kiểm tra: trạng thái hoạt động, lượt dùng, hạn dùng và hạn mức đơn hàng tối thiểu
+            boolean isActive = "ACTIVE".equalsIgnoreCase(v.getStatus());
+            boolean isNotExpired = (v.getExpiredDate() == null || v.getExpiredDate().isAfter(LocalDateTime.now()));
+            boolean hasUsage = v.getUsageLimit() > 0;
+            boolean meetMinOrder = (v.getMinimumOrder() == null || grossAmount.compareTo(BigDecimal.valueOf(v.getMinimumOrder())) >= 0);
+
+            if (isActive && isNotExpired && hasUsage && meetMinOrder) {
+                appliedVoucher = v;
+                if ("PERCENT".equalsIgnoreCase(v.getDiscountType())) {
+                    // Xử lý giảm theo tỷ lệ phần trăm (%)
+                    BigDecimal calculatedDiscount = grossAmount.multiply(BigDecimal.valueOf(v.getDiscountValue())).divide(BigDecimal.valueOf(100));
+                    
+                    // Khống chế mức giảm tối đa nếu chiến dịch có thiết lập max_discount
+                    if (v.getMaxDiscount() != null && v.getMaxDiscount().compareTo(BigDecimal.ZERO) > 0) {
+                        if (calculatedDiscount.compareTo(v.getMaxDiscount()) > 0) {
+                            calculatedDiscount = v.getMaxDiscount();
+                        }
+                    }
+                    totalDiscount = calculatedDiscount;
+                } else {
+                    // Xử lý giảm trừ thẳng mệnh giá tiền mặt cố định (FIXED / MONEY)
+                    totalDiscount = BigDecimal.valueOf(v.getDiscountValue());
+                }
+            }
+        }
+    }
+
+    // 2. Chốt hạ số tiền cuối cùng (Final Amount) tuyệt đối an toàn trên Server
+    BigDecimal finalAmount = grossAmount.subtract(totalDiscount);
+    if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
+        finalAmount = BigDecimal.ZERO;
+    }
+
+    order.setFinalAmount(finalAmount); // 🌟 ĐÃ SỬA: Lưu số tiền tính từ Server chứ không lấy trực tiếp từ Client!
     order.setOrderStatus("COMPLETED");
     order.setPaymentMethod(request.getPaymentMethod());
     order.setPaymentStatus("SUCCESS");
-
     order.setCustomer(customer);
     order.setShowtime(showtime);
 
-    if (request.getVoucherCode() != null &&
-            !request.getVoucherCode().isBlank()) {
-
-        Voucher voucher = voucherRepository
-                .findByVoucherCode(request.getVoucherCode())
-                .orElseThrow(() -> new RuntimeException("Voucher not found"));
-
-        order.setVoucher(voucher);
+    if (appliedVoucher != null) {
+        order.setVoucher(appliedVoucher);
     }
-System.out.println("SAVE ORDER");
+
+    System.out.println("SAVE ORDER SAFELY WITH FINAL AMOUNT: " + finalAmount);
     order = orderRepository.save(order);
-System.out.println("ORDER ID = " + order.getOrderId());
+    System.out.println("ORDER ID = " + order.getOrderId());
+
+    
     // =========================
     // Tạo Ticket + OrderDetail
     // =========================
