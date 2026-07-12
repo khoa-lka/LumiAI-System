@@ -14,6 +14,7 @@ import java.util.Optional;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
@@ -252,8 +253,13 @@ public class PosApiController {
 
     // ==========================================================
     // API 2: NHẬN KẾT QUẢ TỪ VNPAY TRẢ VỀ (vnp_ReturnUrl)
+    // Trang này được mở ở TAB MỚI (do staff.js dùng window.open() thay vì
+    // redirect nguyên tab POS). Vì vậy sau khi có kết quả, trang tự động
+    // postMessage() về window.opener (chính là tab máy POS đang chờ) để
+    // POS tự nhảy tiếp bước hoàn tất đơn — không cần nhân viên tự bấm gì
+    // ngoài việc tab này tự đóng lại.
     // ==========================================================
-    @GetMapping("/vnpay-return")
+    @GetMapping(value = "/vnpay-return", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> vnpayReturn(HttpServletRequest request) {
         try {
             Map<String, String> fields = new HashMap<>();
@@ -288,15 +294,43 @@ public class PosApiController {
 
             if (signValue.equals(vnp_SecureHash)) {
                 if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
-                    return ResponseEntity.ok("<h1>GIAO DỊCH THÀNH CÔNG!</h1><p>Bạn đã thanh toán thành công, vui lòng nhận vé tại quầy.</p>");
+                    return ResponseEntity.ok(buildVnpayResultPage(true,
+                            "GIAO DỊCH THÀNH CÔNG!",
+                            "Bạn đã thanh toán thành công. Đang quay lại máy POS..."));
                 } else {
-                    return ResponseEntity.badRequest().body("<h1>GIAO DỊCH THẤT BẠI</h1><p>Giao dịch đã bị hủy hoặc không thành công.</p>");
+                    return ResponseEntity.badRequest().body(buildVnpayResultPage(false,
+                            "GIAO DỊCH THẤT BẠI",
+                            "Giao dịch đã bị hủy hoặc không thành công."));
                 }
             } else {
-                return ResponseEntity.badRequest().body("<h1>LỖI BẢO MẬT</h1><p>Chữ ký không hợp lệ.</p>");
+                return ResponseEntity.badRequest().body(buildVnpayResultPage(false,
+                        "LỖI BẢO MẬT",
+                        "Chữ ký không hợp lệ."));
             }
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Lỗi hệ thống: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(buildVnpayResultPage(false,
+                    "LỖI HỆ THỐNG",
+                    "Đã có lỗi xảy ra: " + e.getMessage()));
         }
+    }
+
+    // Trang kết quả VNPAY dùng chung cho tab con: báo kết quả về tab POS (window.opener)
+    // qua postMessage rồi tự đóng tab. Nếu không có window.opener (ví dụ người dùng mở
+    // trực tiếp URL này) thì chỉ hiển thị kết quả, không làm gì thêm.
+    private String buildVnpayResultPage(boolean success, String title, String message) {
+        String color = success ? "#22c55e" : "#f87171";
+        return "<!DOCTYPE html><html lang=\"vi\"><head><meta charset=\"UTF-8\">"
+                + "<title>Kết quả thanh toán VNPAY</title>"
+                + "<style>body{font-family:Arial,sans-serif;background:#0e0e11;color:#fff;"
+                + "display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center}"
+                + ".box{padding:32px}h1{color:" + color + ";margin:0 0 10px}p{color:#9a9aa3;font-size:14px}</style>"
+                + "</head><body><div class=\"box\"><h1>" + title + "</h1><p>" + message + "</p></div>"
+                + "<script>"
+                + "try{if(window.opener&&!window.opener.closed){"
+                + "window.opener.postMessage({type:'VNPAY_POS_RESULT',success:" + success + "},'*');"
+                + "window.opener.focus();}}catch(e){}"
+                + "setTimeout(function(){window.close();},1200);"
+                + "</script>"
+                + "</body></html>";
     }
 }

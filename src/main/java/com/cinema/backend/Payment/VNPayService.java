@@ -8,14 +8,23 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+// Service tạo link thanh toán VNPAY dùng cho Máy POS của Staff.
+// Dùng chung VnPayConfig đã có sẵn trong project (không đổi gì ở VnPayConfig).
 @Service
 public class VNPayService {
 
     public String createPaymentUrl(int amount, String orderInfo, HttpServletRequest request) {
         String vnp_TxnRef = "ORD" + System.currentTimeMillis();
-        
+
         // Lấy IP từ file Config của bạn
         String vnp_IpAddr = VnPayConfig.getIpAddress(request);
+
+        // ⚠️ QUAN TRỌNG: KHÔNG dùng VnPayConfig.vnp_ReturnUrl (đang trỏ cứng về
+        // "/index.html" — trang chủ của customer). Nếu dùng chung, VNPAY sẽ luôn
+        // trả kết quả về trang chủ customer thay vì tab POS, khiến máy POS không
+        // thể tự nhận biết thanh toán đã xong. Máy POS cần một đường trả về riêng
+        // (/api/pos/vnpay-return) để tab con tự động báo kết quả lại cho tab POS.
+        String posReturnUrl = getRequestBaseUrl(request) + "/api/pos/vnpay-return";
 
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", VnPayConfig.vnp_Version);
@@ -27,7 +36,7 @@ public class VNPayService {
         vnp_Params.put("vnp_OrderInfo", orderInfo);
         vnp_Params.put("vnp_OrderType", "other");
         vnp_Params.put("vnp_Locale", "vn");
-        vnp_Params.put("vnp_ReturnUrl", VnPayConfig.vnp_ReturnUrl);
+        vnp_Params.put("vnp_ReturnUrl", posReturnUrl);
         vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
@@ -44,7 +53,7 @@ public class VNPayService {
         StringBuilder hashData = new StringBuilder();
         StringBuilder query = new StringBuilder();
         Iterator<String> itr = fieldNames.iterator();
-        
+
         while (itr.hasNext()) {
             String fieldName = (String) itr.next();
             String fieldValue = (String) vnp_Params.get(fieldName);
@@ -53,8 +62,8 @@ public class VNPayService {
                     hashData.append(fieldName).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
                     query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString()))
                          .append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-                } catch (Exception e) { 
-                    e.printStackTrace(); 
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
                 if (itr.hasNext()) {
                     query.append('&');
@@ -62,12 +71,22 @@ public class VNPayService {
                 }
             }
         }
-        
+
         String queryUrl = query.toString();
         // Gọi hàm băm từ file Config của bạn
         String vnp_SecureHash = VnPayConfig.hmacSHA512(VnPayConfig.vnp_SecretKey, hashData.toString());
         queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
-        
+
         return VnPayConfig.vnp_PayUrl + "?" + queryUrl;
+    }
+
+    // Tự dựng lại "http://host:port" từ chính request đang gọi tới, để URL trả về
+    // luôn đúng dù chạy localhost lúc dev hay đổi sang domain/port khác lúc deploy.
+    private String getRequestBaseUrl(HttpServletRequest request) {
+        String scheme = request.getScheme();
+        String host = request.getServerName();
+        int port = request.getServerPort();
+        boolean isDefaultPort = ("http".equals(scheme) && port == 80) || ("https".equals(scheme) && port == 443);
+        return scheme + "://" + host + (isDefaultPort ? "" : ":" + port);
     }
 }

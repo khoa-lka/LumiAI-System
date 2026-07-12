@@ -202,8 +202,14 @@ function drawSeatMap() {
     updateSummary();
     if (currentSeatMap.length === 0) return;
 
+    // Đồng bộ y hệt cách chia lưới ghế của luồng khách hàng (xem js/ui.js
+    // renderCgvInterface): phòng nhiều cột (IMAX) thì thu nhỏ ghế + gap lại.
     const maxCols = Math.max(...currentSeatMap.map(s => s.colIndex));
-    seatMap.style.gridTemplateColumns = `repeat(${maxCols}, 48px)`;
+    const isImaxRoom = maxCols > 10;
+    seatMap.style.display = "grid";
+    seatMap.style.gridTemplateColumns = `repeat(${maxCols}, 1fr)`;
+    seatMap.style.gap = isImaxRoom ? "4px" : "6px";
+    seatMap.classList.toggle("imax-room", isImaxRoom);
 
     currentSeatMap.forEach(s => {
         const seatBtn = document.createElement("button");
@@ -326,34 +332,226 @@ window.createOrder = async function () {
     if (paymentMethod === 'CASH' || totalAmount === 0) {
         executeCheckoutAPI();
     } else if (paymentMethod === 'VNPAY') {
-        try {
-            document.getElementById('qrTitle').textContent = "Đang tạo mã VNPAY...";
-            document.getElementById('qrModal').style.display = 'flex';
-            const response = await fetch(`/api/pos/vnpay/create-url?amount=${totalAmount}`);
-            showQRModal(totalAmount, 'VNPAY', await response.text());
-        } catch (error) { alert("Lỗi kết nối đến VNPAY!"); closeQRModal(); }
+        startVnpaySandboxFlow(totalAmount);
     } else {
-        showQRModal(totalAmount, 'VIETQR');
+        startVietQRPayOSFlow(totalAmount);
     }
 };
 
-function showQRModal(amount, method, customUrl = null) {
+let qrCountdownInterval = null;
+let staffPayOSOrderCode = null;
+let staffQrPollInterval = null;
+let staffQrPollErrorCount = 0;
+
+function setStepTexts(t1, d1, t2, d2, t3, d3) {
+    setText("qrStep1Title", t1); setText("qrStep1Desc", d1);
+    setText("qrStep2Title", t2); setText("qrStep2Desc", d2);
+    setText("qrStep3Title", t3); setText("qrStep3Desc", d3);
+}
+
+// Đếm ngược 15:00 giống hệt luồng khách hàng (vietqr-timer).
+function startQrCountdown(seconds) {
+    if (qrCountdownInterval) clearInterval(qrCountdownInterval);
+    let remaining = seconds;
+    const render = () => {
+        const m = String(Math.floor(remaining / 60)).padStart(2, '0');
+        const s = String(remaining % 60).padStart(2, '0');
+        setText("qrCountdown", `${m}:${s}`);
+    };
+    render();
+    qrCountdownInterval = setInterval(() => {
+        remaining--;
+        if (remaining < 0) { clearInterval(qrCountdownInterval); return; }
+        render();
+    }, 1000);
+}
+
+// ======================= VIETQR (PayOS thật) =======================
+// Dùng đúng API PayOS mà luồng khách hàng (booking.js: API.createPayOSPayment /
+// API.getQrPaymentStatus) đang gọi — /api/payment/payos/create + /api/payment/qr/status/{orderCode}
+// (là các endpoint chung trong PaymentController, không gắn với session khách hàng nên
+// POS gọi thẳng được). Nhờ vậy mã QR là thật (Napas thật, đúng số tiền) và có thể tự
+// nhận diện thanh toán qua webhook giống hệt bên khách hàng — nếu server public/webhook
+// không tới được (ví dụ chạy localhost khi test), nhân viên vẫn bấm nút xác nhận thủ công
+// như bình thường, không bị chặn.
+async function startVietQRPayOSFlow(amount) {
+    const modal = document.getElementById('qrModal');
+    modal.style.display = 'flex';
+    document.getElementById('qrTitle').textContent = "Đang tạo mã VietQR...";
+    setText("qrSubtitle", "Đang kết nối PayOS, vui lòng đợi...");
+    setText("qrStatusText", "Đang tạo mã thanh toán...");
+
+    try {
+        const response = await fetch('/api/payment/payos/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: amount })
+        });
+        const data = await response.json();
+
+        if (data.code !== '00') {
+            alert("Không tạo được thanh toán PayOS: " + (data.desc || "Lỗi không xác định"));
+            closeQRModal();
+            return;
+        }
+
+        const payload = data.data;
+        staffPayOSOrderCode = String(payload.orderCode);
+        showQRModal(amount, 'VIETQR', null, payload.qrCode);
+        startVietQRPolling();
+    } catch (error) {
+        console.error("Lỗi tạo thanh toán PayOS:", error);
+        alert("Lỗi kết nối đến PayOS!");
+        closeQRModal();
+    }
+}
+
+function startVietQRPolling() {
+    stopVietQRPolling();
+    staffQrPollErrorCount = 0;
+    const statusEl = document.getElementById('qrStatusText');
+
+    staffQrPollInterval = setInterval(async () => {
+        if (!staffPayOSOrderCode) return;
+        try {
+            const response = await fetch(`/api/payment/qr/status/${encodeURIComponent(staffPayOSOrderCode)}`);
+            const data = await response.json();
+
+            if (data.paymentStatus === 'SUCCESS') {
+                if (statusEl) { statusEl.textContent = "Thanh toán thành công!"; statusEl.className = "qr-status qr-status-success"; }
+                stopVietQRPolling();
+                closeQRModal();
+                executeCheckoutAPI();
+            } else if (data.paymentStatus === 'CANCELLED') {
+                if (statusEl) { statusEl.textContent = "Giao dịch đã bị hủy."; statusEl.className = "qr-status"; }
+                stopVietQRPolling();
+            } else {
+                if (statusEl) { statusEl.textContent = "Đang chờ thanh toán..."; statusEl.className = "qr-status qr-status-wait"; }
+            }
+        } catch (error) {
+            staffQrPollErrorCount++;
+            console.error("Lỗi kiểm tra trạng thái QR:", error);
+        }
+    }, 3000);
+}
+
+function stopVietQRPolling() {
+    if (staffQrPollInterval) { clearInterval(staffQrPollInterval); staffQrPollInterval = null; }
+}
+
+// ======================= VNPAY (chuyển sang sandbox tab mới) =======================
+// Giống hệt cách booking.js làm cho khách (window.location.href sang sandbox VNPay),
+// chỉ khác là POS không thể điều hướng nguyên tab đang bán hàng (mất dữ liệu đơn +
+// nhân viên phải rời máy POS), nên mở sandbox ở TAB MỚI, giữ nguyên tab POS.
+// Tab con (server trả về ở /api/pos/vnpay-return) sẽ tự postMessage kết quả về
+// tab POS này rồi tự đóng — POS nghe được thì tự động hoàn tất đơn, không cần
+// nhân viên bấm gì. Nút "Đã Nhận Tiền & Xuất Vé" vẫn giữ lại làm phương án dự
+// phòng (ví dụ trình duyệt chặn popup message, hoặc nhân viên tự đóng tab quá
+// nhanh trước khi kịp gửi message).
+let currentVnpayUrl = null;
+
+async function startVnpaySandboxFlow(amount) {
+    const modal = document.getElementById('qrModal');
+    modal.style.display = 'flex';
+    document.getElementById('qrTitle').textContent = "Đang tạo link thanh toán VNPAY...";
+    setText("qrSubtitle", "Đang kết nối cổng VNPAY, vui lòng đợi...");
+
+    try {
+        const response = await fetch(`/api/pos/vnpay/create-url?amount=${amount}`);
+        const url = await response.text();
+        currentVnpayUrl = url;
+        showQRModal(amount, 'VNPAY');
+        window.open(url, '_blank');
+    } catch (error) {
+        alert("Lỗi kết nối đến VNPAY!");
+        closeQRModal();
+    }
+}
+
+window.reopenVnpayTab = function() {
+    if (currentVnpayUrl) window.open(currentVnpayUrl, '_blank');
+};
+
+// Lắng nghe kết quả do tab con VNPAY (cùng origin, xem PosApiController.buildVnpayResultPage)
+// gửi về qua window.postMessage khi khách thanh toán xong.
+window.addEventListener('message', function (event) {
+    if (event.origin !== window.location.origin) return;
+    const data = event.data;
+    if (!data || data.type !== 'VNPAY_POS_RESULT') return;
+
+    const modal = document.getElementById('qrModal');
+    const isModalShowingVnpay = modal && modal.style.display === 'flex' && currentVnpayUrl;
+    if (!isModalShowingVnpay) return;
+
+    if (data.success) {
+        closeQRModal();
+        executeCheckoutAPI();
+    } else {
+        setText("qrSubtitle", "Thanh toán VNPAY không thành công hoặc đã bị hủy.");
+    }
+});
+
+function showQRModal(amount, method, customUrl = null, payOSQrCode = null) {
     const modal = document.getElementById('qrModal');
     const qrImage = document.getElementById('qrImage');
+    const qrCaption = document.getElementById('qrCaption');
+    const qrImageWrapper = document.getElementById('qrImageWrapper');
+    const vnpayTabBox = document.getElementById('qrVnpayTabBox');
+    const bankBadges = document.getElementById('qrBankBadges');
+    const banksLabel = document.getElementById('qrBanksLabel');
+    const statusText = document.getElementById('qrStatusText');
+    const timerRow = document.getElementById('qrTimerRow');
+    const stepsRow = document.getElementById('qrStepsRow');
     document.getElementById('qrAmountDisplay').textContent = formatMoney(amount);
-    
+
     if (method === 'VNPAY') {
         document.getElementById('qrTitle').textContent = "Thanh toán Cổng VNPAY";
-        qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(customUrl)}`;
+        setText("qrSubtitle", "Sandbox VNPAY đã mở ở tab mới");
+        if (qrImageWrapper) qrImageWrapper.style.display = 'none';
+        if (vnpayTabBox) vnpayTabBox.style.display = 'block';
+        if (bankBadges) bankBadges.style.display = 'none';
+        if (banksLabel) banksLabel.style.display = 'none';
+        if (statusText) statusText.style.display = 'none';
+        if (timerRow) timerRow.style.display = 'none';
+        if (stepsRow) stepsRow.style.display = 'none';
     } else if (method === 'VIETQR') {
         document.getElementById('qrTitle').textContent = "Chuyển khoản QR Quốc Gia";
-        const BANK_BIN = "970422"; const ACCOUNT_NO = "0123456789"; const ACCOUNT_NAME = "CINEMA LUMI AI";
-        qrImage.src = `https://img.vietqr.io/image/${BANK_BIN}-${ACCOUNT_NO}-compact2.png?amount=${amount}&addInfo=Thanh toan ve phim&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
+        setText("qrSubtitle", "Thanh toán an toàn qua VietQR - Napas 247");
+        if (qrImageWrapper) qrImageWrapper.style.display = 'inline-block';
+        if (vnpayTabBox) vnpayTabBox.style.display = 'none';
+        if (qrCaption) qrCaption.textContent = "Mã QR VietQR — Napas 247";
+        if (bankBadges) bankBadges.style.display = 'flex';
+        if (banksLabel) banksLabel.style.display = 'block';
+        if (statusText) { statusText.style.display = 'block'; statusText.textContent = "Đang chờ thanh toán..."; statusText.className = "qr-status qr-status-wait"; }
+        if (timerRow) timerRow.style.display = 'block';
+        if (stepsRow) stepsRow.style.display = 'grid';
+        setStepTexts(
+            "Mở app ngân hàng", "Chọn quét mã QR",
+            "Quét mã QR", "Kiểm tra số tiền",
+            "Xác nhận", "Hoàn tất thanh toán"
+        );
+        if (payOSQrCode) {
+            // QR thật từ PayOS (đúng số tiền, đúng nội dung, quét ra ngân hàng thật) —
+            // y hệt cách booking.js render bank-qr-img cho khách hàng.
+            qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payOSQrCode)}`;
+        } else {
+            // Fallback hiếm khi dùng tới (PayOS lỗi nhưng vẫn muốn hiển thị gì đó).
+            const BANK_BIN = "970422"; const ACCOUNT_NO = "0123456789"; const ACCOUNT_NAME = "CINEMA LUMI AI";
+            qrImage.src = `https://img.vietqr.io/image/${BANK_BIN}-${ACCOUNT_NO}-compact2.png?amount=${amount}&addInfo=Thanh toan ve phim&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
+        }
     }
+    if (method === 'VIETQR') startQrCountdown(15 * 60);
+    else if (qrCountdownInterval) { clearInterval(qrCountdownInterval); qrCountdownInterval = null; }
     modal.style.display = 'flex';
 }
 
-window.closeQRModal = function() { document.getElementById('qrModal').style.display = 'none'; }
+window.closeQRModal = function() {
+    document.getElementById('qrModal').style.display = 'none';
+    if (qrCountdownInterval) { clearInterval(qrCountdownInterval); qrCountdownInterval = null; }
+    stopVietQRPolling();
+    staffPayOSOrderCode = null;
+    currentVnpayUrl = null;
+}
 window.confirmQRPayment = function() { closeQRModal(); executeCheckoutAPI(); }
 
 async function executeCheckoutAPI() {
