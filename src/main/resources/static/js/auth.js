@@ -39,7 +39,10 @@ function submitCgvLogin(event) {
     document.getElementById("login-captcha-text").innerText;
 
   if (!user || !pass)
-    return window.showCgvToast("Vui lòng nhập đầy đủ tài khoản và mật khẩu!", "error");
+    return window.showCgvToast(
+      "Vui lòng nhập đầy đủ tài khoản và mật khẩu!",
+      "error",
+    );
   if (captchaInput.toUpperCase() !== currentLoginCaptcha.toUpperCase()) {
     return window.showCgvToast("Mã bảo vệ Captcha không chính xác!", "error");
   }
@@ -84,6 +87,10 @@ function submitCgvLogin(event) {
             "success",
           );
 
+          setTimeout(() => {
+            window.location.reload();
+          }, 800);
+
           const authLinkBox = document.getElementById("top-bar-auth-link");
           authLinkBox.onclick = () => switchCgvTab("panel-profile");
           authLinkBox.style.cursor = "pointer";
@@ -107,8 +114,7 @@ function submitCgvLogin(event) {
           const welcomeNameBox = document.getElementById(
             "profile-welcome-name",
           );
-          if (welcomeNameBox)
-            welcomeNameBox.innerText = uData.fullName;
+          if (welcomeNameBox) welcomeNameBox.innerText = uData.fullName;
 
           const starRoleBox = document.getElementById("profile-star-role");
           if (starRoleBox) starRoleBox.innerText = "MEMBER";
@@ -155,7 +161,9 @@ function submitCgvLogin(event) {
         window.showCgvToast("Đăng nhập thất bại: " + resData.message, "error");
       }
     })
-    .catch((err) => window.showCgvToast("Lỗi đăng nhập: " + err.message, "error"));
+    .catch((err) =>
+      window.showCgvToast("Lỗi đăng nhập: " + err.message, "error"),
+    );
 }
 
 function submitCgvRegister(event) {
@@ -181,10 +189,16 @@ function submitCgvRegister(event) {
     !birthMonth ||
     !birthYear
   ) {
-    return window.showCgvToast("Vui lòng điền đầy đủ thông tin và chọn ngày sinh!", "error");
+    return window.showCgvToast(
+      "Vui lòng điền đầy đủ thông tin và chọn ngày sinh!",
+      "error",
+    );
   }
   if (captchaInput.toUpperCase() !== currentRegCaptcha.toUpperCase()) {
-    return window.showCgvToast("Mã xác thực Captcha đăng ký không khớp!", "error");
+    return window.showCgvToast(
+      "Mã xác thực Captcha đăng ký không khớp!",
+      "error",
+    );
   }
 
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
@@ -211,15 +225,21 @@ function submitCgvRegister(event) {
         window.showCgvToast("Đăng ký thất bại: " + resData.message, "error");
       }
     })
-    .catch((err) => window.showCgvToast("Lỗi đăng ký: " + err.message, "error"));
+    .catch((err) =>
+      window.showCgvToast("Lỗi đăng ký: " + err.message, "error"),
+    );
 }
 
 function submitOtpVerification() {
   const otpInput = document.getElementById("otp-input-field").value.trim();
 
-  if (!otpInput) return window.showCgvToast("Vui lòng nhập mã OTP gồm 6 chữ số!", "error");
+  if (!otpInput)
+    return window.showCgvToast("Vui lòng nhập mã OTP gồm 6 chữ số!", "error");
   if (!temporaryRegisterEmail)
-    return window.showCgvToast("Hệ thống không tìm thấy email đăng ký hợp lệ!", "error");
+    return window.showCgvToast(
+      "Hệ thống không tìm thấy email đăng ký hợp lệ!",
+      "error",
+    );
 
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
   API.verifyOtp({ email: temporaryRegisterEmail, otp: otpInput })
@@ -265,7 +285,8 @@ function saveUpdatedProfileInformationData() {
           .querySelectorAll(".profile-readonly-input")
           .forEach((input) => {
             input.setAttribute("readonly", true);
-            if (input.tagName === "SELECT") input.setAttribute("disabled", true);
+            if (input.tagName === "SELECT")
+              input.setAttribute("disabled", true);
             input.style.border = "1px solid rgba(255,255,255,0.15)";
             input.style.background = "#1c1c21";
             input.style.color = "#f4f4f5";
@@ -296,7 +317,12 @@ function saveUpdatedProfileInformationData() {
         window.showCgvToast("❌ Không thể lưu: " + resData.message, "error");
       }
     })
-    .catch((err) => window.showCgvToast("🚨 Lỗi kết nối cập nhật hồ sơ: " + err.message, "error"));
+    .catch((err) =>
+      window.showCgvToast(
+        "🚨 Lỗi kết nối cập nhật hồ sơ: " + err.message,
+        "error",
+      ),
+    );
 }
 
 function handleProfileTabAccess() {
