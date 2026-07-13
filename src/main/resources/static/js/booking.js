@@ -1407,9 +1407,15 @@ function executeFinalCheckout() {
         }
 
         // Tạo mã ID vé (Nếu Java không trả về thì tự gen ngẫu nhiên)
-        const lasTicketId = data.ticketId
-          ? data.ticketId.replace("CGV-", "LAS-")
-          : "LAS-" + Math.floor(Math.random() * 1000000);
+        const bookingCode = data.orderCode;
+
+        if (!bookingCode) {
+          window.showCgvToast(
+            "Backend không trả về mã đơn hàng. Không thể tạo QR vé!",
+            "error",
+          );
+          return;
+        }
 
         // 🚀 ĐÃ SỬA: Lấy đúng data bắp nước từ database để lưu lịch sử hóa đơn
         const activeFnb = window.fnbMenu;
@@ -1421,7 +1427,7 @@ function executeFinalCheckout() {
         console.log("appliedVoucherDiscount =", appliedVoucherDiscount);
 
         const invoiceObj = {
-          id: lasTicketId,
+          id: bookingCode,
           movie: currentMovie,
           date: selectedDateStr,
           time: selectedShowtime,

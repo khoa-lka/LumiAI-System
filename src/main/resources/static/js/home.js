@@ -1392,6 +1392,35 @@ window.showLoginRequiredModal = showLoginRequiredModal;
 window.closeLoginRequiredModal = closeLoginRequiredModal;
 
 function switchCgvTab(panelId, filterType = "now_showing") {
+  const profilePanel = document.getElementById("panel-profile");
+
+  const leavingProfile =
+    profilePanel?.classList.contains("active") && panelId !== "panel-profile";
+
+  console.log("[NAVIGATION]", {
+    panelId,
+    leavingProfile,
+    guard: window.authFormGuard,
+    canLeaveExists: typeof window.canLeaveAuthForm === "function",
+  });
+
+  if (leavingProfile) {
+    if (typeof window.canLeaveAuthForm !== "function") {
+      console.error("window.canLeaveAuthForm chưa tồn tại");
+
+      window.showCgvToast(
+        "Chức năng cảnh báo chưa được tải. Vui lòng tải lại trang!",
+        "error",
+      );
+
+      return;
+    }
+
+    if (!window.canLeaveAuthForm("profile")) {
+      console.log("[NAVIGATION] Đã chặn rời Profile");
+      return;
+    }
+  }
   // 🌟 CHẶN NGAY TỪ CỔNG VÀO DUY NHẤT CỦA TOÀN BỘ LUỒNG ĐẶT VÉ (kể cả chọn ghế),
   // vì mọi con đường dẫn tới panel-booking trong toàn bộ code (booking.js/home.js)
   // đều phải đi qua hàm switchCgvTab() này.
@@ -2049,11 +2078,15 @@ window.executeFinalCheckout = function () {
     .then((res) => res.json())
     .then((data) => {
       // Sinh mã hóa đơn hiển thị rạp phim ngẫu nhiên
-      const lasTicketId = "LAS-" + Math.floor(100000 + Math.random() * 900000);
+      const lasTicketId =
+        data.orderCode ||
+        data.ticketCode ||
+        data.ticketCodes?.[0] ||
+        "ORDER-" + Date.now();
       console.log("currentPriceTotal =", currentPriceTotal);
       console.log("appliedVoucherDiscount =", appliedVoucherDiscount);
       const invoiceObj = {
-        id: lasTicketId,
+        id: bookingCode,
         movie: currentMovie,
         date: ticketDate,
         time: ticketShowtime,
@@ -2549,16 +2582,6 @@ function switchProfileSubTab(sub) {
   if (currentPanel) currentPanel.classList.add("active");
 }
 
-function activateEditableFormFields() {
-  document.querySelectorAll(".profile-readonly-input").forEach((input) => {
-    input.removeAttribute("readonly");
-    input.removeAttribute("disabled");
-    input.style.border = "1px solid #ff6b35";
-    input.style.background = "#0b0b0e";
-  });
-  document.getElementById("btn-save-profile").style.display = "block";
-}
-
 function openOtpModal() {
   document.getElementById("otp-modal").classList.add("open");
 }
@@ -2593,17 +2616,6 @@ function submitOtpVerification() {
       }
     })
     .catch((err) => alert("❌ Lỗi OTP: " + err.message));
-}
-
-function saveUpdatedProfileInformationData() {
-  document.querySelectorAll(".profile-readonly-input").forEach((input) => {
-    input.setAttribute("readonly", true);
-    if (input.tagName === "SELECT") input.setAttribute("disabled", true);
-    input.style.border = "1px solid rgba(255,255,255,0.15)";
-    input.style.background = "#1c1c21";
-  });
-  document.getElementById("btn-save-profile").style.display = "none";
-  alert("Cập nhật thông tin tài khoản mới thành công!");
 }
 
 let currentForgotIdentifier = "";
@@ -2917,8 +2929,6 @@ window.submitOtpVerification = submitOtpVerification;
 window.handleProfileTabAccess = handleProfileTabAccess;
 window.handleTicketViewAccess = handleTicketViewAccess;
 window.switchProfileSubTab = switchProfileSubTab;
-window.activateEditableFormFields = activateEditableFormFields;
-window.saveUpdatedProfileInformationData = saveUpdatedProfileInformationData;
 window.handleCgvLogout = handleCgvLogout;
 window.closeLogoutConfirmModal = closeLogoutConfirmModal;
 window.confirmCgvLogoutAction = confirmCgvLogoutAction;

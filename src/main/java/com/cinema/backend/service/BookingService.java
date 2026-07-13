@@ -35,6 +35,7 @@ import com.cinema.backend.entities.FoodBeverage;
 
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
+import com.cinema.backend.dto.CheckoutResponseDTO;
 
 @Service
 public class BookingService {
@@ -73,12 +74,14 @@ public class BookingService {
 
     @Value("${app.public-url}")
     private String publicUrl;
-
     
 @Transactional
-public Order1 checkout(CheckoutRequest request) {
+public CheckoutResponseDTO checkout(CheckoutRequest request) {
 System.out.println("===== BOOKING SERVICE =====");
 System.out.println(request);
+List<String> savedTicketCodes = new ArrayList<>();
+List<String> fnbSummaryList = new ArrayList<>();
+String fnbSummary = "Không có";
     if (request.getShowtimeId() == null) {
         throw new RuntimeException("ShowtimeId is null from client");
     }
@@ -198,6 +201,7 @@ System.out.println("ORDER ID = " + order.getOrderId());
 
     Ticket savedTicket =
             ticketRepository.save(ticket);
+    savedTicketCodes.add(code);
 
     OrderDetail detail =
             new OrderDetail();
@@ -220,41 +224,38 @@ System.out.println("SAVE TICKET OK");
 // =========================
 if (request.getFnb() != null && !request.getFnb().isEmpty()) {
 
+    if (request.getFnb() != null && !request.getFnb().isEmpty()) {
+
     for (CheckoutFoodItem item : request.getFnb()) {
 
         FoodBeverage food = foodRepository
                 .findById(item.getFoodItemId())
                 .orElseThrow(() -> new RuntimeException("Food not found"));
 
-        // Kiểm tra tồn kho
         if (food.getStockQuantity() < item.getQuantity()) {
-            throw new RuntimeException(
-                    food.getItemName() + " không đủ số lượng trong kho");
+            throw new RuntimeException(food.getItemName() + " không đủ số lượng trong kho");
         }
 
-        // Tạo OrderDetail cho món ăn
         OrderDetail detail = new OrderDetail();
-
         detail.setOrder(order);
-
         detail.setFoodItem(food);
-
         detail.setQuantity(item.getQuantity());
-
         detail.setSubtotal(
-                food.getPrice().multiply(
-                        BigDecimal.valueOf(item.getQuantity())
-                )
+                food.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()))
         );
 
         orderDetailRepository.save(detail);
 
-        // Trừ tồn kho
-        food.setStockQuantity(
-                food.getStockQuantity() - item.getQuantity());
-
+        food.setStockQuantity(food.getStockQuantity() - item.getQuantity());
         foodRepository.save(food);
+
+        fnbSummaryList.add(food.getItemName() + " x" + item.getQuantity());
     }
+}
+
+fnbSummary = fnbSummaryList.isEmpty()
+        ? "Không có"
+        : String.join(", ", fnbSummaryList);
 }
 
 
@@ -318,18 +319,17 @@ String totalAmount = order.getFinalAmount() != null
     }
 
     // QR code chứa thông tin vé
-    String qrData = "LAS-CINEMA|ORDER=" + order.getOrderCode() + "|TICKET=" + ticketCode;
-
-    String html = emailService.buildTicketEmailHtml(
-            customerName,
-            order.getOrderCode(),
-            movieName,
-            showtimeText,
-            seatsText,
-            totalAmount,
-            ticketCode,
-            qrData
-    );
+    String qrData = order.getOrderCode();
+   String html = emailService.buildTicketEmailHtml(
+        customerName,
+        order.getOrderCode(),
+        movieName,
+        showtimeText,
+        seatsText,
+        fnbSummary,
+        totalAmount,
+        qrData
+);
 
     emailService.sendTicketHtmlEmailWithImages(
             email,
@@ -349,7 +349,7 @@ String totalAmount = order.getFinalAmount() != null
 }
 
 System.out.println("DONE");
-return order;
+return new CheckoutResponseDTO(order, savedTicketCodes, fnbSummary);
 }
 
 private String toPublicImageUrl(String imagePath) {

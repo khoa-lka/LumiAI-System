@@ -1,5 +1,81 @@
 // js/auth.js
+function getAuthFormGuard() {
+  if (!window.authFormGuard) {
+    window.authFormGuard = {
+      registerDirty: false,
+      registerSubmitting: false,
 
+      profileEditing: false,
+      profileDirty: false,
+      profileSubmitting: false,
+
+      lastLeaveAttempt: 0,
+    };
+  }
+
+  return window.authFormGuard;
+}
+
+// Khởi tạo ngay khi file auth.js được load
+getAuthFormGuard();
+function canLeaveAuthForm(formType) {
+  const guard = getAuthFormGuard();
+  const isRegister = formType === "register";
+
+  const isSubmitting = isRegister
+    ? guard.registerSubmitting
+    : guard.profileSubmitting;
+
+  const isEditing = isRegister
+    ? guard.registerDirty
+    : guard.profileEditing || guard.profileDirty;
+
+  // API đang thực hiện thì không cho rời
+  if (isSubmitting) {
+    window.showCgvToast(
+      isRegister
+        ? "Hệ thống đang xử lý đăng ký. Vui lòng chờ hoàn tất!"
+        : "Hệ thống đang cập nhật thông tin. Vui lòng chờ hoàn tất!",
+      "error",
+    );
+
+    return false;
+  }
+
+  // Không có thao tác dang dở
+  if (!isEditing) {
+    return true;
+  }
+
+  const now = Date.now();
+
+  // Bấm lần thứ hai trong 3 giây thì cho rời
+  if (now - guard.lastLeaveAttempt <= 3000) {
+    guard.lastLeaveAttempt = 0;
+
+    if (isRegister) {
+      guard.registerDirty = false;
+    } else {
+      guard.profileEditing = false;
+      guard.profileDirty = false;
+    }
+
+    return true;
+  }
+
+  guard.lastLeaveAttempt = now;
+
+  window.showCgvToast(
+    isRegister
+      ? "Bạn đang nhập thông tin đăng ký. Bấm lại lần nữa trong 3 giây để rời khỏi!"
+      : "Bạn đang chỉnh sửa thông tin. Bấm lại lần nữa trong 3 giây để rời khỏi!",
+    "error",
+  );
+
+  return false;
+}
+
+window.canLeaveAuthForm = canLeaveAuthForm;
 // --- 1. QUẢN LÝ MODAL ---
 // Tìm hàm openAuthModal() ở đầu file auth.js và sửa thành:
 function openAuthModal() {
@@ -10,11 +86,27 @@ function openAuthModal() {
   if (typeof generateNewRegisterCaptcha === "function")
     generateNewRegisterCaptcha();
 }
-function closeAuthModal() {
-  document.getElementById("auth-modal").classList.remove("open");
+function closeAuthModal(forceClose = false) {
+  const registerPanel = document.getElementById("form-register-panel");
+
+  const isRegisterActive = registerPanel?.classList.contains("active");
+
+  if (!forceClose && isRegisterActive && !canLeaveAuthForm("register")) {
+    return;
+  }
+
+  document.getElementById("auth-modal")?.classList.remove("open");
 }
 
-function toggleAuthTab(type) {
+function toggleAuthTab(type, forceChange = false) {
+  const registerPanel = document.getElementById("form-register-panel");
+
+  const leavingRegister =
+    registerPanel?.classList.contains("active") && type !== "register";
+
+  if (!forceChange && leavingRegister && !canLeaveAuthForm("register")) {
+    return;
+  }
   document.getElementById("tab-login-btn")?.classList.remove("active");
   document.getElementById("tab-register-btn")?.classList.remove("active");
   document.getElementById("form-login-panel").classList.remove("active");
@@ -195,6 +287,8 @@ function submitCgvRegister(event) {
   const birthDay = document.getElementById("reg-birth-day").value;
   const birthMonth = document.getElementById("reg-birth-month").value;
   const birthYear = document.getElementById("reg-birth-year").value;
+  const agreementChecked =
+    document.getElementById("reg-agreement")?.checked || false;
 
   // Kiểm tra họ tên
   if (!name) {
@@ -324,6 +418,7 @@ function submitCgvRegister(event) {
     );
   }
 
+  window.authFormGuard.registerSubmitting = true;
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
   API.register({
     name: name,
@@ -336,21 +431,24 @@ function submitCgvRegister(event) {
   })
     .then((resData) => {
       if (resData.status === "success") {
-        window.showCgvToast(
-          resData.message +
-            "\nHãy kiểm tra màn hình Console của Spring Boot để lấy mã OTP nhé!",
-          "success",
-        );
+        window.authFormGuard.registerDirty = false;
+
+        window.showCgvToast(resData.message, "success");
+
         temporaryRegisterEmail = resData.email;
-        closeAuthModal();
+
+        closeAuthModal(true);
         openOtpModal();
       } else {
         window.showCgvToast("Đăng ký thất bại: " + resData.message, "error");
       }
     })
-    .catch((err) =>
-      window.showCgvToast("Lỗi đăng ký: " + err.message, "error"),
-    );
+    .catch((err) => {
+      window.showCgvToast("Lỗi đăng ký: " + err.message, "error");
+    })
+    .finally(() => {
+      window.authFormGuard.registerSubmitting = false;
+    });
 }
 
 function resendRegisterOtp() {
@@ -505,13 +603,8 @@ function saveUpdatedProfileInformationData() {
       "error",
     );
   }
-
-  if (!accountId) {
-    return window.showCgvToast(
-      "Không xác định được tài khoản đang đăng nhập!",
-      "error",
-    );
-  }
+  const guard = getAuthFormGuard();
+  guard.profileSubmitting = true;
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
   API.updateProfile({
     accountId: accountId,
@@ -522,50 +615,49 @@ function saveUpdatedProfileInformationData() {
   })
     .then((resData) => {
       if (resData.status === "success") {
-        window.showCgvToast(resData.message, "success");
+        const guard = getAuthFormGuard();
+
+        guard.profileSubmitting = false;
+        guard.profileEditing = false;
+        guard.profileDirty = false;
+        guard.lastLeaveAttempt = 0;
+
+        window.showCgvToast(
+          resData.message || "Cập nhật thông tin thành công!",
+          "success",
+        );
 
         document
           .querySelectorAll(".profile-readonly-input")
           .forEach((input) => {
             input.setAttribute("readonly", true);
-            if (input.tagName === "SELECT")
+
+            if (input.tagName === "SELECT") {
               input.setAttribute("disabled", true);
+            }
+
             input.style.border = "1px solid rgba(255,255,255,0.15)";
             input.style.background = "#1c1c21";
             input.style.color = "#f4f4f5";
           });
-        document.getElementById("btn-save-profile").style.display = "none";
 
-        // Tra cứu lại thông tin bằng API
-        API.getProfile(accountId).then((profileRes) => {
-          if (profileRes.status === "success") {
-            const updatedData = profileRes.data;
-            document.getElementById("profile-welcome-name").innerText =
-              updatedData.fullName;
+        const saveButton = document.getElementById("btn-save-profile");
 
-            const [year, month, day] = updatedData.dateOfBirth.split("-");
-            document.getElementById("profile-birth-day").value = parseInt(day);
-            document.getElementById("profile-birth-month").value =
-              parseInt(month);
-            document.getElementById("profile-birth-year").value =
-              parseInt(year);
+        if (saveButton) {
+          saveButton.style.display = "none";
+        }
 
-            if (document.getElementById("profile-field-birth")) {
-              document.getElementById("profile-field-birth").value =
-                `${day}/${month}/${year}`;
-            }
-          }
-        });
+        // Giữ đoạn API.getProfile(...) cũ của bạn ở đây
       } else {
-        window.showCgvToast("❌ Không thể lưu: " + resData.message, "error");
+        window.showCgvToast("Không thể lưu: " + resData.message, "error");
       }
     })
-    .catch((err) =>
-      window.showCgvToast(
-        "🚨 Lỗi kết nối cập nhật hồ sơ: " + err.message,
-        "error",
-      ),
-    );
+    .catch((err) => {
+      window.showCgvToast("Lỗi cập nhật hồ sơ: " + err.message, "error");
+    })
+    .finally(() => {
+      getAuthFormGuard().profileSubmitting = false;
+    });
 }
 
 function handleProfileTabAccess() {
@@ -576,12 +668,41 @@ function handleProfileTabAccess() {
   }
 }
 
-function switchProfileSubTab(sub) {
+function switchProfileSubTab(sub, forceChange = false) {
+  const guard =
+    typeof getAuthFormGuard === "function"
+      ? getAuthFormGuard()
+      : window.authFormGuard;
+
+  const leavingGeneralInformation =
+    sub !== "chung" &&
+    Boolean(
+      guard?.profileEditing || guard?.profileDirty || guard?.profileSubmitting,
+    );
+
+  console.log("[PROFILE SUB TAB]", {
+    sub,
+    forceChange,
+    leavingGeneralInformation,
+    guard,
+  });
+
+  if (
+    !forceChange &&
+    leavingGeneralInformation &&
+    typeof window.canLeaveAuthForm === "function" &&
+    !window.canLeaveAuthForm("profile")
+  ) {
+    console.log("[PROFILE SUB TAB] Đã chặn chuyển tab");
+
+    return false;
+  }
+
   document.querySelectorAll(".arrow-btn").forEach((button) => {
     button.classList.remove("active");
   });
 
-  ["chung", "lichsu"].forEach((name) => {
+  ["chung", "lichsu", "dashboard"].forEach((name) => {
     const panel = document.getElementById("pro-panel-" + name);
 
     if (panel) {
@@ -601,23 +722,59 @@ function switchProfileSubTab(sub) {
     currentPanel.classList.add("active");
   }
 
-  // Chỉ thêm đoạn này
-  if (sub === "lichsu") {
-    renderTransactionHistory();
+  if (
+    sub === "lichsu" &&
+    typeof window.renderTransactionHistory === "function"
+  ) {
+    window.renderTransactionHistory();
   }
+
+  return true;
 }
 
 window.switchProfileSubTab = switchProfileSubTab;
 
+window.switchProfileSubTab = switchProfileSubTab;
+
 function activateEditableFormFields() {
+  const guard = getAuthFormGuard();
+
+  guard.profileEditing = true;
+  guard.profileDirty = false;
+  guard.lastLeaveAttempt = 0;
+
   document.querySelectorAll(".profile-readonly-input").forEach((input) => {
     input.removeAttribute("readonly");
     input.removeAttribute("disabled");
+
     input.style.border = "1px solid #ff6b35";
     input.style.background = "#0b0b0e";
     input.style.color = "#f4f4f5";
+
+    // Tránh gắn listener nhiều lần
+    if (input.dataset.profileGuardBound === "true") {
+      return;
+    }
+
+    const eventName =
+      input.tagName === "SELECT" || input.type === "checkbox"
+        ? "change"
+        : "input";
+
+    input.addEventListener(eventName, function () {
+      getAuthFormGuard().profileDirty = true;
+    });
+
+    input.dataset.profileGuardBound = "true";
   });
-  document.getElementById("btn-save-profile").style.display = "block";
+
+  const saveButton = document.getElementById("btn-save-profile");
+
+  if (saveButton) {
+    saveButton.style.display = "block";
+  }
+
+  window.showCgvToast("Bạn đang ở chế độ chỉnh sửa thông tin.", "success");
 }
 
 // --- 4. TIỆN ÍCH KHÁC ---
@@ -678,6 +835,119 @@ function generateForgotCaptcha() {
   }
 }
 
+document.addEventListener("DOMContentLoaded", function () {
+  const registerFields = [
+    "reg-name",
+    "reg-phone",
+    "reg-email",
+    "reg-password",
+    "reg-birth-day",
+    "reg-birth-month",
+    "reg-birth-year",
+    "reg-captcha",
+    "reg-agreement",
+  ];
+
+  registerFields.forEach((id) => {
+    const element = document.getElementById(id);
+
+    if (!element) return;
+
+    const eventName =
+      element.tagName === "SELECT" || element.type === "checkbox"
+        ? "change"
+        : "input";
+
+    element.addEventListener(eventName, function () {
+      window.authFormGuard.registerDirty = true;
+    });
+  });
+});
+
 // 🚀 ĐÃ THÊM: Ép trình duyệt đưa hàm ra phạm vi window tối cao, dẹp bỏ hoàn toàn lỗi undefined nút bấm
 window.generateNewLoginCaptcha = generateNewLoginCaptcha;
 window.generateNewRegisterCaptcha = generateNewRegisterCaptcha;
+
+if (!window.__profileNavigationGuardBound) {
+  window.__profileNavigationGuardBound = true;
+
+  document.addEventListener(
+    "click",
+    function (event) {
+      const guard =
+        typeof getAuthFormGuard === "function"
+          ? getAuthFormGuard()
+          : window.authFormGuard;
+
+      if (!guard) {
+        return;
+      }
+
+      const profileInProgress =
+        guard.profileEditing || guard.profileDirty || guard.profileSubmitting;
+
+      // Không chỉnh sửa thì không cần chặn
+      if (!profileInProgress) {
+        return;
+      }
+
+      // Chỉ xử lý những phần tử có khả năng điều hướng/thực hiện hành động
+      const actionElement = event.target.closest(
+        `
+          a,
+          button,
+          [onclick],
+          .nav-link,
+          .sub-nav-item,
+          .dropdown-item,
+          .arrow-btn,
+          .logo,
+          .bc-back-btn
+        `,
+      );
+
+      if (!actionElement) {
+        return;
+      }
+
+      // Cho phép bấm nút Lưu
+      if (
+        actionElement.id === "btn-save-profile" ||
+        actionElement.closest("#btn-save-profile")
+      ) {
+        return;
+      }
+
+      // Cho phép tiếp tục nhập/chọn dữ liệu trong form
+      if (actionElement.matches("input, select, textarea, option, label")) {
+        return;
+      }
+
+      const inlineAction = actionElement.getAttribute("onclick") || "";
+
+      // Cho phép chính nút Chỉnh sửa
+      if (inlineAction.includes("activateEditableFormFields")) {
+        return;
+      }
+
+      console.log("[GLOBAL PROFILE GUARD]", {
+        clickedElement: actionElement,
+        profileEditing: guard.profileEditing,
+        profileDirty: guard.profileDirty,
+        profileSubmitting: guard.profileSubmitting,
+      });
+
+      if (
+        typeof window.canLeaveAuthForm === "function" &&
+        !window.canLeaveAuthForm("profile")
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+
+        console.log("[GLOBAL PROFILE GUARD] Đã chặn thao tác điều hướng");
+      }
+    },
+    true,
+  );
+}
