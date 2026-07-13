@@ -895,6 +895,21 @@ function renderAdTrendChart() {
   const host = document.getElementById("ad-trend-chart");
   if (!host) return;
   const data = AD_TREND_7D;
+    if (!Array.isArray(data) || data.length === 0) {
+    host.innerHTML = `
+      <div style="
+        height:230px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        color:#9a9aa3;
+        font-size:13px;
+      ">
+        Đang tải dữ liệu biểu đồ...
+      </div>
+    `;
+    return;
+  }
 
   const W = 640, H = 230, padL = 10, padR = 10, padT = 15, padB = 26;
   const innerW = W - padL - padR, innerH = H - padT - padB;
