@@ -424,10 +424,94 @@ function saveUpdatedProfileInformationData() {
   const d = document.getElementById("profile-birth-day").value;
   const m = document.getElementById("profile-birth-month").value;
   const y = document.getElementById("profile-birth-year").value;
+
+  // ===== VALIDATION GIỐNG ĐĂNG KÝ =====
+  if (!newName || !newPhone || !newEmail || !d || !m || !y) {
+    return window.showCgvToast(
+      "Vui lòng điền đầy đủ họ tên, số điện thoại, email và ngày sinh!",
+      "error",
+    );
+  }
+
+  if (newName.length < 2 || newName.length > 50) {
+    return window.showCgvToast("Họ tên phải từ 2 đến 50 ký tự!", "error");
+  }
+
+  const nameRegex = /^[\p{L}\s]+$/u;
+  if (!nameRegex.test(newName)) {
+    return window.showCgvToast(
+      "Họ tên chỉ được chứa chữ cái và khoảng trắng!",
+      "error",
+    );
+  }
+
+  const phoneRegex = /^0\d{9}$/;
+  if (!phoneRegex.test(newPhone)) {
+    return window.showCgvToast(
+      "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0!",
+      "error",
+    );
+  }
+
+  const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+  if (!gmailRegex.test(newEmail)) {
+    return window.showCgvToast(
+      "Email phải đúng định dạng Gmail, ví dụ: example@gmail.com",
+      "error",
+    );
+  }
+
+  const birthDate = new Date(Number(y), Number(m) - 1, Number(d));
+  const today = new Date();
+
+  const isValidBirthDate =
+    birthDate.getFullYear() === Number(y) &&
+    birthDate.getMonth() === Number(m) - 1 &&
+    birthDate.getDate() === Number(d);
+
+  if (!isValidBirthDate) {
+    return window.showCgvToast("Ngày tháng năm sinh không hợp lệ!", "error");
+  }
+
+  if (birthDate >= today) {
+    return window.showCgvToast(
+      "Ngày sinh không được lớn hơn hoặc bằng ngày hiện tại!",
+      "error",
+    );
+  }
+
+  const age = today.getFullYear() - birthDate.getFullYear();
+  if (age < 6) {
+    return window.showCgvToast(
+      "Tuổi tài khoản phải từ 6 tuổi trở lên!",
+      "error",
+    );
+  }
+
   const newBirth = `${y}-${m.toString().padStart(2, "0")}-${d.toString().padStart(2, "0")}`;
+  const cachedUser = JSON.parse(
+    localStorage.getItem("las_logged_in_user") || "{}",
+  );
 
-  const accountId = window.currentLoggedInId || 2;
+  const accountId =
+    window.currentLoggedInId ||
+    sessionStorage.getItem("accountId") ||
+    cachedUser.accountId ||
+    cachedUser.account_id;
 
+  if (!accountId) {
+    return window.showCgvToast(
+      "Không xác định được tài khoản đang đăng nhập!",
+      "error",
+    );
+  }
+
+  if (!accountId) {
+    return window.showCgvToast(
+      "Không xác định được tài khoản đang đăng nhập!",
+      "error",
+    );
+  }
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
   API.updateProfile({
     accountId: accountId,
