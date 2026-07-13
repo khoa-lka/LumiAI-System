@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.Map;
 import java.util.Optional;
 
@@ -53,72 +54,168 @@ public class ProfileController {
     public ResponseEntity<?> updateProfileInformation(@RequestBody Map<String, Object> updateRequest) {
         try {
             if (updateRequest.get("accountId") == null) {
-                return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Thiếu ID tài khoản định danh!"));
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "error",
+                        "message", "Thiếu ID tài khoản định danh!"
+                ));
             }
 
             Integer accountId = Integer.parseInt(updateRequest.get("accountId").toString());
-            String fullname = (String) updateRequest.get("fullName");
-            String email = (String) updateRequest.get("email");
-            String phone = (String) updateRequest.get("phone");
-            String dobStr = (String) updateRequest.get("dateOfBirth"); // Nhận dạng chuỗi 'YYYY-MM-DD' hoặc 'DD/MM/YYYY'
 
-            // Sục tìm tài khoản gốc trong Database ra để sửa
+            String fullname = updateRequest.get("fullName") != null
+                    ? updateRequest.get("fullName").toString().trim()
+                    : "";
+
+            String email = updateRequest.get("email") != null
+                    ? updateRequest.get("email").toString().trim()
+                    : "";
+
+            String phone = updateRequest.get("phone") != null
+                    ? updateRequest.get("phone").toString().trim()
+                    : "";
+
+            String dobStr = updateRequest.get("dateOfBirth") != null
+                    ? updateRequest.get("dateOfBirth").toString().trim()
+                    : "";
+
+            // 1. Check rỗng giống đăng ký
+            if (fullname.isBlank() || email.isBlank() || phone.isBlank() || dobStr.isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "fail",
+                        "message", "Vui lòng điền đầy đủ họ tên, email, số điện thoại và ngày sinh!"
+                ));
+            }
+
+            // 2. Validate họ tên
+            if (fullname.length() < 2 || fullname.length() > 50) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "fail",
+                        "message", "Họ tên phải từ 2 đến 50 ký tự!"
+                ));
+            }
+
+            if (!fullname.matches("^[A-Za-zÀ-ỹ\\s]+$")) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "fail",
+                        "message", "Họ tên chỉ được chứa chữ cái và khoảng trắng!"
+                ));
+            }
+
+            // 3. Validate phone
+            if (!phone.matches("^0\\d{9}$")) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "fail",
+                        "message", "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0!"
+                ));
+            }
+
+            // 4. Validate email
+            if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "fail",
+                        "message", "Email không đúng định dạng!"
+                ));
+            }
+
+            // 5. Parse và validate ngày sinh
+            LocalDate dateOfBirth;
+
+            try {
+                if (dobStr.contains("/")) {
+                    String[] parts = dobStr.split("/");
+
+                    if (parts.length != 3) {
+                        return ResponseEntity.badRequest().body(Map.of(
+                                "status", "fail",
+    "message", "Ngày sinh không đúng định dạng!"
+                        ));
+                    }
+
+                    int day = Integer.parseInt(parts[0]);
+                    int month = Integer.parseInt(parts[1]);
+                    int year = Integer.parseInt(parts[2]);
+
+                    dateOfBirth = LocalDate.of(year, month, day);
+                } else {
+                    dateOfBirth = LocalDate.parse(dobStr);
+                }
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "fail",
+                        "message", "Ngày sinh không hợp lệ!"
+                ));
+            }
+
+            if (!dateOfBirth.isBefore(LocalDate.now())) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "fail",
+                        "message", "Ngày sinh không được lớn hơn hoặc bằng ngày hiện tại!"
+                ));
+            }
+
+            int age = Period.between(dateOfBirth, LocalDate.now()).getYears();
+
+            if (age < 6) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "fail",
+                        "message", "Tuổi tài khoản phải từ 6 tuổi trở lên!"
+                ));
+            }
+
+            // 6. Tìm account
             Optional<Account> accountOpt = accountRepository.findById(accountId);
+
             if (accountOpt.isEmpty()) {
-                return ResponseEntity.status(404).body(Map.of("status", "error", "message", "Tài khoản không tồn tại trên hệ thống!"));
+                return ResponseEntity.status(404).body(Map.of(
+                        "status", "error",
+                        "message", "Tài khoản không tồn tại trên hệ thống!"
+                ));
             }
 
             Account account = accountOpt.get();
 
-            // Ràng buộc bảo mật 1: Check trùng Email với các tài khoản KHÁC trong DB
-            if (email != null && !email.isBlank()) {
-                if (accountRepository.existsByEmailAndAccountIdNot(email, accountId)) {
-                    return ResponseEntity.badRequest().body(Map.of("status", "fail", "message", "Địa chỉ Email mới này đã có người khác sử dụng!"));
-                }
-                account.setEmail(email);
+            // 7. Check trùng email với tài khoản khác
+            if (accountRepository.existsByEmailAndAccountIdNot(email, accountId)) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "fail",
+                        "message", "Địa chỉ Email mới này đã có người khác sử dụng!"
+                ));
             }
 
-            // Ràng buộc bảo mật 2: Check trùng Số điện thoại với các tài khoản KHÁC trong DB
-            if (phone != null && !phone.isBlank()) {
-                if (accountRepository.existsByPhoneAndAccountIdNot(phone, accountId)) {
-                    return ResponseEntity.badRequest().body(Map.of("status", "fail", "message", "Số điện thoại mới này đã có người đăng ký!"));
-                }
-                account.setPhone(phone);
+            // 8. Check trùng phone với tài khoản khác
+            if (accountRepository.existsByPhoneAndAccountIdNot(phone, accountId)) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "fail",
+                        "message", "Số điện thoại mới này đã có người đăng ký!"
+                ));
             }
 
-            // Cập nhật các trường thông tin còn lại
-            if (fullname != null && !fullname.isBlank()) {
-                account.setFullname(fullname);
-            }
+            // 9. Cập nhật
+            account.setFullname(fullname);
+            account.setEmail(email);
+            account.setPhone(phone);
+            account.setDateOfBirth(dateOfBirth);
+            account.setUpdatedDate(LocalDateTime.now());
 
-            if (dobStr != null && !dobStr.isBlank()) {
-                // Hỗ trợ parse cả phom Việt Nam 'DD/MM/YYYY' từ ô input readonly của em sang 'YYYY-MM-DD' chuẩn Java
-                if (dobStr.contains("/")) {
-                    String[] parts = dobStr.split("/");
-                    account.setDateOfBirth(LocalDate.of(Integer.parseInt(parts[2]), Integer.parseInt(parts[1]), Integer.parseInt(parts[0])));
-                } else {
-                    account.setDateOfBirth(LocalDate.parse(dobStr));
-                }
-            }
-
-            account.setUpdatedDate(LocalDateTime.now()); // Ghi nhận mốc thời gian chỉnh sửa mới nhất
-            accountRepository.save(account); // Lưu đè xuống SQL Server
+            accountRepository.save(account);
 
             return ResponseEntity.ok(Map.of(
-                "status", "success",
-                "message", "Cập nhật hồ sơ thông tin tài khoản thành công!",
-                "data", Map.of(
-                    "fullName", account.getFullname(),
-                    "phone", account.getPhone(),
-                    "email", account.getEmail()
-                )
+                    "status", "success",
+                    "message", "Cập nhật hồ sơ thông tin tài khoản thành công!",
+                    "data", Map.of(
+                            "accountId", account.getAccountId(),
+                            "fullName", account.getFullname(),
+                            "phone", account.getPhone(),
+    "email", account.getEmail(),
+                            "dateOfBirth", account.getDateOfBirth().toString()
+                    )
             ));
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of(
-                "status", "error",
-                "message", "Lỗi xử lý lưu hồ sơ: " + e.getMessage()
+                    "status", "error",
+                    "message", "Lỗi xử lý lưu hồ sơ: " + e.getMessage()
             ));
         }
     }
-}
+    }
