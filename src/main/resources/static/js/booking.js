@@ -1,6 +1,25 @@
 console.log("BOOKING JS LOADED");
 window.selectedPaymentGateway = "qr";
 
+// Thông báo thống nhất theo FE của booking(15): luôn ưu tiên showCgvToast.
+// 🎨 Icon outline trắng dùng chung cho khối Rà soát hóa đơn
+const ICON_MOVIE =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l1.3-4a1 1 0 011-.7l13 2.3a1 1 0 01.8 1.2L18.5 10"/><rect x="3" y="10" width="18" height="9" rx="1.3"/><path d="M6.3 6.3l2 3.7M11 5.3l2 3.7M15.7 4.6l2 3.7"/></svg>';
+const ICON_CLOCK =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>';
+const ICON_SEAT =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13V6a1.5 1.5 0 013 0v6"/><path d="M15 13V6a1.5 1.5 0 013 0v6"/><path d="M5 13h14v3a2 2 0 01-2 2H7a2 2 0 01-2-2v-3z"/><path d="M7 18v2M17 18v2"/></svg>';
+const ICON_POPCORN =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l1.2 11a1.2 1.2 0 001.2 1.1h5.2a1.2 1.2 0 001.2-1.1L17 9"/><path d="M5.5 9a2.3 2.3 0 012-3.6 2.3 2.3 0 014-1.4 2.3 2.3 0 014 1.4 2.3 2.3 0 012 3.6z"/></svg>';
+const ICON_TICKET =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 012-2h14a2 2 0 012 2v2a1.5 1.5 0 000 3v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a1.5 1.5 0 000-3V8z"/><path d="M9 6v12" stroke-dasharray="2 2"/></svg>';
+const ICON_CALENDAR =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+const ICON_DOWNLOAD =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>';
+const ICON_INFO =
+  '<svg class="inv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>';
+
 // 🚀 THÊM MỚI: Khai báo mảng fnbMenu toàn cục ban đầu trống
 window.fnbMenu = [];
 
@@ -29,10 +48,18 @@ function initFnbMenuFromServer() {
 }
 
 function handleBookNowClick() {
+  if (
+    typeof window.isBookingRestrictedRole === "function" &&
+    window.isBookingRestrictedRole()
+  ) {
+    if (typeof showBookingRestrictedModal === "function")
+      showBookingRestrictedModal();
+    return;
+  }
   const ticket = document.getElementById("final-ticket-result");
   if (ticket) ticket.innerHTML = "";
   if (!isUserLoggedInState) {
-    alert("Vui lòng đăng nhập hệ thống để tiếp tục đặt vé!");
+    window.showCgvToast("Vui lòng đăng nhập hệ thống để tiếp tục đặt vé!");
     openAuthModal();
   } else {
     const currentMovieTitle =
@@ -45,6 +72,12 @@ function handleBookNowClick() {
       }
       // 🚀 BỔ SUNG TẠI ĐÂY: Xóa sạch các ghế đang chọn dở trước đó khi chuyển sang phim mới này
       selectedSeats = [];
+      selectedShowtime = "";
+      selectedDateStr = "";
+      window.currentSelectedShowtimeId = null;
+      currentBookingStep = 1;
+      isHoldingState = false;
+      window.bookingExpireAt = null;
       if (typeof selectedShowtime !== "undefined") selectedShowtime = "";
       if (typeof window.currentSelectedShowtimeId !== "undefined")
         window.currentSelectedShowtimeId = null;
@@ -140,6 +173,14 @@ function renderDynamicShowtimeGrid() {
 }
 
 function quickBookMovie(movieTitle) {
+  if (
+    typeof window.isBookingRestrictedRole === "function" &&
+    window.isBookingRestrictedRole()
+  ) {
+    if (typeof showBookingRestrictedModal === "function")
+      showBookingRestrictedModal();
+    return;
+  }
   switchCgvTab("panel-booking");
   const selectCombo = document.getElementById("cgv-combo-movie");
   if (selectCombo) {
@@ -437,10 +478,10 @@ function goToBookingStep(step) {
 
     document.getElementById("review-invoice-content").innerHTML = `
             <div class="inv-review">
-              <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
-              <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
-              <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
-              <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${window.fnbMenu.length ? "" : "Không có"}</span></div>
+              <div class="inv-line"><span class="inv-k">${ICON_MOVIE}Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
+              <div class="inv-line"><span class="inv-k">${ICON_CLOCK}Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
+              <div class="inv-line"><span class="inv-k">${ICON_SEAT}Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
+              <div class="inv-line"><span class="inv-k">${ICON_POPCORN}Bắp nước</span><span class="inv-v">${window.fnbMenu.length ? "" : "Không có"}</span></div>
               ${fnbHtml}
               <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
             </div>
@@ -469,34 +510,47 @@ function goToBookingStep(step) {
 }
 
 function handleMainAction() {
+  if (
+    typeof window.isBookingRestrictedRole === "function" &&
+    window.isBookingRestrictedRole()
+  ) {
+    if (typeof showBookingRestrictedModal === "function")
+      showBookingRestrictedModal();
+    return;
+  }
+
   if (!isUserLoggedInState) {
-    alert(
-      "Bạn phải đăng nhập tài khoản thành viên mới có thể tiến hành đặt vé!",
-    );
-    openAuthModal();
+    if (typeof window.showLoginRequiredModal === "function") {
+      window.showLoginRequiredModal();
+    } else {
+      window.showCgvToast(
+        "Bạn phải đăng nhập tài khoản thành viên mới có thể tiến hành đặt vé!",
+      );
+      openAuthModal();
+    }
     return;
   }
 
   if (!window.currentSelectedShowtimeId) {
-    alert("Vui lòng chọn suất chiếu!");
+    window.showCgvToast("Vui lòng chọn suất chiếu!");
     return;
   }
 
   if (currentBookingStep === 1) {
     if (!window.currentSelectedShowtimeId) {
-      alert("Vui lòng chọn suất chiếu!");
+      window.showCgvToast("Vui lòng chọn suất chiếu!");
       return;
     }
 
     if (selectedSeats.length === 0) {
-      alert("Vui lòng chọn ghế!");
+      window.showCgvToast("Vui lòng chọn ghế!");
       return;
     }
 
     if (!isHoldingState) {
       isHoldingState = true;
       document.getElementById("hold-timer").style.display = "flex";
-      startCountdown(Date.now() + 5 * 60 * 1000);
+      startCountdown(Date.now() + 10 * 60 * 1000);
     }
 
     goToBookingStep(2);
@@ -527,10 +581,10 @@ function openCheckoutReview() {
 
   document.getElementById("review-invoice-content").innerHTML = `
         <div class="inv-review">
-          <div class="inv-line"><span class="inv-k">🎬 Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
-          <div class="inv-line"><span class="inv-k">🕐 Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
-          <div class="inv-line"><span class="inv-k">💺 Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
-          <div class="inv-line"><span class="inv-k">🍿 Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
+          <div class="inv-line"><span class="inv-k">${ICON_MOVIE}Phim</span><span class="inv-v">${currentMovie || "—"}</span></div>
+          <div class="inv-line"><span class="inv-k">${ICON_CLOCK}Suất chiếu</span><span class="inv-v">${selectedDateStr} | ${selectedShowtime}</span></div>
+          <div class="inv-line"><span class="inv-k">${ICON_SEAT}Ghế</span><span class="inv-v">${selectedSeats.join(", ") || "—"}</span></div>
+          <div class="inv-line"><span class="inv-k">${ICON_POPCORN}Bắp nước</span><span class="inv-v">${fnbItems.length ? "" : "Không có"}</span></div>
           ${fnbHtml}
           <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
         </div>
@@ -551,7 +605,7 @@ function processToPaymentGateway() {
 
   const finalTotal = window.finalPriceTotal;
   if (!selectedPaymentGateway) {
-    alert("Vui lòng chọn phương thức thanh toán!");
+    window.showCgvToast("Vui lòng chọn phương thức thanh toán!");
     return;
   }
   if (selectedPaymentGateway === "qr") {
@@ -562,28 +616,99 @@ function processToPaymentGateway() {
 }
 
 function openQrPayment(finalTotal) {
+  if (window.bookingExpireAt && Date.now() >= window.bookingExpireAt) {
+    handleBookingExpired(
+      "Phiên giữ ghế đã hết hạn. Vui lòng chọn lại phim và ghế.",
+    );
+    return;
+  }
+
+  _qrCheckoutDone = false;
+  paymentPollingErrorCount = 0;
+
+  window.currentQrRef = null;
+  window.currentPayOSOrderCode = null;
+  window.currentPayOSPaymentLinkId = null;
+
+  const qrImg = document.getElementById("bank-qr-img");
+  if (qrImg) qrImg.removeAttribute("src");
+
+  const statusText = document.getElementById("vietqr-payment-status-text");
+  if (statusText) {
+    statusText.innerText = "Đang chờ thanh toán...";
+    statusText.className = "vietqr-status-wait";
+  }
+
+  const timerBox = document.getElementById("vietqr-timer-box");
+  if (timerBox) {
+    timerBox.classList.remove("vietqr-timer-expired");
+    timerBox.innerHTML =
+      '<span>⏱</span> Thời gian thanh toán còn lại <strong id="vietqr-timer">10:00</strong>';
+  }
+
   document.getElementById("qr-total-price").innerText =
     finalTotal.toLocaleString("vi-VN") + " đ";
 
-  const bankId = "ICB";
-  const accountNo = "101879388698";
-  const accountName = "NGUYEN BAO HOANG";
-  const qrData = "LAS CINEMAS THANH TOAN";
-
-  document.getElementById("bank-qr-img").src =
-    `https://img.vietqr.io/image/${bankId}-${accountNo}-compact.png?amount=${finalTotal}&addInfo=${encodeURIComponent(qrData)}&accountName=${encodeURIComponent(accountName)}`;
-
-  // Mở modal ở bước "Tạo mã QR" (chưa hiện mã)
   const genView = document.getElementById("vietqr-generate-view");
   const codeView = document.getElementById("vietqr-code-view");
+
   if (genView) genView.style.display = "";
   if (codeView) codeView.style.display = "none";
-  stopVietQRTimer();
 
-  document.getElementById("payment-redirect-modal").classList.add("open");
+  stopVietQRTimer();
+  stopQrPaymentPolling();
+
+  const paymentModal = document.getElementById("payment-redirect-modal");
+  if (paymentModal) {
+    paymentModal.style.display = "";
+    paymentModal.classList.add("open");
+  }
+
+  API.createPayOSPayment(finalTotal)
+    .then((res) => {
+      console.log("PAYOS CREATE RESPONSE:", res);
+
+      if (res.code !== "00") {
+        window.showCgvToast("Không tạo được thanh toán payOS: " + res.desc);
+        return;
+      }
+
+      const data = res.data;
+
+      window.currentQrRef = String(data.orderCode);
+      window.currentPayOSOrderCode = data.orderCode;
+      window.currentPayOSPaymentLinkId = data.paymentLinkId;
+
+      const qrImg = document.getElementById("bank-qr-img");
+
+      qrImg.src =
+        "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=" +
+        encodeURIComponent(data.qrCode);
+
+      document.getElementById("qr-total-price").innerText =
+        Number(data.amount).toLocaleString("vi-VN") + " đ";
+
+      if (genView) genView.style.display = "none";
+      if (codeView) codeView.style.display = "";
+
+      generateVietQR();
+    })
+    .catch((err) => {
+      console.error("Lỗi tạo thanh toán payOS:", err);
+
+      handleBookingExpired(
+        "Có lỗi xảy ra trong quá trình tạo thanh toán. Vui lòng thực hiện lại.",
+      );
+
+      return;
+    });
 }
 
 let _vietqrTimerId = null;
+let _qrPaymentPollId = null;
+let _qrCheckoutDone = false;
+window.currentQrRef = null;
+
 function stopVietQRTimer() {
   if (_vietqrTimerId) {
     clearInterval(_vietqrTimerId);
@@ -591,38 +716,102 @@ function stopVietQRTimer() {
   }
 }
 
+function stopQrPaymentPolling() {
+  if (_qrPaymentPollId) {
+    clearInterval(_qrPaymentPollId);
+    _qrPaymentPollId = null;
+  }
+}
+
 function generateVietQR() {
   const genView = document.getElementById("vietqr-generate-view");
   const codeView = document.getElementById("vietqr-code-view");
+  const timerBox = document.getElementById("vietqr-timer-box");
+
   if (genView) genView.style.display = "none";
   if (codeView) codeView.style.display = "";
 
-  // Bắt đầu đếm ngược 10 phút
-  stopVietQRTimer();
-  let remaining = 10 * 60;
-  const timerEl = document.getElementById("vietqr-timer");
-  const timerBox = document.getElementById("vietqr-timer-box");
-  const render = () => {
-    const m = Math.floor(remaining / 60);
-    const s = remaining % 60;
-    if (timerEl) timerEl.innerText = `${m}:${s < 10 ? "0" : ""}${s}`;
-  };
-  render();
-  _vietqrTimerId = setInterval(() => {
-    remaining--;
-    if (remaining <= 0) {
-      stopVietQRTimer();
-      if (timerBox) {
-        timerBox.classList.add("vietqr-timer-expired");
-        timerBox.innerHTML = `⚠ Mã QR đã hết hạn. <span class="vietqr-regen" onclick="generateVietQR()">Tạo lại mã</span>`;
-      }
-      return;
-    }
-    render();
-  }, 1000);
+  if (timerBox) {
+    timerBox.classList.remove("vietqr-timer-expired");
+    timerBox.innerHTML = `<span>⏱</span> Thời gian thanh toán còn lại <strong id="vietqr-timer">10:00</strong>`;
+  }
+
+  startPaymentCountdown();
+  startQrPaymentPolling();
 }
+
 window.generateVietQR = generateVietQR;
 window.stopVietQRTimer = stopVietQRTimer;
+
+function startQrPaymentPolling() {
+  stopQrPaymentPolling();
+  paymentPollingErrorCount = 0;
+
+  if (!window.currentQrRef) {
+    console.warn("Chưa có currentQrRef nên không thể kiểm tra thanh toán");
+    return;
+  }
+
+  const statusText = document.getElementById("vietqr-payment-status-text");
+
+  _qrPaymentPollId = setInterval(() => {
+    API.getQrPaymentStatus(window.currentQrRef)
+      .then((data) => {
+        console.log("QR PAYMENT STATUS:", data);
+
+        if (statusText) {
+          statusText.innerText =
+            data.paymentStatus === "SUCCESS"
+              ? "Thanh toán thành công!"
+              : "Đang chờ thanh toán...";
+        }
+
+        if (data.paymentStatus === "SUCCESS") {
+          if (_qrCheckoutDone) return;
+
+          _qrCheckoutDone = true;
+          bookingTimeoutHandled = true;
+
+          clearInterval(timerInterval);
+
+          if (paymentTimerInterval) {
+            clearInterval(paymentTimerInterval);
+            paymentTimerInterval = null;
+          }
+
+          if (typeof stopVietQRTimer === "function") stopVietQRTimer();
+          if (typeof stopQrPaymentPolling === "function")
+            stopQrPaymentPolling();
+
+          const paymentModal = document.getElementById(
+            "payment-redirect-modal",
+          );
+          if (paymentModal) {
+            paymentModal.classList.remove("open");
+            paymentModal.style.display = "none";
+          }
+
+          executeFinalCheckout();
+        }
+
+        if (data.paymentStatus === "CANCELLED") {
+          stopQrPaymentPolling();
+          stopVietQRTimer();
+        }
+      })
+      .catch((err) => {
+        console.error("Lỗi kiểm tra trạng thái QR:", err);
+
+        paymentPollingErrorCount++;
+
+        if (paymentPollingErrorCount >= 3) {
+          handleBookingExpired(
+            "Không thể kiểm tra trạng thái thanh toán. Vui lòng thực hiện lại.",
+          );
+        }
+      });
+  }, 3000);
+}
 
 function openVnpayPayment(finalTotal) {
   const safeAmount = Math.round(finalTotal);
@@ -658,12 +847,12 @@ function openVnpayPayment(finalTotal) {
 
         window.location.href = data.paymentUrl;
       } else {
-        alert("Không tạo được link VNPAY");
+        window.showCgvToast("Không tạo được link VNPAY");
       }
     })
     .catch((err) => {
       console.error(err);
-      alert("Không kết nối được VNPAY");
+      window.showCgvToast("Không kết nối được VNPAY");
     });
 }
 
@@ -677,7 +866,7 @@ function checkVnpayReturn() {
     return;
   }
   if (responseCode !== "00") {
-    alert("Thanh toán đã bị hủy hoặc thất bại.");
+    window.showCgvToast("Thanh toán đã bị hủy hoặc thất bại.");
 
     sessionStorage.removeItem("checkoutPayload");
 
@@ -788,11 +977,271 @@ function backToPaymentSelection() {
 }
 
 function closePaymentModal() {
-  document.getElementById("payment-redirect-modal").classList.remove("open");
-  if (typeof stopVietQRTimer === "function") stopVietQRTimer();
+  showCancelPaymentConfirm();
 }
 
+function cancelQrPayment() {
+  showCancelPaymentConfirm();
+}
+
+function showCancelPaymentConfirm() {
+  let overlay = document.getElementById("cancel-payment-confirm-overlay");
+
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "cancel-payment-confirm-overlay";
+    overlay.className = "cancel-payment-confirm-overlay";
+
+    overlay.innerHTML = `
+      <div class="cancel-payment-confirm-box">
+        <div class="cancel-payment-confirm-icon">!</div>
+
+        <h3 class="cancel-payment-confirm-title">
+          Xác nhận hủy thanh toán
+        </h3>
+
+        <p class="cancel-payment-confirm-message">
+          Nếu hủy thanh toán, đơn đặt vé và các ghế đang giữ sẽ bị hủy.
+          Bạn có chắc chắn muốn hủy không?
+        </p>
+
+        <div class="cancel-payment-confirm-actions">
+          <button type="button" class="cancel-payment-btn keep-payment-btn" id="btn-keep-payment">
+            Không, tiếp tục thanh toán
+          </button>
+
+          <button type="button" class="cancel-payment-btn confirm-cancel-payment-btn" id="btn-confirm-cancel-payment">
+            Hủy thanh toán
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+  }
+
+  overlay.style.display = "flex";
+
+  const keepBtn = document.getElementById("btn-keep-payment");
+  const cancelBtn = document.getElementById("btn-confirm-cancel-payment");
+
+  if (keepBtn) {
+    keepBtn.onclick = function () {
+      overlay.style.display = "none";
+    };
+  }
+
+  if (cancelBtn) {
+    cancelBtn.onclick = function () {
+      overlay.style.display = "none";
+      cancelQrPaymentAndResetAll();
+    };
+  }
+}
+
+function cancelQrPaymentAndResetAll() {
+  // Dừng timer giữ ghế
+  if (typeof timerInterval !== "undefined") {
+    clearInterval(timerInterval);
+  }
+
+  // Dừng timer thanh toán
+  if (typeof paymentTimerInterval !== "undefined" && paymentTimerInterval) {
+    clearInterval(paymentTimerInterval);
+    paymentTimerInterval = null;
+  }
+
+  // Dừng QR timer + polling
+  if (typeof stopVietQRTimer === "function") stopVietQRTimer();
+  if (typeof stopQrPaymentPolling === "function") stopQrPaymentPolling();
+
+  // Gọi backend hủy QR nếu có
+  const qrRef = window.currentQrRef;
+
+  if (
+    qrRef &&
+    typeof API !== "undefined" &&
+    typeof API.cancelQrPayment === "function"
+  ) {
+    API.cancelQrPayment(qrRef).catch((err) => {
+      console.error("Lỗi hủy QR payment:", err);
+    });
+  }
+
+  // Reset trạng thái payment
+  window.currentQrRef = null;
+  window.currentPayOSOrderCode = null;
+  window.currentPayOSPaymentLinkId = null;
+  window.bookingExpireAt = null;
+
+  if (typeof _qrCheckoutDone !== "undefined") {
+    _qrCheckoutDone = false;
+  }
+
+  if (typeof bookingTimeoutHandled !== "undefined") {
+    bookingTimeoutHandled = false;
+  }
+
+  if (typeof paymentPollingErrorCount !== "undefined") {
+    paymentPollingErrorCount = 0;
+  }
+
+  // Đóng modal thanh toán
+  const modal = document.getElementById("payment-redirect-modal");
+  if (modal) {
+    modal.classList.remove("open");
+    modal.style.display = "none";
+  }
+
+  // Reset view QR để lần sau tạo lại mã mới
+  const genView = document.getElementById("vietqr-generate-view");
+  const codeView = document.getElementById("vietqr-code-view");
+
+  if (genView) genView.style.display = "";
+  if (codeView) codeView.style.display = "none";
+
+  const qrImg = document.getElementById("bank-qr-img");
+  if (qrImg) {
+    qrImg.removeAttribute("src");
+  }
+
+  const qrStatus = document.getElementById("vietqr-payment-status-text");
+  if (qrStatus) {
+    qrStatus.innerText = "Đang chờ thanh toán...";
+    qrStatus.className = "vietqr-status-wait";
+  }
+
+  const qrTimerBox = document.getElementById("vietqr-timer-box");
+  if (qrTimerBox) {
+    qrTimerBox.classList.remove("vietqr-timer-expired");
+    qrTimerBox.innerHTML =
+      '<span>⏱</span> Thời gian thanh toán còn lại <strong id="vietqr-timer">10:00</strong>';
+  }
+
+  // Reset giữ ghế
+  if (typeof isHoldingState !== "undefined") {
+    isHoldingState = false;
+  }
+
+  // Reset toàn bộ booking
+  selectedSeats = [];
+  selectedShowtime = "";
+  selectedDateStr = "";
+  window.currentSelectedShowtimeId = null;
+  currentBookingStep = 1;
+
+  // Reset phương thức thanh toán
+  selectedPaymentGateway = "qr";
+  window.selectedPaymentGateway = "qr";
+
+  // Reset voucher
+  window.currentVoucher = null;
+  appliedVoucherDiscount = 0;
+  currentPriceTotal = 0;
+  window.finalPriceTotal = 0;
+
+  const voucherInput = document.getElementById("voucher-input");
+  if (voucherInput) voucherInput.value = "";
+
+  // Reset F&B
+  if (window.fnbMenu && Array.isArray(window.fnbMenu)) {
+    window.fnbMenu.forEach((item) => {
+      item.qty = 0;
+    });
+  }
+
+  // Ẩn timer giữ ghế
+  const holdTimer = document.getElementById("hold-timer");
+  if (holdTimer) {
+    holdTimer.style.display = "none";
+  }
+
+  const timerString = document.getElementById("timer-string");
+  if (timerString) {
+    timerString.innerText = "10:00";
+  }
+
+  // Reset invoice UI
+  const reviewInvoice = document.getElementById("review-invoice-content");
+  if (reviewInvoice) {
+    reviewInvoice.innerHTML = "";
+  }
+
+  const finalTicket = document.getElementById("final-ticket-result");
+  if (finalTicket) {
+    finalTicket.innerHTML = "";
+  }
+
+  const sumSeats = document.getElementById("sum-seats");
+  if (sumSeats) {
+    sumSeats.innerText = "Chưa chọn";
+  }
+
+  const sumShowtime = document.getElementById("sum-showtime");
+  if (sumShowtime) {
+    sumShowtime.innerText = "-";
+  }
+
+  const sumFnb = document.getElementById("sum-fnb");
+  if (sumFnb) {
+    sumFnb.innerText = "0 Combo";
+  }
+
+  const sumTotal = document.getElementById("sum-total");
+  if (sumTotal) {
+    sumTotal.innerText = "0 đ";
+  }
+
+  const qrTotalPrice = document.getElementById("qr-total-price");
+  if (qrTotalPrice) {
+    qrTotalPrice.innerText = "0 đ";
+  }
+
+  // Clear cache
+  sessionStorage.removeItem("pendingBooking");
+  sessionStorage.removeItem("checkoutPayload");
+  localStorage.removeItem("las_current_booking_cache");
+
+  // Render lại UI
+  if (typeof renderFnbMenu === "function") renderFnbMenu();
+  if (typeof calculateCgvCart === "function") calculateCgvCart();
+  if (typeof renderCgvInterface === "function") renderCgvInterface();
+
+  // Ép booking về bước 1
+  if (typeof goToBookingStep === "function") {
+    goToBookingStep(1);
+  }
+
+  // Về Home
+  if (typeof switchCgvTab === "function") {
+    switchCgvTab("panel-movies", "now_showing");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } else {
+    window.location.href = "index.html";
+    return;
+  }
+
+  setTimeout(() => {
+    window.showCgvToast(
+      "Thanh toán đã được hủy. Đơn đặt vé và ghế đang giữ đã được xóa. Vui lòng đặt lại từ đầu.",
+      "error",
+    );
+  }, 300);
+}
+
+window.closePaymentModal = closePaymentModal;
+window.cancelQrPayment = cancelQrPayment;
+window.cancelQrPaymentAndResetAll = cancelQrPaymentAndResetAll;
+
 function executeFinalCheckout() {
+  if (
+    typeof window.isBookingRestrictedRole === "function" &&
+    window.isBookingRestrictedRole()
+  ) {
+    if (typeof showBookingRestrictedModal === "function")
+      showBookingRestrictedModal();
+    return;
+  }
   console.log("BOOKING EXECUTE");
   console.log("currentSelectedShowtimeId =", window.currentSelectedShowtimeId);
   console.log("selectedShowtime =", selectedShowtime);
@@ -800,29 +1249,32 @@ function executeFinalCheckout() {
   let currentMovie =
     document.getElementById("cgv-combo-movie")?.value?.trim() ||
     document.getElementById("detail-movie-title")?.innerText?.trim();
-const targetMovie = (typeof serverData !== 'undefined' && serverData.movies) 
-        ? serverData.movies.find(m => m.title === currentMovie) 
-        : null;
+  const targetMovie =
+    typeof serverData !== "undefined" && serverData.movies
+      ? serverData.movies.find((m) => m.title === currentMovie)
+      : null;
 
-    // 3. LẤY ID PHIM AN TOÀN
-    const movieId = targetMovie ? (targetMovie.movieId || targetMovie.movie_id) : null;
+  // 3. LẤY ID PHIM AN TOÀN
+  const movieId = targetMovie
+    ? targetMovie.movieId || targetMovie.movie_id
+    : null;
   if (!currentMovie || currentMovie === "-" || currentMovie === "—") {
-    alert("Không xác định được phim!");
+    window.showCgvToast("Không xác định được phim!");
     return;
   }
 
   if (!currentMovie || currentMovie.trim() === "") {
-    alert("Không xác định được phim!");
+    window.showCgvToast("Không xác định được phim!");
     return;
   }
 
   if (!window.currentSelectedShowtimeId) {
-    alert("Không có suất chiếu!");
+    window.showCgvToast("Không có suất chiếu!");
     return;
   }
 
   if (!selectedSeats.length) {
-    alert("Chưa chọn ghế!");
+    window.showCgvToast("Chưa chọn ghế!");
     return;
   }
 
@@ -836,14 +1288,14 @@ const targetMovie = (typeof serverData !== 'undefined' && serverData.movies)
     currentEmail = document.getElementById("profile-field-email")?.value;
 
     if (!currentEmail) {
-      alert("Không lấy được email người dùng!");
+      window.showCgvToast("Không lấy được email người dùng!");
       return;
     }
   } else {
     currentEmail = prompt("Vui lòng nhập email:", "");
 
     if (!currentEmail) {
-      alert("Bạn cần nhập Email!");
+      window.showCgvToast("Bạn cần nhập Email!");
       return;
     }
   }
@@ -852,19 +1304,32 @@ const targetMovie = (typeof serverData !== 'undefined' && serverData.movies)
     isUserLoggedInState,
     email: currentEmail,
   });
-  const currentAccountId = Number(sessionStorage.getItem("accountId"));
+  let currentAccountId = Number(sessionStorage.getItem("accountId"));
+
+  if (!currentAccountId) {
+    const cachedUser = localStorage.getItem("las_logged_in_user");
+
+    if (cachedUser) {
+      try {
+        const u = JSON.parse(cachedUser);
+        currentAccountId = Number(u.accountId || u.account_id);
+      } catch (e) {
+        console.error("Không đọc được las_logged_in_user:", e);
+      }
+    }
+  }
 
   console.log("Account ID:", currentAccountId);
 
   if (!currentAccountId) {
-    alert("Bạn chưa đăng nhập!");
+    window.showCgvToast("Bạn chưa đăng nhập!");
     return;
   }
 
   const showtimeId = window.currentSelectedShowtimeId;
 
   if (!showtimeId) {
-    alert("Bạn chưa chọn suất chiếu!");
+    window.showCgvToast("Bạn chưa chọn suất chiếu!");
     return;
   }
 
@@ -976,12 +1441,12 @@ const targetMovie = (typeof serverData !== 'undefined' && serverData.movies)
             </div>
 
             <div class="bc-card">
-              <div class="bc-card-head">🎫 Thông tin vé</div>
+              <div class="bc-card-head">${ICON_TICKET}Thông tin vé</div>
               <div class="bc-movie">${invoiceObj.movie}</div>
               <div class="bc-meta">
-                <span>📅 ${invoiceObj.date}</span>
-                <span>🕐 ${invoiceObj.time}</span>
-                <span>💺 ${invoiceObj.seats.length} ghế</span>
+                <span>${ICON_CALENDAR}${invoiceObj.date}</span>
+                <span>${ICON_CLOCK}${invoiceObj.time}</span>
+                <span>${ICON_SEAT}${invoiceObj.seats.length} ghế</span>
               </div>
 
               <div class="bc-section-label">Ghế đã chọn</div>
@@ -1002,7 +1467,7 @@ const targetMovie = (typeof serverData !== 'undefined' && serverData.movies)
             </div>
 
             <div class="bc-info-box">
-              <div class="bc-info-title">ℹ️ Thông tin quan trọng</div>
+              <div class="bc-info-title">${ICON_INFO}Thông tin quan trọng</div>
               <ul>
                 <li>Vui lòng đến rạp trước giờ chiếu ít nhất 15 phút.</li>
                 <li>Mang theo giấy tờ tùy thân (CCCD) nếu phim giới hạn độ tuổi.</li>
@@ -1012,7 +1477,7 @@ const targetMovie = (typeof serverData !== 'undefined' && serverData.movies)
             </div>
 
             <div class="bc-actions">
-              <button class="bc-btn bc-btn-primary" onclick="window.print()">⬇ Tải / In vé</button>
+              <button class="bc-btn bc-btn-primary" onclick="window.print()">${ICON_DOWNLOAD}Tải / In vé</button>
               <button class="bc-btn bc-btn-ghost" onclick="goHomeFromBc()">Về trang chủ</button>
             </div>
           </div>
@@ -1023,6 +1488,12 @@ const targetMovie = (typeof serverData !== 'undefined' && serverData.movies)
           finalResultDiv.innerHTML = beautifulTicketHTML;
           // Chuyển sang Bước 4 (Xem vé)
           console.log("Đang chuyển sang bước 4...");
+
+          if (typeof stopQrPaymentPolling === "function")
+            stopQrPaymentPolling();
+          if (typeof stopVietQRTimer === "function") stopVietQRTimer();
+          _qrCheckoutDone = true;
+
           goToBookingStep(4);
           window.isVnpayReturn = false;
           console.log("Đã gọi goToBookingStep(4)");
@@ -1031,14 +1502,14 @@ const targetMovie = (typeof serverData !== 'undefined' && serverData.movies)
         // Nếu đang đăng nhập thì load lại lịch sử giao dịch trong Profile
         if (isUserLoggedInState) renderTransactionHistory();
       } else {
-        alert(
+        window.showCgvToast(
           "Rất tiếc, giao dịch không thành công hoặc ghế đã bị đặt. Vui lòng thử lại!",
         );
       }
     })
     .catch((error) => {
       console.error("Lỗi đặt vé:", error);
-      alert("Đã xảy ra lỗi kết nối với máy chủ!");
+      window.showCgvToast("Đã xảy ra lỗi kết nối với máy chủ!");
     });
 
   console.log({
@@ -1052,7 +1523,7 @@ function selectTime(showtimeId, startTime) {
   console.log("CLICK SHOWTIME:", showtimeId, startTime);
 
   if (!showtimeId && showtimeId !== 0) {
-    alert("showtimeId bị undefined");
+    window.showCgvToast("showtimeId bị undefined");
     return;
   }
 
@@ -1087,27 +1558,61 @@ function cancelCurrentTransaction() {
         renderFnbMenu();
         calculateCgvCart();
         renderCgvInterface();
-        alert("Đã hủy giao dịch và giải phóng ghế!");
+        window.showCgvToast("Đã hủy giao dịch và giải phóng ghế!", "success");
       })
-      .catch((err) => alert("Lỗi hủy ghế: " + err.message));
+      .catch((err) => window.showCgvToast("Lỗi hủy ghế: " + err.message));
   }
 }
 
 function startCountdown(expiresAt) {
   clearInterval(timerInterval);
+
+  window.bookingExpireAt = expiresAt;
+  bookingTimeoutHandled = false;
+
   timerInterval = setInterval(() => {
-    const remain = expiresAt - Date.now();
+    const remain = window.bookingExpireAt - Date.now();
+
     if (remain <= 0) {
-      clearInterval(timerInterval);
-      alert("Hết thời gian giữ ghế 5 phút!");
-      resetHoldState();
-      selectedSeats = [];
-      calculateCgvCart();
-    } else {
-      const minutes = Math.floor(remain / 60000);
-      const seconds = Math.floor((remain % 60000) / 1000);
-      document.getElementById("timer-string").innerText =
-        `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+      handleBookingExpired(
+        "Hết thời gian giữ ghế 10 phút. Vui lòng chọn lại phim và ghế.",
+      );
+      return;
+    }
+
+    const minutes = Math.floor(remain / 60000);
+    const seconds = Math.floor((remain % 60000) / 1000);
+
+    const timerString = document.getElementById("timer-string");
+    if (timerString) {
+      timerString.innerText = `${minutes.toString().padStart(2, "0")}:${seconds
+        .toString()
+        .padStart(2, "0")}`;
+    }
+  }, 1000);
+}
+
+function startPaymentCountdown() {
+  clearInterval(paymentTimerInterval);
+
+  paymentTimerInterval = setInterval(() => {
+    const remain = window.bookingExpireAt - Date.now();
+
+    if (remain <= 0) {
+      handleBookingExpired(
+        "Hết thời gian thanh toán. Đơn vé chưa được ghi nhận, vui lòng thực hiện lại.",
+      );
+      return;
+    }
+
+    const minutes = Math.floor(remain / 60000);
+    const seconds = Math.floor((remain % 60000) / 1000);
+
+    const vietQrTimer = document.getElementById("vietqr-timer");
+    if (vietQrTimer) {
+      vietQrTimer.innerText = `${minutes.toString().padStart(2, "0")}:${seconds
+        .toString()
+        .padStart(2, "0")}`;
     }
   }, 1000);
 }
@@ -1128,7 +1633,7 @@ function applyVoucher() {
   const code = document.getElementById("voucher-input").value.trim();
 
   if (code === "") {
-    alert("Vui lòng nhập mã voucher!");
+    window.showCgvToast("Vui lòng nhập mã voucher!");
     return;
   }
 
@@ -1148,15 +1653,131 @@ function applyVoucher() {
 
       calculateCgvCart();
 
-      alert("Áp dụng voucher thành công!");
+      window.showCgvToast("Áp dụng voucher thành công!", "success");
     })
     .catch((err) => {
       appliedVoucherDiscount = 0;
 
       calculateCgvCart();
 
-      alert(err.message);
+      window.showCgvToast(err.message);
     });
 }
 
+function returnHomeWithPopup(message, title = "Thông báo") {
+  // Đóng các modal nếu đang mở
+  const paymentModal = document.getElementById("payment-redirect-modal");
+  if (paymentModal) {
+    paymentModal.classList.remove("open");
+  }
+
+  const otpModal = document.getElementById("otp-modal");
+  if (otpModal) {
+    otpModal.classList.remove("open");
+  }
+
+  // Clear dữ liệu chọn ghế nếu có
+  if (typeof selectedSeats !== "undefined") {
+    selectedSeats.clear?.();
+  }
+
+  if (typeof window.selectedSeats !== "undefined") {
+    if (Array.isArray(window.selectedSeats)) {
+      window.selectedSeats = [];
+    } else if (window.selectedSeats.clear) {
+      window.selectedSeats.clear();
+    }
+  }
+
+  // Clear cache booking tạm
+  sessionStorage.removeItem("pendingBooking");
+  localStorage.removeItem("las_current_booking_cache");
+
+  // Đẩy về home / danh sách phim
+  if (typeof switchCgvTab === "function") {
+    switchCgvTab("panel-movies", "now_showing");
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  } else {
+    window.location.href = "index.html";
+    return;
+  }
+
+  // Hiện popup theo FE booking(15)
+  setTimeout(() => {
+    window.showCgvToast(message, "error");
+  }, 250);
+}
+
+let bookingTimeoutHandled = false;
+let paymentTimerInterval = null;
+let paymentPollingErrorCount = 0;
+
+function handleBookingExpired(reasonMessage) {
+  if (bookingTimeoutHandled) return;
+  bookingTimeoutHandled = true;
+
+  // Clear timer giữ ghế
+  if (typeof timerInterval !== "undefined") {
+    clearInterval(timerInterval);
+  }
+
+  // Clear timer thanh toán nếu có
+  if (typeof paymentTimerInterval !== "undefined") {
+    clearInterval(paymentTimerInterval);
+  }
+
+  // Stop polling QR nếu có
+  if (typeof stopQrPaymentPolling === "function") {
+    stopQrPaymentPolling();
+  }
+
+  // Đóng modal thanh toán nếu có
+  const paymentModal = document.getElementById("payment-redirect-modal");
+  if (paymentModal) {
+    paymentModal.classList.remove("open");
+    paymentModal.style.display = "none";
+  }
+
+  // Reset giữ ghế
+  if (typeof resetHoldState === "function") {
+    resetHoldState();
+  }
+
+  // Reset ghế chọn
+  selectedSeats = [];
+
+  if (typeof calculateCgvCart === "function") {
+    calculateCgvCart();
+  }
+
+  // Ẩn timer giữ ghế
+  const holdTimer = document.getElementById("hold-timer");
+  if (holdTimer) {
+    holdTimer.style.display = "none";
+  }
+
+  // Clear cache tạm
+  sessionStorage.removeItem("pendingBooking");
+  localStorage.removeItem("las_current_booking_cache");
+
+  // Về Home
+  if (typeof switchCgvTab === "function") {
+    switchCgvTab("panel-movies", "now_showing");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } else {
+    window.location.href = "index.html";
+    return;
+  }
+
+  // Popup theo FE booking(15)
+  setTimeout(() => {
+    window.showCgvToast(
+      reasonMessage || "Phiên đặt vé đã hết hạn. Vui lòng thực hiện lại.",
+      "error",
+    );
+  }, 300);
+}
 window.addEventListener("load", checkVnpayReturn);

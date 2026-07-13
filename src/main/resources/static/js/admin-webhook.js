@@ -9,7 +9,7 @@
 
 const ADM_WEBHOOK_METRICS = [
   {
-    icon: "#️⃣",
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/></svg>',
     bg: "rgba(59,130,246,0.16)",
     fg: "#60a5fa",
     label: "Tổng webhook",
@@ -17,7 +17,7 @@ const ADM_WEBHOOK_METRICS = [
     pct: ""
   },
   {
-    icon: "✅",
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.5 2.5 4.7-5"/></svg>',
     bg: "rgba(34,197,94,0.16)",
     fg: "#4ade80",
     label: "Thành công",
@@ -25,7 +25,7 @@ const ADM_WEBHOOK_METRICS = [
     pct: "0%"
   },
   {
-    icon: "⛔",
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>',
     bg: "rgba(239,68,68,0.16)",
     fg: "#f87171",
     label: "Thất bại",
@@ -33,7 +33,7 @@ const ADM_WEBHOOK_METRICS = [
     pct: "0%"
   },
   {
-    icon: "🔗",
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 13.5 14.5 8.5"/><path d="M11 6.5l1.2-1.2a3.5 3.5 0 0 1 5 5L16 11.5"/><path d="M13 17.5l-1.2 1.2a3.5 3.5 0 0 1-5-5L8 12.5"/></svg>',
     bg: "rgba(59,130,246,0.16)",
     fg: "#60a5fa",
     label: "Endpoint đang hoạt động",

@@ -49,6 +49,7 @@ public class Account {
 
     @OneToMany(mappedBy = "staff")
     private List<Order1> staffOrders;
+
     @Column(name = "status", length = 20)
     private String status;
 }

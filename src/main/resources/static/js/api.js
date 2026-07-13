@@ -45,6 +45,7 @@ const API = {
 
   // 2. MOVIES
   getMovies: () => fetch(`${BASE_URL}/movies`).then(handleResponse),
+
   addMovie: (movieData) =>
     fetch(`${BASE_URL}/movies/add`, {
       method: "POST",
@@ -59,27 +60,28 @@ const API = {
       body: JSON.stringify(movieData),
     }).then(handleResponse),
 
-  // 🚀 ĐÃ SỬA: Khớp chuẩn xác Path Variable dạng /delete/{id} với MovieController.java của bạn
   deleteMovie: (movieId) =>
-    fetch(`${BASE_URL}/movies/delete/${movieId}`, { method: "DELETE" }).then(
-      handleResponse,
-    ),
+    fetch(`${BASE_URL}/movies/delete/${movieId}`, {
+      method: "DELETE",
+    }).then(handleResponse),
 
   // 3. EVENTS & BANNERS
   getEvents: () => fetch(`${BASE_URL}/events`).then(handleResponse),
+
   getBanners: () => fetch(`${BASE_URL}/banners`).then(handleResponse),
 
   // 4. BOOKING
   getShowtimes: (movieId, date) =>
-    fetch(`${BASE_URL}/showtimes/matrix?movieId=${movieId}&date=${date}`).then(
-      handleResponse,
-    ),
+    fetch(
+      `${BASE_URL}/showtimes/matrix?movieId=${encodeURIComponent(
+        movieId,
+      )}&date=${encodeURIComponent(date)}`,
+    ).then(handleResponse),
 
-  // 🚀 ĐÃ THÊM: Gọi API lấy trạng thái danh sách ghế thực tế của suất chiếu
   getSeatsByShowtime: (showtimeId) =>
-    fetch(`${BASE_URL}/seats/matrix?showtimeId=${showtimeId}`).then(
-      handleResponse,
-    ),
+    fetch(
+      `${BASE_URL}/seats/matrix?showtimeId=${encodeURIComponent(showtimeId)}`,
+    ).then(handleResponse),
 
   checkoutTickets: (checkoutData) =>
     fetch(`${BASE_URL}/seats/checkout`, {
@@ -94,7 +96,7 @@ const API = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(cancelData),
     }).then(handleResponse),
-  // 🚀 THÊM MỚI: Gọi API gửi yêu cầu tạo suất chiếu xuống Spring Boot
+
   addShowtime: (showtimeData) =>
     fetch(`${BASE_URL}/showtimes/add`, {
       method: "POST",
@@ -102,96 +104,152 @@ const API = {
       body: JSON.stringify(showtimeData),
     }).then(handleResponse),
 
-  // 5. ADMIN/MANAGER
-  getAdminUsers: () => fetch(`${BASE_URL}/admin/users`).then(handleResponse),
-  getSysLogs: () => fetch(`${BASE_URL}/admin/syslogs`).then(handleResponse),
-  getFaqs: () => fetch(`${BASE_URL}/admin/faqs`).then(handleResponse),
-  getWebhooks: () => fetch(`${BASE_URL}/admin/webhooks`).then(handleResponse),
-  getDbBackups: () => fetch(`${BASE_URL}/admin/backups`).then(handleResponse),
-  banUser: (userId) =>
-    fetch(`${BASE_URL}/admin/users/ban/${userId}`, { method: "PUT" }).then(
+  // 5. PAYMENT QR / PAYOS
+  createQrPayment: (amount) =>
+    fetch(
+      `${BASE_URL}/payment/qr/create?amount=${encodeURIComponent(amount)}`,
+    ).then(handleResponse),
+
+  getQrPaymentStatus: (qrRef) =>
+    fetch(`${BASE_URL}/payment/qr/status/${encodeURIComponent(qrRef)}`).then(
       handleResponse,
     ),
 
-  getOrderHistory: (accountId) =>
-    fetch(`${BASE_URL}/orders/history/${accountId}`).then(handleResponse),
-  // Voucher
-  checkVoucher: (code) =>
-    fetch(`${BASE_URL}/voucher/${code}`).then(handleResponse),
+  cancelQrPayment: (qrRef) =>
+    fetch(`${BASE_URL}/payment/qr/cancel/${encodeURIComponent(qrRef)}`, {
+      method: "POST",
+    }).then(handleResponse),
 
-  // 🍿 Kho F&B
-  // Manager Dashboard analytics (TỔNG HỢP) — backend cần trả về JSON theo spec.
-  getManagerDashboard: () =>
-    fetch(`${BASE_URL}/manager/dashboard`).then(handleResponse),
+  createPayOSPayment: (amount) =>
+    fetch(`${BASE_URL}/payment/payos/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount }),
+    }).then(handleResponse),
 
-  getFnbItems: () => fetch(`${BASE_URL}/fnb`).then(handleResponse),
-  addFnbItem: (data) => fetch(`${BASE_URL}/fnb`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  }).then(handleResponse),
-  updateFnbItem: (id, data) => fetch(`${BASE_URL}/fnb/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  }).then(handleResponse),
-  deleteFnbItem: (id) => fetch(`${BASE_URL}/fnb/${id}`, { method: "DELETE" }).then(res => res.ok ? true : Promise.reject(res)),
+  // 6. ADMIN / MANAGER
+  getAdminUsers: () => fetch(`${BASE_URL}/admin/users`).then(handleResponse),
+
+  getSysLogs: () => fetch(`${BASE_URL}/admin/syslogs`).then(handleResponse),
+
+  getFaqs: () => fetch(`${BASE_URL}/admin/faqs`).then(handleResponse),
+
+  getWebhooks: () => fetch(`${BASE_URL}/admin/webhooks`).then(handleResponse),
+
+  getDbBackups: () => fetch(`${BASE_URL}/admin/backups`).then(handleResponse),
+
+  banUser: (userId) =>
+    fetch(`${BASE_URL}/admin/users/ban/${encodeURIComponent(userId)}`, {
+      method: "PUT",
+    }).then(handleResponse),
+
   updateUserRole: (userId, newRoleId) =>
-  fetch(`${BASE_URL}/admin/users/update-role/${userId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(newRoleId),
-  }).then(handleResponse),
-  getUnreadNotifications: (accountId) =>
-  fetch(`${BASE_URL}/notifications/unread/${accountId}`).then(handleResponse),
+    fetch(`${BASE_URL}/admin/users/update-role/${encodeURIComponent(userId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newRoleId),
+    }).then(handleResponse),
 
-markNotificationAsRead: (notificationId) =>
-  fetch(`${BASE_URL}/notifications/read/${notificationId}`, {
-    method: "PUT",
-  }).then(handleResponse),
-  
-  // 🎟️ QUẢN LÝ VOUCHER CHIẾN DỊCH (MANAGER)
-  getManagerVouchers: () => 
+  createBackup: () =>
+    fetch(`${BASE_URL}/admin/backups`, {
+      method: "POST",
+    }).then(handleResponse),
+
+  restoreBackup: (fileName) =>
+    fetch(`${BASE_URL}/admin/backups/${encodeURIComponent(fileName)}/restore`, {
+      method: "POST",
+    }).then(handleResponse),
+
+  // 6b. THÔNG BÁO TÀI KHOẢN (từ nhánh admin)
+  getUnreadNotifications: (accountId) =>
+    fetch(`${BASE_URL}/notifications/unread/${encodeURIComponent(accountId)}`).then(
+      handleResponse,
+    ),
+
+  markNotificationAsRead: (notificationId) =>
+    fetch(`${BASE_URL}/notifications/read/${encodeURIComponent(notificationId)}`, {
+      method: "PUT",
+    }).then(handleResponse),
+
+  getOrderHistory: (accountId) =>
+    fetch(`${BASE_URL}/orders/history/${encodeURIComponent(accountId)}`).then(
+      handleResponse,
+    ),
+
+  // 7. VOUCHER
+  // Giữ endpoint đúng của booking 15: /vouchers/{code}
+  checkVoucher: (code) =>
+    fetch(`${BASE_URL}/vouchers/${encodeURIComponent(code)}`).then(
+      handleResponse,
+    ),
+
+  getManagerVouchers: () =>
     fetch(`${BASE_URL}/vouchers/manager/all`).then(handleResponse),
 
-  addVoucher: (voucherData) => 
+  addVoucher: (voucherData) =>
     fetch(`${BASE_URL}/vouchers/manager/add`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(voucherData)
+      body: JSON.stringify(voucherData),
     }).then(handleResponse),
 
-  updateVoucher: (id, voucherData) => 
-    fetch(`${BASE_URL}/vouchers/manager/update/${id}`, {
+  updateVoucher: (id, voucherData) =>
+    fetch(`${BASE_URL}/vouchers/manager/update/${encodeURIComponent(id)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(voucherData)
+      body: JSON.stringify(voucherData),
     }).then(handleResponse),
 
-  deleteVoucher: (id) => 
-    fetch(`${BASE_URL}/vouchers/manager/delete/${id}`, { 
-      method: "DELETE" 
-    }).then(res => res.ok ? true : Promise.reject(res)),
-  
-    // 📊 PHÂN HỆ DASHBOARD TỔNG QUAN (MANAGER)
-  getDashboardOverviewData: () => 
+  deleteVoucher: (id) =>
+    fetch(`${BASE_URL}/vouchers/manager/delete/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }).then((res) => {
+      if (!res.ok) {
+        return handleResponse(res);
+      }
+      return true;
+    }),
+
+  // 8. F&B
+  getFnbItems: () => fetch(`${BASE_URL}/fnb`).then(handleResponse),
+
+  addFnbItem: (data) =>
+    fetch(`${BASE_URL}/fnb`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then(handleResponse),
+
+  updateFnbItem: (id, data) =>
+    fetch(`${BASE_URL}/fnb/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then(handleResponse),
+
+  deleteFnbItem: (id) =>
+    fetch(`${BASE_URL}/fnb/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }).then((res) => {
+      if (!res.ok) {
+        return handleResponse(res);
+      }
+      return true;
+    }),
+
+  // 9. DASHBOARD
+  getManagerDashboard: () =>
+    fetch(`${BASE_URL}/manager/dashboard`).then(handleResponse),
+
+  getDashboardOverviewData: () =>
     fetch(`${BASE_URL}/dashboard/overview`).then(handleResponse),
 
-  // 📈 PHÂN HỆ BÁO CÁO & KIỂM TOÁN TÀI CHÍNH ĐỘNG (🎯 BỔ SUNG ĐỂ SỬA LỖI TRÊN ẢNH LOG)
-  getAuditReportData: (dateStr) => 
-    fetch(`${BASE_URL}/audit/report?date=${dateStr}`).then(handleResponse),
-  createBackup: () =>
-  fetch(`${BASE_URL}/admin/backups`, {
-    method: "POST",
-  }).then(handleResponse),
-
-restoreBackup: (fileName) =>
-  fetch(
-    `${BASE_URL}/admin/backups/${encodeURIComponent(fileName)}/restore`,
-    {
-      method: "POST",
-    }
-  ).then(handleResponse),
+  // 10. AUDIT
+  getAuditReportData: (dateStr) =>
+    fetch(`${BASE_URL}/audit/report?date=${encodeURIComponent(dateStr)}`).then(
+      handleResponse,
+    ),
 };
+
+// Đưa API ra window để các file JS khác như booking.js sử dụng ổn định.
+window.API = API;

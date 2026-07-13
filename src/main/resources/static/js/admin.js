@@ -20,6 +20,9 @@ function switchAdminTab(tabName) {
   if (activeTab) activeTab.style.display = "block";
 
   // Gọi hàm load dữ liệu tương ứng khi chuyển tab
+  // Lưu ý: loadAdminSysLogs()/loadAdminWebhooks() mới thực sự gọi API và tự
+  // render lại; renderAdminSysLogPage()/renderAdminWebhookPage() chỉ vẽ lại
+  // dữ liệu đã có trong bộ nhớ (ban đầu rỗng), nên phải gọi hàm load.
   if (tabName === "dashboard") loadAdminDashboard();
   if (tabName === "ban") renderAdminBanList();
   if (tabName === "syslog") loadAdminSysLogs();
@@ -31,42 +34,24 @@ let _admBanUsersCache = [];
 
 // Dữ liệu mẫu - CHỈ dùng để xem trước giao diện khi API chưa sẵn sàng
 // hoặc chưa có tài khoản nào trong DB. Khi API thật trả về dữ liệu, phần này sẽ không được dùng.
-
+const ADM_BAN_MOCK_USERS = [
+  { accountId: "USR-001", email: "hoang.nguyen@las.vn", roleId: 1, status: "Active" },
+  { accountId: "USR-002", email: "nhanvien1@las.vn", roleId: 3, status: "Active" },
+  { accountId: "USR-003", email: "khachhang_scam@gmail.com", roleId: 3, status: "Banned" },
+  { accountId: "USR-004", email: "tranthi.b@las.vn", roleId: 3, status: "Active" },
+  { accountId: "USR-005", email: "admin2@las.vn", roleId: 2, status: "Active" },
+];
 
 function renderAdminBanList() {
   const tbody = document.getElementById("admin-ban-tbody");
-  if (!tbody) return;
-
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="5"
-          style="text-align:center; color:var(--adm-muted); padding:24px;">
-        Đang tải danh sách tài khoản...
-      </td>
-    </tr>
-  `;
-
   API.getAdminUsers()
     .then((users) => {
-      _admBanUsersCache = Array.isArray(users) ? users : [];
-
-      // Giữ nguyên hàm render cũ
-      renderAdminBanRows(_admBanUsersCache);
+      _admBanUsersCache = (users && users.length) ? users : ADM_BAN_MOCK_USERS;
+      renderAdminBanRows(_admBanUsersCache, !users || !users.length);
     })
-    .catch((err) => {
-      console.error("Lỗi tải tài khoản:", err);
-
-      _admBanUsersCache = [];
-
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="5"
-              style="text-align:center; color:#ff4742; padding:24px;">
-            Không tải được tài khoản từ database:
-            ${err.message || "Lỗi kết nối API"}
-          </td>
-        </tr>
-      `;
+    .catch(() => {
+      _admBanUsersCache = ADM_BAN_MOCK_USERS;
+      renderAdminBanRows(_admBanUsersCache, true);
     });
 }
 
@@ -89,35 +74,20 @@ function renderAdminBanRows(users, isMock) {
           ? '<span class="status-badge">Hoạt động</span>'
           : '<span class="status-badge" style="background:#e71a0f;">Bị khóa</span>';
 
+      // Role ID chuẩn theo backend (AdminController.getRoleName): 1=Manager, 2=Staff, 3=Member, 4=Admin
       return `<tr>
           <td>${u.accountId}</td>
           <td>${u.email}</td>
           <td>
             <select
-  data-old-role="${u.roleId}"
-  onchange="changeRoleAction(
-    '${u.accountId}',
-    this.value,
-    this.dataset.oldRole,
-    this
-  )"
->
-  <option value="4" ${Number(u.roleId) === 4 ? "selected" : ""}>
-    Admin
-  </option>
-
-  <option value="1" ${Number(u.roleId) === 1 ? "selected" : ""}>
-    Manager
-  </option>
-
-  <option value="2" ${Number(u.roleId) === 2 ? "selected" : ""}>
-    Staff
-  </option>
-
-  <option value="3" ${Number(u.roleId) === 3 ? "selected" : ""}>
-    Member
-  </option>
-</select>
+              data-old-role="${u.roleId}"
+              onchange="changeRoleAction('${u.accountId}', this.value, this.dataset.oldRole, this)"
+            >
+                <option value="4" ${Number(u.roleId) === 4 ? 'selected' : ''}>Admin</option>
+                <option value="1" ${Number(u.roleId) === 1 ? 'selected' : ''}>Manager</option>
+                <option value="2" ${Number(u.roleId) === 2 ? 'selected' : ''}>Staff</option>
+                <option value="3" ${Number(u.roleId) === 3 ? 'selected' : ''}>Member</option>
+            </select>
           </td>
           <td>${badge}</td>
           <td>
@@ -146,7 +116,8 @@ function filterAdminBanList() {
   renderAdminBanRows(filtered);
 }
 
-// Hàm xử lý sự kiện
+// Hàm xử lý sự kiện đổi quyền — dùng popup thông báo thay vì alert(),
+// và tự trả select về giá trị cũ nếu API lỗi.
 function changeRoleAction(userId, roleId, oldRoleId, selectElement) {
   const newRoleId = Number(roleId);
   const previousRoleId = Number(oldRoleId);
@@ -162,16 +133,13 @@ function changeRoleAction(userId, roleId, oldRoleId, selectElement) {
         result.newRoleName
       );
 
-      // Ghi nhận role mới để lần thay đổi tiếp theo không dùng role cũ
       if (selectElement) {
         selectElement.dataset.oldRole = String(newRoleId);
       }
 
-      // Tải lại dữ liệu thật từ database
       renderAdminBanList();
     })
     .catch((err) => {
-      // API lỗi thì trả select về quyền ban đầu
       if (selectElement) {
         selectElement.value = String(previousRoleId);
       }
@@ -180,8 +148,7 @@ function changeRoleAction(userId, roleId, oldRoleId, selectElement) {
     });
 }
 
-
-// (Tuỳ chọn) Hàm hỗ trợ khi Admin bấm nút Khóa tài khoản
+// Popup xác nhận khóa/mở khóa tài khoản (thay cho confirm()/alert() cũ)
 let banPopupConfirmCallback = null;
 
 function showBanPopup(type, title, message, onConfirm) {
@@ -192,29 +159,23 @@ function showBanPopup(type, title, message, onConfirm) {
   const cancelButton = document.getElementById("ban-popup-cancel");
   const confirmButton = document.getElementById("ban-popup-confirm");
 
+  if (!popup) return;
+
   popup.classList.remove("confirm", "success", "error");
   popup.classList.add(type);
 
-  if (type === "success") {
-    icon.textContent = "✓";
-  } else if (type === "error") {
-    icon.textContent = "!";
-  } else {
-    icon.textContent = "?";
-  }
+  if (icon) icon.textContent = type === "success" ? "✓" : type === "error" ? "!" : "?";
+  if (titleElement) titleElement.textContent = title;
+  if (messageElement) messageElement.textContent = message;
 
-  titleElement.textContent = title;
-  messageElement.textContent = message;
-
-  banPopupConfirmCallback =
-    typeof onConfirm === "function" ? onConfirm : null;
+  banPopupConfirmCallback = typeof onConfirm === "function" ? onConfirm : null;
 
   if (banPopupConfirmCallback) {
-    confirmButton.style.display = "inline-block";
-    cancelButton.textContent = "Hủy";
+    if (confirmButton) confirmButton.style.display = "inline-block";
+    if (cancelButton) cancelButton.textContent = "Hủy";
   } else {
-    confirmButton.style.display = "none";
-    cancelButton.textContent = "Đóng";
+    if (confirmButton) confirmButton.style.display = "none";
+    if (cancelButton) cancelButton.textContent = "Đóng";
   }
 
   popup.classList.add("open");
@@ -222,32 +183,38 @@ function showBanPopup(type, title, message, onConfirm) {
 
 function closeBanPopup() {
   const popup = document.getElementById("ban-popup");
-
-  if (popup) {
-    popup.classList.remove("open");
-  }
-
+  if (popup) popup.classList.remove("open");
   banPopupConfirmCallback = null;
 }
 
 function confirmBanPopup() {
   const callback = banPopupConfirmCallback;
-
   closeBanPopup();
-
-  if (callback) {
-    callback();
-  }
+  if (callback) callback();
 }
 
+function showAdminRoleSuccessPopup(oldRoleName, newRoleName) {
+  const popup = document.getElementById("admin-role-success-popup");
+  const message = document.getElementById("admin-role-success-message");
+
+  if (message) {
+    message.innerHTML = `Đã đổi quyền tài khoản từ <b>${oldRoleName || "Không xác định"}</b> sang <b>${newRoleName || "Không xác định"}</b>.`;
+  }
+
+  if (popup) popup.classList.add("open");
+}
+
+function closeAdminRoleSuccessPopup() {
+  const popup = document.getElementById("admin-role-success-popup");
+  if (popup) popup.classList.remove("open");
+}
+
+// (Tuỳ chọn) Hàm hỗ trợ khi Admin bấm nút Khóa/Mở khóa tài khoản
 function banUserAction(userId) {
   const currentUser = _admBanUsersCache.find(
     (user) => String(user.accountId) === String(userId)
   );
-
-  const isBanned =
-    currentUser && currentUser.status === "Banned";
-
+  const isBanned = currentUser && currentUser.status === "Banned";
   const actionText = isBanned ? "mở khóa" : "khóa";
 
   showBanPopup(
@@ -255,45 +222,24 @@ function banUserAction(userId) {
     isBanned ? "XÁC NHẬN MỞ KHÓA" : "XÁC NHẬN KHÓA",
     `Bạn có chắc chắn muốn ${actionText} tài khoản ID: ${userId}?`,
     function () {
-      if (
-        typeof API === "undefined" ||
-        typeof API.banUser !== "function"
-      ) {
-        showBanPopup(
-          "error",
-          "KHÔNG THỂ THỰC HIỆN",
-          "Chức năng khóa tài khoản chưa được kết nối API."
-        );
-
+      if (typeof API === "undefined" || typeof API.banUser !== "function") {
+        showBanPopup("error", "KHÔNG THỂ THỰC HIỆN", "Chức năng khóa tài khoản chưa được kết nối API.");
         return;
       }
 
-     API.banUser(userId)
-  .then((result) => {
-    const newStatus = result.status;
+      API.banUser(userId)
+        .then((result) => {
+          const newStatus = result.status;
+          const successMessage = newStatus === "Banned"
+            ? `Đã khóa tài khoản ID: ${userId} thành công.`
+            : `Đã mở khóa tài khoản ID: ${userId} thành công.`;
 
-    const successMessage =
-      newStatus === "Banned"
-        ? `Đã khóa tài khoản ID: ${userId} thành công.`
-        : `Đã mở khóa tài khoản ID: ${userId} thành công.`;
-
-    // Hiện popup thành công giống popup cập nhật role
-    showBanPopup(
-      "success",
-      "CẬP NHẬT THÀNH CÔNG",
-      successMessage
-    );
-
-    // Lấy lại danh sách để chuyển trạng thái ngay
-    renderAdminBanList();
-  })
-  .catch((error) => {
-    showBanPopup(
-      "error",
-      "CẬP NHẬT THẤT BẠI",
-      error.message || "Không thể cập nhật trạng thái tài khoản."
-    );
-  });
+          showBanPopup("success", "CẬP NHẬT THÀNH CÔNG", successMessage);
+          renderAdminBanList();
+        })
+        .catch((error) => {
+          showBanPopup("error", "CẬP NHẬT THẤT BẠI", error.message || "Không thể cập nhật trạng thái tài khoản.");
+        });
     }
   );
 }
@@ -313,159 +259,10 @@ function banUserAction(userId) {
 // renderAdminWebhookPage() trong file js/admin-webhook.js — dùng dữ liệu tĩnh
 // theo đúng yêu cầu giao diện tham khảo (LumiAI).
 
-function renderAdminDbBackups() {
-  const tbody = document.getElementById("admin-db-tbody");
-
-  if (!tbody || typeof API === "undefined") {
-    return;
-  }
-
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="5"
-          style="text-align:center; padding:24px; color:var(--adm-muted);">
-        Đang tải danh sách bản sao lưu...
-      </td>
-    </tr>
-  `;
-
-  API.getDbBackups()
-    .then((backups) => {
-      renderAdminDbRows(
-        Array.isArray(backups) ? backups : []
-      );
-    })
-    .catch((error) => {
-      console.error("Lỗi tải backup:", error);
-
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="5"
-              style="text-align:center; padding:24px; color:#ff4742;">
-            Không tải được danh sách backup:
-            ${error.message || "Lỗi kết nối API"}
-          </td>
-        </tr>
-      `;
-    });
-}
-
-function renderAdminDbRows(backups) {
-  const tbody = document.getElementById("admin-db-tbody");
-
-  if (!tbody) return;
-
-  if (!backups.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5"
-            style="text-align:center; padding:28px; color:var(--adm-muted);">
-          Chưa có bản sao lưu nào.
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = backups
-    .map((backup) => {
-      return `
-        <tr>
-          <td>
-            <b>${backup.ver}</b>
-          </td>
-
-          <td>${backup.date}</td>
-
-          <td>${backup.size}</td>
-
-          <td>${backup.type}</td>
-
-          <td>
-            <button
-              class="btn-admin-action edit"
-              onclick="restoreBackupAction('${backup.ver}')"
-            >
-              Phục hồi (Restore)
-            </button>
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
-}
-
-function createManualBackupAction() {
-  if (
-    typeof API === "undefined" ||
-    typeof API.createBackup !== "function"
-  ) {
-    alert("Chức năng tạo backup chưa được kết nối API.");
-    return;
-  }
-
-  const button = event?.currentTarget;
-
-  if (button) {
-    button.disabled = true;
-    button.textContent = "Đang tạo backup...";
-  }
-
-  API.createBackup()
-    .then((result) => {
-      alert(
-        result.message || "Tạo bản sao lưu thành công!"
-      );
-
-      renderAdminDbBackups();
-    })
-    .catch((error) => {
-      alert(
-        "Không thể tạo backup: "
-          + (error.message || "Lỗi không xác định")
-      );
-    })
-    .finally(() => {
-      if (button) {
-        button.disabled = false;
-        button.textContent =
-          "+ Tạo bản sao lưu thủ công";
-      }
-    });
-}
-
-function restoreBackupAction(fileName) {
-  const confirmed = confirm(
-    `Bạn có chắc chắn muốn phục hồi database từ bản:\n\n` +
-    `${fileName}\n\n` +
-    `Dữ liệu hiện tại sẽ bị ghi đè. Hệ thống sẽ tự tạo ` +
-    `một backup an toàn trước khi phục hồi.`
-  );
-
-  if (!confirmed) return;
-
-  if (
-    typeof API === "undefined" ||
-    typeof API.restoreBackup !== "function"
-  ) {
-    alert("Chức năng phục hồi chưa được kết nối API.");
-    return;
-  }
-
-  API.restoreBackup(fileName)
-    .then((result) => {
-      alert(
-        result.message ||
-        "Phục hồi database thành công. Hãy restart backend."
-      );
-    })
-    .catch((error) => {
-      alert(
-        "Không thể phục hồi database: "
-          + (error.message || "Lỗi không xác định")
-      );
-    });
-}
+const ADM_DB_MOCK_BACKUPS = [
+  { ver: "LAS_DB_v1.0.2", date: "19/06/2026 23:59", size: "145.2 MB", type: "Tự động" },
+  { ver: "LAS_DB_v1.0.1", date: "18/06/2026 15:30", size: "144.8 MB", type: "Thủ công" },
+];
 
 function renderAdminDbBackups() {
   const tbody = document.getElementById("admin-db-tbody");
@@ -485,62 +282,27 @@ function renderAdminDbBackups() {
 
   API.getDbBackups()
     .then((backups) => {
-      const backupList =
-        Array.isArray(backups) ? backups : [];
-
-      renderAdminDbRows(backupList);
+      renderAdminDbRows((backups && backups.length) ? backups : ADM_DB_MOCK_BACKUPS, !backups || !backups.length);
     })
-    .catch((error) => {
-      console.error("Lỗi tải Backups:", error);
-
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="5"
-              style="text-align:center; padding:24px; color:#ff4742;">
-            Không tải được danh sách backup:
-            ${error.message || "Lỗi kết nối API"}
-          </td>
-        </tr>
-      `;
+    .catch((err) => {
+      console.error("🚨 Lỗi tải Backups:", err);
+      renderAdminDbRows(ADM_DB_MOCK_BACKUPS, true);
     });
 }
 
-function renderAdminDbRows(backups) {
+function renderAdminDbRows(backups, isMock) {
   const tbody = document.getElementById("admin-db-tbody");
+  const mockNotice = isMock
+    ? `<tr><td colspan="5" style="text-align:center; color:var(--adm-gold); background:rgba(229,169,59,0.08); padding:10px; font-size:12px; font-style:italic;">
+         ⚠ Đang hiển thị DỮ LIỆU MẪU (chưa kết nối được API backups) - chỉ để xem trước giao diện.
+       </td></tr>`
+    : "";
 
-  if (!tbody) return;
-
-  if (!backups.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5"
-            style="text-align:center; padding:28px; color:var(--adm-muted);">
-          Chưa có bản sao lưu nào.
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = backups
-    .map((backup) => {
-      return `
-        <tr>
-          <td><b>${backup.ver}</b></td>
-          <td>${backup.date}</td>
-          <td>${backup.size}</td>
-          <td>${backup.type}</td>
-          <td>
-            <button
-              class="btn-admin-action edit"
-              onclick="restoreBackupAction('${backup.ver}')"
-            >
-              Phục hồi (Restore)
-            </button>
-          </td>
-        </tr>
-      `;
-    })
+  tbody.innerHTML = mockNotice + backups
+    .map(
+      (b) =>
+        `<tr><td><b>${b.ver}</b></td><td>${b.date}</td><td>${b.size}</td><td>${b.type}</td><td><button class="btn-admin-action edit" onclick="restoreBackupAction('${b.ver}')">Phục hồi (Restore)</button></td></tr>`,
+    )
     .join("");
 }
 
@@ -563,30 +325,5 @@ function createManualBackupAction() {
       .catch((err) => alert("Lỗi khi tạo bản sao lưu: " + err.message));
   } else {
     alert("Chức năng tạo bản sao lưu chưa được kết nối API thật (đang ở chế độ xem trước giao diện).");
-  }
-}
-function showAdminRoleSuccessPopup(oldRoleName, newRoleName) {
-  const popup = document.getElementById("admin-role-success-popup");
-  const message = document.getElementById("admin-role-success-message");
-
-  if (message) {
-    message.innerHTML = `
-      Đã đổi quyền tài khoản từ
-      <b>${oldRoleName || "Không xác định"}</b>
-      sang
-      <b>${newRoleName || "Không xác định"}</b>.
-    `;
-  }
-
-  if (popup) {
-    popup.classList.add("open");
-  }
-}
-
-function closeAdminRoleSuccessPopup() {
-  const popup = document.getElementById("admin-role-success-popup");
-
-  if (popup) {
-    popup.classList.remove("open");
   }
 }

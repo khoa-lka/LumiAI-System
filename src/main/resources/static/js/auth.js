@@ -39,9 +39,12 @@ function submitCgvLogin(event) {
     document.getElementById("login-captcha-text").innerText;
 
   if (!user || !pass)
-    return alert("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
+    return window.showCgvToast(
+      "Vui lòng nhập đầy đủ tài khoản và mật khẩu!",
+      "error",
+    );
   if (captchaInput.toUpperCase() !== currentLoginCaptcha.toUpperCase()) {
-    return alert("Mã bảo vệ Captcha không chính xác!");
+    return window.showCgvToast("Mã bảo vệ Captcha không chính xác!", "error");
   }
 
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
@@ -74,21 +77,40 @@ function submitCgvLogin(event) {
         sessionStorage.setItem("roleId", uData.roleId);
         window.currentLoggedInId = uData.accountId;
 
+        // STAFF (roleId = 2): đăng nhập xong vào thẳng Máy POS, không cần
+        // đi qua giao diện trang chủ như khách hàng/Manager/Admin.
+        if (Number(uData.roleId) === 2) {
+          closeAuthModal();
+          window.showCgvToast(
+            `Chào mừng ${uData.fullName}! Đang chuyển sang Máy POS...`,
+            "success",
+          );
+          setTimeout(() => {
+            window.location.href = "/staff.html";
+          }, 600);
+          return;
+        }
+
         // 2. ĐIỀU HƯỚNG: Tất cả vai trò đều vào HOME sau đăng nhập.
         //    Manager(1) và Admin(4) truy cập Dashboard CHỦ ĐỘNG qua tab
         //    "TRUY CẬP DASHBOARD" (Manager -> manager.html, Admin -> admin.html).
         {
-          alert(
-            `Chào mừng ${uData.fullName} đăng nhập thành công!`,
-          );
           closeAuthModal();
+          window.showCgvToast(
+            `Chào mừng ${uData.fullName} đăng nhập thành công!`,
+            "success",
+          );
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 800);
 
           const authLinkBox = document.getElementById("top-bar-auth-link");
           authLinkBox.onclick = () => switchCgvTab("panel-profile");
           authLinkBox.style.cursor = "pointer";
           authLinkBox.innerHTML = `
               <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}! 
-              <span onclick="confirmLogoutAction(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+              <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
           `;
           document.getElementById("top-bar-ticket-link").innerHTML =
             `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
@@ -106,8 +128,7 @@ function submitCgvLogin(event) {
           const welcomeNameBox = document.getElementById(
             "profile-welcome-name",
           );
-          if (welcomeNameBox)
-            welcomeNameBox.innerText = uData.fullName;
+          if (welcomeNameBox) welcomeNameBox.innerText = uData.fullName;
 
           const starRoleBox = document.getElementById("profile-star-role");
           if (starRoleBox) starRoleBox.innerText = "MEMBER";
@@ -151,10 +172,12 @@ function submitCgvLogin(event) {
           switchCgvTab("panel-profile");
         }
       } else {
-        alert("Đăng nhập thất bại: " + resData.message);
+        window.showCgvToast("Đăng nhập thất bại: " + resData.message, "error");
       }
     })
-    .catch((err) => alert("🚨 Lỗi đăng nhập: " + err.message));
+    .catch((err) =>
+      window.showCgvToast("Lỗi đăng nhập: " + err.message, "error"),
+    );
 }
 
 function submitCgvRegister(event) {
@@ -180,10 +203,16 @@ function submitCgvRegister(event) {
     !birthMonth ||
     !birthYear
   ) {
-    return alert("Vui lòng điền đầy đủ thông tin và chọn ngày sinh!");
+    return window.showCgvToast(
+      "Vui lòng điền đầy đủ thông tin và chọn ngày sinh!",
+      "error",
+    );
   }
   if (captchaInput.toUpperCase() !== currentRegCaptcha.toUpperCase()) {
-    return alert("Mã xác thực Captcha đăng ký không khớp!");
+    return window.showCgvToast(
+      "Mã xác thực Captcha đăng ký không khớp!",
+      "error",
+    );
   }
 
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
@@ -198,40 +227,47 @@ function submitCgvRegister(event) {
   })
     .then((resData) => {
       if (resData.status === "success") {
-        alert(
+        window.showCgvToast(
           resData.message +
             "\nHãy kiểm tra màn hình Console của Spring Boot để lấy mã OTP nhé!",
+          "success",
         );
         temporaryRegisterEmail = resData.email;
         closeAuthModal();
         openOtpModal();
       } else {
-        alert("Đăng ký thất bại: " + resData.message);
+        window.showCgvToast("Đăng ký thất bại: " + resData.message, "error");
       }
     })
-    .catch((err) => alert("🚨 Lỗi đăng ký: " + err.message));
+    .catch((err) =>
+      window.showCgvToast("Lỗi đăng ký: " + err.message, "error"),
+    );
 }
 
 function submitOtpVerification() {
   const otpInput = document.getElementById("otp-input-field").value.trim();
 
-  if (!otpInput) return alert("Vui lòng nhập mã OTP gồm 6 chữ số!");
+  if (!otpInput)
+    return window.showCgvToast("Vui lòng nhập mã OTP gồm 6 chữ số!", "error");
   if (!temporaryRegisterEmail)
-    return alert("Hệ thống không tìm thấy email đăng ký hợp lệ!");
+    return window.showCgvToast(
+      "Hệ thống không tìm thấy email đăng ký hợp lệ!",
+      "error",
+    );
 
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
   API.verifyOtp({ email: temporaryRegisterEmail, otp: otpInput })
     .then((resData) => {
       if (resData.status === "success") {
-        alert(resData.message);
+        window.showCgvToast(resData.message, "success");
         closeOtpModal();
         openAuthModal();
         toggleAuthTab("login");
       } else {
-        alert("Xác thực thất bại: " + resData.message);
+        window.showCgvToast("Xác thực thất bại: " + resData.message, "error");
       }
     })
-    .catch((err) => alert("❌ Lỗi OTP: " + err.message));
+    .catch((err) => window.showCgvToast("Lỗi OTP: " + err.message, "error"));
 }
 
 // --- 3. QUẢN LÝ HỒ SƠ ---
@@ -257,13 +293,14 @@ function saveUpdatedProfileInformationData() {
   })
     .then((resData) => {
       if (resData.status === "success") {
-        alert(resData.message);
+        window.showCgvToast(resData.message, "success");
 
         document
           .querySelectorAll(".profile-readonly-input")
           .forEach((input) => {
             input.setAttribute("readonly", true);
-            if (input.tagName === "SELECT") input.setAttribute("disabled", true);
+            if (input.tagName === "SELECT")
+              input.setAttribute("disabled", true);
             input.style.border = "1px solid rgba(255,255,255,0.15)";
             input.style.background = "#1c1c21";
             input.style.color = "#f4f4f5";
@@ -291,10 +328,15 @@ function saveUpdatedProfileInformationData() {
           }
         });
       } else {
-        alert("❌ Không thể lưu: " + resData.message);
+        window.showCgvToast("❌ Không thể lưu: " + resData.message, "error");
       }
     })
-    .catch((err) => alert("🚨 Lỗi kết nối cập nhật hồ sơ: " + err.message));
+    .catch((err) =>
+      window.showCgvToast(
+        "🚨 Lỗi kết nối cập nhật hồ sơ: " + err.message,
+        "error",
+      ),
+    );
 }
 
 function handleProfileTabAccess() {

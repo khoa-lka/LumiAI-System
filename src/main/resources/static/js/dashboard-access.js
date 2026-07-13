@@ -81,9 +81,50 @@
     }
   };
 
+  // ==========================================================================
+  // 🖥️ TAB "MÁY POS" (chỉ dành cho STAFF = 2)
+  // - Staff bình thường được auto-chuyển sang staff.html ngay lúc đăng nhập
+  //   (xem auth.js), nút này chỉ để Staff quay lại Máy POS thủ công nếu lỡ
+  //   điều hướng sang trang khác.
+  // ==========================================================================
+  var POS_ROLES = [2]; // 2 = STAFF
+
+  window.refreshPosTab = function () {
+    var btn = document.getElementById("pro-subtab-btn-pos");
+    if (!btn) return;
+    var roleId = getCurrentRoleId();
+    btn.style.display = POS_ROLES.indexOf(roleId) !== -1 ? "" : "none";
+  };
+
+  window.openPosConfirm = function () {
+    var roleId = getCurrentRoleId();
+    if (POS_ROLES.indexOf(roleId) === -1) {
+      alert("Tài khoản của bạn không có quyền truy cập Máy POS.");
+      return;
+    }
+    var modal = document.getElementById("pos-confirm-modal");
+    if (modal) modal.classList.add("open");
+  };
+
+  window.closePosConfirm = function () {
+    var modal = document.getElementById("pos-confirm-modal");
+    if (modal) modal.classList.remove("open");
+  };
+
+  window.confirmGoPos = function () {
+    var roleId = getCurrentRoleId();
+    if (POS_ROLES.indexOf(roleId) === -1) {
+      alert("Tài khoản của bạn không có quyền truy cập Máy POS.");
+      window.closePosConfirm();
+      return;
+    }
+    window.location.href = "staff.html";
+  };
+
   // Khi tải trang (kể cả khi khôi phục phiên đăng nhập cũ), cập nhật tab
   function init() {
     window.refreshDashboardTab();
+    window.refreshPosTab();
   }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
