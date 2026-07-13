@@ -615,6 +615,24 @@ function processToPaymentGateway() {
   }
 }
 
+function updatePaymentTimerText() {
+  const vietQrTimer = document.getElementById("vietqr-timer");
+
+  if (!vietQrTimer || !window.bookingExpireAt) return;
+
+  const remain = window.bookingExpireAt - Date.now();
+
+  if (remain <= 0) {
+    vietQrTimer.innerText = "00:00";
+    return;
+  }
+
+  const minutes = Math.floor(remain / 60000);
+  const seconds = Math.floor((remain % 60000) / 1000);
+
+  vietQrTimer.innerText = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+}
+
 function openQrPayment(finalTotal) {
   if (window.bookingExpireAt && Date.now() >= window.bookingExpireAt) {
     handleBookingExpired(
@@ -642,9 +660,9 @@ function openQrPayment(finalTotal) {
   const timerBox = document.getElementById("vietqr-timer-box");
   if (timerBox) {
     timerBox.classList.remove("vietqr-timer-expired");
-    timerBox.innerHTML =
-      '<span>⏱</span> Thời gian thanh toán còn lại <strong id="vietqr-timer">10:00</strong>';
   }
+
+  updatePaymentTimerText();
 
   document.getElementById("qr-total-price").innerText =
     finalTotal.toLocaleString("vi-VN") + " đ";
@@ -733,8 +751,9 @@ function generateVietQR() {
 
   if (timerBox) {
     timerBox.classList.remove("vietqr-timer-expired");
-    timerBox.innerHTML = `<span>⏱</span> Thời gian thanh toán còn lại <strong id="vietqr-timer">10:00</strong>`;
   }
+
+  updatePaymentTimerText();
 
   startPaymentCountdown();
   startQrPaymentPolling();
@@ -1594,6 +1613,8 @@ function startCountdown(expiresAt) {
 
 function startPaymentCountdown() {
   clearInterval(paymentTimerInterval);
+
+  updatePaymentTimerText();
 
   paymentTimerInterval = setInterval(() => {
     const remain = window.bookingExpireAt - Date.now();

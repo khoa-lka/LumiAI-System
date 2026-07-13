@@ -5,6 +5,9 @@
     <meta charset="UTF-8" />
     <title>LAS Cinemas Vietnam - Official Premium Interface</title>
     <link rel="stylesheet" href="style.css?v=20" />
+    <link rel="stylesheet" href="auth.css" />
+    <link rel="stylesheet" href="booking.css" />
+    <link rel="stylesheet" href="account.css" />
   </head>
   <body>
     <div class="global-viewport-container">
@@ -325,7 +328,6 @@
       
       <div class="promo-detail-info" style="flex: 1; text-align: left;">
           <h2 id="detail-promo-title" style="margin: 0 0 12px 0; color: #ff6b35; font-size: 22px; font-weight: bold; line-height: 1.4; border-bottom: 2px solid #ff6b35; padding-bottom: 10px;">
->>>>>>>>> Temporary merge branch 2
               -
           </h2>
           <p id="detail-promo-date" style="margin: 0 0 20px 0; font-size: 13.5px; color: #a8a8b3; font-style: italic; font-weight: bold;">
@@ -376,7 +378,7 @@
             </div>
 
             <div class="countdown-timer" id="hold-timer" style="background: #fff3cd; color: #856404; padding: 12px 18px; border: 1px solid #ffeeba; font-weight: bold; margin-bottom: 20px; border-radius: 4px; display: none; justify-content: space-between; align-items: center; font-size: 13.5px;">
-                <span>⚠️ Ghế đang được giữ tạm thời trong: <strong id="timer-string" style="font-size: 16px; color: #e71a0f; margin-left: 5px;">05:00</strong></span>
+                <span>⚠️ Ghế đang được giữ tạm thời trong: <strong id="timer-string" style="font-size: 16px; color: #e71a0f; margin-left: 5px;">10:00</strong></span>
             </div>
 
             <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px; color:#f4f4f5; text-align: left; text-transform: uppercase;">4. Chọn Ghế Ngồi Phòng Chiếu</div>
@@ -1111,7 +1113,10 @@
             </div>
             <div class="las-form-group">
               <label>Email<span>*</span></label>
-              <input type="email" id="reg-email" class="las-input" placeholder="Email" />
+              <input type="email" id="reg-email" class="las-input" required
+  pattern="[a-zA-Z0-9._%+\-]+@gmail\.com"
+  title="Email phải có dạng example@gmail.com"
+  placeholder="example@gmail.com" />
             </div>
             <div class="las-form-group">
               <label>Mật khẩu<span>*</span></label>
@@ -1141,7 +1146,8 @@
               </div>
             </div>
             <div class="las-policy-checkboxes">
-              <label class="las-check-item"><input type="checkbox" class="reg-policy" /> <span>Tôi đồng ý với <b>Điều Khoản Dịch Vụ</b> và <b>Chính Sách Bảo Mật</b> của LAS Cinemas.</span></label>
+              <label class="las-check-item"><input type="checkbox" id="reg-agreement"
+  required class="reg-policy" /> <span>Tôi đồng ý với <b>Điều Khoản Dịch Vụ</b> và <b>Chính Sách Bảo Mật</b> của LAS Cinemas.</span></label>
             </div>
             <button class="las-auth-submit-btn" style="margin-top: 18px" onclick="submitCgvRegister(event)">Đăng ký</button>
           </div>
@@ -1195,6 +1201,12 @@
         <button class="btn-cgv-submit" onclick="submitOtpVerification()">
           XÁC NHẬN KÍCH HOẠT HỒ SƠ
         </button>
+        <button class="btn-cgv-resend-otp"
+    type="button"
+    onclick="resendRegisterOtp()"
+>
+    Gửi lại mã OTP
+</button>
       </div>
     </div>
 
@@ -1235,7 +1247,14 @@
             <label>Nhập Email hoặc Số điện thoại đăng ký <span style="color:red">*</span></label>
             <input type="text" id="forgot-identifier" class="cgv-input-text" placeholder="Email / Số điện thoại..." />
         </div>
-        <button class="btn-cgv-submit" onclick="requestForgotOtp()" style="margin-top: 15px;">GỬI MÃ XÁC THỰC OTP</button>
+        <button
+  type="button"
+  id="btn-forgot-send-otp"
+  class="btn-cgv-submit"
+  onclick="requestForgotOtp()"
+>
+  Gửi mã xác thực OTP
+</button>
     </div>
 
     <div id="forgot-step-2" style="display: none;">
@@ -1248,7 +1267,22 @@
             <label>Mật khẩu mới <span style="color:red">*</span></label>
             <input type="password" id="forgot-new-password" class="cgv-input-text" placeholder="Nhập mật khẩu mới..." />
         </div>
-        <button class="btn-cgv-submit" onclick="submitNewPassword()" style="margin-top: 15px; background: #10b981;">ĐỔI MẬT KHẨU</button>
+        <button
+  type="button"
+  id="btn-forgot-reset-password"
+  class="btn-cgv-submit"
+  onclick="submitNewPassword()"
+>
+  Xác nhận đổi mật khẩu
+</button>
+        <button
+  type="button"
+  id="btn-resend-forgot-otp"
+  class="btn-cgv-resend-otp"
+  onclick="resendForgotPasswordOtp()"
+>
+  Gửi lại mã OTP
+</button>
     </div>
 
   </div>

@@ -442,7 +442,10 @@ function viewMovieDetailText(title, genre) {
   document.getElementById("detail-movie-genre").innerText = genre;
 
   if (!serverData.movies || serverData.movies.length === 0) {
-    alert("Dự án đang tải dữ liệu phim từ SQL Server, vui lòng đợi vài giây!");
+    showCgvToast(
+      "Dự án đang tải dữ liệu phim từ SQL Server, vui lòng đợi vài giây!",
+      "error",
+    );
     return;
   }
 
@@ -551,7 +554,7 @@ function cancelCurrentTransaction() {
     renderFnbMenu();
     calculateCgvCart();
     window.renderCgvInterface();
-    alert("Đã hủy giao dịch và giải phóng ghế!");
+    showCgvToast("Đã hủy giao dịch và giải phóng ghế!", "success");
   }
 }
 
@@ -566,6 +569,25 @@ function getPosterByMovieName(name) {
       );
   } catch (e) {}
   return "";
+}
+
+// Icon outline trắng/xám dùng chung cho khu vực lịch sử giao dịch — thay cho
+// emoji (🎫📅🕐💺🎬💬) vì emoji phụ thuộc font hệ điều hành của người dùng,
+// dễ hiển thị sai/vỡ (như 1 phiên bản Windows từng lỗi) khác nhau giữa các máy.
+const HIST_ICON_TICKET =
+  '<path d="M2 9a3 3 0 1 0 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M13 5v2"></path><path d="M13 11v2"></path><path d="M13 17v2"></path>';
+const HIST_ICON_CALENDAR =
+  '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>';
+const HIST_ICON_CLOCK =
+  '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>';
+const HIST_ICON_SEAT =
+  '<path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"></path><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"></path><path d="M5 18v2"></path><path d="M19 18v2"></path>';
+const HIST_ICON_MESSAGE = '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path>';
+const HIST_ICON_FILM =
+  '<rect x="2" y="3" width="20" height="18" rx="2" ry="2"></rect><line x1="7" y1="3" x2="7" y2="21"></line><line x1="17" y1="3" x2="17" y2="21"></line><line x1="2" y1="9" x2="7" y2="9"></line><line x1="2" y1="15" x2="7" y2="15"></line><line x1="17" y1="9" x2="22" y2="9"></line><line x1="17" y1="15" x2="22" y2="15"></line>';
+
+function histIcon(pathData, size = 13) {
+  return `<svg class="history-meta-icon" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${pathData}</svg>`;
 }
 
 function renderTransactionHistory() {
@@ -601,7 +623,7 @@ function renderTransactionHistory() {
           ? `<div class="history-poster">
                 <img src="${poster}" alt="${movieName}">
              </div>`
-          : `<div class="history-poster history-poster-fallback">🎬</div>`;
+          : `<div class="history-poster history-poster-fallback">${histIcon(HIST_ICON_FILM, 22)}</div>`;
 
         const status = order.ticketStatus || "Không xác định";
 
@@ -643,22 +665,22 @@ function renderTransactionHistory() {
 
                   <div class="history-card-meta">
 
-                      <span>🎫 ${order.orderCode}</span>
+                      <span>${histIcon(HIST_ICON_TICKET)} ${order.orderCode}</span>
 
                       <span>
-                          📅
+                          ${histIcon(HIST_ICON_CALENDAR)}
                           ${new Date(order.createdDate).toLocaleString("vi-VN")}
                       </span>
 
                       ${
                         order.showtime?.startTime
-                          ? `<span>🕐 ${order.showtime.startTime}</span>`
+                          ? `<span>${histIcon(HIST_ICON_CLOCK)} ${new Date(order.showtime.startTime).toLocaleString("vi-VN")}</span>`
                           : ""
                       }
 
                       ${
                         order.seats && order.seats.length
-                          ? `<span>💺 ${order.seats
+                          ? `<span>${histIcon(HIST_ICON_SEAT)} ${order.seats
                               .map(
                                 (s) =>
                                   s.seatLabel || s.seatCode || s.seatNumber,
@@ -683,7 +705,7 @@ function renderTransactionHistory() {
                           class="history-card-btn ghost"
                           onclick="openFeedbackFromHistory(${order.orderId})">
 
-                          💬 Gửi Feedback
+                          ${histIcon(HIST_ICON_MESSAGE)} Gửi Feedback
 
                       </button>
 
@@ -721,7 +743,7 @@ function viewHistoryDetail(invoiceId) {
   console.log(inv.fnb);
 
   if (!inv) {
-    alert("Không tìm thấy hóa đơn!");
+    showCgvToast("Không tìm thấy hóa đơn!", "error");
     return;
   }
 
@@ -840,7 +862,7 @@ function viewHistoryDetail(invoiceId) {
                     class="hist-feedback-btn"
                     onclick="openFeedbackFromHistory(${inv.orderId})">
 
-                    💬 Gửi Feedback
+                    ${histIcon(HIST_ICON_MESSAGE)} Gửi Feedback
 
                 </button>
 
@@ -874,17 +896,17 @@ function openFeedbackModal(movieId, invoiceId = null) {
 window.openFeedbackFromHistory = function (invoiceId) {
   const inv = window.orderHistoryCache.find((o) => o.orderId == invoiceId);
   if (!inv) {
-    alert("Không tìm thấy hóa đơn!");
+    showCgvToast("Không tìm thấy hóa đơn!", "error");
     return;
   }
   if (inv.ticketStatus !== "Đã sử dụng") {
-    alert("Chỉ vé đã sử dụng mới được gửi feedback!");
+    showCgvToast("Chỉ vé đã sử dụng mới được gửi feedback!", "error");
     return;
   }
 
   const movie = inv.showtime?.movie;
   if (!movie) {
-    alert("Không tìm thấy phim!");
+    showCgvToast("Không tìm thấy phim!", "error");
     return;
   }
 
@@ -911,11 +933,11 @@ window.submitFeedbackForm = function () {
   const accId = cachedUser ? JSON.parse(cachedUser).accountId : 1;
 
   if (!content) {
-    alert("Vui lòng nhập nội dung!");
+    showCgvToast("Vui lòng nhập nội dung!", "error");
     return;
   }
   if (rating === 0) {
-    alert("Vui lòng chọn số sao đánh giá!");
+    showCgvToast("Vui lòng chọn số sao đánh giá!", "error");
     return;
   }
 
@@ -942,17 +964,41 @@ window.submitFeedbackForm = function () {
           toast.classList.add("show");
           setTimeout(() => toast.classList.remove("show"), 2600);
         } else {
-          alert("Cảm ơn bạn đã đánh giá!");
+          showCgvToast("Cảm ơn bạn đã đánh giá!", "success");
         }
       } else {
-        alert(data.message);
+        showCgvToast(data.message, "error");
       }
     })
     .catch((err) => {
       console.error("Lỗi gửi feedback:", err);
-      alert("Đã xảy ra lỗi khi gửi feedback, vui lòng thử lại!");
+      showCgvToast("Đã xảy ra lỗi khi gửi feedback, vui lòng thử lại!", "error");
     });
 };
+
+// Bảng màu avatar xoay vòng theo tên khán giả — chỉ để phân biệt trực quan
+// giữa các reviewer khác nhau (giống ảnh tham khảo: mỗi người 1 màu avatar).
+const FB_AVATAR_COLORS = ["#ff6b35", "#5b9dff", "#22c55e", "#e5a93b", "#a855f7", "#ec4899"];
+
+function fbAvatarColor(name) {
+  const str = String(name || "?");
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash + str.charCodeAt(i)) % FB_AVATAR_COLORS.length;
+  return FB_AVATAR_COLORS[hash];
+}
+
+function fbInitials(name) {
+  const parts = String(name || "?").trim().split(/\s+/);
+  const first = parts[0]?.[0] || "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return (first + last).toUpperCase() || "?";
+}
+
+function fbEscapeText(text) {
+  const div = document.createElement("div");
+  div.textContent = text ?? "";
+  return div.innerHTML;
+}
 
 window.loadFeedbacksForMovie = function (movieId) {
   const container = document.getElementById("feedback-list-container");
@@ -963,28 +1009,34 @@ window.loadFeedbacksForMovie = function (movieId) {
     .then((res) => res.json())
     .then((data) => {
       if (!data || data.length === 0) {
-        container.innerHTML = "Chưa có đánh giá nào.";
-        if (avgBox) avgBox.innerHTML = "⭐ 0 / 5";
+        container.innerHTML = `<div class="fb-review-empty">Chưa có đánh giá nào cho phim này.</div>`;
+        if (avgBox) avgBox.innerHTML = "⭐ Chưa có đánh giá";
         return;
       }
 
       const total = data.reduce((sum, fb) => sum + Number(fb.ratingStars || 0), 0);
       const avg = (total / data.length).toFixed(1);
-      if (avgBox) avgBox.innerHTML = `⭐ ${avg} / 5`;
+      if (avgBox)
+        avgBox.innerHTML = `⭐ ${avg}/5 · ${data.length} đánh giá`;
 
       container.innerHTML = `
-  <div class="feedback-scroll-row">
+  <div class="fb-review-grid">
     ${data
       .map((fb) => {
-        const time = new Date(fb.createdAt).toLocaleString("vi-VN");
+        const time = new Date(fb.createdAt).toLocaleDateString("vi-VN");
+        const initials = fbInitials(fb.accountName);
+        const color = fbAvatarColor(fb.accountName);
         return `
-        <div class="fb-item">
-          <div class="fb-card-top">
-            <strong>${fb.accountName}</strong>
-            <span class="fb-rating-badge">⭐ ${fb.ratingStars}</span>
+        <div class="fb-review-card">
+          <div class="fb-review-head">
+            <div class="fb-review-avatar" style="background:${color};">${initials}</div>
+            <div class="fb-review-headtext">
+              <b class="fb-review-name">${fbEscapeText(fb.accountName)}</b>
+              <span class="fb-review-date">${time}</span>
+            </div>
+            <span class="fb-review-rating">★ ${fb.ratingStars}</span>
           </div>
-          <div class="fb-time">${time}</div>
-          <p class="fb-content">${fb.content}</p>
+          <p class="fb-review-text">${fbEscapeText(fb.content)}</p>
         </div>
       `;
       })
@@ -1086,7 +1138,7 @@ function handleTicketViewAccess() {
     if (typeof window.showLoginRequiredModal === "function") {
       window.showLoginRequiredModal();
     } else {
-      alert("Vui lòng đăng nhập hệ thống!");
+      showCgvToast("Vui lòng đăng nhập hệ thống!", "error");
       openAuthModal();
     }
   } else if (typeof window.isBookingRestrictedRole === "function" && window.isBookingRestrictedRole()) {
@@ -1115,9 +1167,9 @@ function submitCgvLogin() {
   const currentLoginCaptcha =
     document.getElementById("login-captcha-text").innerText;
   if (!user || !pass)
-    return alert("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
+    return showCgvToast("Vui lòng nhập đầy đủ tài khoản và mật khẩu!", "error");
   if (captchaInput.toUpperCase() !== currentLoginCaptcha.toUpperCase()) {
-    return alert("Mã bảo vệ Captcha không chính xác!");
+    return showCgvToast("Mã bảo vệ Captcha không chính xác!", "error");
   }
 
   fetch("http://localhost:8080/api/login/login", {
@@ -1142,7 +1194,7 @@ function submitCgvLogin() {
 
         // 🌟 ĐIỀU HƯỚNG: Tất cả vai trò đều vào HOME sau đăng nhập.
         // Manager(1) & Admin(4) truy cập Dashboard chủ động qua tab "TRUY CẬP DASHBOARD".
-        alert(`Chào mừng ${uData.fullName} đăng nhập thành công!`);
+        showCgvToast(`Chào mừng ${uData.fullName} đăng nhập thành công!`, "success");
         closeAuthModal();
 
         const authLinkBox = document.getElementById("top-bar-auth-link");
@@ -1199,7 +1251,7 @@ function submitCgvLogin() {
         );
       }
     })
-    .catch((err) => alert("🚨 Lỗi đăng nhập: " + err.message));
+    .catch((err) => showCgvToast("🚨 Lỗi đăng nhập: " + err.message, "error"));
 }
 
 function submitCgvRegister() {
@@ -1223,10 +1275,13 @@ function submitCgvRegister() {
     !birthMonth ||
     !birthYear
   ) {
-    return alert("Vui lòng điền đầy đủ thông tin và chọn ngày sinh!");
+    return showCgvToast(
+      "Vui lòng điền đầy đủ thông tin và chọn ngày sinh!",
+      "error",
+    );
   }
   if (captchaInput.toUpperCase() !== currentRegCaptcha.toUpperCase()) {
-    return alert("Mã xác thực Captcha đăng ký không khớp!");
+    return showCgvToast("Mã xác thực Captcha đăng ký không khớp!", "error");
   }
 
   fetch("http://localhost:8080/api/register/submit", {
@@ -1252,16 +1307,17 @@ function submitCgvRegister() {
     })
     .then((resData) => {
       if (resData.status === "success") {
-        alert(
+        showCgvToast(
           resData.message +
             "\nHãy kiểm tra màn hình Console của Spring Boot để lấy mã OTP nhé!",
+          "success",
         );
         temporaryRegisterEmail = resData.email;
         closeAuthModal();
         openOtpModal();
       }
     })
-    .catch((err) => alert("🚨 Lỗi đăng ký: " + err.message));
+    .catch((err) => showCgvToast("🚨 Lỗi đăng ký: " + err.message, "error"));
 }
 
 function switchMovieFilterTab(filter) {
@@ -1292,7 +1348,8 @@ function quickBookMovie(movieTitle) {
 }
 
 function selectTime(t) {
-  if (isHoldingState) return alert("Hóa đơn đã khóa thanh toán!");
+  if (isHoldingState)
+    return showCgvToast("Hóa đơn đã khóa thanh toán!", "error");
   selectedShowtime = t;
   selectedSeats = [];
   calculateCgvCart();
@@ -1343,8 +1400,9 @@ function showBookingRestrictedModal() {
     modal.classList.add("open");
   } else {
     // Dự phòng: nếu vì lý do gì đó modal chưa có trong DOM, vẫn đảm bảo có cảnh báo
-    alert(
+    showCgvToast(
       "🚫 Tài khoản Quản lý / Quản trị viên không được phép đặt vé trên hệ thống.",
+      "error",
     );
   }
 }
@@ -1362,7 +1420,10 @@ function showLoginRequiredModal() {
     modal.classList.add("open");
   } else {
     // Dự phòng: nếu vì lý do gì đó modal chưa có trong DOM, vẫn đảm bảo có cảnh báo
-    alert("Bạn phải đăng nhập tài khoản thành viên mới có thể tiến hành đặt vé!");
+    showCgvToast(
+      "Bạn phải đăng nhập tài khoản thành viên mới có thể tiến hành đặt vé!",
+      "error",
+    );
     if (typeof openAuthModal === "function") openAuthModal();
   }
 }
@@ -1781,7 +1842,7 @@ window.goToBookingStep = function (step) {
 window.handleMainAction = function () {
   if (window.currentBookingStep === 1) {
     if (selectedSeats.length === 0) {
-      alert("Vui lòng chọn ít nhất một ghế ngồi trước khi tiếp tục!");
+      showCgvToast("Vui lòng chọn ít nhất một ghế ngồi trước khi tiếp tục!", "error");
       return;
     }
 
@@ -1790,8 +1851,9 @@ window.handleMainAction = function () {
       if (typeof window.showLoginRequiredModal === "function") {
         window.showLoginRequiredModal();
       } else {
-        alert(
+        showCgvToast(
           "Vui lòng đăng nhập tài khoản thành viên LAS Cinemas trước khi tiến hành chọn bắp nước và đặt vé!",
+          "error",
         );
         if (typeof window.handleAuthModalAccess === "function") {
           window.handleAuthModalAccess(); // Mở bảng đăng nhập/đăng ký
@@ -1813,7 +1875,10 @@ window.handleMainAction = function () {
 // --- 6. LIÊN KẾT CÁC HÀM SỰ KIỆN TƯƠNG TÁC GIAO DIỆN ---
 window.selectTime = function (t) {
   if (isHoldingState)
-    return alert("Hóa đơn đã được khóa giữ để thực hiện cổng thanh toán!");
+    return showCgvToast(
+      "Hóa đơn đã được khóa giữ để thực hiện cổng thanh toán!",
+      "error",
+    );
   selectedShowtime = t;
   selectedSeats = [];
   window.calculateCgvCart();
@@ -1877,10 +1942,10 @@ window.applyVoucher = function () {
     .toUpperCase();
   if (code === "LAS20") {
     appliedVoucherDiscount = 0.2;
-    alert("Áp dụng thành công Voucher giảm giá 20% tổng hóa đơn vé!");
+    showCgvToast("Áp dụng thành công Voucher giảm giá 20% tổng hóa đơn vé!", "success");
   } else {
     appliedVoucherDiscount = 0;
-    alert("Mã Voucher không chính xác hoặc đã hết thời gian áp dụng!");
+    showCgvToast("Mã Voucher không chính xác hoặc đã hết thời gian áp dụng!", "error");
   }
   window.calculateCgvCart();
   window.goToBookingStep(3); // Cập nhật hiển thị số tiền mới ngoài hóa đơn
@@ -2125,8 +2190,9 @@ window.executeFinalCheckout = function () {
     })
     .catch((err) => {
       console.error("🚨 Lỗi lưu Database hóa đơn:", err);
-      alert(
+      showCgvToast(
         "Hệ thống đã nhận tiền thanh toán VNPAY, tuy nhiên Server CSDL SQL Server gặp lỗi rò rỉ đồng bộ. Vui lòng liên hệ Admin!",
+        "error",
       );
     });
 };
@@ -2143,7 +2209,10 @@ window.cancelCurrentTransaction = function () {
     window.renderFnbMenu();
     window.calculateCgvCart();
     window.renderCgvInterface();
-    alert("Đã hủy bỏ giao dịch thành công. Vị trí ghế rạp đã được giải phóng!");
+    showCgvToast(
+      "Đã hủy bỏ giao dịch thành công. Vị trí ghế rạp đã được giải phóng!",
+      "success",
+    );
   }
 };
 
@@ -2154,8 +2223,9 @@ window.startCountdown = function (expiresAt) {
     const remain = expiresAt - Date.now();
     if (remain <= 0) {
       clearInterval(timerInterval);
-      alert(
+      showCgvToast(
         "Đã hết thời gian giữ ghế quy định (5 phút)! Hệ thống tự động giải phóng vị trí phòng rạp.",
+        "error",
       );
       window.resetHoldState();
       selectedSeats = [];
@@ -2394,8 +2464,9 @@ window.processToPaymentGateway = function () {
       })
       .then((data) => {
         if (data && data.paymentUrl) {
-          alert(
+          showCgvToast(
             "Hệ thống chuyển hướng an toàn sang cổng bảo mật VNPAY Sandbox...",
+            "success",
           );
           const bookingCache = {
             movie: document.getElementById("cgv-combo-movie").value,
@@ -2416,15 +2487,20 @@ window.processToPaymentGateway = function () {
               total: currentPriceTotal * (1 - appliedVoucherDiscount),
             }),
           );
-          window.location.href = data.paymentUrl; // Điều hướng sang trang chọn của VNPAY thành công
+          // Đợi 1 nhịp ngắn để người dùng kịp đọc toast trước khi rời trang
+          // (alert() cũ chặn luồng nên tự có tác dụng này; toast thì không).
+          setTimeout(() => {
+            window.location.href = data.paymentUrl;
+          }, 600);
         } else {
-          alert("Lỗi dữ liệu hệ thống trả về từ VNPAY Gateway!");
+          showCgvToast("Lỗi dữ liệu hệ thống trả về từ VNPAY Gateway!", "error");
         }
       })
       .catch((err) => {
         console.error("🚨 Lỗi tạo link VNPAY:", err);
-        alert(
+        showCgvToast(
           "Không thể kết nối Server để kích hoạt cổng VNPAY: " + err.message,
+          "error",
         );
       });
 
@@ -2496,7 +2572,7 @@ function startCountdown(expiresAt) {
     const remain = expiresAt - Date.now();
     if (remain <= 0) {
       clearInterval(timerInterval);
-      alert("Hết thời gian giữ ghế 5 phút!");
+      showCgvToast("Hết thời gian giữ ghế 5 phút!", "error");
       resetHoldState();
       selectedSeats = [];
       calculateCgvCart();
@@ -2551,9 +2627,10 @@ function closeOtpModal() {
 
 function submitOtpVerification() {
   const otpInput = document.getElementById("otp-input-field").value.trim();
-  if (!otpInput) return alert("Vui lòng nhập mã OTP gồm 6 chữ số!");
+  if (!otpInput)
+    return showCgvToast("Vui lòng nhập mã OTP gồm 6 chữ số!", "error");
   if (!temporaryRegisterEmail)
-    return alert("Hệ thống không tìm thấy email đăng ký hợp lệ!");
+    return showCgvToast("Hệ thống không tìm thấy email đăng ký hợp lệ!", "error");
   fetch("http://localhost:8080/api/register/verify-otp", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -2569,13 +2646,13 @@ function submitOtpVerification() {
     })
     .then((resData) => {
       if (resData.status === "success") {
-        alert(resData.message);
+        showCgvToast(resData.message, "success");
         closeOtpModal();
         openAuthModal();
         toggleAuthTab("login");
       }
     })
-    .catch((err) => alert("❌ Lỗi OTP: " + err.message));
+    .catch((err) => showCgvToast("❌ Lỗi OTP: " + err.message, "error"));
 }
 
 function saveUpdatedProfileInformationData() {
@@ -2586,7 +2663,7 @@ function saveUpdatedProfileInformationData() {
     input.style.background = "#1c1c21";
   });
   document.getElementById("btn-save-profile").style.display = "none";
-  alert("Cập nhật thông tin tài khoản mới thành công!");
+  showCgvToast("Cập nhật thông tin tài khoản mới thành công!", "success");
 }
 
 let currentForgotIdentifier = "";
@@ -2607,7 +2684,8 @@ function closeForgotModal() {
 // Gọi API gửi OTP
 function requestForgotOtp() {
   const identifier = document.getElementById("forgot-identifier").value.trim();
-  if (!identifier) return alert("Vui lòng nhập Email hoặc Số điện thoại!");
+  if (!identifier)
+    return showCgvToast("Vui lòng nhập Email hoặc Số điện thoại!", "error");
 
   fetch("http://localhost:8080/api/forgot-password/request", {
     method: "POST",
@@ -2619,17 +2697,102 @@ function requestForgotOtp() {
     )
     .then((res) => {
       if (res.status === 200) {
-        alert(res.body.message + "\n(Hãy kiểm tra Console của Spring Boot)");
+        showCgvToast(
+          res.body.message + "\n(Hãy kiểm tra Console của Spring Boot)",
+          "success",
+        );
         currentForgotIdentifier = identifier;
         // Chuyển sang Bước 2
         document.getElementById("forgot-step-1").style.display = "none";
         document.getElementById("forgot-step-2").style.display = "block";
       } else {
-        alert("Lỗi: " + res.body.message);
+        showCgvToast("Lỗi: " + res.body.message, "error");
       }
     })
-    .catch((err) => alert("Lỗi kết nối Server!"));
+    .catch((err) => showCgvToast("Lỗi kết nối Server!", "error"));
 }
+
+// ===== Bổ sung từ LSGD+VALIDATION: gửi lại OTP quên mật khẩu =====
+function resendForgotPasswordOtp() {
+  if (!currentForgotIdentifier) {
+    return window.showCgvToast(
+      "Không tìm thấy Email hoặc số điện thoại cần gửi lại OTP!",
+      "error",
+    );
+  }
+
+  const resendButton = document.getElementById("btn-resend-forgot-otp");
+
+  if (resendButton) {
+    resendButton.disabled = true;
+    resendButton.innerText = "ĐANG GỬI...";
+  }
+
+  fetch("http://localhost:8080/api/forgot-password/request", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      identifier: currentForgotIdentifier,
+    }),
+  })
+    .then(async (response) => {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Không thể gửi lại OTP!");
+      }
+
+      return data;
+    })
+    .then((data) => {
+      document.getElementById("forgot-otp-input").value = "";
+
+      window.showCgvToast(data.message || "Mã OTP mới đã được gửi!", "success");
+
+      startForgotOtpResendCountdown();
+    })
+    .catch((error) => {
+      window.showCgvToast("Gửi lại OTP thất bại: " + error.message, "error");
+
+      if (resendButton) {
+        resendButton.disabled = false;
+        resendButton.innerText = "GỬI LẠI MÃ OTP";
+      }
+    });
+}
+
+let forgotOtpCountdownTimer = null;
+
+function startForgotOtpResendCountdown(seconds = 60) {
+  const resendButton = document.getElementById("btn-resend-forgot-otp");
+
+  if (!resendButton) return;
+
+  clearInterval(forgotOtpCountdownTimer);
+
+  let remainingSeconds = seconds;
+
+  resendButton.disabled = true;
+  resendButton.innerText = `GỬI LẠI SAU ${remainingSeconds} GIÂY`;
+
+  forgotOtpCountdownTimer = setInterval(() => {
+    remainingSeconds--;
+
+    if (remainingSeconds <= 0) {
+      clearInterval(forgotOtpCountdownTimer);
+
+      resendButton.disabled = false;
+      resendButton.innerText = "GỬI LẠI MÃ OTP";
+      return;
+    }
+
+    resendButton.innerText = `GỬI LẠI SAU ${remainingSeconds} GIÂY`;
+  }, 1000);
+}
+
+window.resendForgotPasswordOtp = resendForgotPasswordOtp;
 
 // Gọi API Đổi mật khẩu
 function submitNewPassword() {
@@ -2637,7 +2800,7 @@ function submitNewPassword() {
   const newPassword = document.getElementById("forgot-new-password").value;
 
   if (!otp || !newPassword)
-    return alert("Vui lòng điền đầy đủ OTP và Mật khẩu mới!");
+    return showCgvToast("Vui lòng điền đầy đủ OTP và Mật khẩu mới!", "error");
 
   fetch("http://localhost:8080/api/forgot-password/reset", {
     method: "POST",
@@ -2653,15 +2816,15 @@ function submitNewPassword() {
     )
     .then((res) => {
       if (res.status === 200) {
-        alert(res.body.message);
+        showCgvToast(res.body.message, "success");
         closeForgotModal();
         openAuthModal(); // Mở lại bảng đăng nhập cho khách login
         toggleAuthTab("login");
       } else {
-        alert("Lỗi: " + res.body.message);
+        showCgvToast("Lỗi: " + res.body.message, "error");
       }
     })
-    .catch((err) => alert("Lỗi kết nối Server!"));
+    .catch((err) => showCgvToast("Lỗi kết nối Server!", "error"));
 }
 
 window.switchCgvTab = switchCgvTab;

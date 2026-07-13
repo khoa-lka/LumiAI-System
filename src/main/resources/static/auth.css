@@ -1,0 +1,731 @@
+/* ==========================================================================
+   ĐĂNG NHẬP / ĐĂNG KÝ / QUÊN MẬT KHẨU — STYLESHEET RIÊNG (tách ra từ style.css)
+   File này PHẢI load SAU style.css (dùng chung biến CSS --cgv-red, --surface,
+   --border-color... định nghĩa trong style.css, và dùng chung @keyframes
+   fadeIn định nghĩa trong style.css).
+   ========================================================================== */
+
+/* ==========================================================================
+   MODAL ĐĂNG NHẬP / ĐĂNG KÝ - THIẾT KẾ MỚI 1 CỘT (kiểu FilmFanatic)
+   ========================================================================== */
+.las-auth-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  padding: 36px 34px 30px;
+  box-sizing: border-box;
+}
+.las-auth-close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  z-index: 10;
+  transition: color 0.2s;
+}
+.las-auth-close:hover {
+  color: #fff;
+}
+
+.las-auth-logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.las-auth-logo-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--cgv-red);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+.las-auth-logo-text {
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.3px;
+}
+.las-auth-logo-text span {
+  color: var(--cgv-red);
+}
+
+.las-auth-panel {
+  display: none;
+}
+.las-auth-panel.active {
+  display: block;
+  animation: fadeIn 0.3s var(--ease) both;
+}
+
+.las-auth-title {
+  text-align: center;
+  font-size: 21px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 8px 0;
+}
+.las-auth-subtitle {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 24px 0;
+}
+.las-auth-subtitle a {
+  color: var(--cgv-red);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.las-auth-subtitle a:hover {
+  text-decoration: underline;
+}
+
+.las-form-group {
+  margin-bottom: 14px;
+  text-align: left;
+}
+.las-form-group label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #d4d4d8;
+  margin-bottom: 6px;
+}
+.las-form-group label span {
+  color: var(--cgv-red);
+}
+.las-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: #fff;
+  font-size: 13.5px;
+  font-family: var(--font-main);
+  box-sizing: border-box;
+  outline: none;
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+.las-input::placeholder {
+  color: #6b6b76;
+}
+.las-input:focus {
+  border-color: var(--cgv-red);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+}
+
+.las-toggle-password-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 15px;
+  opacity: 0.7;
+}
+
+.las-captcha-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.las-captcha-input {
+  width: 45% !important;
+  text-transform: uppercase;
+}
+.las-captcha-box {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  height: 42px;
+  box-sizing: border-box;
+}
+.las-captcha-text {
+  font-family: "Georgia", serif;
+  font-style: italic;
+  font-weight: bold;
+  letter-spacing: 3px;
+  font-size: 18px;
+  color: #f4f4f5;
+  user-select: none;
+}
+.las-captcha-refresh {
+  color: var(--cgv-red);
+  font-size: 18px;
+  cursor: pointer;
+  font-weight: bold;
+  user-select: none;
+  transition: transform 0.2s;
+}
+.las-captcha-refresh:hover {
+  transform: rotate(90deg);
+}
+
+.las-birth-gender-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.las-select-birth {
+  padding: 9px 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.las-radio-lbl {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #d4d4d8;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  accent-color: var(--cgv-red);
+}
+
+.las-policy-checkboxes {
+  margin: 16px 0 4px;
+}
+.las-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: #d4d4d8;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.las-check-item input {
+  accent-color: var(--cgv-red);
+  margin-top: 2px;
+}
+.las-check-item b {
+  color: var(--cgv-red);
+  font-weight: 600;
+}
+
+.las-auth-submit-btn {
+  width: 100%;
+  background: var(--cgv-red);
+  color: #fff;
+  border: none;
+  padding: 13px;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+  margin-top: 6px;
+  box-shadow: var(--shadow-glow);
+  transition: all 0.2s var(--ease);
+}
+.las-auth-submit-btn:hover {
+  background: var(--cgv-red-hover);
+  transform: translateY(-1px);
+}
+
+.las-auth-footer-link {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 12.5px;
+}
+.las-auth-footer-link a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.las-auth-footer-link a:hover {
+  color: var(--cgv-red);
+}
+
+.las-auth-scroll {
+  max-height: 56vh;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+.las-auth-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.las-auth-scroll::-webkit-scrollbar-thumb {
+  background: var(--cgv-red);
+  border-radius: 3px;
+}
+@media (max-width: 480px) {
+  .las-auth-card {
+    padding: 28px 20px 22px;
+    max-width: 92vw;
+  }
+}
+
+.cgv-auth-split-box {
+  background-color: #0b0b0e;
+  width: 850px;
+  display: flex;
+  flex-direction: row;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  padding: 0;
+  border: none;
+}
+.cgv-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  color: #e4e4e7;
+  font-size: 24px;
+  cursor: pointer;
+  font-weight: bold;
+  z-index: 10;
+}
+
+.auth-left-form {
+  flex: 1.2;
+  background-color: #0b0b0e;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+}
+.cgv-auth-tabs {
+  display: flex;
+  background-color: #ff6b35;
+  padding: 0 10px;
+}
+.cgv-tab-btn {
+  flex: 1;
+  padding: 15px 0;
+  text-align: center;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  opacity: 0.7;
+  border-bottom: 3px solid transparent;
+  text-transform: uppercase;
+}
+.cgv-tab-btn.active {
+  opacity: 1;
+  border-bottom: 3px solid white;
+}
+
+.cgv-auth-content {
+  padding: 20px 30px;
+}
+.auth-form-panel {
+  display: none;
+}
+.auth-form-panel.active {
+  display: block;
+}
+
+.cgv-form-group {
+  margin-bottom: 12px;
+  text-align: left;
+}
+.cgv-form-group label {
+  display: block;
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 5px;
+  color: #e4e4e7;
+}
+.cgv-form-group label span {
+  color: #ff6b35;
+}
+.cgv-input-text {
+  width: 100%;
+  padding: 11px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  font-size: 13.5px;
+  box-sizing: border-box;
+  background: #1c1c21;
+  color: var(--text-light);
+  outline: none;
+  margin-bottom: 0;
+  transition: border-color 0.2s;
+}
+.cgv-input-text::placeholder {
+  color: var(--muted);
+}
+.cgv-input-text:focus {
+  border: 1px solid var(--cgv-red);
+}
+
+.captcha-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.captcha-input {
+  width: 50% !important;
+}
+.captcha-img-box {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 2px 10px;
+  height: 34px;
+  box-sizing: border-box;
+}
+.captcha-text {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: #e4e4e7;
+  font-style: italic;
+}
+.captcha-refresh {
+  color: #e5a93b;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-cgv-submit {
+  background-color: #ff6b35;
+  color: white;
+  font-weight: bold;
+  font-size: 14.5px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  cursor: pointer;
+  margin-top: 10px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  transition:
+    background 0.2s,
+    transform 0.15s;
+}
+.btn-cgv-submit:hover {
+  background-color: #e0551f;
+  transform: translateY(-1px);
+}
+.btn-cgv-cancel {
+  background-color: #26262c;
+  color: var(--text-light, #f4f4f5);
+  font-weight: bold;
+  font-size: 14.5px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  transition:
+    background 0.2s,
+    transform 0.15s;
+}
+.btn-cgv-cancel:hover {
+  background-color: #333338;
+  transform: translateY(-1px);
+}
+.cgv-auth-footer {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 13px;
+}
+.cgv-auth-footer a {
+  color: #5b9dff;
+  text-decoration: none;
+}
+
+.scrollable-register-form {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+.scrollable-register-form::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollable-register-form::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+.birth-gender-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.select-birth {
+  padding: 6px !important;
+  background: var(--surface-2);
+  color: var(--text-light);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.radio-lbl {
+  font-size: 13px;
+  font-weight: bold !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+}
+.toggle-password-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 16px;
+  color: #a8a8b3;
+}
+
+.policy-checkboxes {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: #f4f4f5;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.check-item span {
+  color: #e4e4e7;
+  font-weight: normal;
+}
+.check-item b {
+  color: #ff6b35;
+  font-weight: bold;
+}
+
+.auth-right-banner {
+  flex: 0.8;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;
+  position: relative;
+}
+.banner-slide-content {
+  text-align: center;
+  width: 100%;
+}
+.banner-illustration {
+  position: relative;
+  height: 140px;
+  margin-bottom: 15px;
+}
+.coin {
+  background: #f1d377;
+  border: 3px dashed #dfb234;
+  border-radius: 50%;
+  position: absolute;
+}
+.coin-main {
+  width: 100px;
+  height: 100px;
+  bottom: 10px;
+  left: calc(50% - 50px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: #bfa143;
+}
+.coin-sub1 {
+  width: 30px;
+  height: 30px;
+  top: 15px;
+  left: 25%;
+}
+.coin-sub2 {
+  width: 22px;
+  height: 22px;
+  top: 30px;
+  right: 25%;
+}
+.banner-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #a8a8b3;
+  text-transform: uppercase;
+}
+.slider-arrow {
+  font-size: 32px;
+  color: #ccc;
+  cursor: pointer;
+}
+.dot-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  background-color: #ccc;
+  border-radius: 50%;
+}
+.dot.active {
+  background-color: #ff6b35;
+}
+
+/* --- POPUP QUÊN MẬT KHẨU --- */
+.cgv-forgot-box {
+  background-color: #0b0b0e;
+  width: 550px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  position: relative;
+  font-family: var(--font-main);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.cgv-forgot-header {
+  background-color: #8c8c8c;
+  padding: 14px 20px;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  text-align: left;
+}
+.cgv-forgot-body {
+  padding: 30px 40px;
+  text-align: left;
+}
+.cgv-forgot-body label {
+  display: block;
+  font-weight: bold;
+  font-size: 14px;
+  color: #e4e4e7;
+  margin-bottom: 8px;
+}
+.cgv-forgot-body label span {
+  color: #ff6b35;
+}
+.btn-cgv-forgot-submit {
+  background-color: #bc251b;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-top: 20px;
+}
+.cgv-forgot-back-link {
+  display: inline-block;
+  margin-top: 20px;
+  color: #bc251b;
+  text-decoration: none;
+  font-size: 13px;
+}
+/* --- POPUP QUÊN MẬT KHẨU (PHONG CÁCH CGV CLASSIC) --- */
+.cgv-forgot-box {
+  background-color: #0b0b0e; /* Màu nền kem */
+  width: 500px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  position: relative;
+  font-family: var(--font-main);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cgv-forgot-header-container {
+  border-bottom: 2px solid #cb352d; /* Đường kẻ ngang chuyển sang màu đỏ */
+  margin: 30px 40px 0 40px;
+}
+
+.cgv-forgot-header-tab {
+  background-color: #cb352d; /* Tab đổi sang màu đỏ giống nút Gởi */
+  display: inline-block;
+  padding: 12px 20px;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 6px 6px 0 0;
+}
+
+.cgv-forgot-body {
+  padding: 25px 40px 40px 40px;
+  text-align: left;
+}
+
+.cgv-forgot-body label {
+  display: block;
+  font-weight: bold;
+  font-size: 14px;
+  color: #e4e4e7;
+  margin-bottom: 8px;
+}
+
+.cgv-forgot-body label span {
+  color: #cb352d;
+} /* Dấu sao màu đỏ */
+
+.btn-cgv-forgot-submit {
+  background-color: #cb352d; /* Nút bấm đỏ gạch */
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 25px;
+  transition: background 0.2s;
+}
+
+.btn-cgv-forgot-submit:hover {
+  background-color: #a82721;
+}
+
+.cgv-forgot-back-link {
+  color: #cb352d;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.cgv-forgot-back-link:hover {
+  text-decoration: underline;
+}

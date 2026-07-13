@@ -145,10 +145,6 @@ public class PosApiController {
             order.setPaymentMethod(request.getPaymentMethod());
             order.setPaymentStatus("SUCCESS");
 
-            Showtime showtimeObj = new Showtime();
-            showtimeObj.setShowtimeId(request.getShowtimeId());
-            order.setShowtime(showtimeObj);
-
             com.cinema.backend.entities.Account staffObj = new com.cinema.backend.entities.Account();
             staffObj.setAccountId(request.getStaffId());
             order.setStaff(staffObj);
@@ -169,6 +165,17 @@ public class PosApiController {
             pt.setOrder(order);
             paymentTransactionRepository.save(pt);
 
+            Showtime showtime = showtimeRepository
+                    .findById(request.getShowtimeId())
+                    .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy suất chiếu")
+                    );
+
+            // Khôi phục: order1.showtime_id cần cho AuditRepository/DashboardRepository
+            // (native query thống kê doanh thu theo suất chiếu). 'order' đang là managed
+            // entity trong transaction này nên chỉ cần set là đủ, Hibernate sẽ tự UPDATE.
+            order.setShowtime(showtime);
+
             // 3. TẠO VÉ & CHI TIẾT ĐƠN HÀNG
             List<Seat> allSeats = seatRepository.findSeatsByShowtimeId(request.getShowtimeId());
             for (String seatCode : request.getSeats()) {
@@ -180,8 +187,13 @@ public class PosApiController {
                 ticket.setTicketCode("TIX-" + timestamp + "-" + seat.getSeatId());
                 ticket.setQrCode("QR_" + ticket.getTicketCode());
                 ticket.setTicketStatus("SOLD");
-                ticket.setShowtimeId(request.getShowtimeId());
-                ticket.setSeatId(seat.getSeatId());
+                
+
+                ticket.setShowtime(showtime);
+                ticket.setSeat(seat);
+
+                // Khôi phục: ticket.order_id cần cho TicketRepository.findTicketsByOrderOrTicketCode
+                // (tab "In vé" ở POS tra cứu vé theo mã đơn hàng).
                 ticket.setOrder(order);
                 ticket = ticketRepository.save(ticket);
 
