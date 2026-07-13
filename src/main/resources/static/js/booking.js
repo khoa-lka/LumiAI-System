@@ -456,7 +456,31 @@ function goToBookingStep(step) {
       backBtn.innerText = "←";
       backBtn.setAttribute("onclick", "goToBookingStep(2)");
     }
-
+    // ==========================================================================
+    // 🌟 TỰ ĐỘNG ÁP DỤNG VOUCHER: Tự quét DB tìm mã Auto khi ô nhập đang trống
+    // ==========================================================================
+    if (!window.currentVoucher && document.getElementById("voucher-input")?.value.trim() === "") {
+      console.log("🔍 Đang quét tìm Voucher tự động áp dụng...");
+      
+      fetch("http://localhost:8080/api/vouchers/manager/all")
+        .then(res => res.ok ? res.json() : [])
+        .then(vouchers => {
+          // Mò tìm voucher thỏa mãn: trạng thái ACTIVE và là loại tự động (autoApply hoặc isAuto)
+          const autoVoucher = (vouchers || []).find(v => v.status === "ACTIVE" && v.applyType === "AUTO");
+          
+          if (autoVoucher) {
+            console.log("🎯 Tìm thấy voucher tự động:", autoVoucher.voucherCode);
+            window.currentVoucher = autoVoucher;
+            
+            const vInput = document.getElementById("voucher-input");
+            if (vInput) vInput.value = autoVoucher.voucherCode; // Điền mã lên giao diện
+            
+            calculateCgvCart(); // Tính lại tiền ở FE
+            goToBookingStep(3); // Khởi động lại giao diện hóa đơn bước 3 đã trừ tiền
+          }
+        })
+        .catch(err => console.error("🚨 Lỗi quét Voucher tự động:", err));
+    }
     // 🚀 Ép hàm tính toán lại giỏ hàng chạy trước để đảm bảo tính đúng
     if (typeof calculateCgvCart === "function") {
       calculateCgvCart();

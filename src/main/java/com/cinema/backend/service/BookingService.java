@@ -135,34 +135,52 @@ if (request.getFnb() != null) {
     Voucher appliedVoucher = null;
 
     // 1. Kiểm tra mã Voucher (Áp dụng cho cả luồng nhập tay MANUAL và tự động AUTO quét ngầm)
-    if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
-        Optional<Voucher> voucherOpt = voucherRepository.findByVoucherCode(request.getVoucherCode());
-        if (voucherOpt.isPresent()) {
-            Voucher v = voucherOpt.get();
-            
-            // Các chốt chặn kiểm tra: trạng thái hoạt động, lượt dùng, hạn dùng và hạn mức đơn hàng tối thiểu
-            boolean isActive = "ACTIVE".equalsIgnoreCase(v.getStatus());
-            boolean isNotExpired = (v.getExpiredDate() == null || v.getExpiredDate().isAfter(LocalDateTime.now()));
-            boolean hasUsage = v.getUsageLimit() > 0;
-            boolean meetMinOrder = (v.getMinimumOrder() == null || grossAmount.compareTo(BigDecimal.valueOf(v.getMinimumOrder())) >= 0);
+    Optional<Voucher> voucherOpt = Optional.empty();
 
-            if (isActive && isNotExpired && hasUsage && meetMinOrder) {
-                appliedVoucher = v;
-                if ("PERCENT".equalsIgnoreCase(v.getDiscountType())) {
-                    // Xử lý giảm theo tỷ lệ phần trăm (%)
-                    BigDecimal calculatedDiscount = grossAmount.multiply(BigDecimal.valueOf(v.getDiscountValue())).divide(BigDecimal.valueOf(100));
-                    
-                    // Khống chế mức giảm tối đa nếu chiến dịch có thiết lập max_discount
-                    if (v.getMaxDiscount() != null && v.getMaxDiscount().compareTo(BigDecimal.ZERO) > 0) {
-                        if (calculatedDiscount.compareTo(v.getMaxDiscount()) > 0) {
-                            calculatedDiscount = v.getMaxDiscount();
-                        }
+    if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
+        // Luồng 1: Nếu client gửi mã cụ thể (nhập tay hoặc FE tự quét điền)
+        voucherOpt = voucherRepository.findByVoucherCode(request.getVoucherCode());
+    } else {
+        // Luồng 2: Dự phòng nếu client truyền rỗng, tự động quét DB tìm Voucher mang cờ tự động áp dụng
+        // (Giả định VoucherRepository của nhóm em có viết hàm findByStatusAndAutoApply)
+        // voucherOpt = voucherRepository.findByStatusAndAutoApply("ACTIVE", true).stream().findFirst();
+        
+        // Hoặc quét danh sách all để lọc an toàn giống FE:
+        // Luồng 2: 🟢 ĐÃ ĐỒNG BỘ: Tự động quét DB tìm Voucher mang cờ 'AUTO' đang hoạt động
+        voucherOpt = voucherRepository.findAll().stream()
+                .filter(v -> "ACTIVE".equalsIgnoreCase(v.getStatus()) 
+                          && "AUTO".equalsIgnoreCase(v.getApplyType())) // 🎯 Khớp chuẩn xác thuộc tính applyType của nhóm em!
+                .findFirst();
+    }
+
+    // Nếu tìm thấy voucher thỏa mãn (từ luồng 1 hoặc luồng 2), tiến hành tính toán giảm giá
+    if (voucherOpt.isPresent()) {
+        Voucher v = voucherOpt.get();
+        
+        // Các chốt chặn kiểm tra: trạng thái hoạt động, lượt dùng, hạn dùng và hạn mức đơn hàng tối thiểu
+        boolean isActive = "ACTIVE".equalsIgnoreCase(v.getStatus());
+        boolean isNotExpired = (v.getExpiredDate() == null || v.getExpiredDate().isAfter(LocalDateTime.now()));
+        boolean hasUsage = v.getUsageLimit() > 0;
+        boolean meetMinOrder = (v.getMinimumOrder() == null || grossAmount.compareTo(BigDecimal.valueOf(v.getMinimumOrder())) >= 0);
+
+        if (isActive && isNotExpired && hasUsage && meetMinOrder) {
+            appliedVoucher = v;
+            
+            // Gán lại mã vào order để ghi nhận hóa đơn dùng voucher hệ thống tự áp dụng
+            if (request.getVoucherCode() == null || request.getVoucherCode().isBlank()) {
+                request.setVoucherCode(v.getVoucherCode());
+            }
+            
+            if ("PERCENT".equalsIgnoreCase(v.getDiscountType())) {
+                BigDecimal calculatedDiscount = grossAmount.multiply(BigDecimal.valueOf(v.getDiscountValue())).divide(BigDecimal.valueOf(100));
+                if (v.getMaxDiscount() != null && v.getMaxDiscount().compareTo(BigDecimal.ZERO) > 0) {
+                    if (calculatedDiscount.compareTo(v.getMaxDiscount()) > 0) {
+                        calculatedDiscount = v.getMaxDiscount();
                     }
-                    totalDiscount = calculatedDiscount;
-                } else {
-                    // Xử lý giảm trừ thẳng mệnh giá tiền mặt cố định (FIXED / MONEY)
-                    totalDiscount = BigDecimal.valueOf(v.getDiscountValue());
                 }
+                totalDiscount = calculatedDiscount;
+            } else {
+                totalDiscount = BigDecimal.valueOf(v.getDiscountValue());
             }
         }
     }
