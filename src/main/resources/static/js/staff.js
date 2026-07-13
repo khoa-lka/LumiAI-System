@@ -744,13 +744,22 @@ function escapeFbText(text) {
 }
 
 // Hàm load danh sách phản hồi từ DB
+// BO SUNG: nạp kèm danh sách phim (/api/movies) để gắn badge tên phim lên mỗi
+// card phản hồi, giúp nhân viên biết ngay phản hồi đó thuộc phim nào.
 async function loadFeedbacks() {
     try {
-        const response = await fetch('/api/pos/feedbacks');
-        const feedbacks = await response.json();
+        const [feedbacks, movieList] = await Promise.all([
+            fetch('/api/pos/feedbacks').then(res => res.json()),
+            fetch('/api/movies').then(res => res.json()).catch(() => [])
+        ]);
+
         const fbList = document.getElementById("feedbackList");
         if (!fbList) return;
         fbList.innerHTML = "";
+
+        // Map tra cứu tên phim theo movieId
+        const movieMap = {};
+        (movieList || []).forEach(m => { movieMap[m.movieId || m.id] = m.title; });
 
         const parents = feedbacks.filter(fb => !fb.title.includes("Phản hồi"));
         const replies = feedbacks.filter(fb => fb.title.includes("Phản hồi"));
@@ -762,6 +771,7 @@ async function loadFeedbacks() {
 
         parents.forEach(p => {
             const myReplies = replies.filter(r => r.title.includes(`ID: ${p.feedbackId}`));
+            const movieName = movieMap[p.movieId] || null;
             const div = document.createElement("div");
             div.className = "fb-review-card";
 
@@ -776,6 +786,7 @@ async function loadFeedbacks() {
                     </div>
                     <div class="fb-review-stars">${renderFbStars(p.ratingStars || 5)}</div>
                 </div>
+                ${movieName ? `<div style="display: inline-block; background: rgba(255, 107, 53, 0.12); border: 1px solid rgba(255, 107, 53, 0.4); color: #ff6b35; font-size: 11.5px; font-weight: bold; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">PHIM: ${escapeFbText(movieName)}</div>` : ''}
                 <p class="fb-review-content">${escapeFbText(p.content)}</p>
                 ${myReplies.length > 0 ? `
                 <div class="fb-review-replies">

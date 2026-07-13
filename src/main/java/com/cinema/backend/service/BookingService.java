@@ -35,6 +35,7 @@ import com.cinema.backend.entities.FoodBeverage;
 
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
+import com.cinema.backend.dto.CheckoutResponseDTO;
 
 @Service
 public class BookingService {
@@ -76,9 +77,12 @@ public class BookingService {
 
     
 @Transactional
-public Order1 checkout(CheckoutRequest request) {
+public CheckoutResponseDTO checkout(CheckoutRequest request) {
 System.out.println("===== BOOKING SERVICE =====");
 System.out.println(request);
+List<String> savedTicketCodes = new ArrayList<>();
+List<String> fnbSummaryList = new ArrayList<>();
+String fnbSummary = "Không có";
     if (request.getShowtimeId() == null) {
         throw new RuntimeException("ShowtimeId is null from client");
     }
@@ -236,8 +240,8 @@ System.out.println("ORDER ID = " + order.getOrderId());
         Ticket ticket = new Ticket();
 
         ticket.setOrder(order);
-        ticket.setSeatId(seat.getSeatId());
-        ticket.setShowtimeId(showtime.getShowtimeId());
+        ticket.setSeat(seat);
+        ticket.setShowtime(showtime);
 
         ticket.setTicketStatus("SOLD");
 
@@ -251,6 +255,7 @@ System.out.println("ORDER ID = " + order.getOrderId());
         }   
 
         ticket = ticketRepository.save(ticket);
+        savedTicketCodes.add(code);
 
         OrderDetail detail = new OrderDetail();
 
@@ -304,9 +309,14 @@ if (request.getFnb() != null && !request.getFnb().isEmpty()) {
                 food.getStockQuantity() - item.getQuantity());
 
         foodRepository.save(food);
+
+        fnbSummaryList.add(food.getItemName() + " x" + item.getQuantity());
     }
 }
 
+fnbSummary = fnbSummaryList.isEmpty()
+        ? "Không có"
+        : String.join(", ", fnbSummaryList);
 
     // =========================
     // Cập nhật Voucher
@@ -378,6 +388,7 @@ String totalAmount = order.getFinalAmount() != null
             seatsText,
             totalAmount,
             ticketCode,
+            fnbSummary,
             qrData
     );
 
@@ -399,7 +410,7 @@ String totalAmount = order.getFinalAmount() != null
 }
 
 System.out.println("DONE");
-return order;
+return new CheckoutResponseDTO(order, savedTicketCodes, fnbSummary);
 }
 
 private String toPublicImageUrl(String imagePath) {
@@ -423,4 +434,3 @@ private String toPublicImageUrl(String imagePath) {
     return publicUrl + "/" + imagePath;
 }
 }
-

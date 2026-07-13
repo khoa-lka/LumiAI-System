@@ -49,6 +49,7 @@ public class EmailService {
         String seats,
         String totalAmount,
         String ticketCode,
+        String fnbSummary,
         String qrData
 ) {
     String safeQrData = URLEncoder.encode(qrData, StandardCharsets.UTF_8);
@@ -147,6 +148,10 @@ public class EmailService {
                                                         </tr>
                                                         <tr>
                                                             <td style="color:#6b7280;">Mã vé</td>
+                                                            <td style="color:#111827; font-weight:700;">%s</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="color:#6b7280;">Combo F&amp;B</td>
                                                             <td style="color:#111827; font-weight:700;">%s</td>
                                                         </tr>
                                                     </table>
@@ -251,6 +256,7 @@ public class EmailService {
             showtime,
             seats,
             ticketCode,
+            fnbSummary,
             totalAmount,
             qrUrl,
             qrData

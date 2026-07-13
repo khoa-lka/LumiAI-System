@@ -671,6 +671,7 @@ function openQrPayment(finalTotal) {
     timerBox.innerHTML =
       '<span>⏱</span> Thời gian thanh toán còn lại <strong id="vietqr-timer">10:00</strong>';
   }
+  updatePaymentTimerText();
 
   document.getElementById("qr-total-price").innerText =
     finalTotal.toLocaleString("vi-VN") + " đ";
@@ -761,6 +762,8 @@ function generateVietQR() {
     timerBox.classList.remove("vietqr-timer-expired");
     timerBox.innerHTML = `<span>⏱</span> Thời gian thanh toán còn lại <strong id="vietqr-timer">10:00</strong>`;
   }
+
+  updatePaymentTimerText();
 
   startPaymentCountdown();
   startQrPaymentPolling();
@@ -1618,6 +1621,23 @@ function startCountdown(expiresAt) {
   }, 1000);
 }
 
+// BO SUNG: cập nhật ngay chữ đếm ngược VietQR tại thời điểm gọi (thay vì phải
+// chờ tick 1 giây đầu tiên của setInterval), tránh nháy "10:00" tĩnh khi vừa mở QR.
+function updatePaymentTimerText() {
+  const vietQrTimer = document.getElementById("vietqr-timer");
+  if (!vietQrTimer || !window.bookingExpireAt) return;
+
+  const remain = window.bookingExpireAt - Date.now();
+  if (remain <= 0) {
+    vietQrTimer.innerText = "00:00";
+    return;
+  }
+
+  const minutes = Math.floor(remain / 60000);
+  const seconds = Math.floor((remain % 60000) / 1000);
+  vietQrTimer.innerText = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+}
+
 function startPaymentCountdown() {
   clearInterval(paymentTimerInterval);
 
@@ -1631,16 +1651,10 @@ function startPaymentCountdown() {
       return;
     }
 
-    const minutes = Math.floor(remain / 60000);
-    const seconds = Math.floor((remain % 60000) / 1000);
-
-    const vietQrTimer = document.getElementById("vietqr-timer");
-    if (vietQrTimer) {
-      vietQrTimer.innerText = `${minutes.toString().padStart(2, "0")}:${seconds
-        .toString()
-        .padStart(2, "0")}`;
-    }
+    updatePaymentTimerText();
   }, 1000);
+
+  updatePaymentTimerText();
 }
 
 function resetHoldState() {
