@@ -22,12 +22,17 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cinema.backend.Payment.VnPayConfig;
 
 import jakarta.servlet.http.HttpServletRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,8 +40,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import com.cinema.backend.dto.QrWebhookDTO;
 
 import java.util.LinkedHashMap;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -49,7 +53,11 @@ import com.cinema.backend.Payment.PayOSConfig;
 @CrossOrigin(origins = "*")
 public class PaymentController {
 private final Map<String, QrPaymentSession> qrSessions = new ConcurrentHashMap<>();
+@Autowired
+private JdbcTemplate jdbcTemplate;
 
+@Autowired
+private ObjectMapper objectMapper;
     @GetMapping("/create-vnpay-url")
     public ResponseEntity<?> createVnPayPaymentUrl(
             @RequestParam("amount") long amount,
@@ -325,48 +333,281 @@ public ResponseEntity<?> createPayOSPayment(@RequestBody Map<String, Object> req
 }
 
 @PostMapping("/payos/webhook")
-public ResponseEntity<?> payOSWebhook(@RequestBody Map<String, Object> payload) {
+public ResponseEntity<?> payOSWebhook(
+        @RequestBody Map<String, Object> payload
+) {
+    long startTime = System.currentTimeMillis();
 
     System.out.println("===== PAYOS WEBHOOK =====");
     System.out.println(payload);
 
+    // 1. Kiểm tra chữ ký trước khi xử lý thanh toán
+    if (!isValidPayOSWebhookSignature(payload)) {
+        savePayOSWebhookLog(
+                payload,
+                401,
+                "failed",
+                startTime
+        );
+
+        return ResponseEntity.status(401).body(
+                Map.of(
+                        "success", false,
+                        "message", "Chữ ký webhook không hợp lệ"
+                )
+        );
+    }
+
+    // 2. Kiểm tra trạng thái PayOS
     Boolean success = (Boolean) payload.get("success");
+    String responseCode = String.valueOf(payload.get("code"));
 
-    if (success == null || !success) {
-        return ResponseEntity.ok(Map.of("success", false));
+    if (!Boolean.TRUE.equals(success) || !"00".equals(responseCode)) {
+        savePayOSWebhookLog(
+                payload,
+                400,
+                "failed",
+                startTime
+        );
+
+        return ResponseEntity.badRequest().body(
+                Map.of(
+                        "success", false,
+                        "message", "Giao dịch PayOS không thành công"
+                )
+        );
     }
 
-    Map<String, Object> data = (Map<String, Object>) payload.get("data");
+    Object dataObject = payload.get("data");
 
-    if (data == null) {
-        return ResponseEntity.ok(Map.of("success", false));
+    if (!(dataObject instanceof Map)) {
+        savePayOSWebhookLog(
+                payload,
+                400,
+                "failed",
+                startTime
+        );
+
+        return ResponseEntity.badRequest().body(
+                Map.of(
+                        "success", false,
+                        "message", "Webhook không có data"
+                )
+        );
     }
 
-    String orderCode = String.valueOf(data.get("orderCode"));
-    long amount = Long.parseLong(data.get("amount").toString());
+    @SuppressWarnings("unchecked")
+    Map<String, Object> data =
+            (Map<String, Object>) dataObject;
 
-    QrPaymentSession session = qrSessions.get(orderCode);
+    try {
+        // 3. Lấy orderCode và số tiền PayOS gửi về
+        String orderCode =
+                String.valueOf(data.get("orderCode"));
 
-    if (session == null) {
-        return ResponseEntity.ok(Map.of(
-                "success", false,
-                "message", "Không tìm thấy session orderCode " + orderCode
-        ));
+        long amount =
+                Long.parseLong(String.valueOf(data.get("amount")));
+
+        QrPaymentSession session =
+                qrSessions.get(orderCode);
+
+        // 4. Kiểm tra phiên thanh toán tồn tại
+       if (session == null) {
+    /*
+     * payOS sẽ gửi webhook mẫu khi đăng ký URL.
+     * Webhook mẫu không có trong qrSessions nên vẫn phải trả HTTP 200.
+     *
+     * Trường hợp backend vừa restart làm mất session, giao dịch hợp lệ
+     * vẫn được ghi vào Webhook Logs để Admin kiểm tra.
+     */
+    savePayOSWebhookLog(
+            payload,
+            200,
+            "success",
+            startTime
+    );
+
+    return ResponseEntity.ok(
+            Map.of(
+                    "success", true,
+                    "message", "Đã nhận webhook hợp lệ",
+                    "orderCode", orderCode,
+                    "paymentStatus", "SUCCESS",
+                    "sessionFound", false
+            )
+    );
+}
+
+        // 5. Kiểm tra số tiền
+        if (session.amount != amount) {
+            savePayOSWebhookLog(
+                    payload,
+                    400,
+                    "failed",
+                    startTime
+            );
+
+            return ResponseEntity.badRequest().body(
+                    Map.of(
+                            "success", false,
+                            "message", "Sai số tiền thanh toán",
+                            "expectedAmount", session.amount,
+                            "receivedAmount", amount
+                    )
+            );
+        }
+
+        // 6. Đánh dấu thành công để frontend polling nhận được
+        session.paymentStatus = "SUCCESS";
+
+        // 7. Ghi log để Admin xem
+        savePayOSWebhookLog(
+                payload,
+                200,
+                "success",
+                startTime
+        );
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "success", true,
+                        "orderCode", orderCode,
+                        "paymentStatus", "SUCCESS"
+                )
+        );
+
+    } catch (Exception exception) {
+        savePayOSWebhookLog(
+                payload,
+                400,
+                "failed",
+                startTime
+        );
+
+        return ResponseEntity.badRequest().body(
+                Map.of(
+                        "success", false,
+                        "message",
+                        "Dữ liệu webhook không hợp lệ"
+                )
+        );
     }
+}
+private boolean isValidPayOSWebhookSignature(
+        Map<String, Object> payload
+) {
+    try {
+        Object signatureObject = payload.get("signature");
+        Object dataObject = payload.get("data");
 
-    if (session.amount != amount) {
-        return ResponseEntity.ok(Map.of(
-                "success", false,
-                "message", "Sai số tiền"
-        ));
+        if (signatureObject == null ||
+                !(dataObject instanceof Map)) {
+            return false;
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data =
+                (Map<String, Object>) dataObject;
+
+        List<String> keys =
+                new ArrayList<>(data.keySet());
+
+        Collections.sort(keys);
+
+        StringBuilder rawData =
+                new StringBuilder();
+
+        for (String key : keys) {
+            if (rawData.length() > 0) {
+                rawData.append("&");
+            }
+
+            Object value = data.get(key);
+
+            rawData.append(key)
+                    .append("=")
+                    .append(value == null ? "" : value);
+        }
+
+        String expectedSignature =
+                PayOSConfig.hmacSHA256(
+                        rawData.toString(),
+                        PayOSConfig.CHECKSUM_KEY
+                );
+
+        String receivedSignature =
+                String.valueOf(signatureObject).trim();
+
+        return MessageDigest.isEqual(
+                expectedSignature.getBytes(StandardCharsets.UTF_8),
+                receivedSignature.getBytes(StandardCharsets.UTF_8)
+        );
+
+    } catch (Exception exception) {
+        System.out.println(
+                "Lỗi kiểm tra PayOS signature: "
+                        + exception.getMessage()
+        );
+
+        return false;
     }
+}
+private void savePayOSWebhookLog(
+        Map<String, Object> payload,
+        int httpCode,
+        String status,
+        long startTime
+) {
+    try {
+        String payloadJson =
+                objectMapper.writeValueAsString(payload);
 
-    session.paymentStatus = "SUCCESS";
+        long responseMs =
+                System.currentTimeMillis() - startTime;
 
-    return ResponseEntity.ok(Map.of(
-            "success", true,
-            "orderCode", orderCode,
-            "paymentStatus", "SUCCESS"
-    ));
+        byte[] payloadBytes =
+                payloadJson.getBytes(StandardCharsets.UTF_8);
+
+        BigDecimal sizeKb =
+                BigDecimal.valueOf(
+                        payloadBytes.length / 1024.0
+                ).setScale(
+                        2,
+                        RoundingMode.HALF_UP
+                );
+
+        jdbcTemplate.update(
+                """
+                INSERT INTO webhook_logs
+                (
+                    time_created,
+                    endpoint,
+                    http_code,
+                    status,
+                    response_ms,
+                    size_kb,
+                    payload
+                )
+                VALUES
+                (
+                    GETDATE(),
+                    ?, ?, ?, ?, ?, ?
+                )
+                """,
+                "/api/payment/payos/webhook",
+                httpCode,
+                status,
+                responseMs,
+                sizeKb,
+                payloadJson
+        );
+
+    } catch (Exception exception) {
+        // Lỗi ghi log không được làm hỏng thanh toán
+        System.out.println(
+                "Không thể ghi Webhook Log: "
+                        + exception.getMessage()
+        );
+    }
 }
 }

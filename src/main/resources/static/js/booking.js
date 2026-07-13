@@ -1781,3 +1781,18 @@ function handleBookingExpired(reasonMessage) {
   }, 300);
 }
 window.addEventListener("load", checkVnpayReturn);
+function activatePayOSPaymentFlow() {
+  window.processToPaymentGateway = processToPaymentGateway;
+  window.selectPaymentGatewayType = selectPaymentGatewayType;
+
+  console.log("Đã kích hoạt luồng thanh toán PayOS từ booking.js");
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener(
+    "DOMContentLoaded",
+    activatePayOSPaymentFlow
+  );
+} else {
+  activatePayOSPaymentFlow();
+}
