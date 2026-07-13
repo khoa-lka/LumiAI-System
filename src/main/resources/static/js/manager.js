@@ -1953,18 +1953,39 @@ fetch(`http://localhost:8080/api/showtimes/update/${showtimeId}`, {
   .catch(err => alert("Cập nhật lên Server thất bại: " + err.message));
 };
 
+// ==========================================================================
+// 🟢 ĐÃ SỬA: Hàm xóa suất chiếu - Kết nối API DELETE thực tế 100% với SQL Server
+// ==========================================================================
 window.mpDeleteShowtimeFromPopover = function(showtimeId){
   const st = mpFindRawShowtime(showtimeId);
   if (!st) return;
-  if (!confirm(`Xóa suất chiếu "${st.movieTitle}" lúc ${st.startTime}?`)) return;
-  mpDeleteShowtimeLocal(showtimeId);
-  const dateKey = mpFindShowtimeDateKey(showtimeId);
-  if (dateKey && window.mpCalRawByDate[dateKey]) {
-    window.mpCalRawByDate[dateKey] = window.mpCalRawByDate[dateKey].filter(s => s.showtimeId !== showtimeId);
-  }
-  alert("Đã xóa suất chiếu (tạm trên trình duyệt).");
-  mpCloseShowtimePopover();
-  mpCalRenderCurrent();
+  
+  // Hộp thoại confirm gốc của trình duyệt giữ nguyên logic để lấy kết quả đồng bộ
+  if (!confirm(`Bạn có chắc chắn muốn gỡ bỏ hoàn toàn suất chiếu phim "${st.movieTitle}" lúc ${st.startTime} khỏi hệ thống không?`)) return;
+
+  console.log("✈️ Gửi API DELETE xóa suất chiếu ID:", showtimeId);
+
+  // Bắn lệnh DELETE lên Server Spring Boot
+  fetch(`http://localhost:8080/api/showtimes/delete/${showtimeId}`, {
+    method: "DELETE"
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Mạng hoặc Server báo lỗi không thể xóa!");
+    return res.json();
+  })
+  .then(data => {
+    alert("Hệ thống đã gỡ suất chiếu khỏi SQL Server thành công!");
+    
+    // 🌟 Làm sạch hoàn toàn bộ nhớ runtime để buộc hệ thống quét mới dữ liệu từ Database
+    window.mpCalRawByDate = {}; 
+    
+    mpCloseShowtimePopover();
+    loadManagerMatrix(); // Tải lại ma trận để cập nhật giao diện mất hẳn ô lịch đó
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Xóa thất bại! Lỗi kết nối hoặc suất chiếu đã dính hóa đơn đặt vé: " + err.message);
+  });
 };
 
 // --- Click vùng trống trên ma trận (view Ngày/Tuần) để tạo nhanh suất chiếu ---

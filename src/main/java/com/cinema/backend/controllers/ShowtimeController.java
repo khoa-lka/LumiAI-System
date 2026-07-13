@@ -178,4 +178,30 @@ public ResponseEntity<?> updateShowtime(@PathVariable("id") Integer id, @Request
             "showtimes", resultList
         ));
     }
+    // 🚀 API Xóa suất chiếu: Nhận lệnh DELETE chọc thẳng xuống SQL Server để xóa vật lý
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<?> deleteShowtime(@PathVariable("id") Integer id) {
+        try {
+            // Kiểm tra xem suất chiếu có tồn tại không trước khi xóa
+            if (!showtimeRepository.existsById(id)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "status", "error",
+                    "message", "Không tìm thấy suất chiếu mang ID: " + id
+                ));
+            }
+            
+            // Thực hiện xóa vật lý trong database qua JpaRepository
+            showtimeRepository.deleteById(id);
+            
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Hệ thống đã gỡ bỏ suất chiếu khỏi cơ sở dữ liệu thành công!"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                "status", "error",
+                "message", "Không thể xóa suất chiếu (Có thể vé đã được khách đặt mua): " + e.getMessage()
+            ));
+        }
+    }
 }
