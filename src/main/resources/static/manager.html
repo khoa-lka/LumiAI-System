@@ -1522,7 +1522,7 @@
     </div>
 
     <div class="mp-modal-overlay" id="mp-create-event-modal">
-      <div class="mp-modal-box">
+      <div class="mp-modal-box" style="max-height: 90vh; overflow-y: auto;">
         <div class="mp-modal-close" onclick="closeEventModal()">✕</div>
         <div class="mp-modal-header" id="event-modal-title">Tạo Sự Kiện Mới</div>
         <input type="hidden" id="event-item-id" />
@@ -1531,9 +1531,13 @@
           <label>Tiêu đề sự kiện</label>
           <input type="text" id="event-title" class="cgv-input-text" placeholder="VD: Đẹo Phone Chắc Tay - Nhận Quà Khủng Liền Tay" />
         </div>
+        <!-- BỔ SUNG: Dropdown bốc danh sách Voucher động từ Database
+             (thay cho ô nhập tay promo_code cũ - Promotion giờ liên kết Voucher qua quan hệ object) -->
         <div class="mp-form-group">
-          <label>Mã ưu đãi (promo_code)</label>
-          <input type="text" id="event-promo-code" class="cgv-input-text" placeholder="VD: PHONE2026" style="text-transform: uppercase;" />
+          <label>Chọn Voucher ưu đãi đi kèm (Nếu có)</label>
+          <select id="event-voucher-select" class="cgv-input-text">
+            <option value="">-- Không kèm Voucher --</option>
+          </select>
         </div>
         <div class="mp-form-group" style="display: flex; gap: 10px;">
           <div style="flex: 1;">
@@ -1620,7 +1624,7 @@
     </div>
 
     <div class="mp-modal-overlay" id="mp-create-promo-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-      <div class="mp-modal-box" style="width: 450px; padding: 26px; border-radius: 16px; box-sizing: border-box;">
+      <div class="mp-modal-box" style="width: 450px; padding: 26px; border-radius: 16px; box-sizing: border-box; max-height: 90vh; overflow-y: auto;">
         <div class="mp-modal-close" onclick="closeCreatePromoModal()">✕</div>
         <div class="mp-modal-header" id="mp-promo-modal-title" style="margin-bottom: 20px;">Tạo Chiến Dịch Voucher Mới</div>
         
@@ -1630,7 +1634,32 @@
           <label>Mã Voucher (Ví dụ: LUMIAI45K)</label>
           <input type="text" id="v-code" class="cgv-input-text" style="text-transform: uppercase;" />
         </div>
-        
+
+        <!-- BỔ SUNG 1: HÌNH THỨC ÁP DỤNG (NHẬP TAY / TỰ ĐỘNG) -->
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label>Hình thức áp dụng Voucher</label>
+          <select id="v-apply-type" class="cgv-input-text" onchange="toggleVoucherConditionFields()">
+            <option value="MANUAL">Nhập mã Voucher</option>
+            <option value="AUTO">Hệ thống tự động áp dụng</option>
+          </select>
+        </div>
+
+        <!-- BỔ SUNG 2: KHỐI ĐIỀU KIỆN QUÉT NGẦM (Mặc định ẩn, tự động hiện khi chọn AUTO) -->
+        <div id="v-auto-conditions-block" style="display: none; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1); margin-bottom: 15px;">
+          <div class="mp-form-group" style="margin-bottom: 10px;">
+            <label style="font-size:12px; color:#9a9aa3;">Loại điều kiện thời gian</label>
+            <select id="v-condition-type" class="cgv-input-text" onchange="toggleConditionValueField()">
+              <option value="NONE">Không áp đặt điều kiện thời gian</option>
+              <option value="DAY_OF_WEEK">Áp dụng theo thứ trong tuần</option>
+              <option value="LAST_DAY_OF_MONTH">Áp dụng vào ngày cuối cùng mỗi tháng</option>
+            </select>
+          </div>
+          <div class="mp-form-group" id="v-condition-value-group" style="margin-bottom: 0; display: none;">
+            <label style="font-size:12px; color:#9a9aa3;">Giá trị thứ trong tuần (Thứ 2 = 1, Thứ 3 = 2, Thứ 4 = 3...)</label>
+            <input type="text" id="v-condition-value" class="cgv-input-text" placeholder="Nhập số 3 nếu chọn Thứ 4" />
+          </div>
+        </div>
+
         <div class="mp-form-group">
           <label>Loại giảm giá</label>
           <select id="v-type" class="cgv-input-text">

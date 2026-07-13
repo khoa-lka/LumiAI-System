@@ -130,7 +130,50 @@ if (request.getFnb() != null) {
     order.setCreatedDate(LocalDateTime.now());
 
     order.setGrossAmount(grossAmount);
-    order.setFinalAmount(request.getTotalMoney());
+
+    // ==========================================================
+    // Vá bảo mật (lấy từ nhánh manager): TÍNH TOÁN GIẢM GIÁ VOUCHER NGAY TRÊN
+    // SERVER thay vì tin thẳng request.getTotalMoney() do client tự gửi lên.
+    // Trước đây client có thể sửa request để trả ít tiền hơn giá thật.
+    // ==========================================================
+    BigDecimal totalDiscount = BigDecimal.ZERO;
+    Voucher appliedVoucher = null;
+
+    if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
+        Optional<Voucher> voucherOpt = voucherRepository.findByVoucherCode(request.getVoucherCode());
+        if (voucherOpt.isPresent()) {
+            Voucher v = voucherOpt.get();
+
+            // Các chốt chặn kiểm tra: trạng thái hoạt động, lượt dùng, hạn dùng và hạn mức đơn hàng tối thiểu
+            boolean isActive = "ACTIVE".equalsIgnoreCase(v.getStatus());
+            boolean isNotExpired = (v.getExpiredDate() == null || v.getExpiredDate().isAfter(LocalDateTime.now()));
+            boolean hasUsage = v.getUsageLimit() > 0;
+            boolean meetMinOrder = (v.getMinimumOrder() == null || grossAmount.compareTo(BigDecimal.valueOf(v.getMinimumOrder())) >= 0);
+
+            if (isActive && isNotExpired && hasUsage && meetMinOrder) {
+                appliedVoucher = v;
+                if ("PERCENT".equalsIgnoreCase(v.getDiscountType())) {
+                    BigDecimal calculatedDiscount = grossAmount.multiply(BigDecimal.valueOf(v.getDiscountValue())).divide(BigDecimal.valueOf(100));
+
+                    if (v.getMaxDiscount() != null && v.getMaxDiscount().compareTo(BigDecimal.ZERO) > 0) {
+                        if (calculatedDiscount.compareTo(v.getMaxDiscount()) > 0) {
+                            calculatedDiscount = v.getMaxDiscount();
+                        }
+                    }
+                    totalDiscount = calculatedDiscount;
+                } else {
+                    totalDiscount = BigDecimal.valueOf(v.getDiscountValue());
+                }
+            }
+        }
+    }
+
+    BigDecimal finalAmount = grossAmount.subtract(totalDiscount);
+    if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
+        finalAmount = BigDecimal.ZERO;
+    }
+
+    order.setFinalAmount(finalAmount); // Đã sửa: lưu số tiền tính từ Server, không tin trực tiếp từ Client!
 
     order.setOrderStatus("COMPLETED");
     order.setPaymentMethod(request.getPaymentMethod());
@@ -143,16 +186,11 @@ if (request.getFnb() != null) {
 
     order.setCustomer(customer);
 
-    if (request.getVoucherCode() != null &&
-            !request.getVoucherCode().isBlank()) {
-
-        Voucher voucher = voucherRepository
-                .findByVoucherCode(request.getVoucherCode())
-                .orElseThrow(() -> new RuntimeException("Voucher not found"));
-
-        order.setVoucher(voucher);
+    if (appliedVoucher != null) {
+        order.setVoucher(appliedVoucher);
     }
-System.out.println("SAVE ORDER");
+
+System.out.println("SAVE ORDER SAFELY WITH FINAL AMOUNT: " + finalAmount);
     order = orderRepository.save(order);
 System.out.println("ORDER ID = " + order.getOrderId());
     // =========================

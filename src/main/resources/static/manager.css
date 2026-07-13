@@ -1566,3 +1566,62 @@
   border-radius:8px;padding:8px 12px;font-size:12.5px;cursor:pointer;
 }
 .mp-msf-clear:hover{border-color:#ff6b35;color:#ff6b35;}
+/* BỔ SUNG: .cgv-input-text vốn chỉ định nghĩa trong auth.css, nhưng manager.html
+   không nhúng auth.css -> toàn bộ input/select trong các popup (Voucher, Sự kiện,
+   Suất chiếu...) bị mất style (không viền bo tròn, không nền tối, không viền cam khi
+   focus). Thêm lại rule này trực tiếp vào manager.css để không phụ thuộc auth.css. */
+.cgv-input-text {
+  width: 100%;
+  padding: 11px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  font-size: 13.5px;
+  box-sizing: border-box;
+  background: #1c1c21;
+  color: var(--text-light);
+  outline: none;
+  margin-bottom: 0;
+  transition: border-color 0.2s;
+}
+.cgv-input-text::placeholder {
+  color: var(--muted);
+}
+.cgv-input-text:focus {
+  border: 1px solid var(--cgv-red);
+}
+
+/* BỔ SUNG: .btn-cgv-submit / .btn-cgv-cancel cũng chỉ định nghĩa trong auth.css,
+   cùng nguyên nhân với .cgv-input-text ở trên -> nút Hủy/Lưu trong các popup bị
+   mất màu (cam cho nút Lưu, xám cho nút Hủy) và hiệu ứng hover. */
+.btn-cgv-submit {
+  background-color: #ff6b35;
+  color: white;
+  font-weight: bold;
+  font-size: 14.5px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  cursor: pointer;
+  margin-top: 10px;
+  border-radius: 10px;
+}
+.btn-cgv-submit:hover {
+  background-color: #e0551f;
+  transform: translateY(-1px);
+}
+.btn-cgv-cancel {
+  background-color: #26262c;
+  color: var(--text-light, #f4f4f5);
+  font-weight: bold;
+  font-size: 14.5px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.btn-cgv-cancel:hover {
+  background-color: #333338;
+  transform: translateY(-1px);
+}

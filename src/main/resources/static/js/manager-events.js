@@ -1,85 +1,54 @@
 /* =========================================================================
-   MANAGER - TAB "SỰ KIỆN VÀ ƯU ĐÃI"
-   Cấu trúc dữ liệu khớp với bảng [promotion] trong DB:
-   title, start_date, end_date, image_url, content, promo_code, status
-   Hiện đang dùng dữ liệu tĩnh (mock) để dựng giao diện; khi Back-end có
-   API tương ứng (VD: GET/POST/PUT/DELETE /api/manager/promotions), chỉ cần
-   thay các hàm loadManagerEvents()/submitEventForm()/confirmDeleteEvent()
-   bằng lệnh gọi API thật, giữ nguyên toàn bộ phần render bên dưới.
+   MANAGER - TAB "SỰ KIỆN VÀ CHIẾN DỊCH VOUCHER"
+   Đồng bộ 100% với Database thực tế qua Spring Boot API
+   Mối liên kết: [promotion] -> voucher_id -> [voucher]
    ========================================================================= */
 
-let _mgEventsData = [
-  {
-    id: 1,
-    title: "Đẹo Phone Chắc Tay - Nhận Quà Khủng Liền Tay",
-    start_date: "2026-06-05",
-    end_date: "2026-06-10",
-    image_url: "img/case.jpg",
-    content:
-      "Chào mừng quý khách đến với ngày hội phụ kiện tại LAS Cinemas! Chỉ cần mang theo điện thoại có ốp lưng độc lạ đến quầy vé, quý khách sẽ nhận ngay ưu đãi hấp dẫn cùng cơ hội trúng quà tặng giá trị từ chương trình.",
-    promo_code: "PHONE2026",
-    status: "ACTIVE",
-  },
-  {
-    id: 2,
-    title: "Combo Bắp Nước Siêu Ưu Đãi Cuối Tuần",
-    start_date: "2026-06-01",
-    end_date: "2026-06-30",
-    image_url: "img/popcorn.png",
-    content:
-      "Mỗi cuối tuần, khách hàng mua combo bắp nước size L sẽ được giảm ngay 20% khi xuất trình mã ưu đãi tại quầy F&B. Áp dụng cho tất cả các suất chiếu trong ngày Thứ 7 và Chủ Nhật.",
-    promo_code: "WEEKENDCOMBO",
-    status: "ACTIVE",
-  },
-  {
-    id: 3,
-    title: "Ưu Đãi Thẻ Tín Dụng - Giảm 45K Mỗi Vé",
-    start_date: "2026-05-01",
-    end_date: "2026-05-31",
-    image_url: "img/creditcard.png",
-    content:
-      "Thanh toán vé xem phim bằng thẻ tín dụng liên kết, khách hàng được giảm ngay 45,000đ cho mỗi vé, áp dụng tối đa 4 vé/giao dịch/tài khoản trong suốt thời gian khuyến mãi.",
-    promo_code: "CARD45K",
-    status: "EXPIRED",
-  },
-  {
-    id: 4,
-    title: "Sự Kiện Ra Mắt Phim Mới - Tặng Poster Giới Hạn",
-    start_date: "2026-07-15",
-    end_date: "2026-07-20",
-    image_url: "img/poster.jpg",
-    content:
-      "Nhân dịp ra mắt phim bom tấn mùa hè, 100 khách hàng đặt vé sớm nhất mỗi ngày sẽ nhận được poster phiên bản giới hạn kèm chữ ký đoàn làm phim.",
-    promo_code: "PREMIERE26",
-    status: "INACTIVE",
-  },
-];
-
-let _mgEventsFiltered = _mgEventsData.slice();
+let _mgEventsData = []; // Dữ liệu thật bốc từ SQL Server về qua API
+let _mgEventsFiltered = [];
 let _mgEventDeleteTargetId = null;
 
-/* --- Tiện ích --- */
+/* --- Tiện ích định dạng hiển thị --- */
 function mgFormatDateVN(iso) {
   if (!iso) return "--";
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
 }
+
 function mgEventStatusLabel(status) {
   if (status === "ACTIVE") return "Đang diễn ra";
   if (status === "INACTIVE") return "Tạm ẩn";
   return "Đã kết thúc";
 }
+
 function mgEventStatusClass(status) {
   if (status === "ACTIVE") return "active";
   if (status === "INACTIVE") return "inactive";
   return "expired";
 }
 
-/* --- 1. Nạp & Render bảng danh sách --- */
+/* --- 1. Nạp danh sách từ Spring Boot và Render lên bảng --- */
 function loadManagerEvents() {
-  // TODO (Back-end thật): thay đoạn dưới bằng fetch("/api/manager/promotions")
-  //   .then(res => res.json()).then(data => { _mgEventsData = data; renderManagerEventsTable(_mgEventsData); });
-  renderManagerEventsTable(_mgEventsData);
+  const tbody = document.getElementById("mp-event-tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Đang quét danh sách chiến dịch sự kiện...</td></tr>';
+
+  // Gọi API Manager lấy toàn bộ danh sách không bộ lọc
+  fetch("http://localhost:8080/api/promos/manager/all")
+    .then(res => {
+      if (!res.ok) throw new Error("Không thể kết nối API danh mục Sự kiện");
+      return res.json();
+    })
+    .then(data => {
+      _mgEventsData = data;
+      _mgEventsFiltered = data.slice();
+      renderManagerEventsTable(_mgEventsFiltered);
+    })
+    .catch(err => {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red; padding:15px;">Lỗi kết nối API: ${err.message}</td></tr>`;
+    });
 }
 window.loadManagerEvents = loadManagerEvents;
 
@@ -87,30 +56,42 @@ function renderManagerEventsTable(list) {
   const tbody = document.getElementById("mp-event-tbody");
   if (!tbody) return;
 
-  if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:#888;">Không tìm thấy sự kiện phù hợp.</td></tr>`;
+  if (!list || !list.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:#888;">Không tìm thấy chiến dịch sự kiện nào phù hợp.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = list
     .map((ev, idx) => {
+      // Bốc mã VoucherCode lồng bên trong đối tượng Voucher ra hiển thị
+      let attachedVoucherCode = (ev.voucher && ev.voucher.voucherCode) 
+        ? `<span class="mp-badge-code" style="background:#e8f5e9; color:#2e7d32; font-weight:bold; padding:4px 8px; border-radius:4px;">${ev.voucher.voucherCode}</span>`
+        : `<span style="color:#777; font-size:12px; font-style:italic;">Không kèm mã</span>`;
+
       return `
       <tr>
-        <td style="text-align:center;">${idx + 1}</td>
+        <td style="text-align:center; font-weight:bold;">${idx + 1}</td>
         <td>
-          <img src="${ev.image_url}" alt="${ev.title}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; cursor:pointer;" onclick="openViewEventModal(${ev.id})" onerror="this.style.opacity=0.3;" />
+          <div style="width: 50px; height: 35px; background: rgba(255, 107, 53, 0.1); border: 1px solid rgba(255, 107, 53, 0.2); border-radius: 4px; display: flex; align-items: center; justify-content: center; margin: 0 auto; cursor: pointer;" 
+              onclick="openViewEventModal(${ev.id})" 
+              title="Bấm để xem chi tiết">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1Z"/>
+              <line x1="4" x2="4" y1="22" y2="15"/>
+            </svg>
+          </div>
         </td>
         <td>
           <strong style="color:#f4f4f5; cursor:pointer;" onclick="openViewEventModal(${ev.id})">${ev.title}</strong>
         </td>
-        <td><span style="font-family:monospace; letter-spacing:0.5px; color:var(--cgv-red, #ff6b35); font-weight:700;">${ev.promo_code}</span></td>
-        <td>${mgFormatDateVN(ev.start_date)} - ${mgFormatDateVN(ev.end_date)}</td>
+        <td>${attachedVoucherCode}</td>
+        <td>${mgFormatDateVN(ev.startDate)} - ${mgFormatDateVN(ev.endDate)}</td>
         <td style="text-align:center;">
           <span class="mp-status ${mgEventStatusClass(ev.status)}">${mgEventStatusLabel(ev.status)}</span>
         </td>
         <td style="text-align:center;">
           <div class="mp-table-actions">
-            <button class="mp-action-btn" title="Xem trước" onclick="openViewEventModal(${ev.id})">
+            <button class="mp-action-btn" title="Xem chi tiết" onclick="openViewEventModal(${ev.id})">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
             <button class="mp-action-btn" title="Sửa" onclick="openEditEventModal(${ev.id})">
@@ -126,13 +107,14 @@ function renderManagerEventsTable(list) {
     .join("");
 }
 
-/* --- 2. Lọc theo từ khóa + trạng thái --- */
+/* --- 2. Bộ lọc tìm kiếm Client-side mượt mà --- */
 function filterManagerEvents() {
   const kw = (document.getElementById("mp-event-search-input").value || "").trim().toLowerCase();
   const status = document.getElementById("mp-event-filter-status").value;
 
   _mgEventsFiltered = _mgEventsData.filter((ev) => {
-    const matchKw = !kw || ev.title.toLowerCase().includes(kw) || ev.promo_code.toLowerCase().includes(kw);
+    const vCode = (ev.voucher && ev.voucher.voucherCode) ? ev.voucher.voucherCode.toLowerCase() : "";
+    const matchKw = !kw || ev.title.toLowerCase().includes(kw) || vCode.includes(kw);
     const matchStatus = status === "all" || ev.status === status;
     return matchKw && matchStatus;
   });
@@ -140,18 +122,25 @@ function filterManagerEvents() {
 }
 window.filterManagerEvents = filterManagerEvents;
 
-/* --- 3. Modal Thêm / Sửa --- */
+/* --- 3. Điều khiển mở form Thêm / Sửa dữ liệu --- */
 function openAddEventModal() {
-  document.getElementById("event-modal-title").innerText = "Tạo Sự Kiện Mới";
+  document.getElementById("event-modal-title").innerText = "Tạo Chiến Dịch Mới";
   document.getElementById("event-item-id").value = "";
   document.getElementById("event-title").value = "";
-  document.getElementById("event-promo-code").value = "";
+  
+  // Nạp lại danh sách voucher thật vào dropdown trước khi mở form[cite: 16]
+  if (typeof window.loadVouchersToSelectDropdown === "function") {
+    window.loadVouchersToSelectDropdown();
+  }
+  document.getElementById("event-voucher-select").value = "";
+  
   document.getElementById("event-date-start").value = "";
   document.getElementById("event-date-end").value = "";
   document.getElementById("event-image-url").value = "";
   document.getElementById("event-content").value = "";
   document.getElementById("event-status").value = "ACTIVE";
   updateEventImagePreview();
+  
   document.getElementById("mp-create-event-modal").classList.add("open");
 }
 window.openAddEventModal = openAddEventModal;
@@ -159,16 +148,24 @@ window.openAddEventModal = openAddEventModal;
 function openEditEventModal(id) {
   const ev = _mgEventsData.find((e) => e.id === id);
   if (!ev) return;
-  document.getElementById("event-modal-title").innerText = "Chỉnh Sửa Sự Kiện";
+
+  document.getElementById("event-modal-title").innerText = "Chỉnh Sửa Chiến Dịch";
   document.getElementById("event-item-id").value = ev.id;
   document.getElementById("event-title").value = ev.title;
-  document.getElementById("event-promo-code").value = ev.promo_code;
-  document.getElementById("event-date-start").value = ev.start_date;
-  document.getElementById("event-date-end").value = ev.end_date;
-  document.getElementById("event-image-url").value = ev.image_url;
-  document.getElementById("event-content").value = ev.content;
-  document.getElementById("event-status").value = ev.status;
+  
+  // Nạp lại danh sách voucher và map trúng ID đang liên kết[cite: 16]
+  if (typeof window.loadVouchersToSelectDropdown === "function") {
+    window.loadVouchersToSelectDropdown();
+  }
+  document.getElementById("event-voucher-select").value = (ev.voucher && ev.voucher.voucherId) ? ev.voucher.voucherId : "";
+
+  document.getElementById("event-date-start").value = ev.startDate || "";
+  document.getElementById("event-date-end").value = ev.endDate || "";
+  document.getElementById("event-image-url").value = ev.imageUrl || "";
+  document.getElementById("event-content").value = ev.content || "";
+  document.getElementById("event-status").value = ev.status || "ACTIVE";
   updateEventImagePreview();
+  
   document.getElementById("mp-create-event-modal").classList.add("open");
 }
 window.openEditEventModal = openEditEventModal;
@@ -190,10 +187,11 @@ function updateEventImagePreview() {
 }
 window.updateEventImagePreview = updateEventImagePreview;
 
+/* --- 4. Đẩy chuỗi dữ liệu kép liên kết lên Spring Boot --- */
 function submitEventForm() {
   const idVal = document.getElementById("event-item-id").value;
   const title = document.getElementById("event-title").value.trim();
-  const promoCode = document.getElementById("event-promo-code").value.trim().toUpperCase();
+  const voucherId = document.getElementById("event-voucher-select").value; // Lấy ID của voucher được chọn từ dropdown[cite: 16]
   const startDate = document.getElementById("event-date-start").value;
   const endDate = document.getElementById("event-date-end").value;
   const imageUrl = document.getElementById("event-image-url").value.trim();
@@ -205,34 +203,60 @@ function submitEventForm() {
     return;
   }
   if (new Date(endDate) < new Date(startDate)) {
-    alert("Ngày kết thúc phải sau ngày bắt đầu.");
+    alert("Ngày kết thúc chương trình phải sau ngày bắt đầu.");
     return;
   }
 
-  const payload = { title, start_date: startDate, end_date: endDate, image_url: imageUrl, content, promo_code: promoCode, status };
+  // Đóng gói JSON payload ăn khớp CamelCase chuẩn Entity Java
+  const payload = {
+    title: title,
+    startDate: startDate,
+    endDate: endDate,
+    imageUrl: imageUrl,
+    content: content,
+    status: status
+  };
 
-  // TODO (Back-end thật): thay đoạn dưới bằng fetch PUT/POST tới /api/manager/promotions
+  // Thiết lập đường link cổng API động dựa trên hình thức Thêm mới hoặc Sửa đổi
+  let url = "http://localhost:8080/api/promos/manager/add";
+  let method = "POST";
+
   if (idVal) {
-    const idx = _mgEventsData.findIndex((e) => e.id === Number(idVal));
-    if (idx !== -1) _mgEventsData[idx] = { ..._mgEventsData[idx], ...payload };
-    alert("Cập nhật sự kiện khuyến mãi thành công!");
-  } else {
-    const newId = _mgEventsData.length ? Math.max(..._mgEventsData.map((e) => e.id)) + 1 : 1;
-    _mgEventsData.push({ id: newId, ...payload });
-    alert("Đã tạo sự kiện khuyến mãi mới thành công!");
+    url = `http://localhost:8080/api/promos/manager/update/${idVal}`;
+    method = "PUT";
   }
 
-  closeEventModal();
-  filterManagerEvents();
+  // Đính kèm tham số voucherId lên chuỗi query string parameters nếu có chọn mã
+  if (voucherId) {
+    url += `?voucherId=${voucherId}`;
+  }
+
+  fetch(url, {
+    method: method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+    .then(res => {
+      if (!res.ok) throw new Error("Server trả về lỗi khi lưu chiến dịch");
+      return res.json();
+    })
+    .then(() => {
+      alert(idVal ? " Cập nhật chiến dịch sự kiện thành công!" : " Đã tạo chiến dịch sự kiện truyền thông mới thành công!");
+      closeEventModal();
+      loadManagerEvents(); // Làm mới lại bảng
+    })
+    .catch(err => {
+      alert("🚨 Thao tác thất bại: " + err.message);
+    });
 }
 window.submitEventForm = submitEventForm;
 
-/* --- 4. Modal Xóa --- */
+/* --- 5. Luồng xử lý Xóa Chiến dịch ưu đãi --- */
 function openDeleteEventModal(id) {
   const ev = _mgEventsData.find((e) => e.id === id);
   if (!ev) return;
   _mgEventDeleteTargetId = id;
-  document.getElementById("event-delete-item-name").innerText = `Bạn có chắc chắn muốn xóa sự kiện "${ev.title}" không?`;
+  document.getElementById("event-delete-item-name").innerText = `Bạn có chắc chắn muốn gỡ bỏ hoàn toàn chiến dịch "${ev.title}" không?`;
   document.getElementById("mp-event-delete-modal").classList.add("open");
 }
 window.openDeleteEventModal = openDeleteEventModal;
@@ -245,26 +269,40 @@ window.closeDeleteEventModal = closeDeleteEventModal;
 
 function confirmDeleteEvent() {
   if (_mgEventDeleteTargetId == null) return;
-  // TODO (Back-end thật): thay đoạn dưới bằng fetch DELETE tới /api/manager/promotions/{id}
-  _mgEventsData = _mgEventsData.filter((e) => e.id !== _mgEventDeleteTargetId);
-  closeDeleteEventModal();
-  filterManagerEvents();
-  alert("Đã xóa sự kiện khuyến mãi thành công!");
+
+  fetch(`http://localhost:8080/api/promos/manager/delete/${_mgEventDeleteTargetId}`, {
+    method: "DELETE"
+  })
+    .then(res => {
+      if (!res.ok) throw new Error("Không thể xóa chiến dịch trên server");
+      closeDeleteEventModal();
+      loadManagerEvents();
+      alert(" Đã gỡ chiến dịch ưu đãi thành công!");
+    })
+    .catch(err => {
+      alert("🚨 Lỗi gỡ dữ liệu: " + err.message);
+      closeDeleteEventModal();
+    });
 }
 window.confirmDeleteEvent = confirmDeleteEvent;
 
-/* --- 5. Modal Xem trước (Preview) --- */
+/* --- 6. Modal Xem trước chi tiết (Preview) --- */
 function openViewEventModal(id) {
   const ev = _mgEventsData.find((e) => e.id === id);
   if (!ev) return;
-  document.getElementById("ev-preview-image").src = ev.image_url;
+
+  document.getElementById("ev-preview-image").src = ev.imageUrl || 'img/default-poster.jpg';
   document.getElementById("ev-preview-title").innerText = ev.title;
-  document.getElementById("ev-preview-dates").innerText = `Áp dụng: ${mgFormatDateVN(ev.start_date)} - ${mgFormatDateVN(ev.end_date)}`;
+  document.getElementById("ev-preview-dates").innerText = `Áp dụng: ${mgFormatDateVN(ev.startDate)} - ${mgFormatDateVN(ev.endDate)}`;
   document.getElementById("ev-preview-content").innerText = ev.content;
-  document.getElementById("ev-preview-code").innerText = ev.promo_code;
+  
+  // Hiển thị mã code nếu chiến dịch có liên kết voucher đi kèm
+  document.getElementById("ev-preview-code").innerText = (ev.voucher && ev.voucher.voucherCode) ? ev.voucher.voucherCode : "Không có";
+  
   const statusEl = document.getElementById("ev-preview-status");
   statusEl.innerText = mgEventStatusLabel(ev.status);
   statusEl.className = "mp-status " + mgEventStatusClass(ev.status);
+  
   document.getElementById("mp-view-event-modal").classList.add("open");
 }
 window.openViewEventModal = openViewEventModal;

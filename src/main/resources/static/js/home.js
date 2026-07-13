@@ -1788,6 +1788,7 @@ window.goToBookingStep = function (step) {
       backBtn.setAttribute("onclick", "window.goToBookingStep(1)");
     }
   } else if (step === 3) {
+    window.autoTriggerSystemPromotion();
     if (mainBtn) {
       mainBtn.innerText = "Thanh Toán Ngay";
       mainBtn.style.background = "#10B981";
@@ -1949,6 +1950,33 @@ window.applyVoucher = function () {
   }
   window.calculateCgvCart();
   window.goToBookingStep(3); // Cập nhật hiển thị số tiền mới ngoài hóa đơn
+};
+
+// BỔ SUNG (nhánh manager): Quét ngầm ưu đãi tự động (AUTO) theo tổng tiền hóa đơn hiện tại
+window.autoTriggerSystemPromotion = function() {
+  fetch(`http://localhost:8080/api/vouchers/check-auto?grossAmount=${currentPriceTotal}`)
+    .then(res => {
+      if (!res.ok) return null;
+      return res.json();
+    })
+    .then(autoVoucher => {
+      if (autoVoucher) {
+        window.selectedVoucherCode = autoVoucher.voucherCode;
+        if (autoVoucher.discountType === "PERCENT") {
+          appliedVoucherDiscount = (currentPriceTotal * autoVoucher.discountValue) / 100;
+        } else {
+          appliedVoucherDiscount = autoVoucher.discountValue;
+        }
+        console.log(`✨ Hệ thống tự động kích hoạt ưu đãi: ${autoVoucher.voucherCode}`);
+
+        const voucherInput = document.getElementById("voucher-input");
+        if (voucherInput) {
+          voucherInput.value = autoVoucher.voucherCode;
+        }
+        window.calculateCgvCart();
+      }
+    })
+    .catch(err => console.error("Lỗi quét voucher tự động: ", err));
 };
 
 // --- 7. TÍCH HỢP CỔNG THANH TOÁN VIETQR VÀ XUẤT VÉ ĐIỆN TỬ ---
