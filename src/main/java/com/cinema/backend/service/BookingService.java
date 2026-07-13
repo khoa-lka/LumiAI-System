@@ -137,7 +137,6 @@ if (request.getFnb() != null) {
     order.setPaymentStatus("SUCCESS");
 
     order.setCustomer(customer);
-    order.setShowtime(showtime);
 
     if (request.getVoucherCode() != null &&
             !request.getVoucherCode().isBlank()) {
@@ -156,47 +155,65 @@ System.out.println("ORDER ID = " + order.getOrderId());
     // =========================
     for (String seatCode : request.getSeats()) {
 
-        String row = seatCode.substring(0, 1);
-        Integer number = Integer.parseInt(seatCode.substring(1));
+    String row = seatCode.substring(0, 1);
 
-        Seat seat = seatRepository
-                .findByRoomIdAndSeatRowAndSeatNumber(
-                        showtime.getRoomId(),
-                        row,
-                        number)
-                .orElseThrow(() -> new RuntimeException("Seat not found: " + seatCode));
+    Integer number =
+            Integer.parseInt(
+                    seatCode.substring(1)
+            );
 
-        Ticket ticket = new Ticket();
+    Seat seat = seatRepository
+            .findByRoomIdAndSeatRowAndSeatNumber(
+                    showtime.getRoomId(),
+                    row,
+                    number
+            )
+            .orElseThrow(() ->
+                    new RuntimeException(
+                            "Seat not found: " +
+                            seatCode
+                    )
+            );
 
-        ticket.setOrder(order);
-        ticket.setSeatId(seat.getSeatId());
-        ticket.setShowtimeId(showtime.getShowtimeId());
+    Ticket ticket = new Ticket();
 
-        ticket.setTicketStatus("SOLD");
+    ticket.setTicketStatus("SOLD");
 
-        String code = "TICKET-" + System.currentTimeMillis() + "-" + seatCode;
+    String code =
+            "TICKET-" +
+            System.currentTimeMillis() +
+            "-" +
+            seatCode;
 
-        ticket.setTicketCode(code);
-        ticket.setQrCode(code);
+    ticket.setTicketCode(code);
+    ticket.setQrCode(code);
 
-        if (firstTicketCode.isBlank()) {
+    // Hai dòng đang bị thiếu
+    ticket.setShowtime(showtime);
+    ticket.setSeat(seat);
+
+    if (firstTicketCode.isBlank()) {
         firstTicketCode = code;
-        }   
-
-        ticket = ticketRepository.save(ticket);
-
-        OrderDetail detail = new OrderDetail();
-
-        detail.setOrder(order);
-        detail.setTicket(ticket);
-
-        detail.setQuantity(1);
-
-        detail.setSubtotal(showtime.getTicketPrice());
-
-        orderDetailRepository.save(detail);
-        bookedSeats.add(seatCode);
     }
+
+    Ticket savedTicket =
+            ticketRepository.save(ticket);
+
+    OrderDetail detail =
+            new OrderDetail();
+
+    detail.setOrder(order);
+    detail.setTicket(savedTicket);
+    detail.setFoodItem(null);
+    detail.setQuantity(1);
+    detail.setSubtotal(
+            showtime.getTicketPrice()
+    );
+
+    orderDetailRepository.save(detail);
+
+    bookedSeats.add(seatCode);
+}
 System.out.println("SAVE TICKET OK");
 // =========================
 // Tạo OrderDetail cho F&B

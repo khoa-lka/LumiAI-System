@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LumiAI System - Máy POS</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0d0d0f;
+      --sidebar: #141416;
+      --panel: #19191d;
+      --border: #303036;
+      --text: #f5f5f7;
+      --muted: #9b9ba5;
+      --orange: #e26735;
+      --orange-dark: #bd4f24;
+      --pink: #ce628f;
+      --vip: #d26030;
+      --standard: #5c5c62;
+      --gold: #d4aa42;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .pos-layout {
+      display: grid;
+      grid-template-columns: 212px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--sidebar);
+      border-right: 1px solid #303035;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding-top: 20px;
+    }
+
+    .brand {
+      color: #f0713b;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.7px;
+      padding: 0 18px 26px;
+    }
+
+    .nav-menu {
+      list-style: none;
+    }
+
+    .nav-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 20px;
+      border: 0;
+      background: transparent;
+      color: #a6a6ae;
+      text-align: left;
+      font-size: 15px;
+    }
+
+    .nav-item:hover {
+      background: #221b1a;
+      color: white;
+    }
+
+    .nav-item.active {
+      background: #2d1d19;
+      color: white;
+      font-weight: 700;
+      border-left: 3px solid #f0713b;
+      padding-left: 17px;
+    }
+
+    .nav-icon {
+      width: 20px;
+      text-align: center;
+    }
+
+    .logout-btn {
+      margin-top: 18px;
+      color: #c4a89b;
+    }
+
+    .main-content {
+      min-width: 0;
+      background: #0e0e10;
+    }
+
+    .topbar {
+      min-height: 91px;
+      border-bottom: 1px solid #303035;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px 30px;
+    }
+
+    .topbar h1 {
+      font-size: 23px;
+    }
+
+    .staff-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border: 1px solid #36363b;
+      border-radius: 22px;
+      background: #161619;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #403a43;
+    }
+
+    .staff-profile strong {
+      display: block;
+      font-size: 12px;
+    }
+
+    .staff-profile span {
+      display: block;
+      margin-top: 2px;
+      font-size: 11px;
+      color: #b5b5bb;
+    }
+
+    .content-wrap {
+      padding: 22px 28px 35px;
+      max-width: 1550px;
+      margin: 0 auto;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .step-title {
+      font-size: 17px;
+      font-weight: 800;
+      margin: 0 0 13px;
+    }
+
+    .orange {
+      color: #f0713b;
+    }
+
+    .field-card,
+    .showtime-card,
+    .seat-card,
+    .order-card,
+    .ticket-search-card,
+    .feedback-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+    }
+
+    .field-card {
+      padding: 16px 20px;
+      margin-bottom: 18px;
+    }
+
+    .field-card select,
+    .ticket-search-card input,
+    .feedback-card textarea {
+      width: 100%;
+      border: 1px solid #3b3b42;
+      border-radius: 5px;
+      background: #17171b;
+      color: white;
+      padding: 12px 14px;
+    }
+
+    .date-card {
+      border: 1px solid #33333a;
+      background: #111114;
+      padding: 15px 16px;
+      margin-bottom: 19px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .date-list {
+      display: flex;
+      gap: 10px;
+      min-width: max-content;
+    }
+
+    .date-btn {
+      width: 60px;
+      height: 78px;
+      border: 1px solid #dadada;
+      border-radius: 6px;
+      background: #fafafa;
+      color: #5a5a5a;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .date-btn.active {
+      background: #151518;
+      border-color: #151518;
+      color: white;
+    }
+
+    .date-btn .dow {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .date-btn .day {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .date-btn .month {
+      font-size: 12px;
+    }
+
+    .showtime-card {
+      padding: 22px 20px;
+      margin-bottom: 20px;
+    }
+
+    .showtime-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .showtime-btn {
+      min-width: 124px;
+      border: 1px solid var(--orange);
+      border-radius: 9px;
+      background: #211917;
+      color: #ff7544;
+      padding: 11px 14px;
+    }
+
+    .showtime-btn.active,
+    .showtime-btn:hover {
+      background: var(--orange);
+      color: white;
+    }
+
+    .showtime-btn b,
+    .showtime-btn small {
+      display: block;
+    }
+
+    .showtime-btn small {
+      margin-top: 4px;
+      font-size: 10px;
+    }
+
+    .seat-card {
+      padding: 18px 20px 20px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+
+    .screen {
+      width: 620px;
+      min-width: 620px;
+      margin: 0 auto 34px;
+      padding: 9px 20px;
+      border-top: 3px solid #d3a43f;
+      border-radius: 0 0 28px 28px;
+      background: #29292c;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .seat-map {
+      width: fit-content;
+      min-width: 540px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(10, 48px);
+      gap: 7px;
+    }
+
+    .seat {
+      height: 48px;
+      border: 0;
+      border-radius: 4px;
+      background: var(--standard);
+      color: white;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .seat:hover:not(:disabled) {
+      filter: brightness(1.2);
+      transform: translateY(-2px);
+    }
+
+    .seat.vip {
+      background: var(--vip);
+    }
+
+    .seat.sweetbox {
+      background: var(--pink);
+    }
+
+    .seat.selected {
+      background: var(--orange);
+      outline: 2px solid #ffc0a7;
+    }
+
+    .seat.booked,
+    .seat:disabled {
+      background: var(--gold);
+      color: #252018;
+      cursor: not-allowed;
+    }
+
+    .seat-legend {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 28px;
+      color: #b8b8c0;
+      font-size: 12px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-box {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      background: var(--standard);
+    }
+
+    .legend-box.vip { background: var(--vip); }
+    .legend-box.sweetbox { background: var(--pink); }
+    .legend-box.booked { background: var(--gold); }
+    .legend-box.selected { background: var(--orange); }
+
+    .order-card {
+      padding: 18px 22px;
+    }
+
+    .order-header {
+      color: #a7a7b0;
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 25px;
+    }
+
+    .order-seats {
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a3a3aa;
+      border-bottom: 1px solid #38383d;
+      padding-bottom: 20px;
+    }
+
+    .order-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 11px 0;
+      color: #a6a6ae;
+    }
+
+    .order-total {
+      color: white;
+      font-size: 18px;
+      font-weight: 800;
+      padding-top: 15px;
+    }
+
+    #totalPrice {
+      color: #ff7043;
+      font-size: 22px;
+    }
+
+    .pay-btn,
+    .primary-btn {
+      border: 0;
+      border-radius: 8px;
+      background: var(--orange);
+      color: white;
+      font-weight: 800;
+    }
+
+    .pay-btn {
+      width: 100%;
+      margin-top: 18px;
+      padding: 15px;
+    }
+
+    .primary-btn {
+      padding: 12px 20px;
+      white-space: nowrap;
+    }
+
+    .ticket-search-card,
+    .feedback-card {
+      padding: 24px;
+    }
+
+    .ticket-search-card h2,
+    .feedback-card h2 {
+      margin-bottom: 10px;
+    }
+
+    .ticket-search-card p,
+    .feedback-card p {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .ticket-result {
+      display: none;
+      margin-top: 20px;
+      border: 1px solid #414147;
+      border-radius: 6px;
+      padding: 18px;
+      background: #141417;
+    }
+
+    .ticket-result.show {
+      display: block;
+    }
+
+    .ticket-result p {
+      margin: 7px 0;
+      color: #e5e5e8;
+    }
+
+    .feedback-card textarea {
+      min-height: 100px;
+      resize: vertical;
+      margin: 15px 0;
+    }
+
+    .feedback-status {
+      display: inline-block;
+      border-radius: 20px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #4a3324;
+      color: #ffb084;
+    }
+
+    .feedback-status.done {
+      background: #183e2b;
+      color: #7ce0a9;
+    }
+
+    @media (max-width: 850px) {
+      .pos-layout {
+        grid-template-columns: 70px minmax(0, 1fr);
+      }
+
+      .brand {
+        font-size: 0;
+        text-align: center;
+      }
+
+      .brand::after {
+        content: "POS";
+        font-size: 14px;
+      }
+
+      .nav-item {
+        justify-content: center;
+        padding: 18px 0;
+      }
+
+      .nav-item span:last-child {
+        display: none;
+      }
+
+      .topbar {
+        padding: 15px 18px;
+      }
+
+      .content-wrap {
+        padding: 18px;
+      }
+    }
+
+    .fb-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .fb-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1c1c1f;
+      padding: 12px 18px;
+      border: 1px solid #303036;
+      border-radius: 6px;
+    }
+
+    .fb-info b {
+      display: block;
+      color: white;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .fb-info span {
+      color: var(--orange);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .fb-action {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .fb-action button {
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 4px;
+      background: #2a2a30;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .fb-action button:hover {
+      background: var(--orange);
+    }
+
+    .fb-qty {
+      color: white;
+      font-weight: bold;
+      width: 20px;
+      text-align: center;
+    }
+
+    /* --- CSS CHỌN PHƯƠNG THỨC THANH TOÁN --- */
+    .payment-methods-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 15px;
+      border-top: 1px solid #38383d;
+      padding-top: 20px;
+    }
+
+    .payment-method-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 18px;
+      border: 1px solid #3b3b42;
+      border-radius: 8px;
+      background: #17171b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    /* Ẩn input radio mặc định đi */
+    .payment-method-card input[type="radio"] {
+      display: none;
+    }
+
+    /* Nút tròn giả radio */
+    .pm-radio-circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid #5c5c62;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Đổi màu khi được chọn (Active) */
+    .payment-method-card.active {
+      border-color: var(--orange);
+      background: #2a1c17; 
+    }
+
+    .payment-method-card.active .pm-radio-circle {
+      border-color: var(--orange);
+    }
+
+    .payment-method-card.active .pm-radio-circle::after {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--orange);
+    }
+
+    .pm-icon {
+      font-size: 22px;
+    }
+
+    .pm-info {
+      flex: 1;
+    }
+
+    .pm-info b {
+      display: block;
+      color: white;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .pm-info small {
+      color: #9b9ba5;
+      font-size: 12px;
+    }
+
+    .pm-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: #2a2a30;
+      color: #a6a6ae;
+      border: 1px solid #3b3b42;
+    }
+
+    .payment-method-card.active .pm-badge {
+      color: var(--orange);
+      border-color: var(--orange);
+    }
+    /* --- CSS POPUP QR CODE --- */
+    .qr-modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
+      display: none; align-items: center; justify-content: center; z-index: 9999;
+    }
+
+    .qr-modal-box {
+      background: #17171b; border: 1px solid #3b3b42; border-radius: 16px;
+      width: 400px; padding: 24px; position: relative; text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .close-qr {
+      position: absolute; top: 16px; right: 16px; background: transparent;
+      color: #a6a6ae; border: none; font-size: 20px; cursor: pointer;
+    }
+
+    .close-qr:hover { color: white; }
+
+    .qr-icon { font-size: 24px; }
+    .qr-header h3 { color: white; margin: 10px 0 4px; font-size: 18px; }
+    .qr-header p { color: #9b9ba5; font-size: 13px; margin-bottom: 20px; }
+
+    .qr-image-wrapper {
+      background: white; padding: 12px; border-radius: 12px;
+      display: inline-block; margin-bottom: 20px;
+    }
+    
+    .qr-image-wrapper img { width: 220px; height: 220px; object-fit: contain; }
+
+    .qr-amount-box {
+      background: #2a1c17; border: 1px solid var(--orange);
+      border-radius: 8px; padding: 12px; margin-bottom: 16px;
+    }
+
+    .qr-amount-box span { display: block; color: #ffb084; font-size: 12px; margin-bottom: 4px; }
+    .qr-amount-box strong { display: block; color: var(--orange); font-size: 26px; }
+
+    .qr-timer { color: #a6a6ae; font-size: 13px; margin-bottom: 20px; }
+    .qr-timer b { color: var(--orange); }
+
+    .qr-confirm-btn {
+      width: 100%; background: #4caf50; color: white; border: none;
+      padding: 14px; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .qr-confirm-btn:hover { background: #43a047; }
+    /* --- POPUP VÉ THÀNH CÔNG --- */
+    .ticket-success-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.92); backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center; z-index: 10000;
+      overflow-y: auto; padding: 20px;
+    }
+    .ticket-success-box {
+      background: #17171b; border: 1px solid #3b3b42; border-radius: 16px;
+      width: 460px; padding: 30px; color: white;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+      max-height: 95vh; overflow-y: auto;
+    }
+    .ticket-header { color: #f0713b; font-weight: bold; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;}
+    .ticket-success-box h2 { font-size: 26px; margin-bottom: 16px; }
+    .ticket-meta { display: flex; gap: 18px; color: #a6a6ae; font-size: 14px; margin-bottom: 24px; }
+    .ticket-section { margin-bottom: 20px; }
+    .section-title { display: block; color: #a6a6ae; font-size: 12px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
+    .seat-badge-container { display: flex; gap: 8px; flex-wrap: wrap; }
+    .seat-badge { background: #2a1c17; color: var(--orange); border: 1px solid var(--orange); padding: 5px 14px; border-radius: 6px; font-weight: bold; font-size: 14px; }
+    .food-list { list-style: disc inside; color: white; font-size: 14px; margin: 0; padding: 0; line-height: 1.8; }
+    .qr-ticket-box { background: #222226; border: 1px solid #38383d; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 18px; margin: 24px 0; }
+    .qr-ticket-box img { width: 100px; height: 100px; background: white; padding: 6px; border-radius: 8px; }
+    .qr-text { color: #9b9ba5; font-size: 13px; line-height: 1.6; }
+    .ticket-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #38383d; border-bottom: 1px dashed #38383d; padding: 18px 0; margin-bottom: 24px; }
+    .ticket-footer span { color: #a6a6ae; font-weight: bold; font-size: 14px; }
+    .ticket-footer strong { color: var(--orange); font-size: 26px; }
+    .info-box { background: #2a1c17; border: 1px solid #4a2818; border-radius: 12px; padding: 18px; margin-bottom: 26px; }
+    .info-title { color: #ffb084; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; font-weight: bold; }
+    .info-box ul { color: #e5e5e8; font-size: 13px; padding-left: 20px; line-height: 1.7; margin: 0; }
+    .action-buttons { display: flex; gap: 12px; }
+    .btn-print { flex: 1; background: var(--orange); color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
+    .btn-print:hover { background: var(--orange-dark); }
+    .btn-home { flex: 1; background: transparent; color: white; border: 1px solid #5c5c62; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
+    .btn-home:hover { background: #2a2a30; }
+
+    /* CHỈ ĐỊNH ĐỂ IN BILL ĐẸP (Khi nhân viên bấm Tải/In vé) */
+    @media print {
+      body * { visibility: hidden; }
+      #ticketSuccessModal, #ticketSuccessModal * { visibility: visible; }
+      #ticketSuccessModal { position: absolute; left: 0; top: 0; background: white !important; color: black !important; display: block;}
+      .ticket-success-box { box-shadow: none; border: none; width: 100%; color: black !important; background: white !important; padding: 0; }
+      .action-buttons { display: none !important; }
+      .info-box { border: 1px solid #000; background: #fff !important; }
+      .info-title { color: black !important; }
+      .info-box ul { color: black !important; }
+      .ticket-header, .section-title, .ticket-meta, .qr-text, .seat-badge { color: black !important; }
+      .seat-badge { border-color: black; }
+      .ticket-footer strong { color: black !important; }
+    }
+
+    /* --- TÙY CHỈNH THANH CUỘN NGÀY THÁNG CỰC XỊN --- */
+    
+    /* Thiết lập độ dày của thanh cuộn ngang */
+    .date-card::-webkit-scrollbar {
+      height: 8px; 
+    }
+
+    /* Phần rãnh nền (Track) của thanh cuộn */
+    .date-card::-webkit-scrollbar-track {
+      background: #19191d; /* Màu nền tối tệp với giao diện */
+      border-radius: 10px;
+      margin-top: 10px; /* Đẩy thanh cuộn cách xa nút ngày một chút */
+    }
+
+    /* Phần lõi cầm kéo (Thumb) màu cam */
+    .date-card::-webkit-scrollbar-thumb {
+      background: var(--orange); /* Dùng biến màu cam mặc định của hệ thống */
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    /* Hiệu ứng khi di chuột vào phần kéo */
+    .date-card::-webkit-scrollbar-thumb:hover {
+      background: var(--orange-dark); 
+    }
+    
+    /* Đảm bảo khung date-card có hiệu ứng cuộn mượt */
+    .date-card {
+      scroll-behavior: smooth;
+      padding-bottom: 20px; /* Thêm padding để không bị lẹm thanh cuộn vào nút */
+    }
+    /* Tối ưu giao diện Feedback */
+    .feedback-card { padding: 24px; background: var(--panel); border-radius: 12px; border: 1px solid var(--border); }
+    .fb-item { 
+      background: #141417; 
+      padding: 20px; 
+      margin-bottom: 20px; 
+      border-radius: 10px; 
+      border-left: 4px solid var(--orange);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .fb-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .fb-customer-name { font-weight: 800; color: #f0713b; font-size: 15px; }
+    .fb-rating { color: #d4aa42; font-size: 13px; }
+    .fb-content { color: #e5e5e8; font-size: 14px; line-height: 1.6; margin-bottom: 15px; }
+    
+    /* Khu vực phản hồi nhân viên (Replies) */
+    .replies-container { 
+      background: #1c1c1f; padding: 12px; border-radius: 8px; margin: 10px 0; 
+      border-left: 2px solid #5c5c62;
+    }
+    .reply-text { color: #a6a6ae; font-size: 13px; font-style: italic; }
+
+    /* Khu vực nhập liệu */
+    .reply-area { display: flex; gap: 10px; margin-top: 15px; }
+    .reply-area textarea { 
+      flex: 1; background: #0e0e10; color: white; border: 1px solid #3b3b42; 
+      padding: 10px; border-radius: 6px; resize: vertical; min-height: 40px; 
+    }
+    .reply-btn { 
+      background: var(--orange); color: white; border: none; padding: 0 20px; 
+      border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;
+    }
+    .reply-btn:hover { background: var(--orange-dark); }
+    /* Khung chứa từng feedback */
+.fb-item {
+    background: #1c1c1f;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    border: 1px solid #303036;
+    transition: transform 0.2s;
+}
+
+/* Phần hiển thị nội dung khách */
+.fb-content-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.customer-meta { font-size: 13px; color: #f0713b; font-weight: bold; }
+
+/* Khu vực nhập phản hồi */
+.reply-wrapper {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: #141416;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.reply-input {
+    flex: 1;
+    background: transparent;
+    color: white;
+    border: none;
+    outline: none;
+    padding: 8px;
+    font-size: 14px;
+}
+
+.send-btn {
+    background: var(--orange);
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+/* Khung feedback hiện đại */
+.fb-item {
+    display: flex;
+    flex-wrap: wrap; /* Cho phép xuống dòng nếu màn hình hẹp */
+    align-items: center;
+    background: #1c1c1f;
+    padding: 16px 20px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: 1px solid #303036;
+    gap: 15px;
+}
+
+.fb-main-info { flex: 2; min-width: 250px; }
+.fb-rating-info { flex: 1; text-align: center; color: #d4aa42; font-size: 13px; }
+
+/* Phần nhập phản hồi đẹp mắt */
+.fb-reply-box {
+    flex: 2;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.fb-reply-box textarea {
+    flex: 1;
+    background: #0e0e10;
+    color: #a6a6ae;
+    border: 1px solid #3b3b42;
+    padding: 8px 12px;
+    border-radius: 6px;
+    height: 40px;
+    resize: none; /* Không cho resize để giữ form */
+    font-size: 13px;
+}
+
+.fb-reply-btn {
+    background: var(--orange);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.fb-reply-btn:hover { background: var(--orange-dark); }
+.modal-overlay {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center; z-index: 9999;
+}
+.modal-content {
+    background: #19191d; padding: 25px; border-radius: 12px;
+    width: 400px; border: 1px solid #303036; position: relative;
+}
+.close-modal {
+    position: absolute; top: 10px; right: 10px; background: none; border: none;
+    color: white; font-size: 20px; cursor: pointer;
+}
+.modal-content textarea {
+    width: 100%; height: 120px; background: #0e0e10; color: white;
+    margin: 15px 0; padding: 10px; border-radius: 6px; border: 1px solid #3b3b42;
+}
+  </style>
+
+<script src="/js/staff.js" defer></script>
+</head>
+
+<body>
+  <div class="pos-layout">
+    <aside class="sidebar">
+      <div class="brand">MÁY POS</div>
+
+      <ul class="nav-menu">
+        <li>
+          <button class="nav-item active" type="button" onclick="openTab('buy-ticket', this)">
+            <span class="nav-icon">🎟️</span>
+            <span>Mua vé</span>
+          </button>
+        </li>
+
+        <li>
+          <button class="nav-item" type="button" onclick="openTab('print-ticket', this)">
+            <span class="nav-icon">🖨️</span>
+            <span>In vé</span>
+          </button>
+        </li>
+
+        <li>
+          <button class="nav-item" type="button" onclick="openTab('feedback', this)">
+            <span class="nav-icon">💬</span>
+            <span>Phản hồi khách hàng</span>
+          </button>
+        </li>
+
+        <li>
+          <button class="nav-item logout-btn" type="button" onclick="logout()">
+            <span class="nav-icon">📋</span>
+            <span>Đăng xuất</span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <h1 id="pageTitle">Xin chào, Nhân viên 👋</h1>
+
+        <div class="staff-profile">
+          <div class="avatar">👤</div>
+          <div>
+            <strong id="staffName">Nhân viên</strong>
+            <span>Nhân viên / Staff</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="content-wrap">
+        <section id="buy-ticket" class="tab-content active">
+          <h2 class="step-title"><span class="white">1.</span> CHỌN PHIM TRỰC THUỘC</h2>
+
+          <div class="field-card">
+            <select id="movie">
+              <option value="">Chọn phim</option>
+              <option value="Mắt Biếc">Mắt Biếc</option>
+              <option value="Lật Mặt 8">Lật Mặt 8</option>
+              <option value="Thám Tử Kiên">Thám Tử Kiên</option>
+              <option value="Doraemon Movie">Doraemon Movie</option>
+            </select>
+          </div>
+
+          <h2 class="step-title">2. CHỌN NGÀY CHIẾU PHIM</h2>
+
+          <div class="date-card">
+            <div class="date-list" id="dateListContainer">
+                </div>
+          </div>
+
+<input type="hidden" id="date" value="" />
+          <h2 class="step-title">3. CHỌN SUẤT CHIẾU HÔM NAY</h2>
+
+          <div class="showtime-card">
+            <div class="showtime-list">
+              <button type="button" class="showtime-btn active" data-showtime="19:45">
+                <b>19:45</b>
+                <small>Phòng 1 (3D Standard)</small>
+              </button>
+
+              <button type="button" class="showtime-btn" data-showtime="20:30">
+                <b>20:30</b>
+                <small>Phòng 2 (2D VIP)</small>
+              </button>
+
+              <button type="button" class="showtime-btn" data-showtime="21:15">
+                <b>21:15</b>
+                <small>Phòng 3 (Sweetbox)</small>
+              </button>
+            </div>
+          </div>
+
+          <input type="hidden" id="showtime" value="19:45" />
+
+          <h2 class="step-title">4. CHỌN GHẾ NGỒI PHÒNG CHIẾU</h2>
+
+          <div class="seat-card">
+            <div class="screen">MÀN HÌNH CHÍNH (SCREEN)</div>
+            <div id="seatMap" class="seat-map"></div>
+
+            <div class="seat-legend">
+              <div class="legend-item"><span class="legend-box"></span> Standard</div>
+              <div class="legend-item"><span class="legend-box vip"></span> Ghế VIP</div>
+              <div class="legend-item"><span class="legend-box sweetbox"></span> Sweetbox</div>
+              <div class="legend-item"><span class="legend-box booked"></span> Đang giữ</div>
+              <div class="legend-item"><span class="legend-box selected"></span> Ghế chọn</div>
+            </div>
+          </div> 
+          
+          <h2 class="step-title">5. CHỌN BẮP NƯỚC (F&B)</h2>
+          <div class="field-card">
+            <div id="foodList" class="fb-list">
+              <p style="color: #5c5c62;">Đang tải danh sách...</p>
+            </div>
+          </div>
+          
+          <div class="order-card">
+            <div class="order-header">
+               ĐƠN HÀNG (<span id="ticketQuantity">0</span> VÉ)
+            </div>
+
+            <div class="order-seats">
+              <span id="selectedSeats">Chưa chọn ghế</span>
+            </div>
+            <div class="order-row">
+              <span>Bắp nước</span>
+               <span id="fbTotalPrice">0đ</span>
+            </div>
+            <div class="order-row">
+              <span>Tạm tính</span>
+              <span id="subtotalPrice">0đ</span>
+            </div>
+
+            <div class="order-row">
+              <span>Mã giảm giá</span>
+              <div style="display: flex; gap: 6px;">
+                <input id="voucherInput" type="text" placeholder="Nhập mã..." style="width: 110px; padding: 4px 8px; background: #17171b; color: white; border: 1px solid #3b3b42; border-radius: 5px; font-size: 13px; outline: none; text-transform: uppercase;">
+                <button type="button" onclick="applyVoucher()" style="padding: 4px 10px; background: #4a4a52; color: white; border: none; border-radius: 5px; font-size: 12px; font-weight: bold;">Áp dụng</button>
+              </div>
+            </div>
+
+            <div class="order-row">
+              <span>Được giảm</span>
+              <span id="discountPrice" style="color: #ce628f; font-weight: bold;">0đ</span>
+            </div>
+            
+            <div class="payment-methods-container">
+              <span style="color: #a7a7b0; font-size: 14px; font-weight: 800; text-transform: uppercase;">Hình thức thanh toán</span>
+              
+              <label class="payment-method-card active">
+                <input type="radio" name="paymentMethod" value="CASH" checked onchange="changePaymentMethod(this)">
+                <div class="pm-radio-circle"></div>
+                <div class="pm-icon">💵</div>
+                <div class="pm-info">
+                  <b>Tiền mặt tại quầy</b>
+                  <small>Thanh toán trực tiếp bằng tiền mặt</small>
+                </div>
+                <div class="pm-badge">Cash</div>
+              </label>
+
+              <label class="payment-method-card">
+                <input type="radio" name="paymentMethod" value="VIETQR" onchange="changePaymentMethod(this)">
+                <div class="pm-radio-circle"></div>
+                <div class="pm-icon">📱</div>
+                <div class="pm-info">
+                  <b>Chuyển khoản / QR Quốc Gia</b>
+                  <small>Quét mã bằng ứng dụng ngân hàng</small>
+                </div>
+                <div class="pm-badge">VietQR</div>
+              </label>
+
+              <label class="payment-method-card">
+                <input type="radio" name="paymentMethod" value="VNPAY" onchange="changePaymentMethod(this)">
+                <div class="pm-radio-circle"></div>
+                <div class="pm-icon">💳</div>
+                <div class="pm-info">
+                  <b>Cổng thanh toán VNPAY</b>
+                  <small>Mobile Banking quét mã an toàn</small>
+                </div>
+                <div class="pm-badge">VNPAY</div>
+              </label>
+            </div>
+
+            <div class="order-row order-total">
+              <span>TỔNG TIỀN</span>
+              <span id="totalPrice">0đ</span>
+            </div>
+
+            <button class="pay-btn" type="button" onclick="createOrder()">Thanh toán →</button>
+          </div>
+        </section>
+
+        <section id="print-ticket" class="tab-content">
+          <div class="ticket-search-card">
+            <h2>In vé</h2>
+            <p>Nhập mã vé hoặc mã đơn hàng để tìm lại giao dịch.</p>
+
+            <div class="search-row">
+              <input id="ticketSearch" type="text" placeholder="Ví dụ: LUMI-123456 hoặc ORD-123456" />
+              <button class="primary-btn" type="button" onclick="searchTicket()">Tìm vé</button>
+            </div>
+
+            <div id="ticketResult" class="ticket-result">
+              <p><strong>Mã đơn:</strong> <span id="resultOrderCode"></span></p>
+              <p><strong>Mã vé:</strong> <span id="resultTicketCode"></span></p>
+              <p><strong>Phim:</strong> <span id="resultMovie"></span></p>
+              <p><strong>Suất chiếu:</strong> <span id="resultShowtime"></span></p>
+              <p><strong>Ghế:</strong> <span id="resultSeats"></span></p>
+
+              <button class="primary-btn" type="button" onclick="printTicket()" style="margin-top: 14px;">
+                In vé
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="feedback" class="tab-content">
+  <div class="feedback-card">
+    <h2 style="margin-bottom: 20px;">Phản hồi khách hàng</h2>
+    <div id="feedbackList"></div>
+  </div>
+</section>
+      </div>
+    </main>
+  </div>
+  <div id="qrModal" class="qr-modal-overlay">
+    <div class="qr-modal-box">
+      <button class="close-qr" onclick="closeQRModal()">✕</button>
+      
+      <div class="qr-header">
+        <span class="qr-icon">📱</span>
+        <h3 id="qrTitle">Chuyển khoản QR Quốc Gia</h3>
+        <p>Thanh toán an toàn qua VietQR - Napas 247</p>
+      </div>
+      
+      <div class="qr-body">
+        <div class="qr-image-wrapper">
+          <img id="qrImage" src="" alt="VietQR Thực Tế" />
+        </div>
+        
+        <div class="qr-amount-box">
+          <span>Số tiền cần thanh toán</span>
+          <strong id="qrAmountDisplay">0đ</strong>
+        </div>
+        
+        <p class="qr-timer">⏱ Mã QR hết hạn sau <b id="qrCountdown">15:00</b></p>
+        
+        <button class="qr-confirm-btn" onclick="confirmQRPayment()">
+          ✓ Đã Nhận Tiền & Xuất Vé
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="ticketSuccessModal" class="ticket-success-overlay">
+    <div class="ticket-success-box">
+      <div class="ticket-header">
+        <span class="ticket-icon">🎟️</span> Thông tin vé
+      </div>
+      <h2 id="successMovieName">Tên Phim</h2>
+      <div class="ticket-meta">
+        <span>📅 <span id="successDate">2026-07-10</span></span>
+        <span>⏱ <span id="successTime">19:45</span></span>
+        <span>💺 <span id="successSeatCount">0</span> ghế</span>
+      </div>
+
+      <div class="ticket-section">
+        <span class="section-title">GHẾ ĐÃ CHỌN</span>
+        <div id="successSeats" class="seat-badge-container">
+          </div>
+      </div>
+
+      <div class="ticket-section">
+        <span class="section-title">BẮP NƯỚC</span>
+        <ul id="successFoodList" class="food-list">
+          </ul>
+      </div>
+
+      <div class="qr-ticket-box">
+        <img id="successQrImg" src="" alt="Ticket QR">
+        <div class="qr-text">
+          Xuất trình mã QR này tại quầy soát vé.<br>
+          Mã đơn hàng: <b id="successOrderCode"></b>
+        </div>
+      </div>
+
+      <div class="ticket-footer">
+        <span>ĐÃ THANH TOÁN</span>
+        <strong id="successTotalPaid">0 đ</strong>
+      </div>
+
+      <div class="info-box">
+        <h4 class="info-title">ℹ️ Thông tin quan trọng</h4>
+        <ul>
+          <li>Vui lòng đến rạp trước giờ chiếu ít nhất 15 phút.</li>
+          <li>Mang theo giấy tờ tùy thân (CCCD) nếu phim giới hạn độ tuổi.</li>
+          <li>Không mang đồ ăn, thức uống bên ngoài vào rạp.</li>
+          <li>Vé không hoàn/đổi trong vòng 2 giờ trước suất chiếu.</li>
+        </ul>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn-print" onclick="window.print()">⬇ Tải / In vé</button>
+        <button class="btn-home" onclick="closeTicketSuccessModal()">Về trang chủ</button>
+      </div>
+    </div>
+  </div>
+  <div id="replyModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <button class="close-modal" onclick="closeModal()">✕</button>
+        <h3>Phản hồi khách hàng</h3>
+        <p id="replyTargetInfo" style="color:#9b9ba5; font-size: 13px;"></p>
+        <textarea id="modalReplyText" placeholder="Nhập nội dung phản hồi..."></textarea>
+        <input type="hidden" id="modalFeedbackId">
+        <button class="reply-btn" onclick="submitModalReply()">Gửi phản hồi</button>
+    </div>
+</div>
+</body>
+</html>

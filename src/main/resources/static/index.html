@@ -514,6 +514,15 @@
                   <span class="arrow-btn-icon"></span>
                   TRUY CẬP DASHBOARD
                 </button>
+                <button
+                  class="arrow-btn arrow-btn-dashboard"
+                  id="pro-subtab-btn-pos"
+                  onclick="openPosConfirm()"
+                  style="display: none"
+                >
+                  <span class="arrow-btn-icon"></span>
+                  MÁY POS
+                </button>
               </div>
             </div>
 
@@ -1101,7 +1110,10 @@
             </div>
             <div class="las-form-group">
               <label>Email<span>*</span></label>
-              <input type="email" id="reg-email" class="las-input" placeholder="Email" />
+              <input type="email" id="reg-email" class="las-input" required
+  pattern="[a-zA-Z0-9._%+\-]+@gmail\.com"
+  title="Email phải có dạng example@gmail.com"
+  placeholder="example@gmail.com" />
             </div>
             <div class="las-form-group">
               <label>Mật khẩu<span>*</span></label>
@@ -1131,7 +1143,8 @@
               </div>
             </div>
             <div class="las-policy-checkboxes">
-              <label class="las-check-item"><input type="checkbox" class="reg-policy" /> <span>Tôi đồng ý với <b>Điều Khoản Dịch Vụ</b> và <b>Chính Sách Bảo Mật</b> của LAS Cinemas.</span></label>
+              <label class="las-check-item"><input type="checkbox"  id="reg-agreement"
+  required class="reg-policy" /> <span>Tôi đồng ý với <b>Điều Khoản Dịch Vụ</b> và <b>Chính Sách Bảo Mật</b> của LAS Cinemas.</span></label>
             </div>
             <button class="las-auth-submit-btn" style="margin-top: 18px" onclick="submitCgvRegister(event)">Đăng ký</button>
           </div>
@@ -1185,6 +1198,12 @@
         <button class="btn-cgv-submit" onclick="submitOtpVerification()">
           XÁC NHẬN KÍCH HOẠT HỒ SƠ
         </button>
+        <button   class="btn-cgv-resend-otp"
+    type="button"
+    onclick="resendRegisterOtp()"
+>
+    Gửi lại mã OTP
+</button>
       </div>
     </div>
 
@@ -1225,7 +1244,14 @@
             <label>Nhập Email hoặc Số điện thoại đăng ký <span style="color:red">*</span></label>
             <input type="text" id="forgot-identifier" class="cgv-input-text" placeholder="Email / Số điện thoại..." />
         </div>
-        <button class="btn-cgv-submit" onclick="requestForgotOtp()" style="margin-top: 15px;">GỬI MÃ XÁC THỰC OTP</button>
+        <button
+  type="button"
+  id="btn-forgot-send-otp"
+  class="btn-cgv-submit"
+  onclick="requestForgotOtp()"
+>
+  Gửi mã xác thực OTP
+</button>
     </div>
 
     <div id="forgot-step-2" style="display: none;">
@@ -1238,7 +1264,22 @@
             <label>Mật khẩu mới <span style="color:red">*</span></label>
             <input type="password" id="forgot-new-password" class="cgv-input-text" placeholder="Nhập mật khẩu mới..." />
         </div>
-        <button class="btn-cgv-submit" onclick="submitNewPassword()" style="margin-top: 15px; background: #10b981;">ĐỔI MẬT KHẨU</button>
+        <button
+  type="button"
+  id="btn-forgot-reset-password"
+  class="btn-cgv-submit"
+  onclick="submitNewPassword()"
+>
+  Xác nhận đổi mật khẩu
+</button>
+        <button
+  type="button"
+  id="btn-resend-forgot-otp"
+  class="btn-cgv-resend-otp"
+  onclick="resendForgotPasswordOtp()"
+>
+  Gửi lại mã OTP
+</button>
     </div>
 
   </div>
@@ -1456,6 +1497,21 @@
       </div>
     </div>
 
+    <!-- POPUP XÁC NHẬN CHUYỂN MÁY POS (chỉ Staff) -->
+    <div class="cgv-modal-overlay" id="pos-confirm-modal">
+      <div class="dash-confirm-box">
+        <h3 class="dash-confirm-title">Truy cập Máy POS</h3>
+        <p class="dash-confirm-text">
+          Bạn sắp rời giao diện khách hàng để chuyển sang <b>Máy POS bán vé tại quầy</b>.
+          Bạn có chắc chắn muốn tiếp tục?
+        </p>
+        <div class="dash-confirm-actions">
+          <button class="dash-btn dash-btn-cancel" onclick="closePosConfirm()">Hủy</button>
+          <button class="dash-btn dash-btn-ok" onclick="confirmGoPos()">Xác nhận</button>
+        </div>
+      </div>
+    </div>
+
     <!-- POPUP THÔNG BÁO CHẶN ĐẶT VÉ (Manager/Admin) - thay cho alert() mặc định -->
     <div class="cgv-modal-overlay" id="booking-restricted-modal">
       <div class="dash-confirm-box">
@@ -1541,10 +1597,27 @@
   <!-- 3. Các file giao diện và tính năng chạy sau cùng -->
   <script src="js/api.js?v=17"></script>   
   <script src="js/ui.js?v=18"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
-  <script src="js/auth.js?v=18"></script>
+  <script src="js/auth.js?v=19"></script>
   <script src="js/admin.js?v=17"></script>
   <script src="js/booking.js?v=18"></script>
   <script src="js/breadcrumb.js?v=17"></script>
-  <script src="js/dashboard-access.js?v=17"></script>
+  <script src="js/dashboard-access.js?v=18"></script>
+
+  <!-- ===== Bổ sung từ nhánh admin: popup thông báo tài khoản (VD: bị đổi quyền) ===== -->
+  <div id="account-notification-popup" class="account-notification-overlay">
+    <div class="account-notification-box">
+      <div class="account-notification-icon">🔔</div>
+
+      <h3 id="account-notification-title">
+        Thông báo tài khoản
+      </h3>
+
+      <p id="account-notification-message"></p>
+
+      <button type="button" onclick="closeAccountNotificationPopup()">
+        Tôi đã biết
+      </button>
+    </div>
+  </div>
   </body>
 </html>

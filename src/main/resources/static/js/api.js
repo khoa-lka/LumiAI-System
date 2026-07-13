@@ -143,6 +143,37 @@ const API = {
       method: "PUT",
     }).then(handleResponse),
 
+  updateUserRole: (userId, newRoleId) =>
+    fetch(`${BASE_URL}/admin/users/update-role/${encodeURIComponent(userId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newRoleId),
+    }).then(handleResponse),
+
+  createBackup: () =>
+    fetch(`${BASE_URL}/admin/backups`, {
+      method: "POST",
+    }).then(handleResponse),
+
+  restoreBackup: (fileName) =>
+    fetch(`${BASE_URL}/admin/backups/${encodeURIComponent(fileName)}/restore`, {
+      method: "POST",
+    }).then(handleResponse),
+
+  // 6b. THÔNG BÁO TÀI KHOẢN (từ nhánh admin)
+  getUnreadNotifications: (accountId) =>
+    fetch(
+      `${BASE_URL}/notifications/unread/${encodeURIComponent(accountId)}`,
+    ).then(handleResponse),
+
+  markNotificationAsRead: (notificationId) =>
+    fetch(
+      `${BASE_URL}/notifications/read/${encodeURIComponent(notificationId)}`,
+      {
+        method: "PUT",
+      },
+    ).then(handleResponse),
+
   getOrderHistory: (accountId) =>
     fetch(`${BASE_URL}/orders/history/${encodeURIComponent(accountId)}`).then(
       handleResponse,

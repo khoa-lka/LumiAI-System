@@ -112,88 +112,126 @@ window.getNameAvatarInitial = getNameAvatarInitial;
 
 window.syncUserLoginSession = function () {
   const cachedUser = localStorage.getItem("las_logged_in_user");
-  if (cachedUser) {
-    isUserLoggedInState = true;
-    const uData = JSON.parse(cachedUser);
 
-    // Điền thông tin giao diện thanh điều hướng (Giữ nguyên logic UI)
+  if (!cachedUser) {
+    isUserLoggedInState = false;
+    window.currentLoggedInId = null;
+    return;
+  }
+
+  try {
+    const uData = JSON.parse(cachedUser);
+    const accountId = uData.accountId || uData.account_id;
+
+    if (!accountId) {
+      localStorage.removeItem("las_logged_in_user");
+      sessionStorage.clear();
+
+      isUserLoggedInState = false;
+      window.currentLoggedInId = null;
+      return;
+    }
+
+    // Khôi phục phiên đăng nhập
+    isUserLoggedInState = true;
+    window.currentLoggedInId = accountId;
+    window.currentUserRoleId = Number(uData.roleId);
+
+    sessionStorage.setItem("isLoggedIn", "true");
+    sessionStorage.setItem("accountId", String(accountId));
+    sessionStorage.setItem("fullName", uData.fullName || "");
+    sessionStorage.setItem("roleId", String(uData.roleId || ""));
+
+    // Thanh tài khoản phía trên
     const authLinkBox = document.getElementById("top-bar-auth-link");
+
     if (authLinkBox) {
       authLinkBox.onclick = () => switchCgvTab("panel-profile");
       authLinkBox.style.cursor = "pointer";
       authLinkBox.innerHTML = `
-          <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
-          <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
+        <span class="sub-nav-icon"></span>
+        XIN CHÀO, ${(uData.fullName || "THÀNH VIÊN").toUpperCase()}!
+        <span
+          onclick="handleCgvLogout(event)"
+          style="
+            color: #5b9dff;
+            margin-left: 8px;
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: bold;
+          "
+        >
+          THOÁT
+        </span>
       `;
     }
-    if (document.getElementById("top-bar-ticket-link")) {
-      document.getElementById("top-bar-ticket-link").innerHTML =
-        `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
+
+    const ticketLink = document.getElementById("top-bar-ticket-link");
+
+    if (ticketLink) {
+      ticketLink.innerHTML = `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
     }
 
-    // 🌟 Đồng bộ lại Avatar / Tên / Vai trò trên tab "Tài Khoản LAS"
-    // (bắt buộc phải làm lại ở đây vì khi RELOAD trang, hàm xử lý đăng nhập
-    //  gốc không chạy lại, nếu không phần này sẽ đứng yên ở giá trị mặc định)
-    if (document.getElementById("profile-summary-avatar")) {
-      document.getElementById("profile-summary-avatar").innerText =
-        getNameAvatarInitial(uData.fullName);
+    // Khôi phục thông tin hồ sơ
+    const avatar = document.getElementById("profile-summary-avatar");
+    const welcomeName = document.getElementById("profile-welcome-name");
+    const nameInput = document.getElementById("profile-field-name");
+    const phoneInput = document.getElementById("profile-field-phone");
+    const emailInput = document.getElementById("profile-field-email");
+    const roleInput = document.getElementById("profile-field-role");
+
+    if (avatar) {
+      avatar.innerText =
+        typeof getNameAvatarInitial === "function"
+          ? getNameAvatarInitial(uData.fullName)
+          : (uData.fullName || "?").charAt(0).toUpperCase();
     }
-    const welcomeNameBoxSync = document.getElementById("profile-welcome-name");
-    if (welcomeNameBoxSync) welcomeNameBoxSync.innerText = uData.fullName;
 
-    let syncRoleString = "Khách hàng thành viên";
-    if (uData.roleId === 1) syncRoleString = "Quản lý (MANAGER)";
-    if (uData.roleId === 2) syncRoleString = "Nhân viên cụm rạp (STAFF)";
-    if (uData.roleId === 4) syncRoleString = "Quản trị viên (ADMIN)";
-
-    if (document.getElementById("profile-field-name"))
-      document.getElementById("profile-field-name").value = uData.fullName;
-    if (document.getElementById("profile-field-phone"))
-      document.getElementById("profile-field-phone").value = uData.phoneNumber;
-    if (document.getElementById("profile-field-email"))
-      document.getElementById("profile-field-email").value = uData.email;
-    if (document.getElementById("profile-field-role"))
-      document.getElementById("profile-field-role").value = syncRoleString;
-
-    // 🌟 Khôi phục hiển thị tab "TRUY CẬP DASHBOARD" theo vai trò đã lưu
-    window.refreshDashboardTab(uData.roleId);
-
-    // 🚀 ĐỒNG BỘ DỮ LIỆU ĐÃ ĐƯỢC CHUẨN HÓA TỪ DATABASE
-    const accountId = uData.account_id || uData.accountId;
-    if (accountId) {
-      fetch(`http://localhost:8080/api/bookings/user/${accountId}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Thất bại khi lấy dữ liệu từ DB");
-          return res.json();
-        })
-        .then((dbBookings) => {
-          // Map chính xác các thuộc tính sạch từ backend trả về
-          window.userPastInvoices = dbBookings.map((b) => ({
-            id: "BK-" + b.bookingId,
-            movie: b.movieTitle, // Lấy từ kết quả JOIN movie
-            date: new Date(b.bookingDate).toLocaleDateString("vi-VN"), // Ngày đặt thực tế trong DB
-            time: b.showStartTime, // Giờ chiếu thực tế lấy từ bảng showtime chứ không lấy biến tạm b.js
-            seats: b.reservedSeats ? b.reservedSeats.split(", ") : [], // Mảng ghế thật trích từ ticket + seat
-            fnb: [], // Có thể bổ sung orderdetail food sau nếu cần
-            total: b.totalMoney,
-            status:
-              b.paymentStatus === "SUCCESS" || b.paymentStatus === "COMPLETELY"
-                ? "Đã thanh toán"
-                : "Chờ xử lý",
-          }));
-
-          // Gọi hàm render hiển thị giao diện lịch sử trong Profile
-          if (typeof renderTransactionHistory === "function") {
-            renderTransactionHistory();
-          }
-        })
-        .catch((err) =>
-          console.error(
-            "🚨 Lỗi nghiêm trọng khi đồng bộ phiên làm việc từ DB:",
-            err,
-          ),
-        );
+    if (welcomeName) {
+      welcomeName.innerText = uData.fullName || "";
     }
+
+    if (nameInput) {
+      nameInput.value = uData.fullName || "";
+    }
+
+    if (phoneInput) {
+      phoneInput.value = uData.phoneNumber || uData.phone || "";
+    }
+
+    if (emailInput) {
+      emailInput.value = uData.email || "";
+    }
+
+    let roleText = "Khách hàng thành viên";
+
+    if (Number(uData.roleId) === 1) {
+      roleText = "Quản lý (MANAGER)";
+    } else if (Number(uData.roleId) === 2) {
+      roleText = "Nhân viên cụm rạp (STAFF)";
+    } else if (Number(uData.roleId) === 4) {
+      roleText = "Quản trị viên (ADMIN)";
+    }
+
+    if (roleInput) {
+      roleInput.value = roleText;
+    }
+
+    if (typeof window.refreshDashboardTab === "function") {
+      window.refreshDashboardTab(uData.roleId);
+    }
+
+    // Không cần fetch bookings ở đây vì renderTransactionHistory()
+    // đã có API.getOrderHistory(accountId).
+  } catch (error) {
+    console.error("Không thể khôi phục phiên đăng nhập:", error);
+
+    localStorage.removeItem("las_logged_in_user");
+    sessionStorage.clear();
+
+    isUserLoggedInState = false;
+    window.currentLoggedInId = null;
+    window.currentUserRoleId = null;
   }
 };
 
@@ -334,6 +372,11 @@ window.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     window.syncUserLoginSession();
 
+    // Lấy thông báo đổi quyền của tài khoản đang đăng nhập (từ nhánh admin)
+    if (typeof window.loadAccountRoleNotifications === "function") {
+      window.loadAccountRoleNotifications();
+    }
+
     // ĐÓN KẾT QUẢ VNPAY-CALLBACK TRẢ VỀ ĐỂ ĐIỀU HƯỚNG BƯỚC 4
   }, 150);
 });
@@ -372,7 +415,7 @@ function openAuthModal() {
   generateNewRegisterCaptcha();
 }
 function closeAuthModal() {
-  document.getElementById("auth-modal").remove("open");
+  document.getElementById("auth-modal")?.classList.remove("open");
 }
 
 function renderFnbMenu() {
@@ -565,288 +608,411 @@ function getPosterByMovieName(name) {
 }
 
 function renderTransactionHistory() {
-  console.log("RENDER HISTORY");
+  console.log("===== RENDER TRANSACTION HISTORY =====");
 
   const historyZone = document.getElementById("cgv-invoice-zone");
-  const accountId = sessionStorage.getItem("accountId");
+
+  if (!historyZone) {
+    console.error("Không tìm thấy #cgv-invoice-zone");
+    return;
+  }
+
+  let accountId = sessionStorage.getItem("accountId");
+
+  if (!accountId) {
+    const cachedUser = localStorage.getItem("las_logged_in_user");
+
+    if (cachedUser) {
+      try {
+        const userData = JSON.parse(cachedUser);
+
+        accountId = userData.accountId || userData.account_id;
+
+        if (accountId) {
+          sessionStorage.setItem("accountId", String(accountId));
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("roleId", String(userData.roleId || ""));
+
+          isUserLoggedInState = true;
+          window.currentLoggedInId = accountId;
+        }
+      } catch (error) {
+        console.error("Dữ liệu đăng nhập trong localStorage bị lỗi:", error);
+      }
+    }
+  }
 
   if (!accountId) {
     historyZone.innerHTML = "Bạn chưa đăng nhập.";
     return;
   }
 
+  historyZone.innerHTML = "<p>Đang tải lịch sử giao dịch...</p>";
+
+  console.log("Account ID lịch sử =", accountId);
+
   API.getOrderHistory(accountId)
     .then((orders) => {
-      console.log(orders[0]);
-      window.orderHistoryCache = orders;
+      console.log("Dữ liệu lịch sử API trả về:", orders);
+
+      window.orderHistoryCache = Array.isArray(orders) ? orders : [];
+
       historyZone.innerHTML = "";
 
-      if (!orders || orders.length === 0) {
+      if (!Array.isArray(orders) || orders.length === 0) {
         historyZone.innerHTML =
           "Bạn chưa thực hiện giao dịch mua vé trực tuyến nào gần đây.";
         return;
       }
 
       orders.forEach((order) => {
-        const movieName =
-          order.showtime?.movie?.title || "Vé xem phim LAS Cinemas";
+        const hasTicket =
+          Boolean(order.showtime) ||
+          (Array.isArray(order.seats) && order.seats.length > 0);
 
-        const poster = getPosterByMovieName(movieName);
+        const movieName = hasTicket
+          ? order.showtime?.movie?.title || "Vé xem phim LAS Cinemas"
+          : "Đơn hàng bắp nước";
 
-        const thumb = poster
-          ? `<div class="history-poster">
-                <img src="${poster}" alt="${movieName}">
-             </div>`
-          : `<div class="history-poster history-poster-fallback">🎬</div>`;
+        const poster =
+          order.showtime?.movie?.mainposter_url ||
+          order.showtime?.movie?.mainposterUrl ||
+          "";
 
-        const status = order.ticketStatus || "Không xác định";
+        const status = hasTicket
+          ? order.ticketStatus || "Không xác định"
+          : order.paymentStatus === "SUCCESS"
+            ? "Đã thanh toán"
+            : order.paymentStatus || "Đang xử lý";
 
-        switch (status) {
-          case "Sắp chiếu":
-            statusClass = "history-badge-upcoming";
-            break;
+        let statusClass = "history-badge-pending";
 
-          case "Đang chiếu":
-            statusClass = "history-badge-showing";
-            break;
-
-          case "Đã sử dụng":
-            statusClass = "history-badge-used";
-            break;
-
-          default:
-            statusClass = "history-badge-pending";
+        if (status === "Sắp chiếu") {
+          statusClass = "history-badge-upcoming";
+        } else if (status === "Đang chiếu") {
+          statusClass = "history-badge-showing";
+        } else if (status === "Đã sử dụng" || status === "Đã thanh toán") {
+          statusClass = "history-badge-used";
         }
 
-        historyZone.innerHTML += `
-          <div class="history-card-item">
+        const seatText = Array.isArray(order.seats)
+          ? order.seats.join(", ")
+          : "";
 
-              ${thumb}
+        const createdDateText = order.createdDate
+          ? new Date(order.createdDate).toLocaleString("vi-VN")
+          : "Không xác định";
+
+        const showtimeText = order.showtime?.startTime
+          ? new Date(order.showtime.startTime).toLocaleString("vi-VN")
+          : "";
+
+        historyZone.insertAdjacentHTML(
+          "beforeend",
+          `
+            <div class="history-card-item">
+
+              ${
+                poster
+                  ? `
+                    <div class="history-poster">
+                      <img
+                        src="${poster}"
+                        alt="${movieName}"
+                      >
+                    </div>
+                  `
+                  : `
+                    <div class="history-poster history-poster-fallback">
+                      🎬
+                    </div>
+                  `
+              }
 
               <div class="history-card-main">
 
-                  <div class="history-card-top-row">
+                <div class="history-card-top-row">
+                  <h4 class="history-card-title">
+                    ${movieName}
+                  </h4>
 
-                      <h4 class="history-card-title">
-                          ${movieName}
-                      </h4>
+                  <span class="history-badge ${statusClass}">
+                    ${status}
+                  </span>
+                </div>
 
-                      <span class="history-badge ${statusClass}">
-                          ${status}
-                      </span>
+                <div class="history-card-meta">
+                  <span>
+                    🎫 ${order.orderCode || "Không có mã đơn"}
+                  </span>
 
-                  </div>
+                  <span>
+                    📅 ${createdDateText}
+                  </span>
 
-                  <div class="history-card-meta">
+                  ${
+                    showtimeText
+                      ? `
+                        <span>
+                          🕐 ${showtimeText}
+                        </span>
+                      `
+                      : ""
+                  }
 
-                      <span>🎫 ${order.orderCode}</span>
+                  ${
+                    seatText
+                      ? `
+                        <span>
+                          💺 ${seatText}
+                        </span>
+                      `
+                      : ""
+                  }
+                </div>
 
-                      <span>
-                          📅
-                          ${new Date(order.createdDate).toLocaleString("vi-VN")}
-                      </span>
+                <div class="history-card-actions">
+                  <button
+                    type="button"
+                    class="history-card-btn"
+                    onclick="viewHistoryDetail(${order.orderId})"
+                  >
+                    Xem chi tiết
+                  </button>
 
-                      ${
-                        order.showtime?.startTime
-                          ? `<span>🕐 ${order.showtime.startTime}</span>`
-                          : ""
-                      }
-
-                      ${
-                        order.seats && order.seats.length
-                          ? `<span>💺 ${order.seats
-                              .map(
-                                (s) =>
-                                  s.seatLabel || s.seatCode || s.seatNumber,
-                              )
-                              .join(", ")}</span>`
-                          : ""
-                      }
-
-                  </div>
-
-                  <div class="history-card-actions">
-
-                      <button
-                          class="history-card-btn"
-                          onclick="viewHistoryDetail(${order.orderId})">
-
-                          Xem chi tiết
-
-                      </button>
-
-                      <button
-                          class="history-card-btn ghost"
-                          onclick="openFeedbackFromHistory(${order.orderId})">
-
-                          💬 Gửi Feedback
-
-                      </button>
-
-                  </div>
+                  <button
+                    type="button"
+                    class="history-card-btn ghost"
+                    onclick="openFeedbackFromHistory(${order.orderId})"
+                  >
+                    💬 Gửi Feedback
+                  </button>
+                </div>
 
               </div>
 
               <div class="history-card-side">
-
-                  <span class="history-price-badge">
-
-                      ${Number(order.finalAmount).toLocaleString("vi-VN")} đ
-
-                  </span>
-
+                <span class="history-price-badge">
+                  ${Number(order.finalAmount || 0).toLocaleString("vi-VN")} đ
+                </span>
               </div>
 
-          </div>
-        `;
+            </div>
+          `,
+        );
       });
     })
-    .catch((err) => {
-      console.error(err);
+    .catch((error) => {
+      console.error("Lỗi tải lịch sử giao dịch:", error);
+
       historyZone.innerHTML = "Không tải được lịch sử giao dịch.";
     });
 }
 
-function viewHistoryDetail(invoiceId) {
-  console.log(invoiceId);
-  console.log(window.orderHistoryCache);
+window.renderTransactionHistory = renderTransactionHistory;
 
-  const inv = window.orderHistoryCache.find((o) => o.orderId == invoiceId);
-  console.log(inv);
-  console.log(inv.seats);
-  console.log(inv.fnb);
+window.renderTransactionHistory = renderTransactionHistory;
+
+function viewHistoryDetail(invoiceId) {
+  console.log("Invoice ID:", invoiceId);
+  console.log("Order cache:", window.orderHistoryCache);
+
+  const inv = window.orderHistoryCache.find(
+    (order) => order.orderId == invoiceId,
+  );
 
   if (!inv) {
     alert("Không tìm thấy hóa đơn!");
     return;
   }
 
-  const movieName = inv.showtime?.movie?.title || "Không xác định";
-  let statusClass = "";
-  switch (inv.ticketStatus) {
-    case "Sắp chiếu":
-      statusClass = "history-badge-upcoming";
-      break;
+  console.log("Invoice:", inv);
+  console.log("Seats:", inv.seats);
+  console.log("F&B:", inv.fnb);
 
-    case "Đang chiếu":
-      statusClass = "history-badge-showing";
-      break;
+  const hasTicket =
+    Boolean(inv.showtime) || (Array.isArray(inv.seats) && inv.seats.length > 0);
 
-    case "Đã sử dụng":
-      statusClass = "history-badge-used";
-      break;
+  const movieName = hasTicket
+    ? inv.showtime?.movie?.title || "Vé xem phim LAS Cinemas"
+    : "Đơn hàng bắp nước";
 
-    default:
-      statusClass = "history-badge-pending";
+  const ticketStatus = inv.ticketStatus || "Không xác định";
+
+  let statusClass = "history-badge-pending";
+
+  if (ticketStatus === "Sắp chiếu") {
+    statusClass = "history-badge-upcoming";
+  } else if (ticketStatus === "Đang chiếu") {
+    statusClass = "history-badge-showing";
+  } else if (ticketStatus === "Đã sử dụng" || ticketStatus === "SOLD") {
+    statusClass = "history-badge-used";
   }
 
   const isPaid =
     inv.paymentStatus === "PAID" || inv.paymentStatus === "SUCCESS";
+
   const showtimeText = inv.showtime?.startTime
     ? new Date(inv.showtime.startTime).toLocaleString("vi-VN")
-    : "";
+    : hasTicket
+      ? "Chưa có thông tin suất chiếu"
+      : "Không áp dụng";
 
-  const hasSeats = inv.seats && inv.seats.length > 0;
-  const hasFnb = inv.fnb && inv.fnb.length > 0;
+  const seatBadges = hasTicket
+    ? (inv.seats || [])
+        .map((seat) => {
+          const seatLabel =
+            typeof seat === "string"
+              ? seat
+              : seat?.seatLabel || seat?.seatCode || seat?.seatNumber || "";
 
-  // Danh sách ghế
-  const seatBadges =
-    (inv.seats || [])
-      .map(
-        (seat) => `
-        <span class="bc-seat-badge">
-            ${seat}
-        </span>
-    `,
-      )
-      .join("") || "—";
+          if (!seatLabel) {
+            return "";
+          }
 
-  // Danh sách F&B
+          return `
+            <span class="bc-seat-badge">
+              ${seatLabel}
+            </span>
+          `;
+        })
+        .filter(Boolean)
+        .join("") || "Chưa có thông tin ghế"
+    : "Không áp dụng cho đơn F&B";
+
   const fnbHtml =
-    (inv.fnb || []).map((i) => `<li>${i.name} × ${i.qty}</li>`).join("") ||
-    "<li>Không có</li>";
+    Array.isArray(inv.fnb) && inv.fnb.length > 0
+      ? inv.fnb
+          .map((item) => {
+            const itemName =
+              item.name || item.foodName || item.foodItemName || "Sản phẩm F&B";
 
-  document.getElementById("history-detail-content").innerHTML = `
-        <div class="hist-inv">
+            const quantity = item.qty || item.quantity || 1;
 
-            <div class="hist-inv-head">
+            return `
+              <li>
+                ${itemName} × ${quantity}
+              </li>
+            `;
+          })
+          .join("")
+      : "<li>Không có</li>";
 
-                <div class="hist-inv-movie">
-                    ${movieName}
-                </div>
+  const detailContent = document.getElementById("history-detail-content");
 
-                <span class="history-badge ${statusClass}">
-                    ${isPaid ? "Đã thanh toán" : "Chưa thanh toán"}
-                </span>
+  if (!detailContent) {
+    console.error("Không tìm thấy #history-detail-content");
+    return;
+  }
 
-            </div>
+  detailContent.innerHTML = `
+    <div class="hist-inv">
 
-            <div class="hist-inv-rows">
+      <div class="hist-inv-head">
 
-                <div class="hist-inv-row">
-                    <span>Mã vé</span>
-                    <span class="hist-inv-code">
-                        ${inv.orderCode}
-                    </span>
-                </div>
-
-                <div class="hist-inv-row">
-                  <span>Trạng thái vé</span>
-                  <span class="${statusClass}">
-                        ${inv.ticketStatus}
-                  </span>
-                </div>
-
-                <div class="hist-inv-row">
-                    <span>Suất chiếu</span>
-                      <span>${showtimeText}</span>
-                </div>
-
-            </div>
-
-            <div class="hist-inv-label">
-                Ghế đã đặt
-            </div>
-
-            <div class="hist-inv-seats">
-                ${seatBadges}
-            </div>
-
-            <div class="hist-inv-label">
-                Bắp nước
-            </div>
-
-            <ul class="hist-inv-fnb">
-                ${fnbHtml}
-            </ul>
-
-            <div class="hist-inv-total">
-
-                <span>Thành tiền</span>
-
-                <span class="hist-inv-amt">
-                    ${Number(inv.finalAmount).toLocaleString("vi-VN")} đ
-                </span>
-
-            </div>
-
-            <div class="hist-inv-actions">
-
-                <button
-                    class="hist-feedback-btn"
-                    onclick="openFeedbackFromHistory(${inv.orderId})">
-
-                    💬 Gửi Feedback
-
-                </button>
-
-            </div>
-
+        <div class="hist-inv-movie">
+          ${movieName}
         </div>
-    `;
 
-  document.getElementById("history-detail-modal").classList.add("open");
+        <span class="history-badge ${statusClass}">
+          ${isPaid ? "Đã thanh toán" : "Chưa thanh toán"}
+        </span>
+
+      </div>
+
+      <div class="hist-inv-rows">
+
+        <div class="hist-inv-row">
+          <span>Mã đơn</span>
+
+          <span class="hist-inv-code">
+            ${inv.orderCode || "Không xác định"}
+          </span>
+        </div>
+
+        ${
+          hasTicket
+            ? `
+              <div class="hist-inv-row">
+                <span>Trạng thái vé</span>
+
+                <span class="${statusClass}">
+                  ${ticketStatus}
+                </span>
+              </div>
+            `
+            : `
+              <div class="hist-inv-row">
+                <span>Loại đơn hàng</span>
+                <span>Đơn F&B</span>
+              </div>
+            `
+        }
+
+        <div class="hist-inv-row">
+          <span>Suất chiếu</span>
+          <span>${showtimeText}</span>
+        </div>
+
+      </div>
+
+      <div class="hist-inv-label">
+        Ghế đã đặt
+      </div>
+
+      <div class="hist-inv-seats">
+        ${seatBadges}
+      </div>
+
+      <div class="hist-inv-label">
+        Bắp nước
+      </div>
+
+      <ul class="hist-inv-fnb">
+        ${fnbHtml}
+      </ul>
+
+      <div class="hist-inv-total">
+
+        <span>Thành tiền</span>
+
+        <span class="hist-inv-amt">
+          ${Number(inv.finalAmount || 0).toLocaleString("vi-VN")} đ
+        </span>
+
+      </div>
+
+      <div class="hist-inv-actions">
+
+        ${
+          hasTicket
+            ? `
+              <button
+                class="hist-feedback-btn"
+                onclick="openFeedbackFromHistory(${inv.orderId})"
+              >
+                💬 Gửi Feedback
+              </button>
+            `
+            : ""
+        }
+
+      </div>
+
+    </div>
+  `;
+
+  const modal = document.getElementById("history-detail-modal");
+
+  if (!modal) {
+    console.error("Không tìm thấy #history-detail-modal");
+    return;
+  }
+
+  modal.classList.add("open");
 }
+
+window.viewHistoryDetail = viewHistoryDetail;
 
 function closeHistoryDetailModal() {
   document.getElementById("history-detail-modal").classList.remove("open");
@@ -1111,154 +1277,6 @@ function handleProfileTabAccess() {
   } else {
     switchCgvTab("panel-profile");
   }
-}
-
-function submitCgvLogin() {
-  const user = document.getElementById("auth-username").value.trim();
-  const pass = document.getElementById("auth-password").value;
-  const captchaInput = document.getElementById("login-captcha").value.trim();
-  const currentLoginCaptcha =
-    document.getElementById("login-captcha-text").innerText;
-  if (!user || !pass)
-    return alert("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
-  if (captchaInput.toUpperCase() !== currentLoginCaptcha.toUpperCase()) {
-    return alert("Mã bảo vệ Captcha không chính xác!");
-  }
-
-  fetch("http://localhost:8080/api/login/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ identifier: user, password: pass }),
-  })
-    .then((res) => {
-      if (!res.ok) {
-        return res.json().then((err) => {
-          throw new Error(err.message || "Thất bại!");
-        });
-      }
-      return res.json();
-    })
-    .then((resData) => {
-      if (resData.status === "success") {
-        isUserLoggedInState = true;
-        let uData = resData.data;
-        localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
-        sessionStorage.setItem("roleId", uData.roleId);
-
-        // 🌟 ĐIỀU HƯỚNG: Tất cả vai trò đều vào HOME sau đăng nhập.
-        // Manager(1) & Admin(4) truy cập Dashboard chủ động qua tab "TRUY CẬP DASHBOARD".
-        alert(`Chào mừng ${uData.fullName} đăng nhập thành công!`);
-        closeAuthModal();
-
-        const authLinkBox = document.getElementById("top-bar-auth-link");
-        authLinkBox.onclick = () => switchCgvTab("panel-profile");
-        authLinkBox.style.cursor = "pointer";
-        authLinkBox.innerHTML = `
-            <span class="sub-nav-icon"></span> XIN CHÀO, ${uData.fullName.toUpperCase()}!
-              <span onclick="handleCgvLogout(event)" style="color: #5b9dff; margin-left: 8px; cursor: pointer; text-decoration: underline; font-weight: bold;">THOÁT</span>
-          `;
-        document.getElementById("top-bar-ticket-link").innerHTML =
-          `<span class="sub-nav-icon"></span> LỊCH SỬ GIAO DỊCH`;
-
-        let roleString = "Khách hàng thành viên";
-        if (uData.roleId === 1) roleString = "Quản lý (MANAGER)";
-        if (uData.roleId === 2) roleString = "Nhân viên cụm rạp (STAFF)";
-        if (uData.roleId === 4) roleString = "Quản trị viên (ADMIN)";
-
-        if (document.getElementById("profile-summary-avatar")) {
-          document.getElementById("profile-summary-avatar").innerText =
-            getNameAvatarInitial(uData.fullName);
-        }
-
-        const welcomeNameBox = document.getElementById("profile-welcome-name");
-        if (welcomeNameBox) welcomeNameBox.innerText = uData.fullName;
-
-        const starRoleBox = document.getElementById("profile-star-role");
-        if (starRoleBox)
-          starRoleBox.innerText =
-            uData.roleId === 1 ? "MANAGER / ADMIN" : "MEMBER";
-
-        document.getElementById("profile-field-name").value = uData.fullName;
-        document.getElementById("profile-field-phone").value =
-          uData.phoneNumber;
-        document.getElementById("profile-field-email").value = uData.email;
-        if (document.getElementById("profile-field-role")) {
-          document.getElementById("profile-field-role").value = roleString;
-        }
-
-        if (window.refreshDashboardTab) window.refreshDashboardTab();
-        switchCgvTab("panel-profile");
-        // 🌟 GHIM LẠI LÊN Ổ CỨNG TRÌNH DUYỆT:
-        localStorage.setItem("las_logged_in_user", JSON.stringify(uData));
-        localStorage.setItem(
-          "las_user_invoices",
-          JSON.stringify(userPastInvoices),
-        );
-      }
-    })
-    .catch((err) => alert("🚨 Lỗi đăng nhập: " + err.message));
-}
-
-function submitCgvRegister() {
-  const name = document.getElementById("reg-name").value.trim();
-  const phone = document.getElementById("reg-phone").value.trim();
-  const email = document.getElementById("reg-email").value.trim();
-  const password = document.getElementById("reg-password").value;
-  const captchaInput = document.getElementById("reg-captcha").value.trim();
-  const currentRegCaptcha =
-    document.getElementById("reg-captcha-text").innerText;
-  const birthDay = document.getElementById("reg-birth-day").value;
-  const birthMonth = document.getElementById("reg-birth-month").value;
-  const birthYear = document.getElementById("reg-birth-year").value;
-
-  if (
-    !name ||
-    !phone ||
-    !email ||
-    !password ||
-    !birthDay ||
-    !birthMonth ||
-    !birthYear
-  ) {
-    return alert("Vui lòng điền đầy đủ thông tin và chọn ngày sinh!");
-  }
-  if (captchaInput.toUpperCase() !== currentRegCaptcha.toUpperCase()) {
-    return alert("Mã xác thực Captcha đăng ký không khớp!");
-  }
-
-  fetch("http://localhost:8080/api/register/submit", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: name,
-      phone: phone,
-      email: email,
-      password: password,
-      birthDay: birthDay,
-      birthMonth: birthMonth,
-      birthYear: birthYear,
-    }),
-  })
-    .then((res) => {
-      if (!res.ok) {
-        return res.json().then((err) => {
-          throw new Error(err.message || "Đăng ký thất bại!");
-        });
-      }
-      return res.json();
-    })
-    .then((resData) => {
-      if (resData.status === "success") {
-        alert(
-          resData.message +
-            "\nHãy kiểm tra màn hình Console của Spring Boot để lấy mã OTP nhé!",
-        );
-        temporaryRegisterEmail = resData.email;
-        closeAuthModal();
-        openOtpModal();
-      }
-    })
-    .catch((err) => alert("🚨 Lỗi đăng ký: " + err.message));
 }
 
 function switchMovieFilterTab(filter) {
@@ -2208,7 +2226,6 @@ window.resetBookingWizard = function () {
       step.classList.remove("active"); // Ẩn hoàn toàn các bước Combo, Thanh toán và Hóa Đơn Thành Công
     }
   });
-
   // 3. Đưa biến kiểm soát bước hiện tại của rạp phim về lại Step 1
   window.currentBookingStep = 1;
 
@@ -2606,63 +2623,279 @@ function closeForgotModal() {
 
 // Gọi API gửi OTP
 function requestForgotOtp() {
-  const identifier = document.getElementById("forgot-identifier").value.trim();
-  if (!identifier) return alert("Vui lòng nhập Email hoặc Số điện thoại!");
+  const identifierInput = document.getElementById("forgot-identifier");
+  const identifier = identifierInput?.value.trim() || "";
+
+  if (!identifier) {
+    return window.showCgvToast(
+      "Vui lòng nhập Email hoặc số điện thoại!",
+      "error",
+    );
+  }
+
+  const submitButton = document.getElementById("btn-forgot-send-otp");
+
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.innerText = "ĐANG GỬI MÃ...";
+  }
 
   fetch("http://localhost:8080/api/forgot-password/request", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ identifier: identifier }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      identifier: identifier,
+    }),
   })
-    .then((res) =>
-      res.json().then((data) => ({ status: res.status, body: data })),
-    )
-    .then((res) => {
-      if (res.status === 200) {
-        alert(res.body.message + "\n(Hãy kiểm tra Console của Spring Boot)");
-        currentForgotIdentifier = identifier;
-        // Chuyển sang Bước 2
-        document.getElementById("forgot-step-1").style.display = "none";
-        document.getElementById("forgot-step-2").style.display = "block";
-      } else {
-        alert("Lỗi: " + res.body.message);
+    .then(async (response) => {
+      let data;
+
+      try {
+        data = await response.json();
+      } catch (error) {
+        data = {
+          message: "Dữ liệu phản hồi từ máy chủ không hợp lệ!",
+        };
       }
+
+      if (!response.ok) {
+        throw new Error(data.message || "Không thể gửi mã xác thực OTP!");
+      }
+
+      return data;
     })
-    .catch((err) => alert("Lỗi kết nối Server!"));
+    .then((data) => {
+      currentForgotIdentifier = identifier;
+
+      window.showCgvToast(
+        data.message || "Mã xác thực OTP đã được gửi. Vui lòng kiểm tra Gmail!",
+        "success",
+      );
+
+      const step1 = document.getElementById("forgot-step-1");
+      const step2 = document.getElementById("forgot-step-2");
+
+      if (step1) step1.style.display = "none";
+      if (step2) step2.style.display = "block";
+
+      const otpInput = document.getElementById("forgot-otp-input");
+      if (otpInput) {
+        otpInput.value = "";
+        otpInput.focus();
+      }
+
+      startForgotOtpResendCountdown();
+    })
+    .catch((error) => {
+      window.showCgvToast(
+        error.message || "Không thể kết nối đến máy chủ!",
+        "error",
+      );
+    })
+    .finally(() => {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerText = "GỬI MÃ XÁC THỰC OTP";
+      }
+    });
 }
+
+window.requestForgotOtp = requestForgotOtp;
+
+function resendForgotPasswordOtp() {
+  if (!currentForgotIdentifier) {
+    return window.showCgvToast(
+      "Không tìm thấy Email hoặc số điện thoại cần gửi lại OTP!",
+      "error",
+    );
+  }
+
+  const resendButton = document.getElementById("btn-resend-forgot-otp");
+
+  if (resendButton) {
+    resendButton.disabled = true;
+    resendButton.innerText = "ĐANG GỬI...";
+  }
+
+  fetch("http://localhost:8080/api/forgot-password/request", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      identifier: currentForgotIdentifier,
+    }),
+  })
+    .then(async (response) => {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Không thể gửi lại OTP!");
+      }
+
+      return data;
+    })
+    .then((data) => {
+      document.getElementById("forgot-otp-input").value = "";
+
+      window.showCgvToast(data.message || "Mã OTP mới đã được gửi!", "success");
+
+      startForgotOtpResendCountdown();
+    })
+    .catch((error) => {
+      window.showCgvToast("Gửi lại OTP thất bại: " + error.message, "error");
+
+      if (resendButton) {
+        resendButton.disabled = false;
+        resendButton.innerText = "GỬI LẠI MÃ OTP";
+      }
+    });
+}
+
+let forgotOtpCountdownTimer = null;
+
+function startForgotOtpResendCountdown(seconds = 60) {
+  const resendButton = document.getElementById("btn-resend-forgot-otp");
+
+  if (!resendButton) return;
+
+  clearInterval(forgotOtpCountdownTimer);
+
+  let remainingSeconds = seconds;
+
+  resendButton.disabled = true;
+  resendButton.innerText = `GỬI LẠI SAU ${remainingSeconds} GIÂY`;
+
+  forgotOtpCountdownTimer = setInterval(() => {
+    remainingSeconds--;
+
+    if (remainingSeconds <= 0) {
+      clearInterval(forgotOtpCountdownTimer);
+
+      resendButton.disabled = false;
+      resendButton.innerText = "GỬI LẠI MÃ OTP";
+      return;
+    }
+
+    resendButton.innerText = `GỬI LẠI SAU ${remainingSeconds} GIÂY`;
+  }, 1000);
+}
+
+window.resendForgotPasswordOtp = resendForgotPasswordOtp;
 
 // Gọi API Đổi mật khẩu
 function submitNewPassword() {
-  const otp = document.getElementById("forgot-otp-input").value.trim();
-  const newPassword = document.getElementById("forgot-new-password").value;
+  const otpInput = document.getElementById("forgot-otp-input");
+  const newPasswordInput = document.getElementById("forgot-new-password");
 
-  if (!otp || !newPassword)
-    return alert("Vui lòng điền đầy đủ OTP và Mật khẩu mới!");
+  const otp = otpInput?.value.trim() || "";
+  const newPassword = newPasswordInput?.value || "";
+
+  if (!currentForgotIdentifier) {
+    return window.showCgvToast(
+      "Không tìm thấy tài khoản đang thực hiện quên mật khẩu!",
+      "error",
+    );
+  }
+
+  if (!otp) {
+    otpInput?.focus();
+
+    return window.showCgvToast("Vui lòng nhập mã xác thực OTP!", "error");
+  }
+
+  if (!/^\d{6}$/.test(otp)) {
+    otpInput?.focus();
+
+    return window.showCgvToast("Mã OTP phải gồm đúng 6 chữ số!", "error");
+  }
+
+  if (!newPassword) {
+    newPasswordInput?.focus();
+
+    return window.showCgvToast("Vui lòng nhập mật khẩu mới!", "error");
+  }
+
+  if (newPassword.length < 6 || newPassword.length > 25) {
+    newPasswordInput?.focus();
+
+    return window.showCgvToast(
+      "Mật khẩu mới phải có từ 6 đến 25 ký tự!",
+      "error",
+    );
+  }
+
+  const submitButton = document.getElementById("btn-forgot-reset-password");
+
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.innerText = "ĐANG ĐỔI MẬT KHẨU...";
+  }
 
   fetch("http://localhost:8080/api/forgot-password/reset", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       identifier: currentForgotIdentifier,
       otp: otp,
       newPassword: newPassword,
     }),
   })
-    .then((res) =>
-      res.json().then((data) => ({ status: res.status, body: data })),
-    )
-    .then((res) => {
-      if (res.status === 200) {
-        alert(res.body.message);
-        closeForgotModal();
-        openAuthModal(); // Mở lại bảng đăng nhập cho khách login
-        toggleAuthTab("login");
-      } else {
-        alert("Lỗi: " + res.body.message);
+    .then(async (response) => {
+      let data;
+
+      try {
+        data = await response.json();
+      } catch (error) {
+        data = {
+          message: "Dữ liệu phản hồi từ máy chủ không hợp lệ!",
+        };
       }
+
+      if (!response.ok) {
+        throw new Error(data.message || "Không thể đổi mật khẩu!");
+      }
+
+      return data;
     })
-    .catch((err) => alert("Lỗi kết nối Server!"));
+    .then((data) => {
+      window.showCgvToast(
+        data.message || "Đổi mật khẩu thành công! Bạn có thể đăng nhập lại.",
+        "success",
+      );
+
+      clearInterval(forgotOtpCountdownTimer);
+      currentForgotIdentifier = "";
+
+      if (otpInput) otpInput.value = "";
+      if (newPasswordInput) newPasswordInput.value = "";
+
+      closeForgotModal();
+
+      setTimeout(() => {
+        openAuthModal();
+        toggleAuthTab("login");
+      }, 700);
+    })
+    .catch((error) => {
+      window.showCgvToast(
+        error.message || "Không thể kết nối đến máy chủ!",
+        "error",
+      );
+    })
+    .finally(() => {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerText = "XÁC NHẬN ĐỔI MẬT KHẨU";
+      }
+    });
 }
+
+window.submitNewPassword = submitNewPassword;
 
 window.switchCgvTab = switchCgvTab;
 window.handleBreadcrumbBack = handleBreadcrumbBack;
@@ -2675,8 +2908,6 @@ window.switchMovieFilterTab = switchMovieFilterTab;
 window.handleAuthModalAccess = openAuthModal;
 window.closeAuthModal = closeAuthModal;
 window.toggleAuthTab = toggleAuthTab;
-window.submitCgvLogin = submitCgvLogin;
-window.submitCgvRegister = submitCgvRegister;
 window.toggleRegPasswordState = toggleRegPasswordState;
 window.generateNewLoginCaptcha = generateNewLoginCaptcha;
 window.generateNewRegisterCaptcha = generateNewRegisterCaptcha;
@@ -2700,8 +2931,25 @@ window.cancelCurrentTransaction = cancelCurrentTransaction;
 window.viewHistoryDetail = viewHistoryDetail;
 window.closeHistoryDetailModal = closeHistoryDetailModal;
 window.updateComboQty = updateComboQty;
+function moveBannerRight() {
+  if (totalBanners === 0) return;
+
+  currentBannerIndex = (currentBannerIndex + 1) % totalBanners;
+
+  updateBannerMovement();
+}
+
+function moveBannerLeft() {
+  if (totalBanners === 0) return;
+
+  currentBannerIndex = (currentBannerIndex - 1 + totalBanners) % totalBanners;
+
+  updateBannerMovement();
+}
+
 window.moveBannerLeft = moveBannerLeft;
 window.moveBannerRight = moveBannerRight;
+window.updateBannerMovement = updateBannerMovement;
 
 function goHomeFromBc() {
   switchCgvTab("panel-movies");
@@ -2995,3 +3243,103 @@ window.sendChatMessageToServer = sendChatMessageToServer;
 window.toggleLasChatbox = toggleLasChatbox;
 window.checkChatSendMessageKey = checkChatSendMessageKey;
 window.formatGeminiResponseToHtml = formatGeminiResponseToHtml;
+let currentAccountNotificationId = null;
+let accountNotificationQueue = [];
+
+function loadAccountRoleNotifications(loginAccountId = null) {
+  let accountId = loginAccountId;
+
+  if (!accountId) {
+    const rawUser = localStorage.getItem("las_logged_in_user");
+
+    if (!rawUser || typeof API === "undefined") {
+      return;
+    }
+
+    try {
+      const user = JSON.parse(rawUser);
+
+      accountId = user.accountId || user.account_id;
+    } catch (error) {
+      console.error("Không đọc được tài khoản đăng nhập:", error);
+      return;
+    }
+  }
+
+  if (!accountId || typeof API === "undefined") {
+    return;
+  }
+
+  API.getUnreadNotifications(accountId)
+    .then((notifications) => {
+      if (!Array.isArray(notifications) || notifications.length === 0) {
+        return;
+      }
+
+      accountNotificationQueue = [...notifications].reverse();
+
+      showNextAccountNotification();
+    })
+    .catch((error) => {
+      console.error("Lỗi tải thông báo tài khoản:", error);
+    });
+}
+
+function showNextAccountNotification() {
+  if (!accountNotificationQueue || accountNotificationQueue.length === 0) {
+    return;
+  }
+
+  const notification = accountNotificationQueue.shift();
+
+  currentAccountNotificationId =
+    notification.notificationId || notification.notification_id;
+
+  const titleBox = document.getElementById("account-notification-title");
+
+  const messageBox = document.getElementById("account-notification-message");
+
+  const popup = document.getElementById("account-notification-popup");
+
+  if (titleBox) {
+    titleBox.textContent = notification.title || "Thay đổi quyền tài khoản";
+  }
+
+  if (messageBox) {
+    messageBox.textContent =
+      notification.message || "Quyền tài khoản của bạn vừa được cập nhật.";
+  }
+
+  if (popup) {
+    popup.classList.add("open");
+  }
+}
+
+function closeAccountNotificationPopup() {
+  const popup = document.getElementById("account-notification-popup");
+
+  if (popup) {
+    popup.classList.remove("open");
+  }
+
+  const notificationId = currentAccountNotificationId;
+
+  currentAccountNotificationId = null;
+
+  if (!notificationId) {
+    showNextAccountNotification();
+    return;
+  }
+
+  API.markNotificationAsRead(notificationId)
+    .catch((error) => {
+      console.error("Không đánh dấu được thông báo đã đọc:", error);
+    })
+    .finally(() => {
+      showNextAccountNotification();
+    });
+}
+
+window.loadAccountRoleNotifications = loadAccountRoleNotifications;
+
+window.closeAccountNotificationPopup = closeAccountNotificationPopup;

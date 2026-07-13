@@ -987,91 +987,118 @@
       </div>
     </div>
 
-    <!-- GUARD: Chỉ ADMIN (role_id = 4) mới được truy cập trang này -->
-    <script>
-      (function () {
-        var roleId = null;
-        try {
-          var raw = localStorage.getItem("las_logged_in_user");
-          if (raw) {
-            var u = JSON.parse(raw);
-            roleId =
-              u.roleId != null
-                ? u.roleId
-                : u.role_id != null
-                  ? u.role_id
-                  : null;
-          }
-        } catch (e) {}
-        if (roleId == null) {
-          var sr = sessionStorage.getItem("roleId");
-          if (sr != null && sr !== "") roleId = parseInt(sr, 10);
-        }
-        if (parseInt(roleId, 10) !== 4) {
-          alert(
-            "CẢNH BÁO: Khu vực Quản trị viên (ADMIN)! Bạn không có quyền truy cập.",
-          );
-          window.location.href = "index.html";
-        }
-      })();
-    </script>
+    <!-- ===== Bổ sung từ nhánh admin: popup thông báo đổi quyền / xác nhận khóa TK / chi tiết log ===== -->
+    <div id="admin-role-success-popup" class="admin-role-popup-overlay">
+      <div class="admin-role-popup-box">
+        <div class="admin-role-popup-icon">✓</div>
 
-    <!-- HEADER MỚI: đăng xuất, dropdown, ngày hiện tại, tên admin thật -->
-    <script>
-      (function () {
-        function displayAdmDate() {
-          var today = new Date();
-          var d = String(today.getDate()).padStart(2, "0");
-          var m = String(today.getMonth() + 1).padStart(2, "0");
-          var y = today.getFullYear();
-          var el = document.getElementById("adm-current-date-text");
-          if (el) el.innerText = d + "/" + m + "/" + y;
-        }
+        <h3>CẬP NHẬT THÀNH CÔNG</h3>
 
-        function loadAdmProfile() {
-          try {
-            var raw = localStorage.getItem("las_logged_in_user");
-            if (!raw) return;
-            var u = JSON.parse(raw);
-            var fullName = u.fullName || "Quản trị viên";
-            var titleBox = document.getElementById("adm-dynamic-title");
-            if (titleBox) titleBox.innerText = "Xin chào Admin: " + fullName;
-            var nameBox = document.getElementById("adm-user-name-text");
-            var headerBox = document.getElementById("adm-user-dropdown-header");
-            if (nameBox) nameBox.innerText = fullName;
-            if (headerBox) headerBox.innerText = "Chào, " + fullName;
-          } catch (e) {}
-        }
+        <p id="admin-role-success-message">Quyền tài khoản đã được cập nhật.</p>
 
-        document.addEventListener("DOMContentLoaded", function () {
-          displayAdmDate();
-          loadAdmProfile();
-          // Tab "Dashboard" mặc định active ngay khi tải trang,
-          // nên phải load data ngay từ đầu (không đợi người dùng click vào tab).
-          if (typeof renderAdminDashboard === "function")
-            renderAdminDashboard();
-        });
-      })();
+        <button type="button" onclick="closeAdminRoleSuccessPopup()">
+          Đóng
+        </button>
+      </div>
+    </div>
+    <div id="ban-popup" class="ban-popup-overlay confirm">
+      <div class="ban-popup-box">
+        <div id="ban-popup-icon" class="ban-popup-icon">?</div>
 
-      function toggleAdmUserDropdown() {
-        var box = document.getElementById("adm-user-dropdown");
-        if (box) box.classList.toggle("open");
-      }
-      function toggleAdmNotifDropdown() {
-        var box = document.getElementById("adm-notif-dropdown");
-        if (box) box.classList.toggle("open");
-      }
-      function exitAdminRoleToCustomerView() {
-        window.location.replace("index.html");
-      }
-    </script>
+        <h3 id="ban-popup-title">XÁC NHẬN</h3>
 
-    <script src="js/state.js?v=12"></script>
+        <p id="ban-popup-message"></p>
 
-    <script src="js/api.js?v=12"></script>
+        <div class="ban-popup-buttons">
+          <button
+            id="ban-popup-cancel"
+            type="button"
+            class="ban-popup-button cancel"
+            onclick="closeBanPopup()"
+          >
+            Hủy
+          </button>
 
-    <script src="js/auth.js?v=12"></script>
+          <button
+            id="ban-popup-confirm"
+            type="button"
+            class="ban-popup-button confirm"
+            onclick="confirmBanPopup()"
+          >
+            Xác nhận
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- POPUP XEM CHI TIẾT LOG -->
+    <div
+      id="syslog-detail-popup"
+      class="syslog-detail-overlay"
+      onclick="closeSysLogDetailByOverlay(event)"
+    >
+      <div class="syslog-detail-box">
+        <div class="syslog-detail-header">
+          <div class="syslog-detail-heading">
+            <div class="syslog-detail-icon">📋</div>
 
+            <div>
+              <h3>CHI TIẾT LOG</h3>
+              <p>Thông tin hoạt động trong hệ thống</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="syslog-detail-close"
+            onclick="closeAdminSysLogDetail()"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="syslog-detail-content">
+          <div class="syslog-detail-row">
+            <span class="syslog-detail-label">Thời gian</span>
+            <strong id="syslog-detail-time"></strong>
+          </div>
+
+          <div class="syslog-detail-row">
+            <span class="syslog-detail-label">Mức độ</span>
+            <span id="syslog-detail-level" class="log-level-badge"></span>
+          </div>
+
+          <div class="syslog-detail-row">
+            <span class="syslog-detail-label">Hành động</span>
+            <strong id="syslog-detail-action"></strong>
+          </div>
+
+          <div class="syslog-detail-row">
+            <span class="syslog-detail-label">Người thực hiện</span>
+            <strong id="syslog-detail-user"></strong>
+          </div>
+
+          <div class="syslog-detail-row">
+            <span class="syslog-detail-label">Địa chỉ IP</span>
+            <strong id="syslog-detail-ip"></strong>
+          </div>
+
+          <div class="syslog-detail-description">
+            <span class="syslog-detail-label">Nội dung chi tiết</span>
+            <p id="syslog-detail-description"></p>
+          </div>
+        </div>
+
+        <div class="syslog-detail-footer">
+          <button
+            type="button"
+            class="syslog-detail-button"
+            onclick="closeAdminSysLogDetail()"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
     <script src="js/admin.js?v=16"></script>
     <script src="js/admin-dashboard.js?v=3"></script>
     <script src="js/admin-syslog.js?v=3"></script>

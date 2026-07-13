@@ -1,13 +1,8 @@
 package com.cinema.backend.entities;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.Data;
+
 @Entity
 @Table(name = "ticket")
 @Data
@@ -27,17 +22,11 @@ public class Ticket {
     @Column(name = "ticket_status")
     private String ticketStatus;
 
-    @Column(name = "showtime_id")
-    private Integer showtimeId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "showtime_id")
+    private Showtime showtime;
 
-    @Column(name = "seat_id")
-    private Integer seatId;
-
-    @ManyToOne
-    @JoinColumn(name = "order_id")
-    private Order1 order;
-
-    static {
-    System.out.println("===== USING NEW TICKET ENTITY =====");
-}
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seat_id")
+    private Seat seat;
 }

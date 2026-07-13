@@ -288,7 +288,7 @@
                 <option value="all">Status</option>
                 <option value="now_showing">Đang chiếu</option>
                 <option value="coming_soon">Sắp chiếu</option>
-                <option value="end_showing">Ngừng chiếu</option>
+                <option value="hidden">Ẩn</option>
               </select>
               </select>
 
@@ -342,7 +342,34 @@
               <button class="mp-btn-outline" onclick="loadManagerMatrix()">Làm mới</button>
             </div>
           </div>
-          
+
+          <!-- ========================================== -->
+          <!-- 🔎 BỘ LỌC MA TRẬN: Trạng thái phim / Phòng chiếu / Phim (multi-select) -->
+          <!-- ========================================== -->
+          <div class="mp-msf-bar" id="mp-msf-bar">
+            <div class="mp-msf" id="mp-msf-status">
+              <button type="button" class="mp-msf-btn" onclick="mpToggleMsf('status')">
+                Trạng thái phim <span class="mp-msf-count" id="mp-msf-count-status">Tất cả</span>
+              </button>
+              <div class="mp-msf-panel" id="mp-msf-panel-status"></div>
+            </div>
+            <div class="mp-msf" id="mp-msf-room">
+              <button type="button" class="mp-msf-btn" onclick="mpToggleMsf('room')">
+                Phòng chiếu <span class="mp-msf-count" id="mp-msf-count-room">Tất cả</span>
+              </button>
+              <div class="mp-msf-panel" id="mp-msf-panel-room"></div>
+            </div>
+            <div class="mp-msf" id="mp-msf-movie">
+              <button type="button" class="mp-msf-btn" onclick="mpToggleMsf('movie')">
+                Phim <span class="mp-msf-count" id="mp-msf-count-movie">Tất cả</span>
+              </button>
+              <div class="mp-msf-panel" id="mp-msf-panel-movie"></div>
+            </div>
+            <button type="button" class="mp-msf-clear" id="mp-msf-clear-btn" onclick="mpClearFilters()" style="display:none;">
+              ✕ Xóa lọc
+            </button>
+          </div>
+
           <!-- 📅 LỊCH CHIẾU KIỂU GOOGLE CALENDAR -->
           <div class="mpcal-toolbar">
             <button class="mpcal-nav-btn" onclick="mpCalToday()">Hôm nay</button>
@@ -699,6 +726,10 @@
               <input type="radio" name="add_status" value="coming_soon" />
               Sắp chiếu
             </label>
+            <label style="display:flex; align-items:center; gap:6px; font-weight:normal; color: var(--text-light); margin:0;">
+              <input type="radio" name="add_status" value="hidden" />
+              Ẩn
+            </label>
           </div>
         </div>
 
@@ -828,6 +859,13 @@
               style="margin-left: 15px"
             />
             Sắp chiếu
+            <input
+              type="radio"
+              name="upd_status"
+              value="hidden"
+              style="margin-left: 15px"
+            />
+            Ẩn
           </div>
         </div>
 
@@ -1301,6 +1339,13 @@
               style="margin-left: 15px"
             />
             Sắp chiếu
+            <input
+              type="radio"
+              name="mxedit_status"
+              value="hidden"
+              style="margin-left: 15px"
+            />
+            Ẩn
           </div>
         </div>
 
@@ -1553,10 +1598,7 @@
         
         <div class="mp-form-group" style="margin-bottom: 15px;">
           <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Chọn phòng chiếu</label>
-          <select id="st-room-select" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-            <option value="1">Phòng 1 (3D Standard)</option>
-            <option value="2">Phòng 2 (IMAX Siêu Đại)</option>
-          </select>
+          <select id="st-room-select" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></select>
         </div>
         
         <div class="mp-form-group" style="margin-bottom: 15px;">

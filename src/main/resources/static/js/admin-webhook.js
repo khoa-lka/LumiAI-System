@@ -7,58 +7,42 @@
    render/filter/export bên dưới.
    ========================================================================= */
 
-/* --- 1. 4 THẺ CHỈ SỐ TỔNG QUAN --- */
 const ADM_WEBHOOK_METRICS = [
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/></svg>', bg: "rgba(59,130,246,0.16)", fg: "#60a5fa", label: "Tổng webhook", value: "1.024", pct: "" },
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.5 2.5 4.7-5"/></svg>', bg: "rgba(34,197,94,0.16)", fg: "#4ade80", label: "Thành công", value: "892", pct: "87.1%" },
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>', bg: "rgba(239,68,68,0.16)", fg: "#f87171", label: "Thất bại", value: "132", pct: "12.9%" },
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 13.5 14.5 8.5"/><path d="M11 6.5l1.2-1.2a3.5 3.5 0 0 1 5 5L16 11.5"/><path d="M13 17.5l-1.2 1.2a3.5 3.5 0 0 1-5-5L8 12.5"/></svg>', bg: "rgba(59,130,246,0.16)", fg: "#60a5fa", label: "Endpoint đang hoạt động", value: "8", pct: "" },
+  {
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/></svg>',
+    bg: "rgba(59,130,246,0.16)",
+    fg: "#60a5fa",
+    label: "Tổng webhook",
+    value: "0",
+    pct: ""
+  },
+  {
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.5 2.5 4.7-5"/></svg>',
+    bg: "rgba(34,197,94,0.16)",
+    fg: "#4ade80",
+    label: "Thành công",
+    value: "0",
+    pct: "0%"
+  },
+  {
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>',
+    bg: "rgba(239,68,68,0.16)",
+    fg: "#f87171",
+    label: "Thất bại",
+    value: "0",
+    pct: "0%"
+  },
+  {
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 13.5 14.5 8.5"/><path d="M11 6.5l1.2-1.2a3.5 3.5 0 0 1 5 5L16 11.5"/><path d="M13 17.5l-1.2 1.2a3.5 3.5 0 0 1-5-5L8 12.5"/></svg>',
+    bg: "rgba(59,130,246,0.16)",
+    fg: "#60a5fa",
+    label: "Endpoint đang hoạt động",
+    value: "0",
+    pct: ""
+  }
 ];
-
-/* --- 2. DANH SÁCH WEBHOOK MẪU (đại diện, phân trang & lọc hoạt động thật trên tập này) --- */
-const ADM_WEBHOOK_DATA = [
-  { time: "09/07/2026 14:32:21", endpoint: "/webhook/chat", code: 200, status: "success", responseMs: 245, sizeKb: 2.45, payload: '{"message":"Xin chào, tôi cần hỗ trợ đặt vé"}' },
-  { time: "09/07/2026 14:31:05", endpoint: "/webhook/user", code: 201, status: "success", responseMs: 198, sizeKb: 1.12, payload: '{"userId":128,"action":"created"}' },
-  { time: "09/07/2026 14:30:12", endpoint: "/webhook/payment", code: 500, status: "failed", responseMs: 1245, sizeKb: 3.67, payload: '{"orderId":"88231","error":"Gateway timeout"}' },
-  { time: "09/07/2026 14:29:47", endpoint: "/webhook/subscription", code: 200, status: "success", responseMs: 312, sizeKb: 2.01, payload: '{"plan":"pro","status":"active"}' },
-  { time: "09/07/2026 14:28:33", endpoint: "/webhook/ai-result", code: 200, status: "success", responseMs: 421, sizeKb: 4.89, payload: '{"model":"lumiai-v2","tokens":842}' },
-  { time: "09/07/2026 14:27:19", endpoint: "/webhook/chat", code: 400, status: "failed", responseMs: 156, sizeKb: 2.33, payload: '{"error":"Thiếu trường bắt buộc: conversation_id"}' },
-  { time: "09/07/2026 14:25:08", endpoint: "/webhook/notification", code: 200, status: "success", responseMs: 99, sizeKb: 1.01, payload: '{"type":"push","recipients":1}' },
-  { time: "09/07/2026 14:24:36", endpoint: "/webhook/email", code: 200, status: "success", responseMs: 120, sizeKb: 1.45, payload: '{"to":"khachhang@example.com","template":"booking_confirm"}' },
-  { time: "09/07/2026 14:23:11", endpoint: "/webhook/security", code: 404, status: "failed", responseMs: 88, sizeKb: 0.92, payload: '{"error":"Endpoint không tồn tại"}' },
-  { time: "09/07/2026 14:21:54", endpoint: "/webhook/email", code: 200, status: "success", responseMs: 110, sizeKb: 1.15, payload: '{"to":"tranthib@example.com","template":"password_reset"}' },
-  { time: "09/07/2026 13:58:02", endpoint: "/webhook/chat", code: 200, status: "success", responseMs: 267, sizeKb: 2.6, payload: '{"message":"Cho tôi hỏi lịch chiếu phim Lầu Chú Hỏa"}' },
-  { time: "09/07/2026 13:47:15", endpoint: "/webhook/payment", code: 200, status: "success", responseMs: 534, sizeKb: 2.98, payload: '{"orderId":"88240","status":"paid"}' },
-  { time: "09/07/2026 13:30:44", endpoint: "/webhook/booking", code: 201, status: "success", responseMs: 289, sizeKb: 3.12, payload: '{"showtimeId":4521,"seats":["C5","C6"]}' },
-  { time: "09/07/2026 13:12:09", endpoint: "/webhook/payment", code: 500, status: "failed", responseMs: 1580, sizeKb: 3.4, payload: '{"orderId":"88245","error":"Bank gateway unreachable"}' },
-  { time: "09/07/2026 12:55:37", endpoint: "/webhook/ai-result", code: 200, status: "success", responseMs: 378, sizeKb: 4.21, payload: '{"model":"lumiai-v2","tokens":650}' },
-  { time: "09/07/2026 12:40:21", endpoint: "/webhook/notification", code: 200, status: "success", responseMs: 104, sizeKb: 0.98, payload: '{"type":"email","recipients":3}' },
-  { time: "09/07/2026 12:20:03", endpoint: "/webhook/security", code: 401, status: "failed", responseMs: 76, sizeKb: 0.85, payload: '{"error":"Token không hợp lệ"}' },
-  { time: "09/07/2026 11:58:59", endpoint: "/webhook/booking", code: 200, status: "success", responseMs: 301, sizeKb: 2.77, payload: '{"showtimeId":4522,"seats":["D1"]}' },
-  { time: "09/07/2026 11:33:12", endpoint: "/webhook/chat", code: 200, status: "success", responseMs: 233, sizeKb: 2.15, payload: '{"message":"Rạp có suất chiếu IMAX không?"}' },
-  { time: "09/07/2026 11:10:48", endpoint: "/webhook/user", code: 200, status: "success", responseMs: 178, sizeKb: 1.34, payload: '{"userId":142,"action":"updated"}' },
-  { time: "09/07/2026 10:47:26", endpoint: "/webhook/payment", code: 400, status: "failed", responseMs: 210, sizeKb: 1.9, payload: '{"error":"Số thẻ không hợp lệ"}' },
-  { time: "09/07/2026 10:22:14", endpoint: "/webhook/email", code: 200, status: "success", responseMs: 132, sizeKb: 1.22, payload: '{"to":"manager_vien@las.vn","template":"low_stock_alert"}' },
-  { time: "09/07/2026 10:05:37", endpoint: "/webhook/chat", code: 200, status: "success", responseMs: 251, sizeKb: 2.5, payload: '{"message":"Giá vé phòng IMAX bao nhiêu?"}' },
-  { time: "09/07/2026 09:48:03", endpoint: "/webhook/security", code: 500, status: "failed", responseMs: 990, sizeKb: 1.05, payload: '{"error":"Không thể xác minh chữ ký webhook"}' },
-  { time: "09/07/2026 09:30:51", endpoint: "/webhook/subscription", code: 200, status: "success", responseMs: 288, sizeKb: 2.09, payload: '{"plan":"basic","status":"cancelled"}' },
-  { time: "08/07/2026 22:14:09", endpoint: "/webhook/booking", code: 200, status: "success", responseMs: 296, sizeKb: 2.81, payload: '{"showtimeId":4498,"seats":["A2","A3"]}' },
-  { time: "08/07/2026 21:50:33", endpoint: "/webhook/security", code: 403, status: "failed", responseMs: 65, sizeKb: 0.77, payload: '{"error":"IP bị chặn do nghi ngờ tấn công"}' },
-  { time: "08/07/2026 20:37:41", endpoint: "/webhook/user", code: 200, status: "success", responseMs: 190, sizeKb: 1.4, payload: '{"userId":91,"action":"updated"}' },
-  { time: "08/07/2026 19:59:12", endpoint: "/webhook/email", code: 500, status: "failed", responseMs: 1420, sizeKb: 1.5, payload: '{"to":"khachhang09@example.com","error":"SMTP timeout"}' },
-  { time: "08/07/2026 19:20:05", endpoint: "/webhook/booking", code: 201, status: "success", responseMs: 305, sizeKb: 3.05, payload: '{"showtimeId":4530,"seats":["B4"]}' },
-  { time: "08/07/2026 18:44:38", endpoint: "/webhook/chat", code: 200, status: "success", responseMs: 244, sizeKb: 2.3, payload: '{"message":"Rạp còn suất 20h hôm nay không?"}' },
-  { time: "08/07/2026 18:02:57", endpoint: "/webhook/ai-result", code: 200, status: "success", responseMs: 402, sizeKb: 4.5, payload: '{"model":"lumiai-v2","tokens":712}' },
-  { time: "08/07/2026 17:31:20", endpoint: "/webhook/payment", code: 200, status: "success", responseMs: 498, sizeKb: 2.85, payload: '{"orderId":"88190","status":"paid"}' },
-  { time: "08/07/2026 16:48:16", endpoint: "/webhook/notification", code: 400, status: "failed", responseMs: 91, sizeKb: 0.88, payload: '{"error":"Thiếu recipients"}' },
-  { time: "08/07/2026 16:10:44", endpoint: "/webhook/booking", code: 200, status: "success", responseMs: 277, sizeKb: 2.66, payload: '{"showtimeId":4501,"seats":["C1","C2"]}' },
-  { time: "08/07/2026 15:22:07", endpoint: "/webhook/subscription", code: 200, status: "success", responseMs: 265, sizeKb: 1.95, payload: '{"plan":"pro","status":"renewed"}' },
-  { time: "08/07/2026 14:59:31", endpoint: "/webhook/security", code: 401, status: "failed", responseMs: 70, sizeKb: 0.81, payload: '{"error":"Token hết hạn"}' },
-  { time: "08/07/2026 14:20:19", endpoint: "/webhook/user", code: 201, status: "success", responseMs: 205, sizeKb: 1.5, payload: '{"userId":150,"action":"created"}' },
-  { time: "08/07/2026 13:45:52", endpoint: "/webhook/chat", code: 200, status: "success", responseMs: 259, sizeKb: 2.4, payload: '{"message":"Cho tôi combo bắp nước loại nào rẻ nhất"}' },
-  { time: "08/07/2026 13:08:03", endpoint: "/webhook/payment", code: 402, status: "failed", responseMs: 340, sizeKb: 1.6, payload: '{"error":"Giao dịch bị từ chối bởi ngân hàng"}' },
-];
-
+/* --- 1. 4 THẺ CHỈ SỐ TỔNG QUAN --- */
+const ADM_WEBHOOK_DATA = [];
 // Danh sách endpoint & mã HTTP (dùng để đổ vào dropdown lọc)
 const ADM_WEBHOOK_ENDPOINTS = [...new Set(ADM_WEBHOOK_DATA.map((w) => w.endpoint))].sort();
 const ADM_WEBHOOK_CODES = [...new Set(ADM_WEBHOOK_DATA.map((w) => w.code))].sort((a, b) => a - b);
@@ -67,6 +51,207 @@ const ADM_WEBHOOK_CODES = [...new Set(ADM_WEBHOOK_DATA.map((w) => w.code))].sort
 let admWebhookCurrentPage = 1;
 let admWebhookPageSize = 10;
 
+
+function formatAdminWebhookTime(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  const pad = (number) => String(number).padStart(2, "0");
+
+  return (
+    `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ` +
+    `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
+}
+
+function normalizeAdminWebhook(item) {
+  const code = Number(item.code) || 0;
+
+  let status = String(item.status || "").toLowerCase();
+
+  if (!["success", "failed"].includes(status)) {
+    status = code >= 200 && code < 300
+      ? "success"
+      : "failed";
+  }
+
+  return {
+    time: formatAdminWebhookTime(item.time),
+    endpoint: item.endpoint || "Không xác định",
+    code: code,
+    status: status,
+    responseMs: Number(item.responseMs) || 0,
+    sizeKb: Number(item.sizeKb) || 0,
+    payload: item.payload || "{}",
+    rawTime: item.time ? new Date(item.time) : null,
+  };
+}
+
+function updateAdminWebhookMetrics(webhooks) {
+  const total = webhooks.length;
+
+  const successCount = webhooks.filter(
+    (item) => item.status === "success"
+  ).length;
+
+  const failedCount = webhooks.filter(
+    (item) => item.status === "failed"
+  ).length;
+
+  const activeEndpoints = new Set(
+    webhooks
+      .filter((item) => item.status === "success")
+      .map((item) => item.endpoint)
+  ).size;
+
+  const successPercent =
+    total === 0 ? 0 : (successCount / total) * 100;
+
+  const failedPercent =
+    total === 0 ? 0 : (failedCount / total) * 100;
+
+  ADM_WEBHOOK_METRICS[0].value =
+    total.toLocaleString("vi-VN");
+
+  ADM_WEBHOOK_METRICS[0].pct = "";
+
+  ADM_WEBHOOK_METRICS[1].value =
+    successCount.toLocaleString("vi-VN");
+
+  ADM_WEBHOOK_METRICS[1].pct =
+    `${successPercent.toFixed(1)}%`;
+
+  ADM_WEBHOOK_METRICS[2].value =
+    failedCount.toLocaleString("vi-VN");
+
+  ADM_WEBHOOK_METRICS[2].pct =
+    `${failedPercent.toFixed(1)}%`;
+
+  ADM_WEBHOOK_METRICS[3].value =
+    activeEndpoints.toLocaleString("vi-VN");
+
+  ADM_WEBHOOK_METRICS[3].pct = "";
+}
+
+async function loadAdminWebhooks() {
+  const tbody = document.getElementById("admin-webhook-tbody");
+
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7"
+            style="text-align:center; padding:24px; color:var(--adm-muted);">
+          Đang tải Webhook Logs...
+        </td>
+      </tr>
+    `;
+  }
+
+  try {
+    const response = await API.getWebhooks();
+
+    const allWebhooks = (
+      Array.isArray(response) ? response : []
+    )
+      .map(normalizeAdminWebhook)
+      .sort((a, b) => {
+        const timeA = a.rawTime
+          ? a.rawTime.getTime()
+          : 0;
+
+        const timeB = b.rawTime
+          ? b.rawTime.getTime()
+          : 0;
+
+        return timeB - timeA;
+      });
+
+    const endDate = new Date();
+
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - 6);
+    startDate.setHours(0, 0, 0, 0);
+
+    const currentWebhooks = allWebhooks.filter(
+      (item) =>
+        item.rawTime &&
+        item.rawTime >= startDate &&
+        item.rawTime <= endDate
+    );
+
+    ADM_WEBHOOK_DATA.splice(
+      0,
+      ADM_WEBHOOK_DATA.length,
+      ...currentWebhooks
+    );
+
+    const endpoints = [
+      ...new Set(
+        ADM_WEBHOOK_DATA.map((item) => item.endpoint)
+      ),
+    ].sort();
+
+    ADM_WEBHOOK_ENDPOINTS.splice(
+      0,
+      ADM_WEBHOOK_ENDPOINTS.length,
+      ...endpoints
+    );
+
+    const codes = [
+      ...new Set(
+        ADM_WEBHOOK_DATA.map((item) => item.code)
+      ),
+    ].sort((a, b) => a - b);
+
+    ADM_WEBHOOK_CODES.splice(
+      0,
+      ADM_WEBHOOK_CODES.length,
+      ...codes
+    );
+
+    updateAdminWebhookMetrics(ADM_WEBHOOK_DATA);
+
+    const dateRange = document.getElementById(
+      "adm-webhook-date-range"
+    );
+
+    if (dateRange) {
+      dateRange.textContent =
+        `📅 ${startDate.toLocaleDateString("vi-VN")} - ` +
+        `${endDate.toLocaleDateString("vi-VN")} ↻`;
+    }
+
+    // Giữ nguyên các hàm render cũ
+    renderAdminWebhookPage();
+
+  } catch (error) {
+    console.error("Lỗi tải Webhook Logs:", error);
+
+    ADM_WEBHOOK_DATA.splice(0);
+    ADM_WEBHOOK_ENDPOINTS.splice(0);
+    ADM_WEBHOOK_CODES.splice(0);
+
+    updateAdminWebhookMetrics([]);
+    renderAdminWebhookPage();
+
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7"
+              style="text-align:center; padding:24px; color:#ff4742;">
+            Không tải được Webhook Logs:
+            ${error.message || "Lỗi kết nối API"}
+          </td>
+        </tr>
+      `;
+    }
+  }
+}
 /* --- 2. HÀM TIỆN ÍCH --- */
 
 function admWebhookCodeColor(code) {
@@ -105,7 +290,7 @@ function renderAdminWebhookMetrics() {
     return `
     <div class="ad-metric-card">
       <div class="ad-metric-top">
-        <div class="ad-metric-icon" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.14); color:#fff;">${m.icon}</div>
+        <div class="ad-metric-icon" style="background:${m.bg}; color:${m.fg};">${m.icon}</div>
       </div>
       <div class="ad-metric-label">${m.label}</div>
       <div class="ad-metric-value">${m.value}${pctHtml}</div>
@@ -168,7 +353,7 @@ function renderAdminWebhookTable() {
           <td>${w.responseMs.toLocaleString("vi-VN")} ms</td>
           <td>${w.sizeKb.toFixed(2)} KB</td>
           <td>
-            <span title="Xem chi tiết" style="cursor:pointer; margin-right:10px;" onclick="viewAdminWebhookDetail(${globalIdx})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
+            <span title="Xem chi tiết" style="cursor:pointer; margin-right:10px;" onclick="viewAdminWebhookDetail(${globalIdx})">👁️</span>
             <span title="Xem payload" style="cursor:pointer;" onclick="viewAdminWebhookPayload(${globalIdx})">&lt;/&gt;</span>
           </td>
         </tr>`;
