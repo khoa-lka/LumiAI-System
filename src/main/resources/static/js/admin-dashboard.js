@@ -12,54 +12,56 @@
 
 const AD_METRICS = [
   {
-    icon: "👥",
-    bg: "rgba(99,102,241,0.16)",
-    fg: "#818cf8",
+    // BỔ SUNG: đồng bộ toàn bộ icon thẻ chỉ số sang nền tối đồng nhất + icon
+    // outline trắng (trước đây mỗi thẻ 1 màu nền/icon riêng theo loại).
+    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
     label: "Tổng người dùng",
     value: "0",
     delta: "0.0%",
     sub: "so với tuần trước"
   },
   {
-    icon: "📈",
-    bg: "rgba(20,184,166,0.16)",
-    fg: "#2dd4bf",
+    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
     label: "Tài khoản mới",
     value: "0",
     delta: "0.0%",
     sub: "so với tuần trước"
   },
   {
-    icon: "🔒",
-    bg: "rgba(239,68,68,0.16)",
-    fg: "#f87171",
+    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
     label: "Tài khoản bị khóa",
     value: "0",
     delta: "0.0%",
     sub: "so với tuần trước"
   },
   {
-    icon: "📄",
-    bg: "rgba(59,130,246,0.16)",
-    fg: "#60a5fa",
+    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
     label: "Logs hệ thống",
     value: "0",
     delta: "0.0%",
     sub: "so với tuần trước"
   },
   {
-    icon: "🔗",
-    bg: "rgba(168,85,247,0.16)",
-    fg: "#c084fc",
+    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
     label: "Webhook Logs",
     value: "0",
     delta: "0.0%",
     sub: "so với tuần trước"
   },
   {
-    icon: "🛡️",
-    bg: "rgba(20,184,166,0.16)",
-    fg: "#2dd4bf",
+    icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>',
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
     label: "Backup thành công",
     value: "0",
     delta: "0.0%",
@@ -72,10 +74,10 @@ const AD_ROLES = [];
 const AD_ACTIVITY_7D = [];
 
 const AD_SYSTEM_STATUS = [
-  { icon: "🗄️", label: "API Server", ok: false },
-  { icon: "📄", label: "Database", ok: false },
-  { icon: "📦", label: "Storage", ok: false },
-  { icon: "🛡️", label: "Backup Service", ok: false }
+  { icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/><line x1="6" y1="6.5" x2="6.01" y2="6.5"/><line x1="6" y1="17.5" x2="6.01" y2="17.5"/></svg>', label: "API Server", ok: false },
+  { icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3"/></svg>', label: "Database", ok: false },
+  { icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>', label: "Storage", ok: false },
+  { icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>', label: "Backup Service", ok: false }
 ];
 
 const AD_LATEST_BACKUP = {
@@ -262,23 +264,23 @@ function adGetLogDisplay(log) {
 
   if (level === "error") {
     return {
-      icon: "❌",
-      color: "#f87171",
+      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>',
+      color: "#ffffff",
       type: "Lỗi"
     };
   }
 
   if (level === "warning") {
     return {
-      icon: "⚠️",
-      color: "#f59e0b",
+      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 19h18z"/><path d="M12 10v4M12 17h.01"/></svg>',
+      color: "#ffffff",
       type: action
     };
   }
 
   return {
-    icon: "📄",
-    color: "#60a5fa",
+    icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    color: "#ffffff",
     type: action
   };
 }
@@ -1042,10 +1044,10 @@ function renderAdBackupBox() {
   if (!host) return;
   const b = AD_LATEST_BACKUP;
   host.innerHTML = `
-    <div class="ad-kv-row"><i class="ad-kv-icon">🕐</i><span class="ad-kv-label">Thời gian</span><span class="ad-kv-val">${b.time}</span></div>
-    <div class="ad-kv-row"><i class="ad-kv-icon">📁</i><span class="ad-kv-label">Loại</span><span class="ad-kv-val">${b.type}</span></div>
-    <div class="ad-kv-row"><i class="ad-kv-icon">💾</i><span class="ad-kv-label">Dung lượng</span><span class="ad-kv-val">${b.size}</span></div>
-    <div class="ad-kv-row"><i class="ad-kv-icon">✅</i><span class="ad-kv-label">Trạng thái</span><span class="ad-kv-val ad-kv-ok">✓ Thành công</span></div>`;
+    <div class="ad-kv-row"><i class="ad-kv-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></i><span class="ad-kv-label">Thời gian</span><span class="ad-kv-val">${b.time}</span></div>
+    <div class="ad-kv-row"><i class="ad-kv-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></i><span class="ad-kv-label">Loại</span><span class="ad-kv-val">${b.type}</span></div>
+    <div class="ad-kv-row"><i class="ad-kv-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></i><span class="ad-kv-label">Dung lượng</span><span class="ad-kv-val">${b.size}</span></div>
+    <div class="ad-kv-row"><i class="ad-kv-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.5 2.5 4.7-5"/></svg></i><span class="ad-kv-label">Trạng thái</span><span class="ad-kv-val">Thành công</span></div>`;
 }
 
 function renderAdWebhookBox() {
@@ -1062,9 +1064,9 @@ const failPct =
     ? "0.0"
     : ((w.fail / w.total) * 100).toFixed(1);
   host.innerHTML = `
-    <div class="ad-kv-row"><i class="ad-kv-icon">🔗</i><span class="ad-kv-label">Tổng số</span><span class="ad-kv-val">${adFormatNum(w.total)}</span></div>
-    <div class="ad-kv-row"><i class="ad-kv-icon ad-kv-green">✅</i><span class="ad-kv-label">Thành công</span><span class="ad-kv-val">${adFormatNum(w.success)} (${pct}%)</span></div>
-    <div class="ad-kv-row"><i class="ad-kv-icon ad-kv-red">❌</i><span class="ad-kv-label">Thất bại</span><span class="ad-kv-val">${adFormatNum(w.fail)} (${failPct}%)</span></div>`;
+    <div class="ad-kv-row"><i class="ad-kv-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></i><span class="ad-kv-label">Tổng số</span><span class="ad-kv-val">${adFormatNum(w.total)}</span></div>
+    <div class="ad-kv-row"><i class="ad-kv-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.5 2.5 4.7-5"/></svg></i><span class="ad-kv-label">Thành công</span><span class="ad-kv-val">${adFormatNum(w.success)} (${pct}%)</span></div>
+    <div class="ad-kv-row"><i class="ad-kv-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg></i><span class="ad-kv-label">Thất bại</span><span class="ad-kv-val">${adFormatNum(w.fail)} (${failPct}%)</span></div>`;
 }
 
 function renderAdLogsBox() {
@@ -1086,10 +1088,10 @@ const errPct =
     ? "0.0"
     : ((l.error / l.total) * 100).toFixed(1);
   host.innerHTML = `
-    <div class="ad-kv-row"><i class="ad-kv-icon">📄</i><span class="ad-kv-label">Tổng số</span><span class="ad-kv-val">${adFormatNum(l.total)}</span></div>
-    <div class="ad-kv-row"><i class="ad-kv-icon ad-kv-blue">🔵</i><span class="ad-kv-label">Thông báo</span><span class="ad-kv-val">${adFormatNum(l.info)} (${infoPct}%)</span></div>
-    <div class="ad-kv-row"><i class="ad-kv-icon ad-kv-warn">⚠️</i><span class="ad-kv-label">Cảnh báo</span><span class="ad-kv-val">${adFormatNum(l.warn)} (${warnPct}%)</span></div>
-    <div class="ad-kv-row"><i class="ad-kv-icon ad-kv-red">🔴</i><span class="ad-kv-label">Lỗi</span><span class="ad-kv-val">${adFormatNum(l.error)} (${errPct}%)</span></div>`;
+    <div class="ad-kv-row"><i class="ad-kv-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></i><span class="ad-kv-label">Tổng số</span><span class="ad-kv-val">${adFormatNum(l.total)}</span></div>
+    <div class="ad-kv-row"><i class="ad-kv-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></i><span class="ad-kv-label">Thông báo</span><span class="ad-kv-val">${adFormatNum(l.info)} (${infoPct}%)</span></div>
+    <div class="ad-kv-row"><i class="ad-kv-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 19h18z"/><path d="M12 10v4M12 17h.01"/></svg></i><span class="ad-kv-label">Cảnh báo</span><span class="ad-kv-val">${adFormatNum(l.warn)} (${warnPct}%)</span></div>
+    <div class="ad-kv-row"><i class="ad-kv-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg></i><span class="ad-kv-label">Lỗi</span><span class="ad-kv-val">${adFormatNum(l.error)} (${errPct}%)</span></div>`;
 }
 
 /* --- 8. RENDER: BẢNG TÀI KHOẢN MỚI NHẤT --- */

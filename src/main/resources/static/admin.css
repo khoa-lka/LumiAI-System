@@ -146,7 +146,7 @@
 .ad-metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 22px; }
 .ad-metric-card { background: #141417; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px; }
 .ad-metric-top { display: flex; align-items: center; margin-bottom: 12px; }
-.ad-metric-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.ad-metric-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; border: 1px solid var(--adm-border); }
 .ad-metric-label { color: #9a9aa3; font-size: 11.5px; margin-bottom: 6px; line-height: 1.3; }
 .ad-metric-value { color: #fff; font-size: 21px; font-weight: 900; font-family: "Sora","Be Vietnam Pro",sans-serif; margin-bottom: 6px; }
 .ad-metric-delta { font-size: 11px; color: #6b6b73; }
@@ -196,22 +196,34 @@
 .ad-status-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .ad-status-row:last-child { border-bottom: none; }
 .ad-status-left { display: flex; align-items: center; gap: 10px; color: #cfd3da; font-size: 13px; }
-.ad-status-icon { font-style: normal; font-size: 14px; }
+/* BỔ SUNG: icon giờ là SVG outline trắng thay vì emoji màu, căn giữa cho gọn */
+.ad-status-icon { font-style: normal; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; color: #ffffff; }
 .ad-pill { font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 999px; }
 .ad-pill-green { background: rgba(34,197,94,0.15); color: #4ade80; }
 .ad-pill-red { background: rgba(239,68,68,0.15); color: #f87171; }
 
 .ad-kv-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; font-size: 12.5px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .ad-kv-row:last-child { border-bottom: none; }
-.ad-kv-icon { font-style: normal; flex: 0 0 16px; }
+/* BỔ SUNG: icon giờ là SVG outline trắng đồng nhất, bỏ màu phân biệt xanh/đỏ/vàng cũ */
+.ad-kv-icon { font-style: normal; flex: 0 0 16px; display: inline-flex; align-items: center; justify-content: center; color: #ffffff; }
 .ad-kv-label { color: #9a9aa3; flex: 1; }
 .ad-kv-val { color: #fff; font-weight: 700; text-align: right; }
-.ad-kv-ok { color: #4ade80 !important; }
-.ad-kv-green { color: #4ade80; }
-.ad-kv-red { color: #f87171; }
-.ad-kv-blue { color: #60a5fa; }
-.ad-kv-warn { color: #fbbf24; }
 .ad-summary-btn { width: 100%; margin-top: 14px; text-align: center; }
+
+/* BỔ SUNG: nút icon dùng chung cho toàn bộ trang admin (nền tối + icon outline trắng) —
+   dùng cho cột THAO TÁC trong bảng (webhook logs, syslog...) thay cho icon emoji/chữ thô. */
+.adm-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 8px; margin-right: 8px;
+  background: var(--adm-surface-2); border: 1px solid var(--adm-border);
+  color: var(--adm-muted); cursor: pointer; transition: 0.2s;
+}
+.adm-icon-btn:last-child { margin-right: 0; }
+.adm-icon-btn:hover {
+  border-color: var(--adm-red); color: var(--adm-text);
+  background: rgba(255,107,53,0.12);
+}
+.adm-icon-btn svg { width: 17px; height: 17px; }
 
 .ad-role-badge { font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 999px; }
 .ad-role-admin { background: rgba(96,165,250,0.15); color: #60a5fa; }
@@ -263,7 +275,8 @@
     height: 58px;
     margin: 0 auto 16px;
     border-radius: 50%;
-    background: #1fae66;
+    background: var(--adm-surface-2);
+    border: 1px solid var(--adm-border);
     color: #fff;
     display: flex;
     align-items: center;
@@ -469,7 +482,9 @@
   height: 48px;
   flex-shrink: 0;
   border-radius: 14px;
-  background: rgba(255, 89, 48, 0.15);
+  background: var(--adm-surface-2);
+  border: 1px solid var(--adm-border);
+  color: #ffffff;
   font-size: 23px;
 }
 
@@ -536,56 +551,4 @@
 }
 
 .syslog-detail-description {
-  margin-top: 18px;
-  padding: 17px;
-  border: 1px solid rgba(255, 89, 48, 0.18);
-  border-radius: 13px;
-  background: rgba(255, 89, 48, 0.07);
-}
-
-.syslog-detail-description p {
-  margin: 10px 0 0;
-  color: #f5f5f7;
-  font-size: 14px;
-  line-height: 1.65;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.syslog-detail-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 18px 24px 22px;
-}
-.syslog-detail-button {
-  min-width: 110px;
-  padding: 11px 22px;
-  border: 0;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #ff693d, #ff4525);
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 750;
-  cursor: pointer;
-  box-shadow: 0 8px 22px rgba(255, 75, 37, 0.28);
-  transition: 0.2s;
-}
-
-.syslog-detail-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 11px 27px rgba(255, 75, 37, 0.38);
-}
-
-@media (max-width: 600px) {
-  .syslog-detail-row {
-    grid-template-columns: 1fr;
-    gap: 7px;
-  }
-
-  .syslog-detail-header,
-  .syslog-detail-content,
-  .syslog-detail-footer {
-    padding-left: 18px;
-    padding-right: 18px;
-  }
-}
+  ma

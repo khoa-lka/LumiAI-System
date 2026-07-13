@@ -1,9 +1,11 @@
 package com.cinema.backend.controllers;
 
 import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import com.cinema.backend.entities.Promotion;
 import com.cinema.backend.service.PromotionService;
 
@@ -11,13 +13,13 @@ import com.cinema.backend.service.PromotionService;
 @RequestMapping("/api/promos")
 @CrossOrigin(origins = "*")
 public class PromotionController {
-
     @Autowired
     private PromotionService promotionService;
 
-    // 🌟 API CHO CUSTOMER: Chỉ lấy các sự kiện ACTIVE và còn hạn hiển thị ở trang chủ
+    // 🌟 ĐÃ SỬA: API cho Customer — chỉ lấy các sự kiện ACTIVE và còn hạn hiển thị ở trang chủ
+    // (Giữ nguyên đường dẫn gốc /api/promos để không phá FE hiện có đang gọi endpoint này)
     @GetMapping
-    public List<Promotion> getAllActivePromotions() {
+    public List<Promotion> getAllPromotions() {
         return promotionService.getActivePromotionsForCustomer();
     }
 

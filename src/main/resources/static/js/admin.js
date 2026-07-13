@@ -64,7 +64,7 @@ function renderAdminBanRows(users, isMock) {
 
   const mockNotice = isMock
     ? `<tr><td colspan="5" style="text-align:center; color:var(--adm-gold); background:rgba(229,169,59,0.08); padding:10px; font-size:12px; font-style:italic;">
-         ⚠ Đang hiển thị DỮ LIỆU MẪU (chưa kết nối được API /admin/users) - chỉ để xem trước giao diện.
+         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><path d="M12 4 3 19h18z"/><path d="M12 10v4M12 17h.01"/></svg>Đang hiển thị DỮ LIỆU MẪU (chưa kết nối được API /admin/users) - chỉ để xem trước giao diện.
        </td></tr>`
     : "";
 
@@ -164,7 +164,10 @@ function showBanPopup(type, title, message, onConfirm) {
   popup.classList.remove("confirm", "success", "error");
   popup.classList.add(type);
 
-  if (icon) icon.textContent = type === "success" ? "✓" : type === "error" ? "!" : "?";
+  // BỔ SUNG: icon giờ là SVG outline trắng thay cho ký tự thô "✓/!/?" — vẫn giữ
+  // nền tròn màu theo trạng thái (cam=xác nhận, xanh=thành công, đỏ=lỗi) vì đây
+  // là popup xác nhận hành động khóa/mở khóa tài khoản, cần cảnh báo rõ bằng màu.
+  if (icon) icon.innerHTML = type === "success" ? '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>' : type === "error" ? '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12.01" y2="16.5"/><circle cx="12" cy="12" r="9"/></svg>' : '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 1.8-2.4 3.5"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
   if (titleElement) titleElement.textContent = title;
   if (messageElement) messageElement.textContent = message;
 
@@ -282,7 +285,7 @@ function renderAdminDbRows(backups, isMock) {
   const tbody = document.getElementById("admin-db-tbody");
   const mockNotice = isMock
     ? `<tr><td colspan="5" style="text-align:center; color:var(--adm-gold); background:rgba(229,169,59,0.08); padding:10px; font-size:12px; font-style:italic;">
-         ⚠ Đang hiển thị DỮ LIỆU MẪU (chưa kết nối được API backups) - chỉ để xem trước giao diện.
+         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><path d="M12 4 3 19h18z"/><path d="M12 10v4M12 17h.01"/></svg>Đang hiển thị DỮ LIỆU MẪU (chưa kết nối được API backups) - chỉ để xem trước giao diện.
        </td></tr>`
     : "";
 

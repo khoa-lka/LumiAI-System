@@ -132,39 +132,70 @@ if (request.getFnb() != null) {
     order.setGrossAmount(grossAmount);
 
     // ==========================================================
-    // Vá bảo mật (lấy từ nhánh manager): TÍNH TOÁN GIẢM GIÁ VOUCHER NGAY TRÊN
-    // SERVER thay vì tin thẳng request.getTotalMoney() do client tự gửi lên.
-    // Trước đây client có thể sửa request để trả ít tiền hơn giá thật.
+    // 🔒 FIX BẢO MẬT: Tự tính finalAmount trên Server, KHÔNG tin
+    // số tiền request.getTotalMoney() do Front-end gửi lên nữa —
+    // nếu không, ai sửa request bằng DevTools/Postman cũng có thể
+    // tự đặt giá vé tùy ý (VD: 1.000đ) mà hệ thống vẫn lưu đơn.
     // ==========================================================
     BigDecimal totalDiscount = BigDecimal.ZERO;
     Voucher appliedVoucher = null;
 
+    // 1. Kiểm tra mã Voucher (áp dụng cho cả luồng nhập tay MANUAL và tự động AUTO quét ngầm)
+    Optional<Voucher> voucherOpt = Optional.empty();
+
     if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
-        Optional<Voucher> voucherOpt = voucherRepository.findByVoucherCode(request.getVoucherCode());
-        if (voucherOpt.isPresent()) {
-            Voucher v = voucherOpt.get();
+        // Luồng 1: Client gửi mã cụ thể (khách tự nhập tay)
+        voucherOpt = voucherRepository.findByVoucherCode(request.getVoucherCode());
+        if (voucherOpt.isEmpty()) {
+            throw new RuntimeException("Voucher not found");
+        }
+    } else {
+        // Luồng 2: Client không gửi mã — tự động quét DB tìm Voucher mang cờ AUTO đang hoạt động
+        Voucher autoVoucher = voucherService.checkAutoVoucher(grossAmount.doubleValue());
+        if (autoVoucher != null) {
+            voucherOpt = Optional.of(autoVoucher);
+        }
+    }
 
-            // Các chốt chặn kiểm tra: trạng thái hoạt động, lượt dùng, hạn dùng và hạn mức đơn hàng tối thiểu
-            boolean isActive = "ACTIVE".equalsIgnoreCase(v.getStatus());
-            boolean isNotExpired = (v.getExpiredDate() == null || v.getExpiredDate().isAfter(LocalDateTime.now()));
-            boolean hasUsage = v.getUsageLimit() > 0;
-            boolean meetMinOrder = (v.getMinimumOrder() == null || grossAmount.compareTo(BigDecimal.valueOf(v.getMinimumOrder())) >= 0);
+    if (voucherOpt.isPresent()) {
+        Voucher voucher = voucherOpt.get();
 
-            if (isActive && isNotExpired && hasUsage && meetMinOrder) {
-                appliedVoucher = v;
-                if ("PERCENT".equalsIgnoreCase(v.getDiscountType())) {
-                    BigDecimal calculatedDiscount = grossAmount.multiply(BigDecimal.valueOf(v.getDiscountValue())).divide(BigDecimal.valueOf(100));
+        boolean isActive = voucher.getStatus() == null || "ACTIVE".equalsIgnoreCase(voucher.getStatus());
+        boolean isNotExpired = voucher.getExpiredDate() == null
+                || voucher.getExpiredDate().isAfter(LocalDateTime.now());
+        boolean hasUsage = voucher.getUsageLimit() != null && voucher.getUsageLimit() > 0;
+        boolean meetMinOrder = voucher.getMinimumOrder() == null
+                || grossAmount.compareTo(BigDecimal.valueOf(voucher.getMinimumOrder())) >= 0;
 
-                    if (v.getMaxDiscount() != null && v.getMaxDiscount().compareTo(BigDecimal.ZERO) > 0) {
-                        if (calculatedDiscount.compareTo(v.getMaxDiscount()) > 0) {
-                            calculatedDiscount = v.getMaxDiscount();
-                        }
-                    }
-                    totalDiscount = calculatedDiscount;
-                } else {
-                    totalDiscount = BigDecimal.valueOf(v.getDiscountValue());
-                }
+        // Chỉ voucher NHẬP TAY mới bắt buộc phải hợp lệ (ném lỗi nếu sai điều kiện);
+        // voucher AUTO nếu lỡ không còn hợp lệ thì âm thầm bỏ qua, không chặn luồng thanh toán.
+        boolean isManualFlow = request.getVoucherCode() != null && !request.getVoucherCode().isBlank();
+
+        if (!isActive || !isNotExpired || !hasUsage || !meetMinOrder) {
+            if (isManualFlow) {
+                throw new RuntimeException("Voucher không hợp lệ hoặc đã hết hạn/hết lượt sử dụng");
             }
+        } else {
+            if (!isManualFlow) {
+                // Gán lại mã vào request để bước "Cập nhật Voucher" phía dưới trừ đúng lượt dùng
+                request.setVoucherCode(voucher.getVoucherCode());
+            }
+
+            if ("PERCENT".equalsIgnoreCase(voucher.getDiscountType())) {
+                BigDecimal calculatedDiscount = grossAmount
+                        .multiply(BigDecimal.valueOf(voucher.getDiscountValue()))
+                        .divide(BigDecimal.valueOf(100));
+                if (voucher.getMaxDiscount() != null
+                        && voucher.getMaxDiscount().compareTo(BigDecimal.ZERO) > 0
+                        && calculatedDiscount.compareTo(voucher.getMaxDiscount()) > 0) {
+                    calculatedDiscount = voucher.getMaxDiscount();
+                }
+                totalDiscount = calculatedDiscount;
+            } else {
+                totalDiscount = BigDecimal.valueOf(voucher.getDiscountValue());
+            }
+
+            appliedVoucher = voucher;
         }
     }
 
@@ -172,24 +203,18 @@ if (request.getFnb() != null) {
     if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
         finalAmount = BigDecimal.ZERO;
     }
-
-    order.setFinalAmount(finalAmount); // Đã sửa: lưu số tiền tính từ Server, không tin trực tiếp từ Client!
+    order.setFinalAmount(finalAmount);
 
     order.setOrderStatus("COMPLETED");
     order.setPaymentMethod(request.getPaymentMethod());
     order.setPaymentStatus("SUCCESS");
 
-    // Khôi phục: order1.showtime_id được AuditRepository/DashboardRepository (native query)
-    // dùng để thống kê doanh thu theo suất chiếu. LSGD+VALIDATION bỏ dòng này -> đơn hàng
-    // mới sẽ có showtime_id = NULL và bị loại khỏi báo cáo doanh thu.
-    order.setShowtime(showtime);
-
     order.setCustomer(customer);
+    order.setShowtime(showtime);
 
     if (appliedVoucher != null) {
         order.setVoucher(appliedVoucher);
     }
-
 System.out.println("SAVE ORDER SAFELY WITH FINAL AMOUNT: " + finalAmount);
     order = orderRepository.save(order);
 System.out.println("ORDER ID = " + order.getOrderId());
@@ -198,71 +223,47 @@ System.out.println("ORDER ID = " + order.getOrderId());
     // =========================
     for (String seatCode : request.getSeats()) {
 
-    String row = seatCode.substring(0, 1);
+        String row = seatCode.substring(0, 1);
+        Integer number = Integer.parseInt(seatCode.substring(1));
 
-    Integer number =
-            Integer.parseInt(
-                    seatCode.substring(1)
-            );
+        Seat seat = seatRepository
+                .findByRoomIdAndSeatRowAndSeatNumber(
+                        showtime.getRoomId(),
+                        row,
+                        number)
+                .orElseThrow(() -> new RuntimeException("Seat not found: " + seatCode));
 
-    Seat seat = seatRepository
-            .findByRoomIdAndSeatRowAndSeatNumber(
-                    showtime.getRoomId(),
-                    row,
-                    number
-            )
-            .orElseThrow(() ->
-                    new RuntimeException(
-                            "Seat not found: " +
-                            seatCode
-                    )
-            );
+        Ticket ticket = new Ticket();
 
-    Ticket ticket = new Ticket();
+        ticket.setOrder(order);
+        ticket.setSeatId(seat.getSeatId());
+        ticket.setShowtimeId(showtime.getShowtimeId());
 
-    ticket.setTicketStatus("SOLD");
+        ticket.setTicketStatus("SOLD");
 
-    String code =
-            "TICKET-" +
-            System.currentTimeMillis() +
-            "-" +
-            seatCode;
+        String code = "TICKET-" + System.currentTimeMillis() + "-" + seatCode;
 
-    ticket.setTicketCode(code);
-    ticket.setQrCode(code);
+        ticket.setTicketCode(code);
+        ticket.setQrCode(code);
 
-    // Hai dòng đang bị thiếu
-    ticket.setShowtime(showtime);
-    ticket.setSeat(seat);
-
-    // Khôi phục: ticket.order_id được TicketRepository.findTicketsByOrderOrTicketCode
-    // (native query, chức năng tra cứu vé ở POS) dùng để join sang bảng order1.
-    // LSGD+VALIDATION bỏ dòng này -> vé mới sẽ có order_id = NULL và không tra
-    // cứu được theo mã đơn hàng.
-    ticket.setOrder(order);
-
-    if (firstTicketCode.isBlank()) {
+        if (firstTicketCode.isBlank()) {
         firstTicketCode = code;
+        }   
+
+        ticket = ticketRepository.save(ticket);
+
+        OrderDetail detail = new OrderDetail();
+
+        detail.setOrder(order);
+        detail.setTicket(ticket);
+
+        detail.setQuantity(1);
+
+        detail.setSubtotal(showtime.getTicketPrice());
+
+        orderDetailRepository.save(detail);
+        bookedSeats.add(seatCode);
     }
-
-    Ticket savedTicket =
-            ticketRepository.save(ticket);
-
-    OrderDetail detail =
-            new OrderDetail();
-
-    detail.setOrder(order);
-    detail.setTicket(savedTicket);
-    detail.setFoodItem(null);
-    detail.setQuantity(1);
-    detail.setSubtotal(
-            showtime.getTicketPrice()
-    );
-
-    orderDetailRepository.save(detail);
-
-    bookedSeats.add(seatCode);
-}
 System.out.println("SAVE TICKET OK");
 // =========================
 // Tạo OrderDetail cho F&B

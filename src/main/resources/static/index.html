@@ -5,6 +5,10 @@
     <meta charset="UTF-8" />
     <title>LAS Cinemas Vietnam - Official Premium Interface</title>
     <link rel="stylesheet" href="style.css?v=20" />
+    <!-- BỔ SUNG: 3 file này đã được tách riêng từ style.css từ trước nhưng
+         chưa bao giờ được nhúng vào trang nào - style.css vẫn đang một mình
+         gánh style cho các phần đăng nhập/đăng ký, đặt vé, tài khoản. Nhúng
+         lại đúng chỗ để có thể dọn sạch phần trùng lặp còn lại ở style.css. -->
     <link rel="stylesheet" href="auth.css" />
     <link rel="stylesheet" href="booking.css" />
     <link rel="stylesheet" href="account.css" />
@@ -174,6 +178,26 @@
 
           <div class="cgv-event-grid" id="cgv-event-grid">
     </div>
+          <div style="text-align: right; max-width: 1200px; margin: 25px auto 40px auto; padding: 0 15px;">
+              <button type="button" 
+                      class="btn-hover-effect"
+                      style="background: #ff6b35; color: #ffffff; border: none; padding: 14px 35px; font-weight: bold; border-radius: 50px; cursor: pointer; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(255, 107, 53, 0.25); display: inline-block; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);"
+                      onclick="window.switchCgvTab('panel-news')">
+                  Xem Tất Cả Ưu Đãi ➔
+              </button>
+          </div>
+
+          <!-- Nhét đoạn style hover nhỏ này ngay dưới nút để không cần mở file style.css -->
+          <style>
+            .btn-hover-effect:hover {
+                transform: translateY(-3px) scale(1.05);
+                background: #ff7b4b !important;
+                box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4) !important;
+            }
+            .btn-hover-effect:active {
+                transform: translateY(-1px) scale(0.98);
+            }
+          </style>
         </div>
 
         <div id="panel-movie-detail" class="cgv-panel">
@@ -328,7 +352,6 @@
       
       <div class="promo-detail-info" style="flex: 1; text-align: left;">
           <h2 id="detail-promo-title" style="margin: 0 0 12px 0; color: #ff6b35; font-size: 22px; font-weight: bold; line-height: 1.4; border-bottom: 2px solid #ff6b35; padding-bottom: 10px;">
-              -
           </h2>
           <p id="detail-promo-date" style="margin: 0 0 20px 0; font-size: 13.5px; color: #a8a8b3; font-style: italic; font-weight: bold;">
               Thời gian áp dụng: -
@@ -484,7 +507,10 @@
             — SỰ KIỆN VÀ ƯU ĐÃI —
           </div>
 
-          
+          <!-- 🔧 ĐÃ SỬA: home.js đã có sẵn hàm renderLasPromoGrid() tìm đúng id này
+               để đổ dữ liệu ưu đãi thật (fetch /api/promos), nhưng HTML lại thiếu
+               hẳn container này nên tab luôn trống trơn — bổ sung lại. -->
+          <div class="cgv-event-grid" id="cgv-event-grid-news" style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"></div>
         </div>
 
         <div id="panel-profile" class="cgv-panel">

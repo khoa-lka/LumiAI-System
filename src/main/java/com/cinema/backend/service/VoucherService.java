@@ -1,12 +1,13 @@
 package com.cinema.backend.service;
 
 import com.cinema.backend.entities.Voucher;
-import java.util.List;
 
 public interface VoucherService {
     Voucher checkVoucher(String code);
+
     boolean useVoucher(String code);
-    List<Voucher> getAllVouchers();
+
+    java.util.List<Voucher> getAllVouchers();
     Voucher createVoucher(Voucher voucher);
     Voucher updateVoucher(Integer id, Voucher voucher);
     void deleteVoucher(Integer id);

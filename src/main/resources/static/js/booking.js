@@ -96,7 +96,7 @@ function loadShowtimesFromServer() {
 
   // 1. Giữ nguyên logic bọc lót dropdown cực tốt của em
   let currentComboValue = selectCombo.value;
-  console.log("🔥 SHOWTIME RAW:", serverData.showtimes);
+  //console.log("🔥 SHOWTIME RAW:", serverData.showtimes);
 
   const detailTitleEl = document.getElementById("detail-movie-title");
   if (
@@ -164,7 +164,7 @@ function renderDynamicShowtimeGrid() {
   });
 
   const currentShowtimeObj = serverData.showtimes.find(
-    (t) => t.showtimeId === window.currentSelectedShowtimeId,
+    (t) => String(t.showtimeId) === String(window.currentSelectedShowtimeId),
   );
 
   document.getElementById("sum-showtime").innerText = currentShowtimeObj
@@ -456,7 +456,33 @@ function goToBookingStep(step) {
       backBtn.innerText = "←";
       backBtn.setAttribute("onclick", "goToBookingStep(2)");
     }
+    // ==========================================================================
+    // 🌟 TỰ ĐỘNG ÁP DỤNG VOUCHER: Tự quét DB tìm mã Auto khi ô nhập đang trống
+    // ==========================================================================
+    if (!window.currentVoucher && document.getElementById("voucher-input")?.value.trim() === "") {
+      console.log("🔍 Đang quét tìm Voucher tự động áp dụng...");
 
+      // 🌟 ĐÃ SỬA: Gọi đúng endpoint /check-auto (dành riêng cho khách hàng, có kiểm tra
+      // điều kiện đơn hàng tối thiểu ở BE) thay vì /manager/all (API quản trị, lộ hết
+      // toàn bộ voucher kể cả loại MANUAL riêng tư cho khách hàng thấy trên Network tab).
+      fetch(`http://localhost:8080/api/vouchers/check-auto?grossAmount=${currentPriceTotal}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(autoVoucher => {
+          // Backend đã tự lọc đúng voucher AUTO + ACTIVE + thỏa điều kiện đơn tối thiểu,
+          // FE không cần lọc lại thủ công nữa.
+          if (autoVoucher) {
+            console.log("🎯 Tìm thấy voucher tự động:", autoVoucher.voucherCode);
+            window.currentVoucher = autoVoucher;
+
+            const vInput = document.getElementById("voucher-input");
+            if (vInput) vInput.value = autoVoucher.voucherCode; // Điền mã lên giao diện
+
+            calculateCgvCart(); // Tính lại tiền ở FE
+            goToBookingStep(3); // Khởi động lại giao diện hóa đơn bước 3 đã trừ tiền
+          }
+        })
+        .catch(err => console.error("🚨 Lỗi quét Voucher tự động:", err));
+    }
     // 🚀 Ép hàm tính toán lại giỏ hàng chạy trước để đảm bảo tính đúng
     if (typeof calculateCgvCart === "function") {
       calculateCgvCart();
@@ -615,24 +641,6 @@ function processToPaymentGateway() {
   }
 }
 
-function updatePaymentTimerText() {
-  const vietQrTimer = document.getElementById("vietqr-timer");
-
-  if (!vietQrTimer || !window.bookingExpireAt) return;
-
-  const remain = window.bookingExpireAt - Date.now();
-
-  if (remain <= 0) {
-    vietQrTimer.innerText = "00:00";
-    return;
-  }
-
-  const minutes = Math.floor(remain / 60000);
-  const seconds = Math.floor((remain % 60000) / 1000);
-
-  vietQrTimer.innerText = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-}
-
 function openQrPayment(finalTotal) {
   if (window.bookingExpireAt && Date.now() >= window.bookingExpireAt) {
     handleBookingExpired(
@@ -660,9 +668,9 @@ function openQrPayment(finalTotal) {
   const timerBox = document.getElementById("vietqr-timer-box");
   if (timerBox) {
     timerBox.classList.remove("vietqr-timer-expired");
+    timerBox.innerHTML =
+      '<span>⏱</span> Thời gian thanh toán còn lại <strong id="vietqr-timer">10:00</strong>';
   }
-
-  updatePaymentTimerText();
 
   document.getElementById("qr-total-price").innerText =
     finalTotal.toLocaleString("vi-VN") + " đ";
@@ -751,9 +759,8 @@ function generateVietQR() {
 
   if (timerBox) {
     timerBox.classList.remove("vietqr-timer-expired");
+    timerBox.innerHTML = `<span>⏱</span> Thời gian thanh toán còn lại <strong id="vietqr-timer">10:00</strong>`;
   }
-
-  updatePaymentTimerText();
 
   startPaymentCountdown();
   startQrPaymentPolling();
@@ -1613,8 +1620,6 @@ function startCountdown(expiresAt) {
 
 function startPaymentCountdown() {
   clearInterval(paymentTimerInterval);
-
-  updatePaymentTimerText();
 
   paymentTimerInterval = setInterval(() => {
     const remain = window.bookingExpireAt - Date.now();

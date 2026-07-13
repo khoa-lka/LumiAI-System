@@ -2,8 +2,10 @@ package com.cinema.backend.controllers;
 
 import com.cinema.backend.entities.Showtime;
 import com.cinema.backend.repositories.ShowtimeRepository;
+import com.cinema.backend.service.ShowtimeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +25,9 @@ public class ShowtimeController {
 
     @Autowired
     private ShowtimeRepository showtimeRepository;
+
+    @Autowired
+    private ShowtimeService showtimeService;
 
     @GetMapping("/matrix")
     public ResponseEntity<?> getShowtimeMatrix(
@@ -47,6 +52,7 @@ public class ShowtimeController {
             map.put("endTime", st.getEndTime().format(timeFormatter));
             map.put("ticketPrice", st.getTicketPrice());
             map.put("roomId", st.getRoomId());
+            map.put("status", st.getStatus() != null ? st.getStatus() : "ACTIVE"); // 🌟 ĐÃ THÊM: Trả status về ma trận UI
             
             resultList.add(map);
         }
@@ -93,6 +99,13 @@ public class ShowtimeController {
             newShowtime.setStartTime(startTime);
             newShowtime.setEndTime(endTime);
 
+            // 🌟 THÊM MỚI: Nhặt thuộc tính status từ form tạo mới gửi sang
+            if (payload.containsKey("status")) {
+                newShowtime.setStatus(payload.get("status").toString().toUpperCase());
+            } else {
+                newShowtime.setStatus("ACTIVE"); // Mặc định nếu Front-End không truyền lên
+            }
+
             // 5. Lưu trực tiếp xuống Database qua JpaRepository
             Showtime savedShowtime = showtimeRepository.save(newShowtime);
 
@@ -107,6 +120,83 @@ public class ShowtimeController {
             return ResponseEntity.internalServerError().body(Map.of(
                 "status", "error",
                 "message", "Lỗi xử lý lưu suất chiếu hệ thống: " + e.getMessage()
+            ));
+        }
+    }
+
+    // 🚀 API Sửa suất chiếu: Nhận lệnh PUT và gọi qua tầng Service xử lý bài bản
+    // (có kiểm tra xung đột lịch/phòng chiếu ở tầng Service trước khi lưu)
+    @PutMapping("/update/{id}")
+    public ResponseEntity<?> updateShowtime(@PathVariable("id") Integer id, @RequestBody Map<String, Object> payload) {
+        try {
+            showtimeService.updateShowtime(id, payload);
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Đã cập nhật dữ liệu suất chiếu qua Service thành công!"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "status", "error",
+                "message", "Cập nhật suất chiếu thất bại: " + e.getMessage()
+            ));
+        }
+    }
+
+    // 🌟 THÊM MỚI: API dành riêng cho Customer Front-End (Chỉ lấy suất chiếu ACTIVE)
+    @GetMapping("/customer")
+    public ResponseEntity<?> getShowtimesForCustomer(
+            @RequestParam("movieId") Long movieId,
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
+
+        List<Showtime> showtimes = showtimeRepository.findActiveShowtimesForCustomer(movieId, startOfDay, endOfDay);
+
+        List<Map<String, Object>> resultList = new ArrayList<>();
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+        for (Showtime st : showtimes) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("showtimeId", st.getShowtimeId());
+            map.put("startTime", st.getStartTime().format(timeFormatter));
+            map.put("endTime", st.getEndTime().format(timeFormatter));
+            map.put("ticketPrice", st.getTicketPrice());
+            map.put("roomId", st.getRoomId());
+            map.put("status", "ACTIVE");
+
+            resultList.add(map);
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "status", "success",
+            "movieId", movieId,
+            "selectedDate", date.toString(),
+            "showtimes", resultList
+        ));
+    }
+
+    // 🚀 API Xóa suất chiếu: Nhận lệnh DELETE chọc thẳng xuống SQL Server để xóa vật lý
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<?> deleteShowtime(@PathVariable("id") Integer id) {
+        try {
+            if (!showtimeRepository.existsById(id)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "status", "error",
+                    "message", "Không tìm thấy suất chiếu mang ID: " + id
+                ));
+            }
+
+            showtimeRepository.deleteById(id);
+
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Hệ thống đã gỡ bỏ suất chiếu khỏi cơ sở dữ liệu thành công!"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                "status", "error",
+                "message", "Không thể xóa suất chiếu (Có thể vé đã được khách đặt mua): " + e.getMessage()
             ));
         }
     }

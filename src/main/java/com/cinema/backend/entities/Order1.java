@@ -18,13 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
-
 @Entity
 @Table(name = "order1")
 @Getter
@@ -75,12 +68,4 @@ public class Order1 {
     @ManyToOne
     @JoinColumn(name = "showtime_id")
     private Showtime showtime;
-
-    @OneToMany(
-    mappedBy = "order",
-    fetch = FetchType.LAZY,
-    cascade = CascadeType.ALL
-)
-private List<OrderDetail> orderDetails = new ArrayList<>();
-
 }

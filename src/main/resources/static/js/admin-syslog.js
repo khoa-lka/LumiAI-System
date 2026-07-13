@@ -8,10 +8,12 @@
 
 /* --- 1. 4 THẺ CHỈ SỐ TỔNG QUAN --- */
 const ADM_SYSLOG_METRICS = [
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>', bg: "rgba(34,197,94,0.16)", fg: "#4ade80", label: "Tổng log", value: "0", delta: "0%", trend: "up", sub: "so với 7 ngày trước" },
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>', bg: "rgba(59,130,246,0.16)", fg: "#60a5fa", label: "Thông tin", value: "0", delta: "0%", trend: "up", sub: "so với 7 ngày trước" },
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 19h18z"/><path d="M12 10v4M12 17h.01"/></svg>', bg: "rgba(245,158,11,0.16)", fg: "#f59e0b", label: "Cảnh báo", value: "0", delta: "0%", trend: "up", sub: "so với 7 ngày trước" },
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>', bg: "rgba(239,68,68,0.16)", fg: "#f87171", label: "Lỗi", value: "0", delta: "0%", trend: "down", sub: "so với 7 ngày trước" },
+  // BỔ SUNG: đồng bộ nền tối đồng nhất + icon outline trắng cho cả 4 thẻ
+  // (trước đây mỗi thẻ 1 màu nền/icon riêng theo loại: xanh lá/xanh dương/cam/đỏ).
+  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>', bg: "var(--adm-surface-2)", fg: "#ffffff", label: "Tổng log", value: "0", delta: "0%", trend: "up", sub: "so với 7 ngày trước" },
+  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>', bg: "var(--adm-surface-2)", fg: "#ffffff", label: "Thông tin", value: "0", delta: "0%", trend: "up", sub: "so với 7 ngày trước" },
+  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 19h18z"/><path d="M12 10v4M12 17h.01"/></svg>', bg: "var(--adm-surface-2)", fg: "#ffffff", label: "Cảnh báo", value: "0", delta: "0%", trend: "up", sub: "so với 7 ngày trước" },
+  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>', bg: "var(--adm-surface-2)", fg: "#ffffff", label: "Lỗi", value: "0", delta: "0%", trend: "down", sub: "so với 7 ngày trước" },
 ];
 
 /* --- 2. DỮ LIỆU LOG ĐƯỢC LẤY TỪ API --- */
@@ -157,8 +159,8 @@ async function loadAdminSysLogs() {
 
     if (dateRange) {
       dateRange.textContent =
-        `📅 ${currentStart.toLocaleDateString("vi-VN")} - ` +
-        `${endDate.toLocaleDateString("vi-VN")} 🗓️`;
+        `${currentStart.toLocaleDateString("vi-VN")} - ` +
+        `${endDate.toLocaleDateString("vi-VN")}`;
     }
 
     // Gọi lại toàn bộ render cũ, không sửa logic render
@@ -267,7 +269,9 @@ function renderAdminSysLogTable() {
           <td>${l.ip}</td>
           <td>
             ${l.detail}
-            <span title="Xem chi tiết" style="cursor:pointer; margin-left:8px; opacity:0.8;" onclick="viewAdminSysLogDetail(${globalIdx})">👁️</span>
+            <span class="adm-icon-btn" style="margin-left:8px;" title="Xem chi tiết" onclick="viewAdminSysLogDetail(${globalIdx})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
           </td>
         </tr>`;
       })

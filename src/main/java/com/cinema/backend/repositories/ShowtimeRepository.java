@@ -33,4 +33,15 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Integer> {
     List<Map<String, Object>> findPosShowtimesByMovieAndDate(
             @Param("movieId") Integer movieId,
             @Param("showDate") String showDate);
+
+    // 🌟 THÊM MỚI: Dùng cho Customer — chỉ lấy suất chiếu mang trạng thái ACTIVE và còn hạn
+    @Query("SELECT s FROM Showtime s WHERE s.movie.movieId = :movieId " +
+           "AND s.startTime >= :startOfDay AND s.startTime <= :endOfDay " +
+           "AND s.status = 'ACTIVE' " +
+           "ORDER BY s.startTime ASC")
+    List<Showtime> findActiveShowtimesForCustomer(
+        @Param("movieId") Long movieId,
+        @Param("startOfDay") LocalDateTime startOfDay,
+        @Param("endOfDay") LocalDateTime endOfDay
+    );
 }
