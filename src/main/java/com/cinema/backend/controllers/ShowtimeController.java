@@ -2,8 +2,10 @@ package com.cinema.backend.controllers;
 
 import com.cinema.backend.entities.Showtime;
 import com.cinema.backend.repositories.ShowtimeRepository;
+import com.cinema.backend.service.ShowtimeService; // 🌟 Đã chèn import Service
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus; // 🌟 Đã chèn import HttpStatus
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +25,9 @@ public class ShowtimeController {
 
     @Autowired
     private ShowtimeRepository showtimeRepository;
+
+    @Autowired
+    private ShowtimeService showtimeService; // 🌟 Đã tiêm tầng Service vào để xử lý PUT API
 
     @GetMapping("/matrix")
     public ResponseEntity<?> getShowtimeMatrix(
@@ -47,6 +52,7 @@ public class ShowtimeController {
             map.put("endTime", st.getEndTime().format(timeFormatter));
             map.put("ticketPrice", st.getTicketPrice());
             map.put("roomId", st.getRoomId());
+            map.put("status", st.getStatus() != null ? st.getStatus() : "ACTIVE"); // 🌟 ĐÃ THÊM: Trả status về ma trận UI
             
             resultList.add(map);
         }
@@ -58,7 +64,8 @@ public class ShowtimeController {
             "showtimes", resultList
         ));
     }
-    // 🚀 THÊM MỚI: API hứng yêu cầu POST từ Front-End để tạo suất chiếu và lưu xuống SQL Server
+
+    // 🚀 API Tạo suất chiếu: Đã chèn dòng hứng "status" từ Front-End gửi lên
     @PostMapping("/add")
     public ResponseEntity<?> addShowtime(@RequestBody Map<String, Object> payload) {
         try {
@@ -93,6 +100,13 @@ public class ShowtimeController {
             newShowtime.setStartTime(startTime);
             newShowtime.setEndTime(endTime);
 
+            // 🌟 VỊ TRÍ CHÈN MỚI: Nhặt thuộc tính status từ form tạo mới gửi sang
+            if (payload.containsKey("status")) {
+                newShowtime.setStatus(payload.get("status").toString().toUpperCase());
+            } else {
+                newShowtime.setStatus("ACTIVE"); // Mặc định nếu Front-End không truyền lên
+            }
+
             // 5. Lưu trực tiếp xuống Database qua JpaRepository
             Showtime savedShowtime = showtimeRepository.save(newShowtime);
 
@@ -109,5 +123,59 @@ public class ShowtimeController {
                 "message", "Lỗi xử lý lưu suất chiếu hệ thống: " + e.getMessage()
             ));
         }
+    }
+
+    // 🚀 API Sửa suất chiếu: Nhận lệnh PUT và gọi qua tầng Service xử lý bài bản
+    // 🟢 Thay đổi đường dẫn rõ ràng để tránh lỗi trùng quét hoặc nhận diện sai URL động của Tomcat
+@PutMapping("/update/{id}")
+public ResponseEntity<?> updateShowtime(@PathVariable("id") Integer id, @RequestBody Map<String, Object> payload) {
+        try {
+            showtimeService.updateShowtime(id, payload);
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Đã cập nhật dữ liệu suất chiếu qua Service thành công!"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "status", "error",
+                "message", "Cập nhật suất chiếu thất bại: " + e.getMessage()
+            ));
+        }
+
+    }
+    // 🌟 THÊM MỚI: API dành riêng cho Customer Front-End (Chỉ lấy suất chiếu ACTIVE)
+    @GetMapping("/customer")
+    public ResponseEntity<?> getShowtimesForCustomer(
+            @RequestParam("movieId") Long movieId,
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        
+        // Tạo mốc bắt đầu 00:00:00 và kết thúc 23:59:59 của ngày khách chọn xem
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
+
+        // 🚀 CHỐT CHẶN: Chỉ gọi lên các suất chiếu ACTIVE
+        List<Showtime> showtimes = showtimeRepository.findActiveShowtimesForCustomer(movieId, startOfDay, endOfDay);
+
+        List<Map<String, Object>> resultList = new ArrayList<>();
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+        for (Showtime st : showtimes) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("showtimeId", st.getShowtimeId());
+            map.put("startTime", st.getStartTime().format(timeFormatter)); 
+            map.put("endTime", st.getEndTime().format(timeFormatter));
+            map.put("ticketPrice", st.getTicketPrice());
+            map.put("roomId", st.getRoomId());
+            map.put("status", "ACTIVE"); 
+            
+            resultList.add(map);
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "status", "success",
+            "movieId", movieId,
+            "selectedDate", date.toString(),
+            "showtimes", resultList
+        ));
     }
 }

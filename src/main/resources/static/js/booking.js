@@ -96,7 +96,7 @@ function loadShowtimesFromServer() {
 
   // 1. Giữ nguyên logic bọc lót dropdown cực tốt của em
   let currentComboValue = selectCombo.value;
-  console.log("🔥 SHOWTIME RAW:", serverData.showtimes);
+  //console.log("🔥 SHOWTIME RAW:", serverData.showtimes);
 
   const detailTitleEl = document.getElementById("detail-movie-title");
   if (
@@ -164,7 +164,7 @@ function renderDynamicShowtimeGrid() {
   });
 
   const currentShowtimeObj = serverData.showtimes.find(
-    (t) => t.showtimeId === window.currentSelectedShowtimeId,
+    (t) => String(t.showtimeId) === String(window.currentSelectedShowtimeId),
   );
 
   document.getElementById("sum-showtime").innerText = currentShowtimeObj

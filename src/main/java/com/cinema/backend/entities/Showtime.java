@@ -47,4 +47,9 @@ public class Showtime {
     @JsonIgnore
     @OneToMany(mappedBy = "showtime")
     private List<Order1> orders;
+
+    private String status; // ACTIVE, INACTIVE, HIDDEN
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

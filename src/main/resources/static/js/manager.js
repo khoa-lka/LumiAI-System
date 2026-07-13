@@ -1358,27 +1358,33 @@ function mpApplyOverride(st){
   return { ...st, ...ov, isLocallyEdited: true };
 }
 
-// Tải suất chiếu của 1 ngày (mọi phim) + gắn tên phim + phát hiện xung đột
-// + áp lớp override tạm (sửa/xóa) ở trên.
-function mpCalFetchDate(dateStr){
-  return Promise.all((window.moviesList||[]).map(movie =>
+// ==========================================================================
+// 🟢 ĐÃ SỬA: Hàm nạp dữ liệu gốc - Lấy từ DB, gỡ bỏ hoàn toàn localStorage
+// ==========================================================================
+function mpCalFetchDate(dateStr) {
+  return Promise.all((window.moviesList || []).map(movie =>
     API.getShowtimes(movie.movieId, dateStr)
-      .then(res => (res.showtimes||[]).map(st => ({
+      .then(res => (res.showtimes || []).map(st => ({
         ...st,
         movieId: movie.movieId,
         movieTitle: movie.title,
         movieStatus: movie.status,
+        // 🌟 Đồng bộ trường status chữ hoa từ SQL Server nhả về qua Controller
+        status: st.status ? st.status.toUpperCase() : "ACTIVE" 
       })))
-      .catch(()=>[])
+      .catch(() => [])
   )).then(arr => {
-    const list = arr.flat().map(mpApplyOverride).filter(Boolean);
+    // 🌟 CHỐT CHẶN: Lấy danh sách gốc từ DB trả về thẳng, KHÔNG gọi mpApplyOverride nữa
+    const list = arr.flat().filter(Boolean); 
+    
+    // Thuật toán quét và tự động cảnh báo xung đột (Conflict) giữ nguyên
     list.forEach(cur => {
       mpEnsureRoomKnown(cur.roomId);
       cur.isConflict = false;
-      const cs=mpCalToMin(cur.startTime), ce=mpCalToMin(cur.endTime);
+      const cs = mpCalToMin(cur.startTime), ce = mpCalToMin(cur.endTime);
       list.forEach(o => {
         if (cur.showtimeId !== o.showtimeId && cur.roomId === o.roomId) {
-          const os=mpCalToMin(o.startTime), oe=mpCalToMin(o.endTime);
+          const os = mpCalToMin(o.startTime), oe = mpCalToMin(o.endTime);
           if (cs < oe && ce > os) cur.isConflict = true;
         }
       });
@@ -1392,17 +1398,22 @@ function mpCalEventHTML(st, col, cols){
   const top = mpCalToMin(st.startTime)/60*MPCAL_HOUR_H;
   const h = Math.max(20, (mpCalToMin(st.endTime)-mpCalToMin(st.startTime))/60*MPCAL_HOUR_H - 3);
   const cf = st.isConflict ? " mpcal-evt-conflict" : "";
-  const hiddenCls = st.movieStatus === "hidden" ? " mpcal-evt-hidden" : "";
+  
+  // Suất chiếu mờ đi nếu Phim bị ẩn HOẶC bản thân Suất chiếu đó mang trạng thái HIDDEN
+  const hiddenCls = (st.movieStatus === "hidden" || st.status === "HIDDEN") ? " mpcal-evt-hidden" : "";
   const badge = st.isConflict ? '<span class="mpcal-evt-warn" title="Xung đột lịch chiếu!">!</span>' : '';
-  const editedBadge = st.isLocallyEdited ? '<span class="mpcal-evt-warn" style="background:#3b82f6;right:24px;" title="Đã sửa tạm ở trình duyệt, chưa đồng bộ server">✎</span>' : '';
+  
+  // 🌟 ĐÃ XÓA: Bỏ biến editedBadge (icon dấu bút chì chỉnh sửa tạm ở local cũ) để giao diện đồng bộ chuẩn DB 100%
+  
   const n = cols || 1;
   const w = 100 / n;
   const left = (col || 0) * w;
   const compact = n > 1 ? " mpcal-evt-compact" : "";
+  
   return `<div class="mpcal-evt${cf}${hiddenCls}${compact}" data-showtime-id="${st.showtimeId}" style="top:${top}px;height:${h}px;left:calc(${left}% + 2px);width:calc(${w}% - 4px);background:${c}22;border-left-color:${c};"
       title="${st.movieTitle} (${st.startTime} - ${st.endTime}) · ${mpCalRoomLabel(st.roomId)}"
       onmousedown="mpEvtMouseDown(event, ${st.showtimeId})">
-      ${badge}${editedBadge}
+      ${badge}
       <div class="mpcal-evt-t">${st.movieTitle}</div>
       <div class="mpcal-evt-h">${mpCalFmtH(st.startTime)} – ${mpCalFmtH(st.endTime)} · <b class="mpcal-evt-room-tag">${mpCalRoomShort(st.roomId)}</b></div>
       <div class="mpcal-evt-r">${mpCalRoomLabel(st.roomId)}</div>
@@ -1420,13 +1431,10 @@ function mpCalLayout(list){
     const colsArr=[];
     cluster.forEach(ev=>{
       let placed=false;
-      for(let i=0;i<colsArr.length;i++){
-        if(colsArr[i][colsArr[i].length-1].e <= ev.s){ colsArr[i].push(ev); ev.col=i; placed=true; break; }
-      }
+      for(let i=0;i<colsArr.length;i++){ if(colsArr[i][colsArr[i].length-1].e <= ev.s){ colsArr[i].push(ev); ev.col=i; placed=true; break; } }
       if(!placed){ ev.col=colsArr.length; colsArr.push([ev]); }
     });
-    cluster.forEach(ev=> ev.cols=colsArr.length);
-    cluster=[]; clusterEnd=-1;
+    cluster.forEach(ev=> ev.cols=colsArr.length); cluster = []; clusterEnd=-1;
   };
   evs.forEach(ev=>{
     if(cluster.length && ev.s>=clusterEnd) flush();
@@ -1489,12 +1497,31 @@ window.mpCalRawByDate = window.mpCalRawByDate || {};
 window.mpCalDays = window.mpCalDays || [];
 window.mpMsfOpenKey = null;
 
+// ==========================================================================
+// 🟢 ĐÃ SỬA: Hàm quyết định vẽ hay ẩn - Đồng bộ giá trị bộ lọc tĩnh & DB thật
+// ==========================================================================
 function mpCalApplyFilters(list){
   const f = window.mpFilterState;
   return (list||[]).filter(st => {
-    if (f.status.size && !f.status.has(st.movieStatus)) return false;
+    // 🌟 1. XỬ LÝ CHO BỘ LỌC TRẠNG THÁI (Đa lựa chọn)
+    if (f.status.size) {
+      // Ép toàn bộ trạng thái phim và suất chiếu về chữ thường để đồng bộ với giao diện
+      const movieStat = String(st.movieStatus || "").toLowerCase();  // now_showing, coming_soon, hidden
+      const showtimeStat = String(st.status || "").toLowerCase();   // active, inactive, hidden
+      
+      // 🟢 Mấu chốt: Map chữ "active" của suất chiếu thành "now_showing" để ăn khớp với checkbox "Đang chiếu" trên UI nhóm em
+      const mappedShowtimeStat = showtimeStat === "active" ? "now_showing" : showtimeStat;
+
+      // Nếu trạng thái của bộ phim KHÔNG khớp VÀ trạng thái của suất chiếu KHÔNG khớp bộ lọc -> Ẩn khối lịch
+      if (!f.status.has(movieStat) && !f.status.has(mappedShowtimeStat)) return false;
+    }
+    
+    // 🌟 2. LỌC THEO PHÒNG CHIẾU (Giữ nguyên logic id số của em)
     if (f.room.size && !f.room.has(st.roomId)) return false;
+    
+    // 🌟 3. LỌC THEO TÊN BỘ PHIM (Giữ nguyên logic id số của em)
     if (f.movie.size && !f.movie.has(st.movieId)) return false;
+    
     return true;
   });
 }
@@ -1660,8 +1687,12 @@ function mpMinToHHMM(min){
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
+// ==========================================================================
+// 🟢 ĐÃ SỬA: Hàm định vị suất chiếu - Ép kiểu chuỗi để tránh lệch kiểu dữ liệu
+// ==========================================================================
 function mpFindRawShowtime(id){
   for (const k in window.mpCalRawByDate) {
+    // 🌟 SỬA TẠI ĐÂY: Ép cả 2 vế về String() để so khớp chuẩn xác giữa Số và Chuỗi
     const found = (window.mpCalRawByDate[k] || []).find(s => String(s.showtimeId) === String(id));
     if (found) return found;
   }
@@ -1670,6 +1701,7 @@ function mpFindRawShowtime(id){
 
 function mpFindShowtimeDateKey(id){
   for (const k in window.mpCalRawByDate) {
+    // 🌟 SỬA TẠI ĐÂY: Ép cả 2 vế về String() tương tự để tìm đúng ngày của suất chiếu
     if ((window.mpCalRawByDate[k] || []).some(s => String(s.showtimeId) === String(id))) return k;
   }
   return null;
@@ -1678,9 +1710,12 @@ function mpFindShowtimeDateKey(id){
 function mpPatchRawShowtime(showtimeId, patch){
   const dateKey = mpFindShowtimeDateKey(showtimeId);
   if (!dateKey || !window.mpCalRawByDate[dateKey]) return dateKey;
-  const idx = window.mpCalRawByDate[dateKey].findIndex(s => s.showtimeId === showtimeId);
+  
+  // 🌟 SỬA TẠI ĐÂY: Ép kiểu String() cho hàm tìm vị trí index
+  const idx = window.mpCalRawByDate[dateKey].findIndex(s => String(s.showtimeId) === String(showtimeId));
+  
   if (idx >= 0) {
-    window.mpCalRawByDate[dateKey][idx] = { ...window.mpCalRawByDate[dateKey][idx], ...patch, isLocallyEdited: true };
+    window.mpCalRawByDate[dateKey][idx] = { ...window.mpCalRawByDate[dateKey][idx], ...patch };
   }
   return dateKey;
 }
@@ -1814,6 +1849,9 @@ window.mpOpenShowtimePopover = function(showtimeId, anchorEl){
   const roomOptions = window.MP_ROOMS.slice().sort((a, b) => a.id - b.id)
     .map(r => `<option value="${r.id}" ${r.id === st.roomId ? "selected" : ""}>${r.label}</option>`).join("");
 
+  // 🌟 ĐÃ SỬA: Lấy trạng thái hiện tại của suất chiếu từ Database (Mặc định là ACTIVE nếu trống)
+  const currentStatus = st.status || "ACTIVE";
+
   el.innerHTML = `
     <div class="mp-evt-pop-head">
       <b>${st.movieTitle}</b>
@@ -1826,6 +1864,14 @@ window.mpOpenShowtimePopover = function(showtimeId, anchorEl){
       <select id="mpep-room">${roomOptions}</select>
       <label>Giá vé (VND)</label>
       <input type="number" id="mpep-price" value="${st.ticketPrice || 90000}" />
+      
+      <!-- 🌟 THÊM MỚI: Dropdown cấu hình trạng thái suất chiếu theo yêu cầu -->
+      <label>Trạng thái suất chiếu</label>
+      <select id="mpep-status" style="width:100%; padding:6px; background:#1c1c21; color:#fff; border:1px solid rgba(255,255,255,0.12); border-radius:4px; font-size:12px;">
+        <option value="ACTIVE" ${currentStatus === "ACTIVE" ? "selected" : ""}>🟢 Active (Đang chiếu)</option>
+        <option value="INACTIVE" ${currentStatus === "INACTIVE" ? "selected" : ""}>🟡 Inactive (Sắp chiếu)</option>
+        <option value="HIDDEN" ${currentStatus === "HIDDEN" ? "selected" : ""}>🔴 Ẩn (Hidden)</option>
+      </select>
     </div>
     <div class="mp-evt-pop-actions">
       <button class="btn-cgv-cancel" onclick="mpDeleteShowtimeFromPopover(${st.showtimeId})">Xóa</button>
@@ -1850,35 +1896,61 @@ window.mpCloseShowtimePopover = function(){
 };
 
 window.mpSaveShowtimeFromPopover = function(showtimeId){
-  const st = mpFindRawShowtime(showtimeId);
-  if (!st) return;
+  const st = mpFindRawShowtime(showtimeId); if (!st) return;
   const newStart = document.getElementById("mpep-start").value;
   const newRoom = parseInt(document.getElementById("mpep-room").value);
   const newPrice = parseFloat(document.getElementById("mpep-price").value) || st.ticketPrice;
+  const newStatus = document.getElementById("mpep-status").value;
+  
   if (!newStart) { alert("Vui lòng chọn giờ bắt đầu!"); return; }
 
+  // 🟢 GỘP CHUNG VÀ ĐƯA LÊN ĐẦU: Định nghĩa biến dateKey/selectedDate ngay lập tức từ hàm tạo sẵn
+  const dateKey = mpFindShowtimeDateKey(showtimeId);
+  if (!dateKey) { alert("Không xác định được ngày của suất chiếu!"); return; }
+  const selectedDate = dateKey; // Gán hai biến bằng nhau để các đoạn code payload phía dưới không bị lỗi logic
+
   const durMin = mpCalToMin(st.endTime) - mpCalToMin(st.startTime);
+  const newEnd = mpMinToHHMM(mpCalToMin(newStart) + durMin);
+
+  // ==========================================================================
+  // 🌟 KHÓA CHẶN TRÙNG LỊCH: Kiểm tra conflict giờ chiếu thực tế (dateKey đã sẵn sàng)
+  // ==========================================================================
   const newStartMin = mpCalToMin(newStart);
   const newEndMin = newStartMin + durMin;
-  const newEnd = mpMinToHHMM(newEndMin);
 
-  const dateKey = mpFindShowtimeDateKey(showtimeId);
   const conflict = (window.mpCalRawByDate[dateKey] || []).find(o => {
-    if (o.showtimeId === showtimeId || o.roomId !== newRoom) return false;
-    const os = mpCalToMin(o.startTime), oe = mpCalToMin(o.endTime);
+    if (String(o.showtimeId) === String(showtimeId) || o.roomId !== newRoom) return false;
+    const os = mpCalToMin(o.startTime);
+    const oe = mpCalToMin(o.endTime);
     return newStartMin < oe && newEndMin > os;
   });
+
   if (conflict) {
-    alert(`Không thể lưu: trùng với "${conflict.movieTitle}" (${conflict.startTime}-${conflict.endTime}) tại ${mpCalRoomLabel(newRoom)}.`);
+    alert(`❌ KHÔNG THỂ CẬP NHẬT!\n\nKhung giờ bạn chọn (${newStart} - ${newEnd}) đã bị trùng lịch với phim "${conflict.movieTitle}" (${conflict.startTime} - ${conflict.endTime}) tại ${mpCalRoomLabel(newRoom)}.\nVui lòng chọn khung giờ khác!`);
     return;
   }
+  const payload = {
+    roomId: newRoom,
+    startTime: `${selectedDate}T${newStart}:00`,
+    endTime: `${selectedDate}T${newEnd}:00`,
+    ticketPrice: newPrice,
+    status: newStatus,
+    updatedBy: 1
+  };
 
-  mpSetShowtimeOverride(showtimeId, { startTime: newStart, endTime: newEnd, roomId: newRoom, ticketPrice: newPrice });
-  mpPatchRawShowtime(showtimeId, { startTime: newStart, endTime: newEnd, roomId: newRoom, ticketPrice: newPrice });
-  mpEnsureRoomKnown(newRoom);
-  alert("Đã lưu thay đổi suất chiếu (tạm trên trình duyệt — backend chưa có API cập nhật thật).");
-  mpCloseShowtimePopover();
-  mpCalRenderCurrent();
+  // 🟢 Đã sửa: Khớp chuẩn xác 100% với endpoint update tường minh của Spring Boot
+fetch(`http://localhost:8080/api/showtimes/update/${showtimeId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(res => { if (!res.ok) throw new Error("Lỗi cập nhật!"); return res.json(); })
+  .then(() => {
+    alert("Hệ thống đã cập nhật suất chiếu xuống SQL Server thành công!");
+    window.mpCalRawByDate = {}; // Xóa cache sạch
+    mpCloseShowtimePopover(); loadManagerMatrix();
+  })
+  .catch(err => alert("Cập nhật lên Server thất bại: " + err.message));
 };
 
 window.mpDeleteShowtimeFromPopover = function(showtimeId){
@@ -1925,19 +1997,15 @@ window.openAddShowtimeModal = function() {
 
   movieSelect.innerHTML = "";
   
-  // Kiểm tra mảng phim toàn cục đã lưu từ database
   if (!window.moviesList || window.moviesList.length === 0) {
     alert("Không tìm thấy danh sách phim trong bộ nhớ! Đang tải lại...");
     return;
   }
 
-  // Duyệt qua danh sách phim động để nạp vào Form
   window.moviesList.forEach(m => {
     movieSelect.innerHTML += `<option value="${m.movieId}">${m.title} (${m.duration || m.durationMinutes || 0} phút)</option>`;
   });
 
-  // Nạp danh sách phòng chiếu ĐỘNG từ window.MP_ROOMS (không hardcode cứng
-  // số phòng nữa — phòng nào có trong dữ liệu thực tế sẽ tự xuất hiện ở đây)
   const roomSelect = document.getElementById("st-room-select");
   if (roomSelect) {
     roomSelect.innerHTML = window.MP_ROOMS.slice()
@@ -1946,9 +2014,34 @@ window.openAddShowtimeModal = function() {
       .join("");
   }
 
-  // Reset các ô nhập liệu về trạng thái trống sạch sẽ
+  // Reset các ô nhập liệu cơ bản về trạng thái mặc định
   document.getElementById("st-start-time").value = "";
   document.getElementById("st-ticket-price").value = "90000";
+
+  // 🌟 THÊM MỚI CHỖ NÀY: Tự động chèn Dropdown chọn 3 trạng thái vào Form Tạo mới nếu chưa có
+  let statusGroup = document.getElementById("st-status-group");
+  if (!statusGroup) {
+    // Bốc thằng ô nhập giá vé để chèn cái dropdown trạng thái lên ngay phía trên nó
+    const priceInput = document.getElementById("st-ticket-price");
+    if (priceInput && priceInput.parentElement) {
+      statusGroup = document.createElement("div");
+      statusGroup.id = "st-status-group";
+      statusGroup.className = "mp-form-group"; // Ăn theo class CSS form chung của nhóm em
+      statusGroup.innerHTML = `
+        <label style="display:block; margin: 10px 0 5px 0; font-size:12px; color:#9a9aa3;">Trạng thái suất chiếu</label>
+        <select id="st-status" style="width:100%; padding:8px; background:#1c1c21; color:#fff; border:1px solid rgba(255,255,255,0.12); border-radius:4px; font-size:13px;">
+          <option value="ACTIVE" selected>🟢 Active (Đang chiếu)</option>
+          <option value="INACTIVE">🟡 Inactive (Sắp chiếu)</option>
+          <option value="HIDDEN">🔴 Ẩn (Hidden)</option>
+        </select>
+      `;
+      // Chèn lên trước ô giá vé
+      priceInput.parentElement.insertBefore(statusGroup, priceInput.previousSibling);
+    }
+  } else {
+    // Nếu dropdown đã tồn tại từ lần mở trước, reset nó về mặc định ACTIVE
+    document.getElementById("st-status").value = "ACTIVE";
+  }
 
   document.getElementById("mp-add-showtime-modal").style.display = "flex";
 };
@@ -1961,10 +2054,13 @@ window.closeAddShowtimeModal = function() {
 window.submitAddShowtimeForm = function() {
   const movieId = document.getElementById("st-movie-select").value;
   const roomId = parseInt(document.getElementById("st-room-select").value) || 1;
-  const startTimeRaw = document.getElementById("st-start-time").value; // Định dạng "HH:mm"
+  const startTimeRaw = document.getElementById("st-start-time").value; 
   const ticketPrice = parseFloat(document.getElementById("st-ticket-price").value) || 0;
   
-  // Bốc lấy ngày mà Manager đang xem ở ô input date ngoài ma trận lịch chiếu
+  // 🌟 THÊM MỚI: Bốc trạng thái được chọn từ Form (Mặc định phòng hờ là ACTIVE)
+  const statusSelect = document.getElementById("st-status");
+  const showtimeStatus = statusSelect ? statusSelect.value : "ACTIVE";
+  
   const selectedDate = document.getElementById("mp-matrix-date-input").value;
 
   if (!startTimeRaw) {
@@ -1976,14 +2072,11 @@ window.submitAddShowtimeForm = function() {
     return;
   }
 
-  // Định dạng lại mốc thời gian ISO chuẩn LocalDateTime gửi cho Java nhận diện: "YYYY-MM-DDTHH:mm:00"
   const formattedStartTime = `${selectedDate}T${startTimeRaw}:00`;
 
-  // Tìm phim tương ứng để lấy thời lượng tự động tính toán giờ kết thúc (endTime) cho Java
   const targetMovie = window.moviesList.find(m => String(m.movieId) === String(movieId));
   const duration = targetMovie ? (targetMovie.duration || targetMovie.durationMinutes || 120) : 120;
   
-  // Tính toán thời điểm kết thúc dựa trên giờ bắt đầu và thời lượng phim bằng Javascript
   const startDateTime = new Date(`${selectedDate} ${startTimeRaw}`);
   const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
   
@@ -1991,21 +2084,20 @@ window.submitAddShowtimeForm = function() {
   const endM = String(endDateTime.getMinutes()).padStart(2, "0");
   const formattedEndTime = `${selectedDate}T${endH}:${endM}:00`;
 
-  // Đóng gói Dữ liệu JSON khớp chuẩn 100% với Entity Showtime.java của nhóm em
+  // 📦 ĐÃ SỬA: Đóng gói thêm thuộc tính "status" đồng bộ sang map payload của Java
   const payload = {
-    movie: { movieId: parseInt(movieId) }, // Khớp cấu trúc @ManyToOne Private Movie movie
+    movie: { movieId: parseInt(movieId) },
     roomId: roomId,
-    startTime: formattedStartTime, // "2026-06-20T19:00:00"
-    endTime: formattedEndTime,     // "2026-06-20T21:00:00"
+    startTime: formattedStartTime,
+    endTime: formattedEndTime,
     ticketPrice: ticketPrice,
+    status: showtimeStatus, // 🌟 Đẩy trạng thái sang Backend xử lý
     createdBy: 1
   };
 
   console.log("🚀 Payload gửi lên Spring Boot tạo suất chiếu:", payload);
 
-  // ==========================================================================
-  // POPUP CHẶN TRÙNG LỊCH (BẰNG DATA ĐỘNG - KHÔNG XÀI DOM - GIỮ NGUYÊN CẤU TRÚC CỦA KHOA)
-  // ==========================================================================
+  // --- Đoạn check trùng lịch Google Calendar động của nhóm em giữ nguyên 100% ---
   const timeToMinutes = (timeStr) => {
     const [h, m] = timeStr.split(":").map(Number);
     return h * 60 + m;
@@ -2014,7 +2106,6 @@ window.submitAddShowtimeForm = function() {
   const newStartMin = timeToMinutes(startTimeRaw);
   const newEndMin = newStartMin + duration;
 
-  // Gọi nhanh API gom lại danh sách để so sánh chéo, đảm bảo không lệch một phút nào với DB
   const checkPromises = window.moviesList.map((movie) => {
     return API.getShowtimes(movie.movieId, selectedDate)
       .then((resData) => (resData.showtimes || []).map(st => ({ ...st, movieTitle: movie.title })))
@@ -2028,12 +2119,10 @@ window.submitAddShowtimeForm = function() {
       let conflictMovieTitle = "";
 
       for (let st of currentShowtimesInDay) {
-        // Chỉ check nếu trùng phòng chiếu
         if (st.roomId === roomId) {
           const existStart = timeToMinutes(st.startTime);
           const existEnd = timeToMinutes(st.endTime);
 
-          // Công thức giao thoa: Start1 < End2 AND End1 > Start2
           if (newStartMin < existEnd && newEndMin > existStart) {
             isTimeConflict = true;
             conflictMovieTitle = st.movieTitle;
@@ -2044,14 +2133,17 @@ window.submitAddShowtimeForm = function() {
 
       if (isTimeConflict) {
         alert(`KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`);
-        return; // Chặn đứng tại đây, không cho gọi API add
+        return; 
       }
 
-      // Nếu an toàn, thực hiện gọi API lưu xuống database y như cũ của em
+      // Nếu an toàn, thực hiện gọi API lưu xuống database
       API.addShowtime(payload)
         .then(() => {
           alert("Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.");
           closeAddShowtimeModal();
+          
+          // Xóa mảng dữ liệu thô cũ để ép hệ thống gọi API nạp mới hoàn toàn từ DB về, hiển thị ẩn ngay tức thì
+          window.mpCalRawByDate = {}; 
           loadManagerMatrix();
         })
         .catch((err) => {
