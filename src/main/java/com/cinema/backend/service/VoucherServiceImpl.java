@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import com.cinema.backend.entities.Voucher;
 import com.cinema.backend.repositories.VoucherRepository;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,15 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Autowired
     private VoucherRepository voucherRepository;
+
+    // 🌟 THÊM MỚI: Bộ quét ngầm tự động chạy vào lúc 00:00:00 mỗi đêm
+    @Scheduled(cron = "0 0 0 * * ?")
+    public void scanAndDisableExpiredVouchers() {
+        LocalDateTime now = LocalDateTime.now();
+        int updatedCount = voucherRepository.autoUpdateExpiredVouchers(now);
+        System.out.println("⏰ [LumiAI System] Đã tự động quét và chuyển trạng thái ẩn " 
+                            + updatedCount + " mã Voucher hết hiệu lực lúc: " + now);
+    }
 
     @Override
     public Voucher checkVoucher(String code) {

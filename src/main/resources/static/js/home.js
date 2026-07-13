@@ -305,8 +305,8 @@ window.fetchSyncData = function () {
     });
 };
 
-// Khởi chạy khi tải trang
 // Khởi chạy khi tải trang và phục hồi trạng thái từ LocalStorage tránh lỗi refresh mất biến
+// 🌟 KHỐI SỰ KIỆN CUỐI FILE HOME.JS ĐÃ ĐƯỢC KÍCH HOẠT HÀM GỌI API ĐỘNG:
 window.addEventListener("DOMContentLoaded", () => {
   const daySelect = document.getElementById("reg-birth-day");
   const monthSelect = document.getElementById("reg-birth-month");
@@ -328,18 +328,17 @@ window.addEventListener("DOMContentLoaded", () => {
 
   if (typeof switchCgvTab === "function")
     switchCgvTab("panel-movies", "now_showing");
-  window.fetchSyncData();
+    
+  window.fetchSyncData(); // Gọi nạp phim từ database
+  
+  // 🌟 CHÈN THÊM DÒNG NÀY VÀO ĐÂY: Kích hoạt luồng cào dữ liệu ưu đãi động ngay khi tải trang
+  window.renderLasPromoGrid(); 
 
-  // 🌟 KHÓA TRÌ HOÃN 150MS: Đợi các file JS khác nạp xong giao diện mặc định rồi mới khôi phục Đăng Nhập
   setTimeout(() => {
     window.syncUserLoginSession();
-
-    // Lấy thông báo đổi quyền của tài khoản đang đăng nhập (từ nhánh admin)
     if (typeof window.loadAccountRoleNotifications === "function") {
       window.loadAccountRoleNotifications();
     }
-
-    // ĐÓN KẾT QUẢ VNPAY-CALLBACK TRẢ VỀ ĐỂ ĐIỀU HƯỚNG BƯỚC 4
   }, 150);
 });
 
@@ -2299,100 +2298,125 @@ window.lasPromoList = [
   },
 ];
 
-// Hàm tự động vẽ danh sách ưu đãi động ra ngoài trang chủ
+// ==========================================================================
+// 🌟 HÀM RENDER DỮ LIỆU SỰ KIỆN & ƯU ĐÃI ĐỒNG BỘ ĐA PHÂN VÙNG (BẢN SỬA CHÍ MẠNG)
+// ==========================================================================
 window.renderLasPromoGrid = function () {
-  const promoNewsContainer = document.getElementById("cgv-event-grid-news");
-  // 🚀 Cào dữ liệu động trực tiếp từ Database SQL Server qua Spring Boot
+  const homePromoContainer = document.getElementById("cgv-event-grid");
+  const panelPromoContainer = document.getElementById("customer-promo-grid");
+
+  console.log("✈️ Bắt đầu cào dữ liệu từ Database SQL Server...");
+
+  // Gọi trực tiếp API promos thật từ Backend
   fetch("http://localhost:8080/api/promos")
     .then((res) => {
       if (!res.ok) throw new Error("Không thể kết nối API ưu đãi");
       return res.json();
     })
     .then((promosList) => {
-      console.log("🎁 Đã nhận danh sách ưu đãi động từ Database:", promosList);
-      window.lasPromoList = promosList;
-      // Xóa rỗng phân vùng chứa của Tab Tin tức trước khi vẽ động
-      if (promoNewsContainer) promoNewsContainer.innerHTML = "";
-      window.lasPromoList.forEach((item) => {
-        // Quét sạch các trường hợp đặt tên cột từ Spring Boot đẩy lên Frontend
-        let validImg =
-          item.imageUrl || item.image_url || item.image || item.img || "";
-        validImg = validImg.trim();
-        // Định dạng chuỗi hiển thị khoảng thời gian diễn ra sự kiện
-        let dateString = `${item.startDate || item.start_date || "05/06/2026"} - ${item.endDate || item.end_date || "12/06/2026"}`;
-        // 🚀 THẦN CHÚ BẮN THẺ <IMG> TRỰC TIẾP: Triệt tiêu hoàn toàn lỗi sập co rúm khung hình của thẻ div cũ
-        let imgHTML =
-          validImg.startsWith("http") ||
-          validImg.includes("/") ||
-          validImg.includes(".")
-            ? `<img src="${validImg}" class="news-card-img-holder" style="width: 100%; height: 200px; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://www.cgv.vn/media/catalog/product/placeholder/default/cgv_title.png';">`
-            : `<div class="news-card-img-holder" style="background: #a1dbf1; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0c6291; font-size: 14px; height: 200px; width: 100%; text-align: center; padding: 0 10px; box-sizing: border-box;">${validImg || "LAS CINEMA"}</div>`;
-        // Tạo cấu trúc thẻ card chuẩn chỉ ăn khớp layout hai phân vùng
-        let cardHTML = `
-          <div class="news-promo-card" onclick="window.viewPromoDetailText('${item.id}')" style="cursor: pointer; background: #17171b; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; overflow: hidden; transition: transform 0.2s; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+      console.log("🎯 Dữ liệu ưu đãi ĐÃ LẤY THÀNH CÔNG từ DB:", promosList);
+      
+      // 🌟 GHIM CHẶT: Ép cả biến window toàn cục nhận đúng danh sách từ DB để đồng bộ hàm xem chi tiết
+      window.lasPromoList = promosList; 
+
+      // Dọn sạch cả 2 phân vùng chứa
+      if (homePromoContainer) homePromoContainer.innerHTML = "";
+      if (panelPromoContainer) panelPromoContainer.innerHTML = "";
+
+      if (!promosList || promosList.length === 0) {
+        const noData = `<div style="color:#888; grid-column:1/-1; padding:20px; text-align:center;">Dự án chưa có sự kiện nào đang diễn ra hôm nay.</div>`;
+        if (homePromoContainer) homePromoContainer.innerHTML = noData;
+        if (panelPromoContainer) panelPromoContainer.innerHTML = noData;
+        return;
+      }
+
+      // HÀM TẠO CARD ĐỒNG BỘ CHO CẢ HAI NƠI
+      const createCardHtml = (item) => {
+        let promoId = item.id;
+        let validImg = item.imageUrl || item.image_url || "";
+        let promoTitle = item.title || "Chương trình ưu đãi";
+        let dateString = `${item.startDate || "2026-07-13"} - ${item.endDate || "2026-08-08"}`;
+
+        let hasRealImage = validImg && (validImg.startsWith("http") || validImg.includes("/") || validImg.includes("."));
+
+        let imgHTML = "";
+        if (hasRealImage) {
+          imgHTML = `<img src="${validImg}" style="width: 100%; height: 180px; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=400&auto=format&fit=crop';">`;
+        } else {
+          // Hiện chữ tiêu đề sự kiện từ DB nếu không có ảnh 
+          imgHTML = `<div style="background: linear-gradient(135deg, #2c2c35, #1c1c21); border-bottom: 1px solid rgba(255,107,53,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 180px; width: 100%; color: #ff6b35; padding: 15px; box-sizing: border-box; text-align: center;">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1Z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
+                <span style="font-size: 13px; font-weight: bold; color: #f4f4f5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${promoTitle}</span>
+             </div>`;
+        }
+
+        return `
+          <div class="news-promo-card" onclick="window.viewPromoDetailText('${promoId}')" style="cursor: pointer; background: #17171b; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; overflow: hidden; display: block; height: 100%;">
               ${imgHTML}
               <div style="padding: 15px; text-align: left;">
-                  <div class="news-card-date" style="color: #a8a8b3; font-size: 12px; margin-bottom: 5px;">📅 ${dateString}</div>
-                  <div class="news-card-title-text" style="font-weight: bold; font-size: 14px; color: #f4f4f5; line-height: 1.4;">${item.title || "Chương trình ưu đãi"}</div>
+                  <div style="color: #888893; font-size: 11px; margin-bottom: 6px;">Thời gian: ${dateString}</div>
+                  <div style="font-weight: bold; font-size: 14px; color: #f4f4f5; line-height: 1.4; height: 40px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${promoTitle}</div>
               </div>
           </div>
         `;
+      };
 
-        if (promoNewsContainer) promoNewsContainer.innerHTML += cardHTML;
-      });
+      // 1. Chỉ đổ đúng 3 sự kiện của database thật ra trang chủ
+      const homePromos = promosList.slice(0, 3);
+      if (homePromoContainer) {
+        homePromoContainer.innerHTML = ""; // Xoá sạch bóng dữ liệu cũ cứng đầu
+        homePromos.forEach(item => {
+          homePromoContainer.innerHTML += createCardHtml(item);
+        });
+      }
+
+      // 2. Đổ toàn bộ sự kiện thật vào panel danh sách tổng
+      if (panelPromoContainer) {
+        promosList.forEach(item => {
+          panelPromoContainer.innerHTML += createCardHtml(item);
+        });
+      }
     })
-    .catch((err) =>
-      console.error("🚨 Lỗi khi kéo dữ liệu ưu đãi từ SQL Server: ", err),
-    );
+    .catch((err) => console.error("🚨 Lỗi nạp sự kiện hệ thống:", err));
 };
 
 // Hàm kích hoạt nhảy sang tab chi tiết ưu đãi và đổ dữ liệu
 window.viewPromoDetailText = function (promoId) {
-  // Đồng bộ ép kiểu dữ liệu về chuỗi hoặc số để so sánh khớp với ID dưới DB gửi lên
+  console.log("👉 Đang kích hoạt xem chi tiết Sự kiện ID:", promoId);
+  
+  // 🌟 ĐÃ SỬA: Dùng toán tử linh hoạt để tự động ép kiểu, tránh lỗi lệch pha chuỗi/số từ SQL Server
   const targetPromo = window.lasPromoList.find(
-    (p) => String(p.id) === String(promoId),
+    (p) => p.id == promoId || p.promotionId == promoId
   );
-  if (!targetPromo) return;
+  
+  if (!targetPromo) {
+    console.error("🚨 Không tìm thấy sự kiện tương ứng trong mảng toàn cục window.lasPromoList!");
+    return;
+  }
 
   document.getElementById("detail-promo-title").innerText = targetPromo.title;
   document.getElementById("detail-promo-date").innerText =
     "Thời gian áp dụng: " +
-    (targetPromo.startDate || targetPromo.start_date) +
+    (targetPromo.startDate || targetPromo.start_date || "-") +
     " đến " +
-    (targetPromo.endDate || targetPromo.end_date);
-  document.getElementById("detail-promo-content").innerHTML =
-    targetPromo.content;
+    (targetPromo.endDate || targetPromo.end_date || "-");
+  document.getElementById("detail-promo-content").innerHTML = targetPromo.content;
 
   const imgBoxEl = document.getElementById("detail-promo-img-box");
   if (imgBoxEl) {
-    let validImg =
-      targetPromo.imageUrl ||
-      targetPromo.image_url ||
-      targetPromo.image ||
-      targetPromo.img ||
-      "";
+    let validImg = targetPromo.imageUrl || targetPromo.image_url || targetPromo.image || targetPromo.img || "";
     validImg = validImg.trim();
 
-    if (
-      validImg.startsWith("http") ||
-      validImg.includes("/") ||
-      validImg.includes(".")
-    ) {
-      // 🚀 THẦN CHÚ ÉP STYLE: Giải phóng hoàn toàn chiều cao cố định, cố định độ rộng bài viết đứng
-      imgBoxEl.style.width = "340px"; // Độ rộng lý tưởng cho poster đứng trên giao diện máy tính
-      imgBoxEl.style.height = "auto"; // Cho phép chiều cao tự bung theo tỉ lệ 9:16 nguyên bản
-      imgBoxEl.style.flexShrink = "0"; // Không cho phép cột chữ bên phải ép bẹp ảnh
+    if (validImg.startsWith("http") || validImg.includes("/") || validImg.includes(".")) {
+      imgBoxEl.style.width = "340px";
+      imgBoxEl.style.height = "auto";
+      imgBoxEl.style.flexShrink = "0";
       imgBoxEl.style.background = "none";
-      imgBoxEl.style.backgroundImage = "none";
-      imgBoxEl.style.overflow = "visible"; // Cho phép hiển thị tràn mà không bị cắt rìa
-
-      // Nạp thẻ img thật với chiều cao tự động tính toán theo ảnh gốc 1080x1920
       imgBoxEl.innerHTML = `<img src="${validImg}" style="width: 100%; height: auto; display: block; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">`;
     } else {
-      // Hiển thị khung màu đại diện nếu dữ liệu dưới SQL Server chỉ là chuỗi ký tự text
       imgBoxEl.style.background = "#a1dbf1";
       imgBoxEl.style.width = "340px";
-      imgBoxEl.style.height = "500px"; // Giả lập chiều cao đứng chuẩn poster
+      imgBoxEl.style.height = "480px";
       imgBoxEl.style.display = "flex";
       imgBoxEl.style.alignItems = "center";
       imgBoxEl.style.justifyContent = "center";
@@ -2401,7 +2425,8 @@ window.viewPromoDetailText = function (promoId) {
       imgBoxEl.innerHTML = `<b>${validImg || "LAS CINEMA"}</b>`;
     }
   }
-  // Kích hoạt điều hướng nhảy chuyển phân vùng hiển thị Tab Panel
+  
+  // Lật sang panel hiển thị bài viết chi tiết
   window.switchCgvTab("panel-news-detail");
 };
 
@@ -2410,10 +2435,6 @@ window.addEventListener("DOMContentLoaded", () => {
   // ... các hàm có sẵn của em (generateCgvDateSlider, fetchSyncData...)
   window.renderLasPromoGrid(); // 🌟 Gọi hàm vẽ tin tức ưu đãi lên trang chủ
 });
-
-// ==========================================================================
-// 🌟 HÀM RẼ NHÁNH THANH TOÁN TOÀN DIỆN (SỬA LỖI ĐÈ HÀM & HIỂN THỊ 0 Đ)
-// ==========================================================================
 // ==========================================================================
 // 🌟 HÀM RẼ NHÁNH THANH TOÁN (SỬA LỖI NGÂN HÀNG KHÔNG HỖ TRỢ TRÊN SANDBOX)
 // ==========================================================================

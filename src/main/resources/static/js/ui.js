@@ -22,7 +22,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // 4. Load Dữ liệu ban đầu từ Database Spring Boot
   loadBannersFromDatabase();
   setInterval(moveBannerRight, 3000);
-  loadEventsFromDatabase();
+  // loadEventsFromDatabase();
 
   // 🚀 ĐÃ SỬA: Thay thế fetchSyncData bằng hàm đồng bộ danh sách phim thật từ DB lên màn hình và dropdown đặt vé
   initDatabaseMovies();
@@ -167,7 +167,7 @@ function updateTopBarMenu(fullName, roleName) {
     `;
   }
 }
-
+/*
 function loadEventsFromDatabase() {
   if (typeof API === "undefined" || !API.getEvents) return;
   API.getEvents()
@@ -189,6 +189,7 @@ function loadEventsFromDatabase() {
     })
     .catch((err) => console.error("Lỗi khi tải sự kiện từ Database: ", err));
 }
+*/
 
 function loadBannersFromDatabase() {
   if (typeof API === "undefined" || !API.getBanners) return;

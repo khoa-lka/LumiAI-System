@@ -3,6 +3,7 @@ package com.cinema.backend.service;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import com.cinema.backend.entities.Promotion;
 import com.cinema.backend.entities.Voucher;
@@ -17,6 +18,16 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Autowired
     private VoucherRepository voucherRepository;
+    
+    // 🌟 THÊM MỚI: Bộ quét ngầm tự động chạy vào lúc 00:00:00 mỗi đêm
+    // Thần chú Cron: Giây(0) Phút(0) Giờ(0) Ngày(*) Tháng(*) Thứ(?)
+    @Scheduled(cron = "0 0 0 * * ?")
+    public void scanAndDisableExpiredPromotions() {
+        LocalDate today = LocalDate.now();
+        int updatedCount = promotionRepository.autoUpdateExpiredPromotions(today);
+        System.out.println("⏰ [LumiAI System] Đã tự động quét và chuyển trạng thái ẩn " 
+                            + updatedCount + " chương trình ưu đãi hết hạn ngày " + today);
+    }
 
     // 1. Dùng cho Tab Quản lý của Manager: Lấy tất cả không bộ lọc
     @Override
