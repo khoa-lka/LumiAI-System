@@ -663,6 +663,7 @@ document.addEventListener("DOMContentLoaded", function () {
             loadShowtimes();
         });
     });
+    loadPublicFeedbacks();
     loadFeedbacks();
     renderDates();
     loadMovies();
@@ -744,29 +745,40 @@ function escapeFbText(text) {
 }
 
 // Hàm load danh sách phản hồi từ DB
+// staff.js - Dành cho nhân viên (có kiểm tra đăng nhập)
 async function loadFeedbacks() {
+    console.log("🚀 Đang bắt đầu load feedback...");
     try {
-        const response = await fetch('/api/pos/feedbacks');
-        const feedbacks = await response.json();
+        const [fbResponse, movieResponse, orderResponse] = await Promise.all([
+            fetch('/api/pos/feedbacks').then(res => res.json()),
+            fetch('/api/movies').then(res => res.json()),
+            fetch('/api/orders').then(res => res.json())
+        ]);
+
+        // Tạo Map để tra cứu tên phim qua Order hoặc Movie ID
+        const movieMap = {};
+        movieResponse.forEach(m => movieMap[m.movieId || m.id] = m.title);
+
         const fbList = document.getElementById("feedbackList");
         if (!fbList) return;
         fbList.innerHTML = "";
 
-        const parents = feedbacks.filter(fb => !fb.title.includes("Phản hồi"));
-        const replies = feedbacks.filter(fb => fb.title.includes("Phản hồi"));
-
-        if (parents.length === 0) {
-            fbList.innerHTML = `<div class="fb-empty-state">Chưa có phản hồi nào từ khách hàng.</div>`;
-            return;
-        }
+        const parents = fbResponse.filter(fb => !fb.title.includes("Phản hồi"));
+        const replies = fbResponse.filter(fb => fb.title.includes("Phản hồi"));
 
         parents.forEach(p => {
+            // Lấy tên phim từ Map dựa trên movieId 
+            const movieName = movieMap[p.movieId] || "Không xác định"; 
+            
             const myReplies = replies.filter(r => r.title.includes(`ID: ${p.feedbackId}`));
             const div = document.createElement("div");
             div.className = "fb-review-card";
 
             div.innerHTML = `
                 <div class="fb-review-head">
+                    <div style="display: inline-block; background: rgba(255, 107, 53, 0.12); border: 1px solid rgba(255, 107, 53, 0.4); color: #ff6b35; font-size: 11.5px; font-weight: bold; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(255, 107, 53, 0.15);">
+     PHIM: ${escapeFbText(movieName)}
+</div>
                     <div class="fb-review-avatar">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${FB_ICON_USER}</svg>
                     </div>
@@ -788,11 +800,19 @@ async function loadFeedbacks() {
                     Phản hồi
                 </button>
             `;
+
             fbList.appendChild(div);
         });
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Lỗi:", e); }
 }
 
+document.addEventListener("DOMContentLoaded", function () {
+    // Logic kiểm tra đăng nhập giữ nguyên cho nhân viên [cite: 901]
+    const loggedUser = getLoggedUser();
+    if (!loggedUser) return;
+    
+    loadFeedbacks(); // Gọi load ngay khi trang khởi tạo
+});
 // Hàm phản hồi riêng biệt
 window.replySpecificFeedback = async function (feedbackId) {
     const content = document.getElementById(`reply-${feedbackId}`).value.trim();

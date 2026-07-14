@@ -162,10 +162,14 @@ window.syncUserLoginSession = function () {
     const accountId = uData.account_id || uData.accountId;
     if (accountId) {
       fetch(`http://localhost:8080/api/bookings/user/${accountId}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("Thất bại khi lấy dữ liệu từ DB");
-          return res.json();
-        })
+  .then((res) => {
+    if (!res.ok) {
+        // Chỉ log lỗi chứ không throw để không làm hỏng các phần khác
+        console.warn("Lịch sử đặt vé chưa có hoặc API lỗi, bỏ qua...");
+        return []; // Trả về mảng rỗng để renderTransactionHistory vẫn chạy được
+    }
+    return res.json();
+  })
         .then((dbBookings) => {
           // Map chính xác các thuộc tính sạch từ backend trả về
           window.userPastInvoices = dbBookings.map((b) => ({
@@ -495,6 +499,12 @@ function viewMovieDetailText(title, genre) {
       synopsisBox.innerText =
         targetMovie.synopsis || "Chưa có tóm tắt cho bộ phim điện ảnh này.";
     }
+
+    // 🚀 BẠN ĐÃ QUÊN 4 DÒNG NÀY (THÊM VÀO ĐÂY ĐỂ GỌI FEEDBACK SAU KHI VẼ XONG PHIM)
+    const movieId = targetMovie.movieId || targetMovie.movie_id || targetMovie.id;
+    if (movieId && typeof window.loadFeedbacksForMovie === 'function') {
+        window.loadFeedbacksForMovie(movieId);
+    }
   }
 
   const bookBtn = document.getElementById("btn-detail-book-now");
@@ -505,7 +515,6 @@ function viewMovieDetailText(title, genre) {
   }
   switchCgvTab("panel-movie-detail");
 }
-
 function openCheckoutReview() {
   const currentMovie = document.getElementById("cgv-combo-movie").value;
   const fnbItems = window.fnbMenu.filter((i) => i.qty > 0);
@@ -1000,53 +1009,73 @@ function fbEscapeText(text) {
   return div.innerHTML;
 }
 
-window.loadFeedbacksForMovie = function (movieId) {
-  const container = document.getElementById("feedback-list-container");
-  const avgBox = document.getElementById("feedback-average-box");
-  if (!container) return;
+window.loadFeedbacksForMovie = async function(movieId) {
+    try {
+        const response = await fetch(`/api/feedback/movie/${movieId}`);
+        const feedbacks = await response.json();
+        
+        const container = document.getElementById("feedback-list-container");
+        const avgBox = document.getElementById("feedback-average-box");
+        if (!container) return;
+        
+        container.innerHTML = "";
+        
+        // 1. Trạng thái trống gọi đúng class .fb-review-empty của bạn
+        if (feedbacks.length === 0) {
+            container.innerHTML = `<div class="fb-review-empty">Chưa có đánh giá nào cho phim này.</div>`;
+            if (avgBox) avgBox.innerHTML = "⭐ 0.0 / 5";
+            return;
+        }
 
-  fetch(`http://localhost:8080/api/feedback/movie/${movieId}`)
-    .then((res) => res.json())
-    .then((data) => {
-      if (!data || data.length === 0) {
-        container.innerHTML = `<div class="fb-review-empty">Chưa có đánh giá nào cho phim này.</div>`;
-        if (avgBox) avgBox.innerHTML = "⭐ Chưa có đánh giá";
-        return;
-      }
+        let totalStars = 0;
+        
+        // 2. Tạo thẻ bọc Grid gọi đúng class .fb-review-grid của bạn
+        const gridWrapper = document.createElement("div");
+        gridWrapper.className = "fb-review-grid";
 
-      const total = data.reduce((sum, fb) => sum + Number(fb.ratingStars || 0), 0);
-      const avg = (total / data.length).toFixed(1);
-      if (avgBox)
-        avgBox.innerHTML = `⭐ ${avg}/5 · ${data.length} đánh giá`;
+        feedbacks.forEach(fb => {
+            const stars = fb.ratingStars || 5;
+            totalStars += stars;
+            const reviewerName = fb.title || 'Khách hàng';
+            
+            // Lấy màu và avatar động
+            const avatarBg = window.fbAvatarColor ? window.fbAvatarColor(reviewerName) : "#ff6b35";
+            const avatarInitials = window.fbInitials ? window.fbInitials(reviewerName) : "KH";
+            
+            const div = document.createElement("div");
+            div.className = "fb-review-card"; // Gọi class của bạn
+            
+            // 3. Cấu trúc HTML tuân thủ 100% bộ CSS trong style.txt của bạn
+            div.innerHTML = `
+                <div class="fb-review-head">
+                    <div class="fb-review-avatar" style="background: ${avatarBg};">
+                        ${avatarInitials}
+                    </div>
+                    <div class="fb-review-headtext">
+                        <span class="fb-review-name">${reviewerName}</span>
+                        <span class="fb-review-date">Đã đánh giá trải nghiệm</span>
+                    </div>
+                    <div class="fb-review-rating">
+                        ⭐ ${stars}.0
+                    </div>
+                </div>
+                <p class="fb-review-text">${fb.content}</p>
+            `;
+            gridWrapper.appendChild(div);
+        });
 
-      container.innerHTML = `
-  <div class="fb-review-grid">
-    ${data
-      .map((fb) => {
-        const time = new Date(fb.createdAt).toLocaleDateString("vi-VN");
-        const initials = fbInitials(fb.accountName);
-        const color = fbAvatarColor(fb.accountName);
-        return `
-        <div class="fb-review-card">
-          <div class="fb-review-head">
-            <div class="fb-review-avatar" style="background:${color};">${initials}</div>
-            <div class="fb-review-headtext">
-              <b class="fb-review-name">${fbEscapeText(fb.accountName)}</b>
-              <span class="fb-review-date">${time}</span>
-            </div>
-            <span class="fb-review-rating">★ ${fb.ratingStars}</span>
-          </div>
-          <p class="fb-review-text">${fbEscapeText(fb.content)}</p>
-        </div>
-      `;
-      })
-      .join("")}
-  </div>
-`;
-    })
-    .catch((err) => console.error("Lỗi load feedback:", err));
+        container.appendChild(gridWrapper);
+
+        // Cập nhật số sao trung bình trên header
+        if (avgBox) {
+            const avg = (totalStars / feedbacks.length).toFixed(1);
+            avgBox.innerHTML = `⭐ ${avg} / 5 <span style="font-size:12px; color:var(--muted); font-weight:normal;">(${feedbacks.length} lượt)</span>`;
+        }
+
+    } catch (e) { 
+        console.error("Lỗi khi tải feedback:", e); 
+    }
 };
-
 function closeFeedbackModal() {
   document.getElementById("feedback-modal").classList.remove("open");
 }
@@ -2431,6 +2460,9 @@ window.viewPromoDetailText = function (promoId) {
 window.addEventListener("DOMContentLoaded", () => {
   // ... các hàm có sẵn của em (generateCgvDateSlider, fetchSyncData...)
   window.renderLasPromoGrid(); // 🌟 Gọi hàm vẽ tin tức ưu đãi lên trang chủ
+  if (typeof window.loadFeedbacks === "function") {
+      window.loadFeedbacks(); 
+  }
 });
 
 // ==========================================================================
