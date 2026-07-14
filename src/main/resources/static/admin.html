@@ -369,13 +369,20 @@
     } catch (e) {}
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    displayAdmDate();
-    loadAdmProfile();
-    // Tab "Dashboard" mặc định active ngay khi tải trang,
-    // nên phải load data ngay từ đầu (không đợi người dùng click vào tab).
-    if (typeof renderAdminDashboard === "function") renderAdminDashboard();
-  });
+document.addEventListener("DOMContentLoaded", function () {
+  displayAdmDate();
+  loadAdmProfile();
+
+  // Tải dữ liệu thật từ API ngay khi mở trang Admin
+  if (typeof loadAdminDashboard === "function") {
+    loadAdminDashboard();
+  }
+
+  // Tự động cập nhật Dashboard
+  if (typeof startAdminDashboardAutoRefresh === "function") {
+    startAdminDashboardAutoRefresh();
+  }
+});
 })();
 
 function toggleAdmUserDropdown() {
