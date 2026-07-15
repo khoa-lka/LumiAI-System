@@ -507,10 +507,9 @@
             — SỰ KIỆN VÀ ƯU ĐÃI —
           </div>
 
-          <!-- 🔧 ĐÃ SỬA: home.js đã có sẵn hàm renderLasPromoGrid() tìm đúng id này
-               để đổ dữ liệu ưu đãi thật (fetch /api/promos), nhưng HTML lại thiếu
-               hẳn container này nên tab luôn trống trơn — bổ sung lại. -->
-          <div class="cgv-event-grid" id="cgv-event-grid-news" style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"></div>
+          <!-- Thêm thẻ grid này vào để hàm render của home.js bốc trúng id đổ dữ liệu -->
+          <div class="cgv-event-grid" id="customer-promo-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1200px; margin: 0 auto; padding: 0 15px;">
+          </div>
         </div>
 
         <div id="panel-profile" class="cgv-panel">
