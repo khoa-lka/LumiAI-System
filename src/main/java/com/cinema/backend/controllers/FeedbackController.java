@@ -1,12 +1,13 @@
 package com.cinema.backend.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
 import com.cinema.backend.entities.Feedback;
 import com.cinema.backend.entities.Order1;
 import com.cinema.backend.repositories.FeedbackRepository;
 import com.cinema.backend.repositories.OrderRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -38,16 +39,15 @@ public class FeedbackController {
 
         if (order.getCustomer() == null ||
                 !order.getCustomer().getAccountId().equals(req.getAccountStaffId())) {
+
             return Map.of(
                     "success", false,
                     "message", "Bạn không có quyền feedback đơn hàng này!"
             );
         }
 
-        boolean hasUsedTicket =
-                "Đã sử dụng".equalsIgnoreCase(req.getTicketStatus());
+        if (!"Đã sử dụng".equalsIgnoreCase(req.getTicketStatus())) {
 
-        if (!hasUsedTicket) {
             return Map.of(
                     "success", false,
                     "message", "Chỉ vé đã sử dụng mới được gửi feedback!"
@@ -55,6 +55,7 @@ public class FeedbackController {
         }
 
         Feedback fb = new Feedback();
+
         fb.setTitle(req.getTitle());
         fb.setContent(req.getContent());
         fb.setRatingStars(req.getRatingStars());
@@ -71,13 +72,15 @@ public class FeedbackController {
     }
 
     @GetMapping("/movie/{movieId}")
-    public List<Map<String, Object>> getByMovie(@PathVariable Integer movieId) {
+    public List<Map<String,Object>> getByMovie(@PathVariable Integer movieId){
 
         List<Object[]> rows = repo.getFeedbackWithUser(movieId);
-        List<Map<String, Object>> result = new ArrayList<>();
 
-        for (Object[] r : rows) {
-            Map<String, Object> item = new HashMap<>();
+        List<Map<String,Object>> result = new ArrayList<>();
+
+        for(Object[] r : rows){
+
+            Map<String,Object> item = new HashMap<>();
 
             item.put("feedbackId", r[0]);
             item.put("title", r[1]);
@@ -93,8 +96,26 @@ public class FeedbackController {
 
         return result;
     }
+@GetMapping("/movie/{movieId}/average")
+public Map<String, Object> getAverage(@PathVariable Integer movieId) {
 
-    public static class FeedbackRequest {
+    Double avg = repo.getAverageRating(movieId);
+
+    if (avg == null) avg = 0.0;
+
+    return Map.of(
+        "average", Math.round(avg * 10.0) / 10.0
+    );
+}
+    @GetMapping("/public-all")
+    public List<Feedback> getAllPublicFeedback(){
+
+        return repo.findAll(
+                Sort.by(Sort.Direction.DESC,"createdAt")
+        );
+    }
+
+    public static class FeedbackRequest{
 
         private String title;
         private String content;
@@ -104,60 +125,27 @@ public class FeedbackController {
         private Integer orderId;
         private String ticketStatus;
 
-        public String getTitle() {
-            return title;
-        }
+        public String getTitle(){ return title; }
+        public void setTitle(String title){ this.title = title; }
 
-        public void setTitle(String title) {
-            this.title = title;
-        }
+        public String getContent(){ return content; }
+        public void setContent(String content){ this.content = content; }
 
-        public String getContent() {
-            return content;
-        }
+        public Integer getRatingStars(){ return ratingStars; }
+        public void setRatingStars(Integer ratingStars){ this.ratingStars = ratingStars; }
 
-        public void setContent(String content) {
-            this.content = content;
-        }
+        public Integer getMovieId(){ return movieId; }
+        public void setMovieId(Integer movieId){ this.movieId = movieId; }
 
-        public Integer getRatingStars() {
-            return ratingStars;
-        }
+        public Integer getAccountStaffId(){ return accountStaffId; }
+        public void setAccountStaffId(Integer accountStaffId){ this.accountStaffId = accountStaffId; }
 
-        public void setRatingStars(Integer ratingStars) {
-            this.ratingStars = ratingStars;
-        }
+        public Integer getOrderId(){ return orderId; }
+        public void setOrderId(Integer orderId){ this.orderId = orderId; }
 
-        public Integer getMovieId() {
-            return movieId;
-        }
+        public String getTicketStatus(){ return ticketStatus; }
+        public void setTicketStatus(String ticketStatus){ this.ticketStatus = ticketStatus; }
 
-        public void setMovieId(Integer movieId) {
-            this.movieId = movieId;
-        }
-
-        public Integer getAccountStaffId() {
-            return accountStaffId;
-        }
-
-        public void setAccountStaffId(Integer accountStaffId) {
-            this.accountStaffId = accountStaffId;
-        }
-
-        public Integer getOrderId() {
-            return orderId;
-        }
-
-        public void setOrderId(Integer orderId) {
-            this.orderId = orderId;
-        }
-
-        public String getTicketStatus() {
-            return ticketStatus;
-        }
-
-        public void setTicketStatus(String ticketStatus) {
-            this.ticketStatus = ticketStatus;
-        }
     }
+
 }
