@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import com.cinema.backend.config.JwtUtil;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -21,6 +22,9 @@ public class AccountController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;   
 
     @PostMapping("/login")
     public ResponseEntity<?> handleLogin(@RequestBody Map<String, String> loginRequest) {
@@ -88,6 +92,8 @@ public class AccountController {
             ));
         }
 
+        String token = jwtUtil.generateToken(account.getAccountId(), account.getRoleId());
+
         return ResponseEntity.ok(Map.of(
             "status", "success",
             "message", "Đăng nhập thành công!",
@@ -97,7 +103,7 @@ public class AccountController {
                 "email", account.getEmail(),
                 "phoneNumber", account.getPhone(),
                 "roleId", account.getRoleId(),
-                "token", "generated-jwt-token-string"
+                "token", token
             )
         ));
     }

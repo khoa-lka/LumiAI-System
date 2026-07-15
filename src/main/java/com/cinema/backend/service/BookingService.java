@@ -94,7 +94,18 @@ String fnbSummary = "Không có";
     // Lấy suất chiếu
     Showtime showtime = showtimeRepository.findById(request.getShowtimeId())
             .orElseThrow(() -> new RuntimeException("Showtime not found"));
-
+    
+    // 🔒 UC-07: Chặn đặt trùng ghế — kiểm tra ghế đã bán chưa
+    java.util.List<String> soldSeats =
+            seatRepository.findSoldSeatCodesByShowtime(request.getShowtimeId());
+    for (String seatCode : request.getSeats()) {
+        boolean taken = soldSeats.stream()
+                .anyMatch(s -> s != null && s.trim().equalsIgnoreCase(seatCode.trim()));
+        if (taken) {
+            throw new RuntimeException(
+                    "Ghế " + seatCode + " đã có người đặt, vui lòng chọn ghế khác!");
+        }
+    }
     // =========================
     // Tạo Order
     // =========================
@@ -241,7 +252,13 @@ System.out.println("ORDER ID = " + order.getOrderId());
         firstTicketCode = code;
         }   
 
-        ticket = ticketRepository.save(ticket);
+        try {
+            ticket = ticketRepository.save(ticket);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            // Ghế vừa bị người khác giành mất đúng khoảnh khắc này (UNIQUE index chặn)
+            throw new RuntimeException(
+                    "Ghế " + seatCode + " vừa có người khác đặt mất, vui lòng chọn lại!");
+        }
         savedTicketCodes.add(code);
 
         OrderDetail detail = new OrderDetail();
