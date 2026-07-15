@@ -1566,10 +1566,17 @@
   border-radius:8px;padding:8px 12px;font-size:12.5px;cursor:pointer;
 }
 .mp-msf-clear:hover{border-color:#ff6b35;color:#ff6b35;}
-/* BỔ SUNG: .cgv-input-text vốn chỉ định nghĩa trong auth.css, nhưng manager.html
-   không nhúng auth.css -> toàn bộ input/select trong các popup (Voucher, Sự kiện,
-   Suất chiếu...) bị mất style (không viền bo tròn, không nền tối, không viền cam khi
-   focus). Thêm lại rule này trực tiếp vào manager.css để không phụ thuộc auth.css. */
+
+/* ==========================================================================
+   FIX: form input + nut Luu/Huy dung chung trong cac modal cua Manager
+   (them/sua phim, F&B, nhap kho, xoa xac nhan, su kien, voucher, suat chieu...).
+   Cac class .cgv-input-text/.btn-cgv-submit/.btn-cgv-cancel von duoc dinh nghia
+   trong auth.css (dung cho trang dang nhap/dang ky), nhung manager.html lai
+   dung lai cac class nay o rat nhieu modal (76 lan) ma KHONG load auth.css -
+   khien toan bo input/nut trong modal Manager bi mat style, hien thi theo
+   giao dien mac dinh cua trinh duyet. Copy lai dinh nghia vao day de tu chua,
+   tranh phai load them auth.css (khong lien quan toi trang Manager).
+   ========================================================================== */
 .cgv-input-text {
   width: 100%;
   padding: 11px 16px;
@@ -1589,10 +1596,6 @@
 .cgv-input-text:focus {
   border: 1px solid var(--cgv-red);
 }
-
-/* BỔ SUNG: .btn-cgv-submit / .btn-cgv-cancel cũng chỉ định nghĩa trong auth.css,
-   cùng nguyên nhân với .cgv-input-text ở trên -> nút Hủy/Lưu trong các popup bị
-   mất màu (cam cho nút Lưu, xám cho nút Hủy) và hiệu ứng hover. */
 .btn-cgv-submit {
   background-color: #ff6b35;
   color: white;
@@ -1604,6 +1607,9 @@
   cursor: pointer;
   margin-top: 10px;
   border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  transition: background-color 0.2s, transform 0.2s;
 }
 .btn-cgv-submit:hover {
   background-color: #e0551f;
@@ -1620,6 +1626,7 @@
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  transition: background-color 0.2s, transform 0.2s;
 }
 .btn-cgv-cancel:hover {
   background-color: #333338;
