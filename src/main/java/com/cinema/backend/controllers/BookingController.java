@@ -15,6 +15,7 @@ import com.cinema.backend.entities.Banner;
 import com.cinema.backend.entities.Booking;
 import com.cinema.backend.repositories.BannerRepository;
 import com.cinema.backend.repositories.BookingRepository;
+import java.util.Map;
 @RestController
 @RequestMapping("/api/bookings")
 @CrossOrigin("*")
