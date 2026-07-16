@@ -5,12 +5,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.cinema.backend.dto.FoodItemDTO;
-import com.cinema.backend.entities.FoodBeverage;
-import com.cinema.backend.entities.Showtime;
 import com.cinema.backend.entities.Voucher;
-import com.google.auto.value.AutoValue.Builder;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -34,7 +32,12 @@ public class OrderHistoryDTO {
 
     private LocalDateTime createdDate;
 
-    private Showtime showtime;
+    // BO SUNG: đổi từ Showtime (Hibernate Entity) sang ShowtimeHistoryDTO — tránh trả
+    // thẳng entity ra JSON (rủi ro lazy-loading proxy / vòng lặp serialization).
+    // Đồng thời sửa luôn import "com.google.auto.value.AutoValue.Builder" bị nhầm ở
+    // bản trước (không liên quan gì tới Lombok, có thể gây lỗi biên dịch nếu thư viện
+    // AutoValue không có trong classpath) thành đúng "lombok.Builder".
+    private ShowtimeHistoryDTO showtime;
 
     private Voucher voucher;
 
@@ -42,6 +45,4 @@ public class OrderHistoryDTO {
 
     private List<FoodItemDTO> fnb;
 
-    
 }
-

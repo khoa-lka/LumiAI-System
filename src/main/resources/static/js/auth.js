@@ -71,12 +71,14 @@ function submitCgvLogin(event) {
         console.log("Saved:", localStorage.getItem("las_logged_in_user"));
 
         // 1. Lưu thông tin đăng nhập vào bộ nhớ trình duyệt
-        sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("accountId", uData.accountId);
-        sessionStorage.setItem("fullName", uData.fullName);
-        sessionStorage.setItem("roleId", uData.roleId);
-        window.currentLoggedInId = uData.accountId;
+        const accountId = uData.accountId || uData.account_id;
 
+        sessionStorage.setItem("isLoggedIn", "true");
+        sessionStorage.setItem("accountId", String(accountId));
+        sessionStorage.setItem("fullName", uData.fullName || "");
+        sessionStorage.setItem("roleId", String(uData.roleId));
+
+        window.currentLoggedInId = accountId;
         // STAFF (roleId = 2): đăng nhập xong vào thẳng Máy POS, không cần
         // đi qua giao diện trang chủ như khách hàng/Manager/Admin.
         if (Number(uData.roleId) === 2) {
@@ -194,20 +196,132 @@ function submitCgvRegister(event) {
   const birthMonth = document.getElementById("reg-birth-month").value;
   const birthYear = document.getElementById("reg-birth-year").value;
 
-  if (
-    !name ||
-    !phone ||
-    !email ||
-    !password ||
-    !birthDay ||
-    !birthMonth ||
-    !birthYear
-  ) {
+  // Sửa lỗi: agreementChecked chưa từng được khai báo (dùng biến này ở dưới
+  // sẽ gây ReferenceError). Đọc trực tiếp từ trạng thái checkbox.
+  const agreementChecked =
+    document.getElementById("reg-agreement")?.checked || false;
+
+  // Kiểm tra họ tên
+  if (!name) {
+    document.getElementById("reg-name")?.focus();
+
+    return window.showCgvToast("Vui lòng nhập họ và tên!", "error");
+  }
+
+  if (!/^[\p{L}\s]+$/u.test(name)) {
+    document.getElementById("reg-name")?.focus();
+
     return window.showCgvToast(
-      "Vui lòng điền đầy đủ thông tin và chọn ngày sinh!",
+      "Họ tên chỉ được chứa chữ cái và khoảng trắng!",
       "error",
     );
   }
+
+  if (name.length < 2 || name.length > 50) {
+    document.getElementById("reg-name")?.focus();
+
+    return window.showCgvToast("Họ tên phải có từ 2 đến 50 ký tự!", "error");
+  }
+
+  // Kiểm tra số điện thoại
+  if (!phone) {
+    document.getElementById("reg-phone")?.focus();
+
+    return window.showCgvToast("Vui lòng nhập số điện thoại!", "error");
+  }
+
+  if (!/^0\d{9}$/.test(phone)) {
+    document.getElementById("reg-phone")?.focus();
+
+    return window.showCgvToast(
+      "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0!",
+      "error",
+    );
+  }
+
+  // Kiểm tra Email
+  if (!email) {
+    document.getElementById("reg-email")?.focus();
+
+    return window.showCgvToast("Vui lòng nhập địa chỉ Gmail!", "error");
+  }
+
+  const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+
+  if (!gmailRegex.test(email)) {
+    document.getElementById("reg-email")?.focus();
+
+    return window.showCgvToast(
+      "Email phải đúng định dạng Gmail, ví dụ: example@gmail.com",
+      "error",
+    );
+  }
+
+  // Kiểm tra mật khẩu
+  if (!password) {
+    document.getElementById("reg-password")?.focus();
+
+    return window.showCgvToast("Vui lòng nhập mật khẩu!", "error");
+  }
+
+  if (password.length < 6 || password.length > 25) {
+    document.getElementById("reg-password")?.focus();
+
+    return window.showCgvToast("Mật khẩu phải có từ 6 đến 25 ký tự!", "error");
+  }
+
+  // Kiểm tra ngày sinh
+  if (!birthDay) {
+    document.getElementById("reg-birth-day")?.focus();
+
+    return window.showCgvToast("Vui lòng chọn ngày sinh!", "error");
+  }
+
+  if (!birthMonth) {
+    document.getElementById("reg-birth-month")?.focus();
+
+    return window.showCgvToast("Vui lòng chọn tháng sinh!", "error");
+  }
+
+  if (!birthYear) {
+    document.getElementById("reg-birth-year")?.focus();
+
+    return window.showCgvToast("Vui lòng chọn năm sinh!", "error");
+  }
+
+  const birthDate = new Date(
+    Number(birthYear),
+    Number(birthMonth) - 1,
+    Number(birthDay),
+  );
+
+  const isValidBirthDate =
+    birthDate.getFullYear() === Number(birthYear) &&
+    birthDate.getMonth() === Number(birthMonth) - 1 &&
+    birthDate.getDate() === Number(birthDay);
+
+  if (!agreementChecked) {
+    document.getElementById("reg-agreement")?.focus();
+
+    return window.showCgvToast(
+      "Bạn phải đồng ý với điều khoản và chính sách trước khi đăng ký!",
+      "error",
+    );
+  }
+
+  if (!isValidBirthDate) {
+    return window.showCgvToast("Ngày tháng năm sinh không hợp lệ!", "error");
+  }
+
+  const today = new Date();
+
+  if (birthDate > today) {
+    return window.showCgvToast(
+      "Ngày sinh không được nằm trong tương lai!",
+      "error",
+    );
+  }
+
   if (captchaInput.toUpperCase() !== currentRegCaptcha.toUpperCase()) {
     return window.showCgvToast(
       "Mã xác thực Captcha đăng ký không khớp!",
@@ -244,6 +358,42 @@ function submitCgvRegister(event) {
     );
 }
 
+function resendRegisterOtp() {
+  if (!temporaryRegisterEmail) {
+    return window.showCgvToast(
+      "Không tìm thấy Email cần gửi lại OTP!",
+      "error",
+    );
+  }
+
+  fetch("/api/register/resend-otp", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email: temporaryRegisterEmail,
+    }),
+  })
+    .then(async (response) => {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Không thể gửi lại OTP!");
+      }
+
+      return data;
+    })
+    .then((data) => {
+      window.showCgvToast(data.message || "Đã gửi lại OTP mới!", "success");
+    })
+    .catch((error) => {
+      window.showCgvToast("Gửi lại OTP thất bại: " + error.message, "error");
+    });
+}
+
+window.resendRegisterOtp = resendRegisterOtp;
+
 function submitOtpVerification() {
   const otpInput = document.getElementById("otp-input-field").value.trim();
 
@@ -279,10 +429,94 @@ function saveUpdatedProfileInformationData() {
   const d = document.getElementById("profile-birth-day").value;
   const m = document.getElementById("profile-birth-month").value;
   const y = document.getElementById("profile-birth-year").value;
+
+  // ===== VALIDATION GIỐNG ĐĂNG KÝ =====
+  if (!newName || !newPhone || !newEmail || !d || !m || !y) {
+    return window.showCgvToast(
+      "Vui lòng điền đầy đủ họ tên, số điện thoại, email và ngày sinh!",
+      "error",
+    );
+  }
+
+  if (newName.length < 2 || newName.length > 50) {
+    return window.showCgvToast("Họ tên phải từ 2 đến 50 ký tự!", "error");
+  }
+
+  const nameRegex = /^[\p{L}\s]+$/u;
+  if (!nameRegex.test(newName)) {
+    return window.showCgvToast(
+      "Họ tên chỉ được chứa chữ cái và khoảng trắng!",
+      "error",
+    );
+  }
+
+  const phoneRegex = /^0\d{9}$/;
+  if (!phoneRegex.test(newPhone)) {
+    return window.showCgvToast(
+      "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0!",
+      "error",
+    );
+  }
+
+  const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+  if (!gmailRegex.test(newEmail)) {
+    return window.showCgvToast(
+      "Email phải đúng định dạng Gmail, ví dụ: example@gmail.com",
+      "error",
+    );
+  }
+
+  const birthDate = new Date(Number(y), Number(m) - 1, Number(d));
+  const today = new Date();
+
+  const isValidBirthDate =
+    birthDate.getFullYear() === Number(y) &&
+    birthDate.getMonth() === Number(m) - 1 &&
+    birthDate.getDate() === Number(d);
+
+  if (!isValidBirthDate) {
+    return window.showCgvToast("Ngày tháng năm sinh không hợp lệ!", "error");
+  }
+
+  if (birthDate >= today) {
+    return window.showCgvToast(
+      "Ngày sinh không được lớn hơn hoặc bằng ngày hiện tại!",
+      "error",
+    );
+  }
+
+  const age = today.getFullYear() - birthDate.getFullYear();
+  if (age < 6) {
+    return window.showCgvToast(
+      "Tuổi tài khoản phải từ 6 tuổi trở lên!",
+      "error",
+    );
+  }
+
   const newBirth = `${y}-${m.toString().padStart(2, "0")}-${d.toString().padStart(2, "0")}`;
+  const cachedUser = JSON.parse(
+    localStorage.getItem("las_logged_in_user") || "{}",
+  );
 
-  const accountId = window.currentLoggedInId || 2;
+  const accountId =
+    window.currentLoggedInId ||
+    sessionStorage.getItem("accountId") ||
+    cachedUser.accountId ||
+    cachedUser.account_id;
 
+  if (!accountId) {
+    return window.showCgvToast(
+      "Không xác định được tài khoản đang đăng nhập!",
+      "error",
+    );
+  }
+
+  if (!accountId) {
+    return window.showCgvToast(
+      "Không xác định được tài khoản đang đăng nhập!",
+      "error",
+    );
+  }
   // 🚀 SỬ DỤNG api.js THAY VÌ FETCH THÔ
   API.updateProfile({
     accountId: accountId,
@@ -348,18 +582,37 @@ function handleProfileTabAccess() {
 }
 
 function switchProfileSubTab(sub) {
-  document
-    .querySelectorAll(".arrow-btn")
-    .forEach((b) => b.classList.remove("active"));
-  ["chung", "lichsu"].forEach((p) => {
-    const panel = document.getElementById("pro-panel-" + p);
-    if (panel) panel.classList.remove("active");
+  document.querySelectorAll(".arrow-btn").forEach((button) => {
+    button.classList.remove("active");
   });
-  const currentBtn = document.getElementById("pro-subtab-btn-" + sub);
+
+  ["chung", "lichsu"].forEach((name) => {
+    const panel = document.getElementById("pro-panel-" + name);
+
+    if (panel) {
+      panel.classList.remove("active");
+    }
+  });
+
+  const currentButton = document.getElementById("pro-subtab-btn-" + sub);
+
   const currentPanel = document.getElementById("pro-panel-" + sub);
-  if (currentBtn) currentBtn.classList.add("active");
-  if (currentPanel) currentPanel.classList.add("active");
+
+  if (currentButton) {
+    currentButton.classList.add("active");
+  }
+
+  if (currentPanel) {
+    currentPanel.classList.add("active");
+  }
+
+  // Chỉ thêm đoạn này
+  if (sub === "lichsu") {
+    renderTransactionHistory();
+  }
 }
+
+window.switchProfileSubTab = switchProfileSubTab;
 
 function activateEditableFormFields() {
   document.querySelectorAll(".profile-readonly-input").forEach((input) => {

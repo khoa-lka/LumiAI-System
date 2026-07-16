@@ -47,8 +47,15 @@ window.openTab = function (tabId, button) {
     else if (tabId === "feedback") title.textContent = "Phản hồi khách hàng";
 };
 
+// Popup xác nhận đăng xuất (thay cho confirm() mặc định của trình duyệt) —
+// theo bản chỉnh sửa của bạn cùng nhóm.
 window.logout = function () {
-    if (!confirm("Bạn có muốn đăng xuất khỏi hệ thống không?")) return;
+    document.getElementById("confirmModal").style.display = "flex";
+};
+window.closeConfirmModal = function() {
+    document.getElementById("confirmModal").style.display = "none";
+};
+window.executeLogout = function() {
     sessionStorage.clear();
     localStorage.removeItem("las_logged_in_user");
     window.location.href = "index.html";
@@ -307,8 +314,8 @@ window.createOrder = async function () {
     const showtimeId = activeShowtimeBtn ? activeShowtimeBtn.dataset.showtimeId : null;
     const seats = Array.from(selectedSeats);
 
-    if (!movie || !date || !showtimeId) { alert("Vui lòng chọn đầy đủ Phim, Ngày và Suất chiếu."); return; }
-    if (seats.length === 0) { alert("Vui lòng chọn ít nhất một ghế để tiếp tục."); return; }
+    if (!movie || !date || !showtimeId) { showToast("Vui lòng chọn đầy đủ Phim, Ngày và Suất chiếu.", false); return; }
+    if (seats.length === 0) { showToast("Vui lòng chọn ít nhất một ghế để tiếp tục.", false); return; }
 
     const foodItems = [];
     for (const key in selectedFoods) {
@@ -331,8 +338,6 @@ window.createOrder = async function () {
 
     if (paymentMethod === 'CASH' || totalAmount === 0) {
         executeCheckoutAPI();
-    } else if (paymentMethod === 'VNPAY') {
-        startVnpaySandboxFlow(totalAmount);
     } else {
         startVietQRPayOSFlow(totalAmount);
     }
@@ -397,7 +402,7 @@ async function startVietQRPayOSFlow(amount) {
 
         const payload = data.data;
         staffPayOSOrderCode = String(payload.orderCode);
-        showQRModal(amount, 'VIETQR', null, payload.qrCode);
+        showQRModal(amount, payload.qrCode);
         startVietQRPolling();
     } catch (error) {
         console.error("Lỗi tạo thanh toán PayOS:", error);
@@ -439,109 +444,36 @@ function stopVietQRPolling() {
     if (staffQrPollInterval) { clearInterval(staffQrPollInterval); staffQrPollInterval = null; }
 }
 
-// ======================= VNPAY (chuyển sang sandbox tab mới) =======================
-// Giống hệt cách booking.js làm cho khách (window.location.href sang sandbox VNPay),
-// chỉ khác là POS không thể điều hướng nguyên tab đang bán hàng (mất dữ liệu đơn +
-// nhân viên phải rời máy POS), nên mở sandbox ở TAB MỚI, giữ nguyên tab POS.
-// Tab con (server trả về ở /api/pos/vnpay-return) sẽ tự postMessage kết quả về
-// tab POS này rồi tự đóng — POS nghe được thì tự động hoàn tất đơn, không cần
-// nhân viên bấm gì. Nút "Đã Nhận Tiền & Xuất Vé" vẫn giữ lại làm phương án dự
-// phòng (ví dụ trình duyệt chặn popup message, hoặc nhân viên tự đóng tab quá
-// nhanh trước khi kịp gửi message).
-let currentVnpayUrl = null;
-
-async function startVnpaySandboxFlow(amount) {
-    const modal = document.getElementById('qrModal');
-    modal.style.display = 'flex';
-    document.getElementById('qrTitle').textContent = "Đang tạo link thanh toán VNPAY...";
-    setText("qrSubtitle", "Đang kết nối cổng VNPAY, vui lòng đợi...");
-
-    try {
-        const response = await fetch(`/api/pos/vnpay/create-url?amount=${amount}`);
-        const url = await response.text();
-        currentVnpayUrl = url;
-        showQRModal(amount, 'VNPAY');
-        window.open(url, '_blank');
-    } catch (error) {
-        alert("Lỗi kết nối đến VNPAY!");
-        closeQRModal();
-    }
-}
-
-window.reopenVnpayTab = function() {
-    if (currentVnpayUrl) window.open(currentVnpayUrl, '_blank');
-};
-
-// Lắng nghe kết quả do tab con VNPAY (cùng origin, xem PosApiController.buildVnpayResultPage)
-// gửi về qua window.postMessage khi khách thanh toán xong.
-window.addEventListener('message', function (event) {
-    if (event.origin !== window.location.origin) return;
-    const data = event.data;
-    if (!data || data.type !== 'VNPAY_POS_RESULT') return;
-
-    const modal = document.getElementById('qrModal');
-    const isModalShowingVnpay = modal && modal.style.display === 'flex' && currentVnpayUrl;
-    if (!isModalShowingVnpay) return;
-
-    if (data.success) {
-        closeQRModal();
-        executeCheckoutAPI();
-    } else {
-        setText("qrSubtitle", "Thanh toán VNPAY không thành công hoặc đã bị hủy.");
-    }
-});
-
-function showQRModal(amount, method, customUrl = null, payOSQrCode = null) {
+function showQRModal(amount, payOSQrCode = null) {
     const modal = document.getElementById('qrModal');
     const qrImage = document.getElementById('qrImage');
     const qrCaption = document.getElementById('qrCaption');
-    const qrImageWrapper = document.getElementById('qrImageWrapper');
-    const vnpayTabBox = document.getElementById('qrVnpayTabBox');
     const bankBadges = document.getElementById('qrBankBadges');
     const banksLabel = document.getElementById('qrBanksLabel');
     const statusText = document.getElementById('qrStatusText');
-    const timerRow = document.getElementById('qrTimerRow');
-    const stepsRow = document.getElementById('qrStepsRow');
     document.getElementById('qrAmountDisplay').textContent = formatMoney(amount);
 
-    if (method === 'VNPAY') {
-        document.getElementById('qrTitle').textContent = "Thanh toán Cổng VNPAY";
-        setText("qrSubtitle", "Sandbox VNPAY đã mở ở tab mới");
-        if (qrImageWrapper) qrImageWrapper.style.display = 'none';
-        if (vnpayTabBox) vnpayTabBox.style.display = 'block';
-        if (bankBadges) bankBadges.style.display = 'none';
-        if (banksLabel) banksLabel.style.display = 'none';
-        if (statusText) statusText.style.display = 'none';
-        if (timerRow) timerRow.style.display = 'none';
-        if (stepsRow) stepsRow.style.display = 'none';
-    } else if (method === 'VIETQR') {
-        document.getElementById('qrTitle').textContent = "Chuyển khoản QR Quốc Gia";
-        setText("qrSubtitle", "Thanh toán an toàn qua VietQR - Napas 247");
-        if (qrImageWrapper) qrImageWrapper.style.display = 'inline-block';
-        if (vnpayTabBox) vnpayTabBox.style.display = 'none';
-        if (qrCaption) qrCaption.textContent = "Mã QR VietQR — Napas 247";
-        if (bankBadges) bankBadges.style.display = 'flex';
-        if (banksLabel) banksLabel.style.display = 'block';
-        if (statusText) { statusText.style.display = 'block'; statusText.textContent = "Đang chờ thanh toán..."; statusText.className = "qr-status qr-status-wait"; }
-        if (timerRow) timerRow.style.display = 'block';
-        if (stepsRow) stepsRow.style.display = 'grid';
-        setStepTexts(
-            "Mở app ngân hàng", "Chọn quét mã QR",
-            "Quét mã QR", "Kiểm tra số tiền",
-            "Xác nhận", "Hoàn tất thanh toán"
-        );
-        if (payOSQrCode) {
-            // QR thật từ PayOS (đúng số tiền, đúng nội dung, quét ra ngân hàng thật) —
-            // y hệt cách booking.js render bank-qr-img cho khách hàng.
-            qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payOSQrCode)}`;
-        } else {
-            // Fallback hiếm khi dùng tới (PayOS lỗi nhưng vẫn muốn hiển thị gì đó).
-            const BANK_BIN = "970422"; const ACCOUNT_NO = "0123456789"; const ACCOUNT_NAME = "CINEMA LUMI AI";
-            qrImage.src = `https://img.vietqr.io/image/${BANK_BIN}-${ACCOUNT_NO}-compact2.png?amount=${amount}&addInfo=Thanh toan ve phim&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
-        }
+    document.getElementById('qrTitle').textContent = "Chuyển khoản QR Quốc Gia";
+    setText("qrSubtitle", "Thanh toán an toàn qua VietQR - Napas 247");
+    if (qrCaption) qrCaption.textContent = "Mã QR VietQR — Napas 247";
+    if (bankBadges) bankBadges.style.display = 'flex';
+    if (banksLabel) banksLabel.style.display = 'block';
+    if (statusText) { statusText.style.display = 'block'; statusText.textContent = "Đang chờ thanh toán..."; statusText.className = "qr-status qr-status-wait"; }
+    setStepTexts(
+        "Mở app ngân hàng", "Chọn quét mã QR",
+        "Quét mã QR", "Kiểm tra số tiền",
+        "Xác nhận", "Hoàn tất thanh toán"
+    );
+    if (payOSQrCode) {
+        // QR thật từ PayOS (đúng số tiền, đúng nội dung, quét ra ngân hàng thật) —
+        // y hệt cách booking.js render bank-qr-img cho khách hàng.
+        qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payOSQrCode)}`;
+    } else {
+        // Fallback hiếm khi dùng tới (PayOS lỗi nhưng vẫn muốn hiển thị gì đó).
+        const BANK_BIN = "970422"; const ACCOUNT_NO = "0123456789"; const ACCOUNT_NAME = "CINEMA LUMI AI";
+        qrImage.src = `https://img.vietqr.io/image/${BANK_BIN}-${ACCOUNT_NO}-compact2.png?amount=${amount}&addInfo=Thanh toan ve phim&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
     }
-    if (method === 'VIETQR') startQrCountdown(15 * 60);
-    else if (qrCountdownInterval) { clearInterval(qrCountdownInterval); qrCountdownInterval = null; }
+    startQrCountdown(15 * 60);
     modal.style.display = 'flex';
 }
 
@@ -550,7 +482,6 @@ window.closeQRModal = function() {
     if (qrCountdownInterval) { clearInterval(qrCountdownInterval); qrCountdownInterval = null; }
     stopVietQRPolling();
     staffPayOSOrderCode = null;
-    currentVnpayUrl = null;
 }
 window.confirmQRPayment = function() { closeQRModal(); executeCheckoutAPI(); }
 
@@ -631,34 +562,38 @@ window.closeTicketSuccessModal = function() {
     document.getElementById("ticketSuccessModal").style.display = 'none';
 }
 // ======================= TOOLS (SEARCH, FEEDBACK) =======================
-window.searchTicket = function () {
+// Tra cứu đơn hàng/vé thật trong DB qua /api/pos/orders/search — trước đây
+// hàm này chỉ so khớp với đơn vừa bán gần nhất lưu trong localStorage của
+// đúng trình duyệt đó (không tra được đơn cũ / đơn từ máy POS khác).
+window.searchTicket = async function () {
     const keyword = document.getElementById("ticketSearch").value.trim();
-    const savedOrderRaw = localStorage.getItem("las_last_pos_order");
-    
-    // Tìm các phần tử hiển thị kết quả
     const ticketResult = document.getElementById("ticketResult");
-    
-    // 1. Nếu chưa có đơn hàng nào từng mua, báo lỗi luôn
-    if (!savedOrderRaw) {
-        alert("Chưa có giao dịch nào được lưu trên máy này.");
+
+    if (!keyword) {
+        showToast("Vui lòng nhập mã đơn hàng.", false);
         return;
     }
 
-    const lastOrder = JSON.parse(savedOrderRaw);
-    
-    // 2. So sánh mã đơn hàng
-    if (lastOrder.orderCode === keyword) {
-        // Nếu tìm thấy: hiển thị thông tin
-        setText("resultOrderCode", lastOrder.orderCode);
-        setText("resultTicketCode", lastOrder.ticketCode || "N/A");
-        setText("resultMovie", lastOrder.movie);
-        setText("resultShowtime", lastOrder.showtime + " - " + lastOrder.date);
-        setText("resultSeats", lastOrder.seats.join(", "));
+    try {
+        const response = await fetch(`/api/pos/orders/search?code=${encodeURIComponent(keyword)}`);
+        if (!response.ok) {
+            ticketResult.classList.remove("show");
+            const errText = await response.text();
+            showToast(errText || "Không tìm thấy vé/đơn hàng.", false);
+            return;
+        }
+
+        const order = await response.json();
+        setText("resultOrderCode", order.orderCode || "N/A");
+        setText("resultTicketCode", order.ticketCode || "N/A");
+        setText("resultMovie", order.movie || "N/A");
+        setText("resultShowtime", `${order.showtime || ""} - ${order.date || ""}`);
+        setText("resultSeats", Array.isArray(order.seats) && order.seats.length ? order.seats.join(", ") : "N/A");
         ticketResult.classList.add("show");
-    } else {
-        // 3. Nếu KHÔNG tìm thấy: xóa kết quả cũ và báo lỗi
-        ticketResult.classList.remove("show"); // Ẩn vé cũ đi
-        alert("Mã vé hoặc mã đơn hàng không tồn tại trong phiên làm việc này. Vui lòng kiểm tra lại!");
+    } catch (error) {
+        console.error("Lỗi tìm vé:", error);
+        ticketResult.classList.remove("show");
+        showToast("Lỗi kết nối đến máy chủ.", false);
     }
 };
 window.printTicket = function () {
@@ -715,7 +650,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
     const fullName = loggedUser.fullName || loggedUser.name || loggedUser.username || "Nhân viên";
-    setText("pageTitle", "Xin chào, " + fullName + " 👋");
+    setText("pageTitle", "Xin chào, " + fullName );
     setText("staffName", fullName);
 
     document.getElementById("movie").addEventListener("change", loadShowtimes);
@@ -785,41 +720,84 @@ function renderDates() {
     document.getElementById("date").value = `${fY}-${fM}-${fD}`;
 }
 
+// Icon outline trắng dùng chung cho khu vực feedback (đồng bộ với style icon
+// của toàn bộ giao diện POS).
+const FB_ICON_USER = '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>';
+const FB_ICON_SEND = '<path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path>';
+
+// Vẽ 5 ngôi sao đánh giá, tô màu cam theo số sao thực tế (ratingStars).
+function renderFbStars(rating) {
+    const filled = Math.max(0, Math.min(5, Math.round(rating || 0)));
+    let html = "";
+    for (let i = 1; i <= 5; i++) {
+        const cls = i <= filled ? "filled" : "empty";
+        html += `<svg class="${cls}" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+    }
+    return html;
+}
+
+// Escape text hiển thị để tránh vỡ layout khi nội dung khách chứa ký tự đặc biệt.
+function escapeFbText(text) {
+    const div = document.createElement("div");
+    div.textContent = text ?? "";
+    return div.innerHTML;
+}
+
 // Hàm load danh sách phản hồi từ DB
-// Hàm load danh sách phản hồi từ DB
+// BO SUNG: nạp kèm danh sách phim (/api/movies) để gắn badge tên phim lên mỗi
+// card phản hồi, giúp nhân viên biết ngay phản hồi đó thuộc phim nào.
 async function loadFeedbacks() {
     try {
-        const response = await fetch('/api/pos/feedbacks');
-        const feedbacks = await response.json();
+        const [feedbacks, movieList] = await Promise.all([
+            fetch('/api/pos/feedbacks').then(res => res.json()),
+            fetch('/api/movies').then(res => res.json()).catch(() => [])
+        ]);
+
         const fbList = document.getElementById("feedbackList");
         if (!fbList) return;
         fbList.innerHTML = "";
 
+        // Map tra cứu tên phim theo movieId
+        const movieMap = {};
+        (movieList || []).forEach(m => { movieMap[m.movieId || m.id] = m.title; });
+
         const parents = feedbacks.filter(fb => !fb.title.includes("Phản hồi"));
         const replies = feedbacks.filter(fb => fb.title.includes("Phản hồi"));
 
+        if (parents.length === 0) {
+            fbList.innerHTML = `<div class="fb-empty-state">Chưa có phản hồi nào từ khách hàng.</div>`;
+            return;
+        }
+
         parents.forEach(p => {
             const myReplies = replies.filter(r => r.title.includes(`ID: ${p.feedbackId}`));
+            const movieName = movieMap[p.movieId] || null;
             const div = document.createElement("div");
-            div.className = "fb-item";
-            div.style = "background:#1c1c1f; padding:20px; margin-bottom:20px; border-radius:12px; border:1px solid #303036;";
-            
+            div.className = "fb-review-card";
+
             div.innerHTML = `
-                <div style="margin-bottom: 15px;">
-                    <b style="color:#f0713b;">👤 Khách: ${p.title}</b>
-                    <p style="color:#fff; margin:5px 0;">${p.content}</p>
-                    <span style="color:#d4aa42; font-size:12px;">Đánh giá: ${p.ratingStars || 5} ⭐</span>
+                <div class="fb-review-head">
+                    <div class="fb-review-avatar">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${FB_ICON_USER}</svg>
+                    </div>
+                    <div class="fb-review-headtext">
+                        <b class="fb-review-name">Khách: ${escapeFbText(p.title)}</b>
+                        <span class="fb-review-meta">Phản hồi khách hàng</span>
+                    </div>
+                    <div class="fb-review-stars">${renderFbStars(p.ratingStars || 5)}</div>
                 </div>
-                <div class="replies-container" style="border-top:1px solid #3b3b42; margin-top:10px; padding-top:10px;">
+                ${movieName ? `<div style="display: inline-block; background: rgba(255, 107, 53, 0.12); border: 1px solid rgba(255, 107, 53, 0.4); color: #ff6b35; font-size: 11.5px; font-weight: bold; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">PHIM: ${escapeFbText(movieName)}</div>` : ''}
+                <p class="fb-review-content">${escapeFbText(p.content)}</p>
+                ${myReplies.length > 0 ? `
+                <div class="fb-review-replies">
                     ${myReplies.map(r => `
-                        <div style="background:#26262b; padding:8px; border-radius:5px; margin-bottom:5px;">
-                          <small style="color:#a6a6ae; font-style:italic;">↳ Nhân viên: ${r.content.replace('Phản hồi: ', '')}</small>
-                        </div>
+                        <div class="fb-reply-bubble"><b>Nhân viên:</b> ${escapeFbText(r.content.replace('Phản hồi: ', ''))}</div>
                     `).join('')}
-                </div>
-                <div class="reply-area" style="display:flex; gap:10px; margin-top:10px;">
-                    <button class="reply-btn" onclick="openReplyModal(${p.feedbackId}, '${p.title}')" style="background:#e26735; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Phản hồi</button>
-                </div>
+                </div>` : ''}
+                <button class="fb-respond-btn" onclick="openReplyModal(${p.feedbackId}, '${escapeFbText(p.title).replace(/'/g, "\\'")}')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${FB_ICON_SEND}</svg>
+                    Phản hồi
+                </button>
             `;
             fbList.appendChild(div);
         });
@@ -876,25 +854,67 @@ window.closeModal = function() {
 window.submitModalReply = async function() {
     const feedbackId = document.getElementById("modalFeedbackId").value;
     const content = document.getElementById("modalReplyText").value.trim();
-    
-    if (!content) { alert("Vui lòng nhập nội dung!"); return; }
-    
-    // Gọi API (tương tự như hàm replySpecificFeedback cũ của bạn)
-    const response = await fetch('/api/pos/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            content: "Phản hồi: " + content,
-            title: "Phản hồi cho feedback ID: " + feedbackId,
-            ratingStars: 5,
-            accountStaffId: 1
-        })
-    });
 
-    if (response.ok) {
-        alert("Gửi thành công!");
-        document.getElementById("modalReplyText").value = "";
-        closeModal();
-        loadFeedbacks(); // Load lại danh sách
+    if (!content) {
+        showToast("Vui lòng nhập nội dung phản hồi!", false, "VUI LÒNG NHẬP PHẢN HỒI");
+        return;
     }
+
+    try {
+        // Gọi API (tương tự như hàm replySpecificFeedback cũ của bạn)
+        const response = await fetch('/api/pos/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                content: "Phản hồi: " + content,
+                title: "Phản hồi cho feedback ID: " + feedbackId,
+                ratingStars: 5,
+                accountStaffId: 1
+            })
+        });
+
+        if (response.ok) {
+            showToast("Đã gửi phản hồi thành công!", true);
+            document.getElementById("modalReplyText").value = "";
+            closeModal();
+            loadFeedbacks(); // Load lại danh sách
+        } else {
+            alert("Có lỗi xảy ra khi gửi phản hồi.");
+        }
+    } catch (error) {
+        console.error("Lỗi:", error);
+        alert("Không thể kết nối đến máy chủ.");
+    }
+};
+
+// Popup thông báo góc màn hình (thay cho alert() ở một số chỗ) — theo bản
+// chỉnh sửa của bạn cùng nhóm.
+// Icon outline trắng đổi theo trạng thái: dấu tick tròn khi thành công,
+// dấu chấm than tròn khi cảnh báo/lỗi.
+const TOAST_ICON_CHECK = '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>';
+const TOAST_ICON_WARNING = '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>';
+
+let toastHideTimer = null;
+window.showToast = function(message, isSuccess = false, title = null) {
+    const toast = document.getElementById("toastNotification");
+    const titleElement = document.getElementById("toastTitle");
+    const messageElement = document.getElementById("toastMessage");
+    const iconSvg = document.getElementById("toastIconSvg");
+    if (!toast || !titleElement || !messageElement) return;
+
+    titleElement.textContent = title || (isSuccess ? "THÀNH CÔNG" : "CẢNH BÁO");
+    messageElement.textContent = message;
+    if (iconSvg) iconSvg.innerHTML = isSuccess ? TOAST_ICON_CHECK : TOAST_ICON_WARNING;
+
+    if (isSuccess) {
+        toast.classList.add("success");
+    } else {
+        toast.classList.remove("success");
+    }
+
+    toast.style.display = "flex";
+    // Popup tự ẩn sau 3s; nếu gọi liên tiếp thì reset lại giờ đếm thay vì
+    // để timer cũ tắt sớm popup mới.
+    if (toastHideTimer) clearTimeout(toastHideTimer);
+    toastHideTimer = setTimeout(() => { toast.style.display = "none"; }, 3000);
 };

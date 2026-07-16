@@ -76,12 +76,12 @@ public class RegisterController {
                 ));
             }
 
-            if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "status", "error",
-                        "message", "Địa chỉ Email không đúng định dạng!"
-                ));
-            }
+            if (!email.matches("(?i)^[A-Za-z0-9._%+-]+@gmail\\.com$")) {
+    return ResponseEntity.badRequest().body(Map.of(
+            "status", "error",
+            "message", "Email phải đúng định dạng Gmail, ví dụ: example@gmail.com"
+    ));
+}
 
             if (password.length() < 6 || password.length() > 25) {
                 return ResponseEntity.badRequest().body(Map.of(
@@ -113,12 +113,85 @@ public class RegisterController {
                 ));
             }
 
-            if (accountRepository.existsByEmail(email)) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "status", "error",
-                        "message", "Địa chỉ Email này đã có người sử dụng!"
-                ));
-            }
+            Account existingAccount = accountRepository.findByEmail(email).orElse(null);
+
+if (existingAccount != null) {
+
+    // Tài khoản đã kích hoạt thì không được đăng ký lại
+    if ("ACTIVE".equalsIgnoreCase(existingAccount.getStatus())) {
+        return ResponseEntity.badRequest().body(Map.of(
+                "status", "error",
+                "message", "Địa chỉ Email này đã được đăng ký và kích hoạt!"
+        ));
+    }
+
+    // Tài khoản bị khóa
+    if ("BANNED".equalsIgnoreCase(existingAccount.getStatus())) {
+        return ResponseEntity.status(403).body(Map.of(
+                "status", "error",
+                "message", "Tài khoản sử dụng Email này đã bị khóa!"
+        ));
+    }
+
+    // Tài khoản PENDING: cập nhật thông tin và gửi OTP mới
+    if ("PENDING".equalsIgnoreCase(existingAccount.getStatus())) {
+
+        // Kiểm tra số điện thoại nhập lại có đúng với tài khoản cũ không
+        if (!phone.equals(existingAccount.getPhone())) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "message", "Email này đang có tài khoản chờ kích hoạt nhưng số điện thoại không khớp!"
+            ));
+        }
+
+        existingAccount.setFullname(name);
+        existingAccount.setPasswordHash(password);
+        existingAccount.setDateOfBirth(dateOfBirth);
+        existingAccount.setUpdatedDate(LocalDateTime.now());
+
+        accountRepository.save(existingAccount);
+
+        String newOtpCode =
+                String.format("%06d", new Random().nextInt(1000000));
+
+        otpStorage.put(email, newOtpCode);
+        otpExpiryStorage.put(
+                email,
+                LocalDateTime.now().plusMinutes(5)
+        );
+
+        try {
+            emailService.sendSimpleEmail(
+                    email,
+                    "Mã OTP kích hoạt tài khoản LAS Cinema",
+                    "Xin chào " + name + ",\n\n"
+                            + "Mã OTP kích hoạt mới của bạn là: "
+                            + newOtpCode
+                            + "\n\nMã này có hiệu lực trong 5 phút."
+            );
+
+            System.out.println(
+                    "========= OTP MỚI CỦA [" + email + "] LÀ: "
+                            + newOtpCode + " ========="
+            );
+
+        } catch (Exception mailException) {
+            mailException.printStackTrace();
+
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "status", "error",
+                    "message", "Không thể gửi lại OTP. Vui lòng thử lại!"
+            ));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Tài khoản đang chờ kích hoạt. Hệ thống đã gửi lại OTP mới!",
+                "email", email,
+                "pending", true
+        ));
+    }
+}
 
             if (accountRepository.existsByPhone(phone)) {
                 return ResponseEntity.badRequest().body(Map.of(
@@ -207,6 +280,92 @@ public class RegisterController {
             ));
         }
     }
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<?> resendOtp(
+        @RequestBody Map<String, String> request
+) {
+    try {
+        String email = request.get("email");
+
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "message", "Vui lòng nhập Email!"
+            ));
+        }
+
+        email = email.trim();
+
+        Account account = accountRepository.findByEmail(email)
+                .orElse(null);
+
+        if (account == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "message", "Không tìm thấy tài khoản sử dụng Email này!"
+            ));
+        }
+
+        if ("ACTIVE".equalsIgnoreCase(account.getStatus())) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "message", "Tài khoản này đã được kích hoạt!"
+            ));
+        }
+
+        if ("BANNED".equalsIgnoreCase(account.getStatus())) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "status", "error",
+                    "message", "Tài khoản này đã bị khóa!"
+            ));
+        }
+
+        if (!"PENDING".equalsIgnoreCase(account.getStatus())) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "message", "Tài khoản không ở trạng thái chờ kích hoạt!"
+            ));
+        }
+
+        String newOtpCode =
+                String.format("%06d", new Random().nextInt(1000000));
+
+        otpStorage.put(email, newOtpCode);
+        otpExpiryStorage.put(
+                email,
+                LocalDateTime.now().plusMinutes(5)
+        );
+
+        emailService.sendSimpleEmail(
+                email,
+                "Gửi lại mã OTP LAS Cinema",
+                "Xin chào " + account.getFullname() + ",\n\n"
+                        + "Mã OTP kích hoạt mới của bạn là: "
+                        + newOtpCode
+                        + "\n\nMã này có hiệu lực trong 5 phút."
+        );
+
+        System.out.println(
+                "========= OTP GỬI LẠI CỦA [" + email + "] LÀ: "
+                        + newOtpCode + " ========="
+        );
+
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Đã gửi lại mã OTP mới!",
+                "email", email
+        ));
+
+    } catch (Exception e) {
+        e.printStackTrace();
+
+        return ResponseEntity.internalServerError().body(Map.of(
+                "status", "error",
+                "message", "Không thể gửi lại OTP. Vui lòng thử lại!"
+        ));
+    }
+}
 
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> verifyRequest) {

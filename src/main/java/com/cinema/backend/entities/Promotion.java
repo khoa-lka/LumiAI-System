@@ -29,6 +29,22 @@ public class Promotion {
 
     private String status;
 
+    // 🌟 THÊM MỚI (bổ sung từ nhánh manager): Nhiều Promotion có thể cùng áp dụng
+    // một Voucher giảm giá. Giữ lại "promoCode" phía trên để không mất dữ liệu
+    // cột cũ nếu bảng promotion đã có sẵn cột này — 2 cơ chế có thể cùng tồn tại,
+    // tùy nhóm quyết định cái nào là nguồn dữ liệu chính khi hiển thị FE.
+    @ManyToOne
+    @JoinColumn(name = "voucher_id")
+    private Voucher voucher;
+
+    public Voucher getVoucher() {
+        return voucher;
+    }
+
+    public void setVoucher(Voucher voucher) {
+        this.voucher = voucher;
+    }
+
     public Long getId() {
         return id;
     }

@@ -157,9 +157,10 @@ public class PosApiController {
             order.setPaymentMethod(request.getPaymentMethod());
             order.setPaymentStatus("SUCCESS");
 
-            Showtime showtimeObj = new Showtime();
-            showtimeObj.setShowtimeId(request.getShowtimeId());
-            order.setShowtime(showtimeObj);
+            Showtime showtime = showtimeRepository
+                    .findById(request.getShowtimeId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy suất chiếu"));
+            order.setShowtime(showtime);
 
             com.cinema.backend.entities.Account staffObj = new com.cinema.backend.entities.Account();
             staffObj.setAccountId(request.getStaffId());
@@ -192,8 +193,8 @@ public class PosApiController {
                 ticket.setTicketCode("TIX-" + timestamp + "-" + seat.getSeatId());
                 ticket.setQrCode("QR_" + ticket.getTicketCode());
                 ticket.setTicketStatus("SOLD");
-                ticket.setShowtimeId(request.getShowtimeId());
-                ticket.setSeatId(seat.getSeatId());
+                ticket.setShowtime(showtime);
+                ticket.setSeat(seat);
                 ticket.setOrder(order);
                 ticket = ticketRepository.save(ticket);
 
@@ -225,6 +226,41 @@ public class PosApiController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    // Dùng cho Máy POS (Staff), tab "In vé": tra cứu đơn hàng/vé thật trong DB
+    // theo mã đơn (order_code, VD "ORD-...") hoặc mã vé (ticket_code, VD "TIX-...").
+    // BO SUNG: staff.js đã gọi sẵn /api/pos/orders/search nhưng backend chưa có
+    // endpoint này — trước đây tab này chỉ so khớp với đơn vừa bán gần nhất lưu trong
+    // localStorage của trình duyệt đó (không tra được đơn cũ / đơn từ máy khác).
+    @GetMapping("/orders/search")
+    public ResponseEntity<?> searchOrder(@RequestParam String code) {
+        String trimmedCode = code == null ? "" : code.trim();
+        if (trimmedCode.isEmpty()) {
+            return ResponseEntity.badRequest().body("Vui lòng nhập mã vé hoặc mã đơn hàng.");
+        }
+
+        List<Map<String, Object>> rows = ticketRepository.findTicketsByOrderOrTicketCode(trimmedCode);
+        if (rows.isEmpty()) {
+            return ResponseEntity.badRequest().body("Không tìm thấy vé/đơn hàng với mã: " + trimmedCode);
+        }
+
+        Map<String, Object> first = rows.get(0);
+        List<String> seats = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            Object seatCode = row.get("seatCode");
+            if (seatCode != null) seats.add(String.valueOf(seatCode));
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("orderCode", first.get("orderCode"));
+        result.put("ticketCode", first.get("ticketCode"));
+        result.put("movie", first.get("movieTitle"));
+        result.put("date", first.get("showDate"));
+        result.put("showtime", first.get("showTime"));
+        result.put("seats", seats);
+        result.put("totalPaid", first.get("totalPaid"));
+        return ResponseEntity.ok(result);
     }
 
     // API Kiểm tra và áp dụng mã giảm giá

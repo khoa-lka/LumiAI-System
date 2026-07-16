@@ -28,11 +28,21 @@ public class VoucherController {
             return ResponseEntity.badRequest().body("Voucher đã hết lượt sử dụng");
         }
 
-        if (voucher.getExpiredDate().isBefore(java.time.LocalDateTime.now())) {
+        if (voucher.getExpiredDate() != null && voucher.getExpiredDate().isBefore(java.time.LocalDateTime.now())) {
             return ResponseEntity.badRequest().body("Voucher đã hết hạn");
         }
 
         return ResponseEntity.ok(voucher);
+    }
+
+    // 🌟 API MỚI BỔ SUNG: Cho phép luồng Booking quét tìm khuyến mãi tự động (AUTO) phù hợp giá trị đơn
+    @GetMapping("/check-auto")
+    public ResponseEntity<?> checkAutoVoucher(@RequestParam("grossAmount") Double grossAmount) {
+        Voucher autoVoucher = voucherService.checkAutoVoucher(grossAmount);
+        if (autoVoucher == null) {
+            return ResponseEntity.ok().body(null); // Trả về null êm đẹp nếu hiện tại không có ưu đãi tự động
+        }
+        return ResponseEntity.ok(autoVoucher);
     }
     // 🚀 API 1: Lấy toàn bộ danh sách Voucher cho bảng quản trị của Manager
     @GetMapping("/manager/all")

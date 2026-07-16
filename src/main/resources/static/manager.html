@@ -55,7 +55,7 @@
               ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.59 2.59 20 10a2 2 0 0 1 0 2.83l-7.17 7.17a2 2 0 0 1-2.83 0L3 13V5a2 2 0 0 1 2-2h7.59Z"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/></svg
             ></span>
             <div class="mp-nav-text">
-              Kho &<span class="mp-nav-subtext">Dịch vụ F&B</span>
+              Kho <span class="mp-nav-subtext">Dịch vụ F&B</span>
             </div>
           </li>
           <li
@@ -67,7 +67,7 @@
               ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a2 2 0 0 0 0 4v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a2 2 0 0 1 0-4V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z"/><path d="M9 5v14" stroke-dasharray="2 2"/></svg
             ></span>
             <div class="mp-nav-text">
-              Chiến dịch<span class="mp-nav-subtext">Khuyến mãi</span>
+              Voucher<span class="mp-nav-subtext">Khuyến mãi</span>
             </div>
           </li>
           <li
@@ -79,7 +79,7 @@
               ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/><path d="M12 12V2"/><path d="m8 6 4-4 4 4"/><rect x="2" y="8" width="20" height="4" rx="1"/></svg
             ></span>
             <div class="mp-nav-text">
-              Sự kiện<span class="mp-nav-subtext">Ưu đãi &amp; Tin tức</span>
+              Chiến dịch<span class="mp-nav-subtext">Phát hành Voucher</span>
             </div>
           </li>
           <li
@@ -506,7 +506,7 @@
         <div id="mp-tab-promo" class="mp-tab-section" style="display: none;">
           <div class="mp-action-bar">
             <button class="mp-btn-add" onclick="openAddVoucherModal()">
-              Tạo Chiến Dịch Mới
+              Tạo Voucher Mới
             </button>
             <div class="mp-filters">
               <div class="mp-search-box">
@@ -547,11 +547,11 @@
         <div id="mp-tab-events" class="mp-tab-section" style="display: none;">
           <div class="mp-action-bar">
             <button class="mp-btn-add" onclick="openAddEventModal()">
-              Tạo Sự Kiện Mới
+              Tạo Chiến dịch mới
             </button>
             <div class="mp-filters">
               <div class="mp-search-box">
-                <input type="text" id="mp-event-search-input" placeholder="Tìm tiêu đề, mã ưu đãi..." oninput="filterManagerEvents()" />
+                <input type="text" id="mp-event-search-input" placeholder="Tìm tiêu đề, mã voucher..." oninput="filterManagerEvents()" />
               </div>
               <select class="mp-filter-select" id="mp-event-filter-status" onchange="filterManagerEvents()">
                 <option value="all">Trạng thái (Tất cả)</option>
@@ -569,7 +569,7 @@
                   <th style="width: 50px; text-align: center">STT</th>
                   <th style="width: 90px">Hình ảnh</th>
                   <th>Tiêu đề sự kiện</th>
-                  <th>Mã ưu đãi</th>
+                  <th>Mã Voucher</th>
                   <th>Thời gian áp dụng</th>
                   <th style="text-align: center">Trạng thái</th>
                   <th style="text-align: center">Hành động</th>
@@ -586,8 +586,8 @@
               <option>Doanh thu/Đối soát</option>
             </select>
             <select class="mp-select-sm" id="aud-range-select" onchange="renderAuditReport(this.value)">
-              <option value="week">Tuần này (03/06 - 09/06)</option>
-              <option value="prev_week">Tuần trước (27/05 - 02/06)</option>
+              <option value="week">Tuần này</option>
+              <option value="prev_week">Tuần trước</option>
             </select>
             <button class="mp-btn-report mp-btn-export" onclick="alert('Đang xuất báo cáo PDF/Excel...')">
               Xuất báo cáo (PDF/Excel)
@@ -715,7 +715,7 @@
             ><input type="text" id="add-performer" class="cgv-input-text" />
           </div>
           <div class="mp-form-group" style="grid-column: span 2">
-            <label>Tóm tắt (Synopsis)</label
+            <label>Tóm tắt</label
             ><textarea
               id="add-synopsis"
               class="cgv-input-text"
@@ -769,7 +769,7 @@
             onclick="closeAddMovie()"
             style="flex: 1; cursor: pointer"
           >
-            Hủy
+            HỦY
           </button>
           <button
             class="btn-cgv-submit"
@@ -859,7 +859,7 @@
             ><input type="text" id="upd-performer" class="cgv-input-text" />
           </div>
           <div class="mp-form-group" style="grid-column: span 2">
-            <label>Tóm tắt (Synopsis)</label
+            <label>Tóm tắt</label
             ><textarea
               id="upd-synopsis"
               class="cgv-input-text"
@@ -880,8 +880,8 @@
           </div>
           <div class="mp-form-group">
             <label>Trạng thái</label><br />
-            <input type="radio" name="upd_status" value="now_showing" /> Đang
-            chiếu
+            <input type="radio" name="upd_status" value="now_showing" 
+            /> Đang chiếu
             <input
               type="radio"
               name="upd_status"
@@ -905,7 +905,7 @@
             onclick="closeUpdateMovie()"
             style="flex: 1; cursor: pointer"
           >
-            Hủy
+            HỦY
           </button>
           <button
             class="btn-cgv-submit"
@@ -1524,12 +1524,12 @@
       <div class="mp-modal-box" style="text-align: center;">
         <div class="mp-modal-close" onclick="closePromoDeleteModal()">✕</div>
         <div style="margin-bottom: 10px;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto; display:block;"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
-        <div class="mp-modal-header" style="margin-bottom: 10px;">Xóa Chiến Dịch Khuyến Mãi?</div>
+        <div class="mp-modal-header" style="margin-bottom: 10px;">Xóa Voucher?</div>
         <div class="mp-modal-sub" id="promo-delete-item-name" style="margin-bottom: 20px;">
-          Bạn có chắc chắn muốn xóa chiến dịch này không?
+          Bạn có chắc chắn muốn xóa Voucher này không?
         </div>
         <div style="display: flex; gap: 10px;">
-          <button class="btn-cgv-cancel" style="flex: 1;" onclick="closePromoDeleteModal()">Hủy</button>
+          <button class="btn-cgv-cancel" style="flex: 1;" onclick="closePromoDeleteModal()">HỦY</button>
           <button class="btn-cgv-submit" style="flex: 1; margin-top: 0;" onclick="confirmDeletePromo()">XÁC NHẬN XÓA</button>
         </div>
       </div>
@@ -1539,31 +1539,40 @@
       <div class="mp-modal-box" style="text-align: center;">
         <div class="mp-modal-close" onclick="closeDeleteEventModal()">✕</div>
         <div style="margin-bottom: 10px;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto; display:block;"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
-        <div class="mp-modal-header" style="margin-bottom: 10px;">Xóa Sự Kiện?</div>
+        <div class="mp-modal-header" style="margin-bottom: 10px;">Xóa Chiến dịch?</div>
         <div class="mp-modal-sub" id="event-delete-item-name" style="margin-bottom: 20px;">
-          Bạn có chắc chắn muốn xóa sự kiện này không?
+          Bạn có chắc chắn muốn xóa Chiến dịch này không?
         </div>
         <div style="display: flex; gap: 10px;">
-          <button class="btn-cgv-cancel" style="flex: 1;" onclick="closeDeleteEventModal()">Hủy</button>
+          <button class="btn-cgv-cancel" style="flex: 1;" onclick="closeDeleteEventModal()">HỦY</button>
           <button class="btn-cgv-submit" style="flex: 1; margin-top: 0;" onclick="confirmDeleteEvent()">XÁC NHẬN XÓA</button>
         </div>
       </div>
     </div>
 
+    <!-- ========================================================== -->
+    <!-- 🎬 MODAL CẤU HÌNH CHIẾN DỊCH / SỰ KIỆN TRUYỀN THÔNG MỚI -->
+    <!-- ========================================================== -->
     <div class="mp-modal-overlay" id="mp-create-event-modal">
-      <div class="mp-modal-box">
+      <div class="mp-modal-box" style="max-height: 90vh; overflow-y: auto;">
         <div class="mp-modal-close" onclick="closeEventModal()">✕</div>
-        <div class="mp-modal-header" id="event-modal-title">Tạo Sự Kiện Mới</div>
+        <div class="mp-modal-header" id="event-modal-title">Tạo Chiến dịch mới</div>
         <input type="hidden" id="event-item-id" />
 
         <div class="mp-form-group">
-          <label>Tiêu đề sự kiện</label>
-          <input type="text" id="event-title" class="cgv-input-text" placeholder="VD: Đẹo Phone Chắc Tay - Nhận Quà Khủng Liền Tay" />
+          <label>Tiêu đề Chiến dịch</label>
+          <input type="text" id="event-title" class="cgv-input-text" placeholder="VD: Đeo Phone Chắc Tay - Nhận Quà Khủng Liền Tay" />
         </div>
+
+        <!-- 🌟 THAY THẾ CHÍ MẠNG: Dropdown bốc danh sách Voucher động từ Database -->
         <div class="mp-form-group">
-          <label>Mã ưu đãi (promo_code)</label>
-          <input type="text" id="event-promo-code" class="cgv-input-text" placeholder="VD: PHONE2026" style="text-transform: uppercase;" />
+          <label>Chọn Voucher ưu đãi đi kèm (Nếu có)</label>
+          <select id="event-voucher-select" class="cgv-input-text">
+            <!-- JavaScript sẽ tự động cào danh sách voucher thật đổ vào đây -->
+            <option value="">-- Không kèm Voucher --</option>
+          </select>
         </div>
+
         <div class="mp-form-group" style="display: flex; gap: 10px;">
           <div style="flex: 1;">
             <label>Ngày bắt đầu</label>
@@ -1574,26 +1583,29 @@
             <input type="date" id="event-date-end" class="cgv-input-text" />
           </div>
         </div>
+
         <div class="mp-form-group">
-          <label>Hình ảnh (image_url)</label>
+          <label>Hình ảnh Banner / Poster (URL)</label>
           <input type="text" id="event-image-url" class="cgv-input-text" placeholder="VD: img/case.jpg" oninput="updateEventImagePreview()" />
           <img id="event-image-preview" src="" alt="" style="display:none; margin-top:8px; width:100%; max-height:120px; object-fit:cover; border-radius:8px; border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none';" />
         </div>
+
         <div class="mp-form-group">
-          <label>Nội dung chi tiết (content)</label>
-          <textarea id="event-content" class="cgv-input-text" rows="4" placeholder="Nội dung mô tả sự kiện hiển thị cho khách hàng..."></textarea>
+          <label>Nội dung chi tiết chương trình</label>
+          <textarea id="event-content" class="cgv-input-text" rows="4" placeholder="Nội dung mô tả Chiến dịch hiển thị ngoài trang chủ..."></textarea>
         </div>
+
         <div class="mp-form-group">
           <label>Trạng thái</label>
           <select id="event-status" class="cgv-input-text">
-            <option value="ACTIVE">ACTIVE - Đang diễn ra</option>
-            <option value="INACTIVE">INACTIVE - Tạm ẩn</option>
-            <option value="EXPIRED">EXPIRED - Đã kết thúc</option>
+            <option value="ACTIVE">Đang diễn ra</option>
+            <option value="INACTIVE">Tạm ẩn</option>
+            <option value="EXPIRED">Đã kết thúc</option>
           </select>
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button class="btn-cgv-cancel" style="flex: 1;" onclick="closeEventModal()">Hủy</button>
+          <button class="btn-cgv-cancel" style="flex: 1;" onclick="closeEventModal()">HỦY</button>
           <button class="btn-cgv-submit" style="flex: 1; margin-top: 0;" onclick="submitEventForm()">LƯU LẠI</button>
         </div>
       </div>
@@ -1609,7 +1621,7 @@
           <div style="font-size:12.5px; color:#9a9aa3; margin-bottom:14px;" id="ev-preview-dates"></div>
           <div style="font-size:13.5px; line-height:1.7; color:#c4c4cc; white-space:pre-line;" id="ev-preview-content"></div>
           <div style="margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between;">
-            <span style="font-size:12px; color:#9a9aa3;">Mã ưu đãi</span>
+            <span style="font-size:12px; color:#9a9aa3;">Mã Voucher</span>
             <span style="font-weight:800; letter-spacing:1px; color:var(--cgv-red, #ff6b35); font-size:15px;" id="ev-preview-code"></span>
           </div>
         </div>
@@ -1622,7 +1634,7 @@
         <div class="mp-modal-header" style="margin-bottom: 20px;">Tạo Suất Chiếu Mới</div>
         
         <div class="mp-form-group" style="margin-bottom: 15px;">
-          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Chọn bộ phim</label>
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Chọn phim</label>
           <select id="st-movie-select" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></select>
         </div>
         
@@ -1632,7 +1644,7 @@
         </div>
         
         <div class="mp-form-group" style="margin-bottom: 15px;">
-          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Giờ bắt đầu (Ví dụ: 14:30, 19:00)</label>
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Giờ bắt đầu</label>
           <input type="time" id="st-start-time" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
         </div>
 
@@ -1642,22 +1654,50 @@
         </div>
         
         <div style="display: flex; gap: 10px;">
-          <button class="btn-cgv-cancel" onclick="closeAddShowtimeModal()" style="flex: 1; cursor: pointer;">Hủy bỏ</button>
+          <button class="btn-cgv-cancel" onclick="closeAddShowtimeModal()" style="flex: 1; cursor: pointer;">HỦY BỎ</button>
           <button class="btn-cgv-submit" onclick="submitAddShowtimeForm()" style="flex: 1; cursor: pointer; background:var(--cgv-red, #ff6b35); color:white; border:none; padding:10px; border-radius:4px; font-weight:bold;">XẾP LỊCH NGAY</button>
         </div>
       </div>
     </div>
-
-    <div class="mp-modal-overlay" id="mp-create-promo-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-      <div class="mp-modal-box" style="width: 450px; padding: 26px; border-radius: 16px; box-sizing: border-box;">
+    
+    <!-- ========================================================== -->
+    <!-- 🎟️ MODAL CẤU HÌNH VOUCHER -->
+    <!-- ========================================================== -->
+    <div class="mp-modal-overlay" id="mp-create-promo-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 9999; align-items: center; justify-content: center;">
+      <div class="mp-modal-box" style="width: 450px; padding: 26px; border-radius: 16px; box-sizing: border-box; max-height: 90vh; overflow-y: auto;">
         <div class="mp-modal-close" onclick="closeCreatePromoModal()">✕</div>
-        <div class="mp-modal-header" id="mp-promo-modal-title" style="margin-bottom: 20px;">Tạo Chiến Dịch Voucher Mới</div>
+        <div class="mp-modal-header" id="mp-promo-modal-title" style="margin-bottom: 20px;">Tạo Voucher Mới</div>
         
         <input type="hidden" id="v-id" />
         
         <div class="mp-form-group">
           <label>Mã Voucher (Ví dụ: LUMIAI45K)</label>
           <input type="text" id="v-code" class="cgv-input-text" style="text-transform: uppercase;" />
+        </div>
+
+        <!-- 🌟 BỔ SUNG 1: HÌNH THỨC ÁP DỤNG (NHẬP TAY / TỰ ĐỘNG) -->
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label>Hình thức áp dụng Voucher</label>
+          <select id="v-apply-type" class="cgv-input-text" onchange="toggleVoucherConditionFields()">
+            <option value="MANUAL">Nhập mã Voucher</option>
+            <option value="AUTO">Hệ thống tự động áp dụng</option>
+          </select>
+        </div>
+
+        <!-- 🌟 BỔ SUNG 2: KHỐI ĐIỀU KIỆN QUẾT NGẦM (Mặc định ẩn, tự động hiện khi chọn AUTO) -->
+        <div id="v-auto-conditions-block" style="display: none; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1); margin-bottom: 15px;">
+          <div class="mp-form-group" style="margin-bottom: 10px;">
+            <label style="font-size:12px; color:#9a9aa3;">Loại điều kiện thời gian</label>
+            <select id="v-condition-type" class="cgv-input-text" onchange="toggleConditionValueField()">
+              <option value="NONE">Không áp đặt điều kiện thời gian</option>
+              <option value="DAY_OF_WEEK">Áp dụng theo thứ trong tuần</option>
+              <option value="LAST_DAY_OF_MONTH">Áp dụng vào ngày cuối cùng mỗi tháng</option>
+            </select>
+          </div>
+          <div class="mp-form-group" id="v-condition-value-group" style="margin-bottom: 0; display: none;">
+            <label style="font-size:12px; color:#9a9aa3;">Giá trị thứ trong tuần (Thứ 2 = 1, Thứ 3 = 2, Thứ 4 = 3...)</label>
+            <input type="text" id="v-condition-value" class="cgv-input-text" placeholder="Nhập số 3 nếu chọn Thứ 4" />
+          </div>
         </div>
         
         <div class="mp-form-group">
@@ -1689,21 +1729,22 @@
         </div>
 
         <div class="mp-form-group" style="margin-bottom: 20px;">
-          <label>Ngày và giờ hết hạn chiến dịch</label>
+          <label>Ngày và giờ hết hạn Voucher</label>
           <input type="datetime-local" id="v-expired" class="cgv-input-text" />
         </div>
 
         <div class="mp-form-group" style="margin-bottom: 20px;">
           <label>Trạng thái</label>
           <select id="v-status" class="cgv-input-text">
-            <option value="ACTIVE">Đang hoạt động</option>
-            <option value="INACTIVE">Ngừng hoạt động</option>
+            <option value="ACTIVE">Đang diễn ra</option>
+            <option value="INACTIVE">Tạm ẩn</option>
+            <option value="EXPIRED">Đã kết thúc</option>
           </select>
         </div>
         
         <div style="display: flex; gap: 10px;">
-          <button class="btn-cgv-cancel" onclick="closeCreatePromoModal()" style="flex: 1; cursor: pointer;">Hủy bỏ</button>
-          <button class="btn-cgv-submit" onclick="submitVoucherForm()" style="flex: 1; cursor: pointer; margin-top:0;">LƯU CHIẾN DỊCH</button>
+          <button class="btn-cgv-cancel" onclick="closeCreatePromoModal()" style="flex: 1; cursor: pointer;">HỦY</button>
+          <button class="btn-cgv-submit" onclick="submitVoucherForm()" style="flex: 1; cursor: pointer; margin-top:0;">LƯU VOUCHER</button>
         </div>
       </div>
     </div>

@@ -35,6 +35,7 @@ import com.cinema.backend.entities.FoodBeverage;
 
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
+import com.cinema.backend.dto.CheckoutResponseDTO;
 
 @Service
 public class BookingService {
@@ -76,9 +77,12 @@ public class BookingService {
 
     
 @Transactional
-public Order1 checkout(CheckoutRequest request) {
+public CheckoutResponseDTO checkout(CheckoutRequest request) {
 System.out.println("===== BOOKING SERVICE =====");
 System.out.println(request);
+List<String> savedTicketCodes = new ArrayList<>();
+List<String> fnbSummaryList = new ArrayList<>();
+String fnbSummary = "Không có";
     if (request.getShowtimeId() == null) {
         throw new RuntimeException("ShowtimeId is null from client");
     }
@@ -130,7 +134,80 @@ if (request.getFnb() != null) {
     order.setCreatedDate(LocalDateTime.now());
 
     order.setGrossAmount(grossAmount);
-    order.setFinalAmount(request.getTotalMoney());
+
+    // ==========================================================
+    // 🔒 FIX BẢO MẬT: Tự tính finalAmount trên Server, KHÔNG tin
+    // số tiền request.getTotalMoney() do Front-end gửi lên nữa —
+    // nếu không, ai sửa request bằng DevTools/Postman cũng có thể
+    // tự đặt giá vé tùy ý (VD: 1.000đ) mà hệ thống vẫn lưu đơn.
+    // ==========================================================
+    BigDecimal totalDiscount = BigDecimal.ZERO;
+    Voucher appliedVoucher = null;
+
+    // 1. Kiểm tra mã Voucher (áp dụng cho cả luồng nhập tay MANUAL và tự động AUTO quét ngầm)
+    Optional<Voucher> voucherOpt = Optional.empty();
+
+    if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
+        // Luồng 1: Client gửi mã cụ thể (khách tự nhập tay)
+        voucherOpt = voucherRepository.findByVoucherCode(request.getVoucherCode());
+        if (voucherOpt.isEmpty()) {
+            throw new RuntimeException("Voucher not found");
+        }
+    } else {
+        // Luồng 2: Client không gửi mã — tự động quét DB tìm Voucher mang cờ AUTO đang hoạt động
+        Voucher autoVoucher = voucherService.checkAutoVoucher(grossAmount.doubleValue());
+        if (autoVoucher != null) {
+            voucherOpt = Optional.of(autoVoucher);
+        }
+    }
+
+    if (voucherOpt.isPresent()) {
+        Voucher voucher = voucherOpt.get();
+
+        boolean isActive = voucher.getStatus() == null || "ACTIVE".equalsIgnoreCase(voucher.getStatus());
+        boolean isNotExpired = voucher.getExpiredDate() == null
+                || voucher.getExpiredDate().isAfter(LocalDateTime.now());
+        boolean hasUsage = voucher.getUsageLimit() != null && voucher.getUsageLimit() > 0;
+        boolean meetMinOrder = voucher.getMinimumOrder() == null
+                || grossAmount.compareTo(BigDecimal.valueOf(voucher.getMinimumOrder())) >= 0;
+
+        // Chỉ voucher NHẬP TAY mới bắt buộc phải hợp lệ (ném lỗi nếu sai điều kiện);
+        // voucher AUTO nếu lỡ không còn hợp lệ thì âm thầm bỏ qua, không chặn luồng thanh toán.
+        boolean isManualFlow = request.getVoucherCode() != null && !request.getVoucherCode().isBlank();
+
+        if (!isActive || !isNotExpired || !hasUsage || !meetMinOrder) {
+            if (isManualFlow) {
+                throw new RuntimeException("Voucher không hợp lệ hoặc đã hết hạn/hết lượt sử dụng");
+            }
+        } else {
+            if (!isManualFlow) {
+                // Gán lại mã vào request để bước "Cập nhật Voucher" phía dưới trừ đúng lượt dùng
+                request.setVoucherCode(voucher.getVoucherCode());
+            }
+
+            if ("PERCENT".equalsIgnoreCase(voucher.getDiscountType())) {
+                BigDecimal calculatedDiscount = grossAmount
+                        .multiply(BigDecimal.valueOf(voucher.getDiscountValue()))
+                        .divide(BigDecimal.valueOf(100));
+                if (voucher.getMaxDiscount() != null
+                        && voucher.getMaxDiscount().compareTo(BigDecimal.ZERO) > 0
+                        && calculatedDiscount.compareTo(voucher.getMaxDiscount()) > 0) {
+                    calculatedDiscount = voucher.getMaxDiscount();
+                }
+                totalDiscount = calculatedDiscount;
+            } else {
+                totalDiscount = BigDecimal.valueOf(voucher.getDiscountValue());
+            }
+
+            appliedVoucher = voucher;
+        }
+    }
+
+    BigDecimal finalAmount = grossAmount.subtract(totalDiscount);
+    if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
+        finalAmount = BigDecimal.ZERO;
+    }
+    order.setFinalAmount(finalAmount);
 
     order.setOrderStatus("COMPLETED");
     order.setPaymentMethod(request.getPaymentMethod());
@@ -139,16 +216,10 @@ if (request.getFnb() != null) {
     order.setCustomer(customer);
     order.setShowtime(showtime);
 
-    if (request.getVoucherCode() != null &&
-            !request.getVoucherCode().isBlank()) {
-
-        Voucher voucher = voucherRepository
-                .findByVoucherCode(request.getVoucherCode())
-                .orElseThrow(() -> new RuntimeException("Voucher not found"));
-
-        order.setVoucher(voucher);
+    if (appliedVoucher != null) {
+        order.setVoucher(appliedVoucher);
     }
-System.out.println("SAVE ORDER");
+System.out.println("SAVE ORDER SAFELY WITH FINAL AMOUNT: " + finalAmount);
     order = orderRepository.save(order);
 System.out.println("ORDER ID = " + order.getOrderId());
     // =========================
@@ -169,8 +240,8 @@ System.out.println("ORDER ID = " + order.getOrderId());
         Ticket ticket = new Ticket();
 
         ticket.setOrder(order);
-        ticket.setSeatId(seat.getSeatId());
-        ticket.setShowtimeId(showtime.getShowtimeId());
+        ticket.setSeat(seat);
+        ticket.setShowtime(showtime);
 
         ticket.setTicketStatus("SOLD");
 
@@ -184,6 +255,7 @@ System.out.println("ORDER ID = " + order.getOrderId());
         }   
 
         ticket = ticketRepository.save(ticket);
+        savedTicketCodes.add(code);
 
         OrderDetail detail = new OrderDetail();
 
@@ -237,9 +309,14 @@ if (request.getFnb() != null && !request.getFnb().isEmpty()) {
                 food.getStockQuantity() - item.getQuantity());
 
         foodRepository.save(food);
+
+        fnbSummaryList.add(food.getItemName() + " x" + item.getQuantity());
     }
 }
 
+fnbSummary = fnbSummaryList.isEmpty()
+        ? "Không có"
+        : String.join(", ", fnbSummaryList);
 
     // =========================
     // Cập nhật Voucher
@@ -311,6 +388,7 @@ String totalAmount = order.getFinalAmount() != null
             seatsText,
             totalAmount,
             ticketCode,
+            fnbSummary,
             qrData
     );
 
@@ -332,7 +410,7 @@ String totalAmount = order.getFinalAmount() != null
 }
 
 System.out.println("DONE");
-return order;
+return new CheckoutResponseDTO(order, savedTicketCodes, fnbSummary);
 }
 
 private String toPublicImageUrl(String imagePath) {
@@ -356,4 +434,3 @@ private String toPublicImageUrl(String imagePath) {
     return publicUrl + "/" + imagePath;
 }
 }
-

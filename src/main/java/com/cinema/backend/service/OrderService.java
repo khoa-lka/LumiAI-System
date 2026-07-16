@@ -6,9 +6,12 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.cinema.backend.dto.FoodItemDTO;
+import com.cinema.backend.dto.MovieHistoryDTO;
 import com.cinema.backend.dto.OrderHistoryDTO;
+import com.cinema.backend.dto.ShowtimeHistoryDTO;
 import com.cinema.backend.entities.Order1;
 import com.cinema.backend.entities.OrderDetail;
 import com.cinema.backend.entities.Seat;
@@ -16,7 +19,6 @@ import com.cinema.backend.entities.Showtime;
 import com.cinema.backend.entities.Ticket;
 import com.cinema.backend.repositories.OrderDetailRepository;
 import com.cinema.backend.repositories.OrderRepository;
-import com.cinema.backend.repositories.SeatRepository;
 
 @Service
 public class OrderService {
@@ -27,9 +29,12 @@ public class OrderService {
     @Autowired
     private OrderDetailRepository orderDetailRepository;
 
-    @Autowired
-    private SeatRepository seatRepository;
-
+    // BO SUNG: getHistory() giờ trả về DTO an toàn (ShowtimeHistoryDTO/MovieHistoryDTO)
+    // thay vì trả thẳng Hibernate Entity (Showtime) như trước - tránh rủi ro lazy-loading
+    // proxy / vòng lặp serialization khi Jackson chuyển đối tượng sang JSON.
+    // ticket.getSeat() lấy trực tiếp từ quan hệ object mới của Ticket, không cần
+    // gọi lại SeatRepository.findById() như bản cũ.
+    @Transactional(readOnly = true)
     public List<OrderHistoryDTO> getHistory(Integer accountId) {
 
         List<Order1> orders =
@@ -49,77 +54,98 @@ public class OrderService {
             dto.setOrderStatus(order.getOrderStatus());
             dto.setPaymentStatus(order.getPaymentStatus());
             dto.setVoucher(order.getVoucher());
-            dto.setShowtime(order.getShowtime());
-            dto.setTicketStatus( calculateTicketStatus(order.getShowtime()));
-
-            //------------------------------------
-            // Ghế
-            //------------------------------------
 
             List<String> seats = new ArrayList<>();
-
-            //------------------------------------
-            // F&B
-            //------------------------------------
-
             List<FoodItemDTO> foods = new ArrayList<>();
 
-            //------------------------------------
-            // Đọc Order Detail
-            //------------------------------------
+            Showtime historyShowtime = null;
+            String databaseTicketStatus = null;
 
             List<OrderDetail> details =
                     orderDetailRepository.findByOrderOrderId(order.getOrderId());
 
             for (OrderDetail detail : details) {
-                 System.out.println("Detail ID = " + detail.getOrderDetailId());
 
-                System.out.println("Ticket = " + detail.getTicket());
-
-                System.out.println("Food = " + detail.getFoodItem());
-
-
-                // ===== Vé =====
                 if (detail.getTicket() != null) {
 
                     Ticket ticket = detail.getTicket();
 
-                    Seat seat = seatRepository
-                            .findById(ticket.getSeatId())
-                            .orElse(null);
+                    if (historyShowtime == null && ticket.getShowtime() != null) {
+                        historyShowtime = ticket.getShowtime();
+                    }
+
+                    if (databaseTicketStatus == null) {
+                        databaseTicketStatus = ticket.getTicketStatus();
+                    }
+
+                    Seat seat = ticket.getSeat();
 
                     if (seat != null) {
-
-                        seats.add(
-                                seat.getSeatRow() +
-                                seat.getSeatNumber()
-                        );
-
+                        String seatLabel = seat.getSeatRow() + seat.getSeatNumber();
+                        if (!seats.contains(seatLabel)) {
+                            seats.add(seatLabel);
+                        }
                     }
                 }
 
-                // ===== F&B =====
                 if (detail.getFoodItem() != null) {
 
                     FoodItemDTO food = new FoodItemDTO();
-
                     food.setName(detail.getFoodItem().getItemName());
-                    food.setQty(detail.getQuantity());
+                    food.setQty(detail.getQuantity() == null ? 0 : detail.getQuantity());
 
                     foods.add(food);
                 }
             }
 
+            // Map Showtime Entity sang ShowtimeHistoryDTO - không trả Hibernate Entity trực tiếp.
+            ShowtimeHistoryDTO showtimeDTO = mapShowtime(historyShowtime);
+
+            dto.setShowtime(showtimeDTO);
             dto.setSeats(seats);
             dto.setFnb(foods);
 
-            // Trạng thái vé
-            dto.setTicketStatus(calculateTicketStatus(order.getShowtime()));
+            if (historyShowtime != null) {
+                dto.setTicketStatus(calculateTicketStatus(historyShowtime));
+            } else if (databaseTicketStatus != null) {
+                dto.setTicketStatus(databaseTicketStatus);
+            } else {
+                dto.setTicketStatus("Không xác định");
+            }
 
             result.add(dto);
         }
 
         return result;
+    }
+
+    private ShowtimeHistoryDTO mapShowtime(Showtime showtime) {
+
+        if (showtime == null) {
+            return null;
+        }
+
+        MovieHistoryDTO movieDTO = null;
+
+        if (showtime.getMovie() != null) {
+            movieDTO = new MovieHistoryDTO();
+            movieDTO.setMovieId(showtime.getMovie().getMovieId());
+            movieDTO.setTitle(showtime.getMovie().getTitle());
+            movieDTO.setGenre(showtime.getMovie().getGenre());
+            movieDTO.setDuration(showtime.getMovie().getDuration());
+            movieDTO.setMainposterUrl(showtime.getMovie().getMainposterUrl());
+        }
+
+        ShowtimeHistoryDTO dto = new ShowtimeHistoryDTO();
+
+        dto.setShowtimeId(showtime.getShowtimeId());
+        dto.setStartTime(showtime.getStartTime());
+        dto.setEndTime(showtime.getEndTime());
+        dto.setTicketPrice(showtime.getTicketPrice());
+        dto.setRoomId(showtime.getRoomId());
+        dto.setMovie(movieDTO);
+
+        return dto;
     }
 
     private String calculateTicketStatus(Showtime showtime) {
@@ -130,7 +156,6 @@ public class OrderService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // Nếu Entity Showtime dùng LocalDateTime
         if (showtime.getEndTime() != null && now.isAfter(showtime.getEndTime())) {
             return "Đã sử dụng";
         }
@@ -141,5 +166,4 @@ public class OrderService {
 
         return "Sắp chiếu";
     }
-
 }

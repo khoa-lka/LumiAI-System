@@ -8,34 +8,35 @@
    ========================================================================= */
 
 const ADM_WEBHOOK_METRICS = [
+  // BỔ SUNG: đồng bộ nền tối đồng nhất + icon outline trắng cho cả 4 thẻ.
   {
     icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/></svg>',
-    bg: "rgba(59,130,246,0.16)",
-    fg: "#60a5fa",
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
     label: "Tổng webhook",
     value: "0",
     pct: ""
   },
   {
     icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.5 2.5 4.7-5"/></svg>',
-    bg: "rgba(34,197,94,0.16)",
-    fg: "#4ade80",
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
     label: "Thành công",
     value: "0",
     pct: "0%"
   },
   {
     icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>',
-    bg: "rgba(239,68,68,0.16)",
-    fg: "#f87171",
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
     label: "Thất bại",
     value: "0",
     pct: "0%"
   },
   {
     icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 13.5 14.5 8.5"/><path d="M11 6.5l1.2-1.2a3.5 3.5 0 0 1 5 5L16 11.5"/><path d="M13 17.5l-1.2 1.2a3.5 3.5 0 0 1-5-5L8 12.5"/></svg>',
-    bg: "rgba(59,130,246,0.16)",
-    fg: "#60a5fa",
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
     label: "Endpoint đang hoạt động",
     value: "0",
     pct: ""
@@ -222,7 +223,7 @@ async function loadAdminWebhooks() {
 
     if (dateRange) {
       dateRange.textContent =
-        `📅 ${startDate.toLocaleDateString("vi-VN")} - ` +
+        `${startDate.toLocaleDateString("vi-VN")} - ` +
         `${endDate.toLocaleDateString("vi-VN")} ↻`;
     }
 
@@ -353,8 +354,12 @@ function renderAdminWebhookTable() {
           <td>${w.responseMs.toLocaleString("vi-VN")} ms</td>
           <td>${w.sizeKb.toFixed(2)} KB</td>
           <td>
-            <span title="Xem chi tiết" style="cursor:pointer; margin-right:10px;" onclick="viewAdminWebhookDetail(${globalIdx})">👁️</span>
-            <span title="Xem payload" style="cursor:pointer;" onclick="viewAdminWebhookPayload(${globalIdx})">&lt;/&gt;</span>
+            <span class="adm-icon-btn" title="Xem chi tiết" onclick="viewAdminWebhookDetail(${globalIdx})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+            <span class="adm-icon-btn" title="Xem payload" onclick="viewAdminWebhookPayload(${globalIdx})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </span>
           </td>
         </tr>`;
       })
@@ -418,20 +423,115 @@ function filterAdminWebhookTable() {
   renderAdminWebhookTable();
 }
 
+/* --- 5b. POPUP CHI TIẾT / PAYLOAD (thay cho alert() mặc định của trình duyệt) --- */
+
+// BỔ SUNG: trước đây viewAdminWebhookDetail/viewAdminWebhookPayload dùng alert()
+// gốc của trình duyệt (popup "localhost:8080 says" xấu, không đồng bộ giao diện).
+// Giờ chuyển sang popup tự vẽ, dùng chung màu sắc với theme admin (--adm-*).
+function ensureAdminWebhookModal() {
+  let overlay = document.getElementById("adm-webhook-modal-overlay");
+  if (overlay) return overlay;
+
+  const style = document.createElement("style");
+  style.textContent = [
+    "#adm-webhook-modal-overlay {",
+    "  display: none; position: fixed; inset: 0; z-index: 9999;",
+    "  background: rgba(0,0,0,0.6); align-items: center; justify-content: center;",
+    "}",
+    "#adm-webhook-modal-overlay.active { display: flex; }",
+    ".adm-webhook-modal-box {",
+    "  background: var(--adm-surface); color: var(--adm-text);",
+    "  border: 1px solid var(--adm-border); border-top: 3px solid var(--adm-red);",
+    "  border-radius: 10px; box-shadow: 0 4px 18px rgba(0,0,0,0.45);",
+    "  width: 92%; max-width: 480px; max-height: 85vh; overflow-y: auto;",
+    "  padding: 22px 24px; box-sizing: border-box;",
+    "}",
+    ".adm-webhook-modal-head {",
+    "  display: flex; align-items: center; justify-content: space-between;",
+    "  margin-bottom: 16px;",
+    "}",
+    ".adm-webhook-modal-head h3 { margin: 0; font-size: 17px; color: var(--adm-text); }",
+    ".adm-webhook-modal-close {",
+    "  cursor: pointer; background: var(--adm-surface-2); border: 1px solid var(--adm-border);",
+    "  color: var(--adm-muted); border-radius: 50%; width: 28px; height: 28px;",
+    "  display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1;",
+    "}",
+    ".adm-webhook-modal-close:hover { color: var(--adm-text); border-color: var(--adm-red); }",
+    ".adm-webhook-modal-row {",
+    "  display: flex; justify-content: space-between; gap: 14px;",
+    "  padding: 9px 0; border-bottom: 1px solid var(--adm-border); font-size: 14px;",
+    "}",
+    ".adm-webhook-modal-row:last-child { border-bottom: none; }",
+    ".adm-webhook-modal-row span:first-child { color: var(--adm-muted); }",
+    ".adm-webhook-modal-row span:last-child { color: var(--adm-text); font-weight: 600; text-align: right; }",
+    ".adm-webhook-modal-pre {",
+    "  background: var(--adm-surface-2); border: 1px solid var(--adm-border); border-radius: 8px;",
+    "  padding: 14px; font-size: 13px; color: var(--adm-text); white-space: pre-wrap;",
+    "  word-break: break-word; max-height: 50vh; overflow-y: auto; margin: 0;",
+    "}"
+  ].join("\n");
+  document.head.appendChild(style);
+
+  overlay = document.createElement("div");
+  overlay.id = "adm-webhook-modal-overlay";
+  overlay.innerHTML =
+    '<div class="adm-webhook-modal-box" onclick="event.stopPropagation()">' +
+      '<div class="adm-webhook-modal-head">' +
+        '<h3 id="adm-webhook-modal-title"></h3>' +
+        '<span class="adm-webhook-modal-close" onclick="closeAdminWebhookModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>' +
+      '</div>' +
+      '<div id="adm-webhook-modal-body"></div>' +
+    '</div>';
+  overlay.addEventListener("click", closeAdminWebhookModal);
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function closeAdminWebhookModal() {
+  const overlay = document.getElementById("adm-webhook-modal-overlay");
+  if (overlay) overlay.classList.remove("active");
+}
+
+function openAdminWebhookModal(title, bodyHtml) {
+  const overlay = ensureAdminWebhookModal();
+  overlay.querySelector("#adm-webhook-modal-title").textContent = title;
+  overlay.querySelector("#adm-webhook-modal-body").innerHTML = bodyHtml;
+  overlay.classList.add("active");
+}
+
 function viewAdminWebhookDetail(globalIdx) {
   const filtered = admWebhookGetFilteredData();
   const item = filtered[globalIdx];
   if (!item) return;
-  alert(
-    `Chi tiết webhook\n\nThời gian: ${item.time}\nEndpoint: ${item.endpoint}\nHTTP Code: ${item.code}\nTrạng thái: ${item.status === "success" ? "Thành công" : "Thất bại"}\nThời gian phản hồi: ${item.responseMs} ms\nKích thước: ${item.sizeKb} KB`,
-  );
+
+  const statusText = item.status === "success" ? "Thành công" : "Thất bại";
+  const rows = [
+    ["Thời gian", item.time],
+    ["Endpoint", item.endpoint],
+    ["HTTP Code", item.code],
+    ["Trạng thái", statusText],
+    ["Thời gian phản hồi", `${item.responseMs} ms`],
+    ["Kích thước", `${item.sizeKb.toFixed(2)} KB`],
+  ];
+
+  const bodyHtml = rows
+    .map(([label, value]) => `<div class="adm-webhook-modal-row"><span>${label}</span><span>${value}</span></div>`)
+    .join("");
+
+  openAdminWebhookModal("Chi tiết webhook", bodyHtml);
 }
 
 function viewAdminWebhookPayload(globalIdx) {
   const filtered = admWebhookGetFilteredData();
   const item = filtered[globalIdx];
   if (!item) return;
-  alert(`Payload — ${item.endpoint}\n\n${item.payload}`);
+
+  const bodyHtml = `<pre class="adm-webhook-modal-pre">${item.payload
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")}</pre>`;
+
+  openAdminWebhookModal(`Payload — ${item.endpoint}`, bodyHtml);
 }
 
 /* --- 6. XUẤT CSV (client-side, không cần Back-end) --- */
@@ -458,7 +558,7 @@ function exportAdminWebhookCsv() {
     .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
     .join("\r\n");
 
-  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

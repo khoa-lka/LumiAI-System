@@ -459,7 +459,16 @@ function renderCgvInterface() {
         `🎬 Gửi request lấy suất chiếu phim ID: ${movieId} cho ngày: ${dateStr}`,
       );
 
-      API.getShowtimes(movieId, dateStr)
+      console.log(
+        `🎬 [Customer Security] Gửi request lấy suất chiếu ACTIVE cho phim ID: ${movieId} ngày: ${dateStr}`,
+      );
+
+      // 🌟 ĐÃ SỬA: Chuyển sang gọi API bảo mật /customer thay vì hàm matrix của Admin cũ
+      fetch(`http://localhost:8080/api/showtimes/customer?movieId=${movieId}&date=${dateStr}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Lỗi fetch lịch chiếu");
+          return res.json();
+        })
         .then((resData) => {
           timeGrid.innerHTML = "";
           const actualShowtimes = resData.showtimes || [];

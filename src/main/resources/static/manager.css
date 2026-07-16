@@ -1,0 +1,1627 @@
+/* MANAGER PANEL — STYLESHEET RIÊNG (tách ra từ style.css để dễ quản lý)
+   Toàn bộ class trong file này chỉ dùng riêng cho manager.html (không dùng
+   ở admin.html/staff.html/trang khách hàng) — an toàn tách ra vì không có
+   class nào trùng tên bị admin.css override lại. File phải được load SAU
+   style.css trong manager.html (giống cách admin.html load style.css rồi
+   mới đến admin.css). Khối "MANAGER DASHBOARD - ANALYTICS" (.md-*) KHÔNG
+   nằm trong file này vì nó dùng chung với admin.html — vẫn giữ trong style.css. */
+
+/* ==========================================================================
+   CINEMA MANAGER PRO - DASHBOARD GIAO DIỆN QUẢN LÝ
+   ========================================================================== */
+
+.manager-pro-layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: transparent;
+  font-family: var(--font-main);
+}
+
+/* --- SIDEBAR MANAGER --- */
+/* 🚀 ĐÃ SỬA: chuyển sang position:fixed + height:100vh giống hệt sidebar Admin.
+   Trước đây sidebar chỉ cao bằng flex-stretch theo nội dung, nên khi tab Dashboard
+   có nội dung dài hơn sidebar, phần dư bên dưới lộ ra màu nền trang (tạo vệt loang
+   ngang giữa sidebar). Cố định sidebar theo viewport sẽ luôn phủ kín 100% chiều cao
+   màn hình, không phụ thuộc nội dung bên phải dài hay ngắn. */
+.mp-sidebar {
+  width: 260px;
+  background: #111114;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 15px;
+  box-sizing: border-box;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.mp-logo-zone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 40px;
+  padding-left: 10px;
+}
+
+.mp-logo-icon {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, var(--cgv-red), var(--cgv-red-dark));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.mp-nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mp-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 20px;
+  font-size: 14px;
+  color: #a0aab5;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mp-nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.mp-nav-item.active {
+  background: linear-gradient(135deg, var(--cgv-red), var(--cgv-red-dark));
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.mp-nav-icon {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+.mp-nav-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.mp-nav-text {
+  display: flex;
+  flex-direction: column;
+}
+.mp-nav-subtext {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+/* --- MAIN CONTENT MANAGER --- */
+.mp-main-content {
+  flex-grow: 1;
+  margin-left: 260px;
+  padding: 30px 40px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  min-height: 100vh;
+  background: var(--cgv-gray-bg);
+}
+
+.mp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.mp-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #f4f4f5;
+  margin: 0;
+}
+
+.mp-header-utils {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.mp-date-badge {
+  background: #17171b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #c4c4cc;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mp-icon-svg {
+  width: 20px;
+  height: 20px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.mp-chevron {
+  width: 14px;
+  height: 14px;
+  color: #ffffff;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+.mp-bell {
+  font-size: 20px;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.mp-bell::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 8px;
+  height: 8px;
+  background: var(--cgv-red);
+  border-radius: 50%;
+}
+
+.mp-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mp-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1.6px solid rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mp-avatar .mp-icon-svg {
+  width: 22px;
+  height: 22px;
+}
+.mp-user-info {
+  display: flex;
+  flex-direction: column;
+}
+.mp-user-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #f4f4f5;
+}
+.mp-user-role {
+  font-size: 12px;
+  color: #9a9aa3;
+}
+
+/* --- METRICS CARDS MANAGER --- */
+.mp-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 25px;
+}
+.mp-card {
+  background: #17171b;
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.mp-card-icon {
+  font-size: 30px;
+}
+.mp-card-info {
+  flex-grow: 1;
+}
+.mp-card-title {
+  font-size: 12px;
+  color: #9a9aa3;
+  margin-bottom: 8px;
+}
+.mp-card-value {
+  font-size: 20px;
+  font-weight: 900;
+  color: #f4f4f5;
+}
+.mp-trend-up {
+  font-size: 11px;
+  color: #10b981;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.mp-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #1c1c21;
+  border-radius: 3px;
+  margin-top: 8px;
+}
+.mp-progress-fill {
+  width: 78%;
+  height: 100%;
+  background: #10b981;
+  border-radius: 3px;
+}
+
+/* --- CHARTS ZONE MANAGER --- */
+.mp-charts-zone {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+.mp-box {
+  background: #17171b;
+  border-radius: 10px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+.mp-box-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #f4f4f5;
+  margin: 0 0 25px 0;
+}
+
+/* Mock Bar Chart */
+.mp-bar-chart {
+  height: 200px;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+  position: relative;
+}
+.mp-y-axis {
+  position: absolute;
+  left: -40px;
+  top: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #8a8a94;
+}
+.mp-bar {
+  width: 35px;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+}
+.mp-bar-label {
+  position: absolute;
+  bottom: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #9a9aa3;
+  white-space: nowrap;
+}
+
+/* Mock Donut Chart */
+.mp-donut-chart {
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.mp-donut-circle {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: conic-gradient(#f57c00 0% 30%, #1976d2 30% 100%);
+  position: relative;
+}
+.mp-donut-hole {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90px;
+  height: 90px;
+  background: #17171b;
+  border-radius: 50%;
+}
+.mp-donut-labels {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+.mp-label-30 {
+  position: absolute;
+  top: 20%;
+  left: -10px;
+  font-weight: bold;
+  font-size: 14px;
+}
+.mp-label-70 {
+  position: absolute;
+  bottom: 20%;
+  right: -10px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.mp-legend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 25px;
+  font-size: 12px;
+  color: #c4c4cc;
+}
+.mp-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mp-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* --- TABLE MANAGER --- */
+.mp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.mp-table th {
+  text-align: left;
+  padding: 15px 10px;
+  color: #f4f4f5;
+  font-weight: bold;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+.mp-table td {
+  padding: 15px 10px;
+  color: #c4c4cc;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mp-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* ==========================================================================
+   CINEMA MANAGER PRO - QUẢN LÝ DANH MỤC PHIM & MODAL
+   ========================================================================== */
+
+/* Thanh công cụ Action Bar */
+.mp-action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  background: #17171b;
+  padding: 15px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.mp-btn-add {
+  background: var(--cgv-red);
+  color: #fff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: var(--radius-pill);
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.mp-btn-add:hover {
+  background: var(--cgv-red-hover);
+}
+
+.mp-filters {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.mp-search-box {
+  position: relative;
+}
+.mp-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8a8a94;
+  font-size: 14px;
+}
+.mp-search-box input {
+  padding: 9px 15px 9px 35px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  outline: none;
+  font-size: 13px;
+  width: 200px;
+  background: var(--surface-2);
+  color: var(--text-dark);
+  transition: border 0.2s;
+}
+.mp-search-box input::placeholder {
+  color: var(--muted);
+}
+.mp-search-box input:focus {
+  border-color: var(--cgv-red);
+}
+
+.mp-filter-select {
+  padding: 9px 30px 9px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background-color: var(--surface-2);
+  color: var(--text-dark);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239a9aa3%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px top 50%;
+  background-size: 10px auto;
+}
+
+/* Bảng Danh mục Phim */
+.mp-movie-table th {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+}
+.mp-movie-table td {
+  vertical-align: middle;
+}
+
+.mp-movie-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.mp-movie-poster {
+  width: 40px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.mp-movie-title {
+  font-weight: bold;
+  color: var(--text-light);
+  font-size: 13.5px;
+}
+.mp-movie-title-vn {
+  font-weight: bold;
+  color: var(--text-light);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.mp-movie-title-en {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Badges */
+.mp-age-badges {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.mp-badge {
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+}
+.mp-badge.c18 {
+  background-color: var(--danger);
+}
+.mp-badge.c13 {
+  background-color: var(--success);
+}
+.mp-badge.p {
+  background-color: var(--success);
+}
+
+.mp-status {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: bold;
+}
+.mp-status.active {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+.mp-status.coming {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+.mp-status.inactive {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+}
+.mp-status.hidden {
+  background: rgba(138, 138, 147, 0.16);
+  color: #8a8a93;
+  border: 1px dashed rgba(138, 138, 147, 0.5);
+}
+.mp-status.available {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+.mp-status.lowstock {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+/* Các nút hành động Icon */
+.mp-table-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.mp-action-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #9a9aa3;
+  transition:
+    color 0.2s,
+    transform 0.2s;
+  padding: 0;
+}
+.mp-action-btn:hover {
+  color: var(--cgv-red);
+  transform: scale(1.1);
+}
+.mp-row-inactive {
+  background-color: transparent !important;
+}
+
+/* ==========================================================================
+   CINEMA MANAGER PRO - BẢNG KHO & DỊCH VỤ F&B (đồng bộ format với bảng Phim)
+   ========================================================================== */
+.mp-fnb-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.mp-fnb-type {
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.mp-fnb-type.combo {
+  background: rgba(229, 169, 59, 0.15);
+  color: var(--cgv-gold);
+}
+.mp-fnb-type.bap {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+.mp-fnb-type.nuoc {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+.mp-fnb-type.anvat {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.mp-row-lowstock {
+  background: rgba(255, 107, 53, 0.05) !important;
+}
+
+/* Genre pill + Rating chip (dùng cho bảng danh sách phim bên dưới Ma trận Lịch chiếu) */
+.mp-genre-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mp-genre-pill {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill, 20px);
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  color: #c4c4cc;
+  white-space: nowrap;
+}
+.mp-rating-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: bold;
+  font-size: 13px;
+  color: #f4b942;
+}
+.mp-duration-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #c4c4cc;
+  font-size: 13px;
+}
+
+/* Modal Xóa Phim */
+.mp-delete-popup {
+  width: 400px;
+  background: var(--surface, #141417);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+  text-align: center;
+  animation: fadeIn 0.2s ease-in-out;
+}
+.mp-delete-header {
+  background: var(--cgv-red, #ff6b35);
+  color: white;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: bold;
+}
+.mp-delete-body {
+  padding: 25px 30px;
+  font-size: 14px;
+  color: #e4e4e7;
+  line-height: 1.6;
+}
+.mp-delete-footer {
+  padding: 0 30px 25px 30px;
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+.mp-btn-cancel {
+  background: #757575;
+  color: white;
+  border: none;
+  padding: 10px 0;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  flex: 1;
+}
+.mp-btn-confirm {
+  background: #e53935;
+  color: white;
+  border: none;
+  padding: 10px 0;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  flex: 1;
+}
+/* --- POPUP THÔNG BÁO --- */
+.mp-notif-dropdown {
+  position: absolute;
+  top: 50px;
+  right: 180px;
+  width: 300px;
+  background: #1c2128;
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  padding: 15px;
+  z-index: 1001;
+  display: none;
+  color: #fff;
+}
+.mp-notif-dropdown.open {
+  display: block;
+}
+.mp-notif-header {
+  font-weight: bold;
+  border-bottom: 1px solid #333;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+.mp-notif-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #333;
+  font-size: 12px;
+}
+.mp-notif-item:last-child {
+  border-bottom: none;
+}
+.mp-notif-btn {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 8px;
+  width: 100%;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+/* --- POPUP QUẢN LÝ TÀI KHOẢN (USER DROPDOWN) --- */
+.mp-user-dropdown {
+  position: absolute;
+  top: 70px;
+  right: 40px;
+  width: 200px;
+  background: #1c2128;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  padding: 10px 0;
+  z-index: 1002;
+  display: none;
+  color: #fff;
+}
+.mp-user-dropdown.open {
+  display: block;
+  animation: fadeIn 0.2s;
+}
+.mp-user-dropdown-header {
+  padding: 10px 20px;
+  font-weight: bold;
+  border-bottom: 1px solid #333;
+  margin-bottom: 5px;
+}
+.mp-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.mp-dropdown-item:hover {
+  background: var(--cgv-red);
+}
+.mp-dropdown-item.logout {
+  color: var(--cgv-red);
+}
+.mp-dropdown-item.logout:hover {
+  color: white;
+  background: var(--cgv-red);
+}
+/* ==========================================================================
+   CINEMA MANAGER PRO - MA TRẬN LỊCH CHIẾU (GANTT CHART)
+   ========================================================================== */
+
+.mp-btn-outline {
+  background: #17171b;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e4e4e7;
+  padding: 9px 15px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.mp-btn-outline:hover {
+  background: #1c1c21;
+}
+.mp-date-picker {
+  background: #17171b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 9px 15px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #e4e4e7;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.mp-matrix-container {
+  background: #17171b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  overflow-x: auto;
+  padding-bottom: 20px;
+}
+
+.mp-matrix-header {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 15px 0 10px 0;
+}
+.mp-matrix-room-col {
+  width: 60px;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #c4c4cc;
+  font-size: 12px;
+}
+/* Hiệu ứng xoay chữ dọc cho tên phòng chiếu */
+.mp-matrix-room-name {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  letter-spacing: 1px;
+}
+
+.mp-matrix-timeline {
+  flex-grow: 1;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 2%;
+  color: #c4c4cc;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.mp-matrix-row {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  height: 90px;
+}
+
+.mp-matrix-tracks {
+  flex-grow: 1;
+  position: relative;
+  /* Vẽ các đường kẻ dọc mờ tương ứng với từng giờ */
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent,
+    transparent calc(6.66% - 1px),
+    rgba(255, 255, 255, 0.06) calc(6.66% - 1px),
+    rgba(255, 255, 255, 0.06) 6.66%
+  );
+}
+
+/* Các khối lịch chiếu */
+.mp-track-block {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  border-radius: 6px;
+  padding: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    z-index 0.2s;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.mp-track-block:hover {
+  transform: scale(1.02);
+  z-index: 10 !important;
+}
+
+/* Bảng màu khối phim */
+.mp-bg-yellow {
+  background: #fdc02f;
+  color: #241a00;
+  text-shadow: none;
+}
+.mp-bg-blue {
+  background: #2b78c9;
+}
+.mp-bg-green {
+  background: #7cb342;
+}
+.mp-bg-red {
+  background: #d32f2f;
+}
+.mp-bg-gray {
+  background: #1c1c21;
+  color: #9a9aa3;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.mp-gap-text {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #8a8a94;
+  font-weight: bold;
+}
+
+/* --- XỬ LÝ HIỆU ỨNG XUNG ĐỘT (CONFLICT) --- */
+.mp-conflict-box {
+  border: 2px solid #d32f2f;
+  animation: pulse-red-glow 1.5s infinite;
+  z-index: 5;
+}
+@keyframes pulse-red-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(211, 47, 47, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(211, 47, 47, 0);
+  }
+}
+
+.mp-conflict-tooltip {
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 4px;
+  padding: 8px 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e4e4e7;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.mp-conflict-tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px 6px 0;
+  border-style: solid;
+  border-color: white transparent transparent transparent;
+}
+.mp-icon-error {
+  background: #d32f2f;
+  color: white;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 10px;
+}
+/* --- CSS CHO CÁC POPUP MỚI --- */
+.mp-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.mp-modal-overlay.open {
+  display: flex;
+}
+
+.mp-modal-box {
+  background: var(--surface, #141417);
+  width: 450px;
+  padding: 28px;
+  border-radius: 16px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+  position: relative;
+  color: var(--text-light, #f4f4f5);
+}
+.mp-modal-header {
+  font-size: 19px;
+  font-weight: 800;
+  margin-bottom: 5px;
+  color: var(--text-light, #f4f4f5);
+}
+.mp-modal-sub {
+  font-size: 13px;
+  color: #a8a8b3;
+  margin-bottom: 20px;
+}
+.mp-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  cursor: pointer;
+  font-size: 20px;
+  color: #8a8a94;
+  transition: color 0.2s;
+}
+.mp-modal-close:hover {
+  color: var(--cgv-red, #e71a0f);
+}
+
+/* Form Add Movie */
+.mp-form-group {
+  margin-bottom: 16px;
+}
+.mp-form-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 12.5px;
+  margin-bottom: 6px;
+  color: #b8b3ff;
+  letter-spacing: 0.2px;
+}
+.mp-upload-zone {
+  border: 2px dashed rgba(255, 255, 255, 0.12);
+  padding: 30px;
+  text-align: center;
+  border-radius: 8px;
+  cursor: pointer;
+}
+/* Đảm bảo modal hiện đúng giữa màn hình và tối nền */
+.mp-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.mp-modal-overlay.open {
+  display: flex;
+}
+
+/* Bọc form trong modal (dùng chung .mp-modal-box đã định nghĩa ở trên, width tuỳ modal override qua inline style) */
+/* ==========================================================================
+   CINEMA MANAGER PRO - QUẢN LÝ KHO F&B
+   ========================================================================== */
+
+.mp-fnb-header-controls {
+  background: #17171b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+.mp-fnb-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+.mp-fnb-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.mp-fnb-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mp-fnb-table th,
+.mp-fnb-table td {
+  padding: 12px 10px;
+  vertical-align: middle;
+}
+
+/* Ảnh sản phẩm F&B (legacy, không còn dùng sau khi đổi sang .mp-fnb-thumb) */
+.mp-fnb-img {
+  width: 24px;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* Tooltip cảnh báo nổi lên */
+.mp-fnb-tooltip {
+  position: absolute;
+  right: 30px;
+  bottom: 40px;
+  background: var(--surface-2);
+  border: 1px solid var(--warning);
+  border-radius: 8px;
+  padding: 12px 15px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  color: var(--text-dark);
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  animation: fadeIn 0.3s ease-in-out;
+}
+.mp-fnb-tooltip strong {
+  color: var(--warning-text);
+}
+.mp-fnb-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 20px;
+  border-width: 0 6px 6px;
+  border-style: solid;
+  border-color: transparent transparent var(--warning) transparent;
+}
+.mp-fnb-tooltip::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: 20px;
+  border-width: 0 6px 6px;
+  border-style: solid;
+  border-color: transparent transparent var(--surface-2) transparent;
+}
+/* ==========================================================================
+   CINEMA MANAGER PRO - QUẢN LÝ KHUYẾN MÃI
+   ========================================================================== */
+.mp-promo-status {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: bold;
+}
+.status-active {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+.status-running {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+.status-expired {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+}
+
+/* Dòng hết hạn */
+.mp-promo-expired {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  color: var(--muted);
+}
+.mp-promo-expired td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Modal Tạo Khuyến Mãi (dùng chung .mp-modal-box / .mp-modal-header / .mp-modal-close đã định nghĩa ở trên) */
+.mp-input-group {
+  margin-bottom: 15px;
+}
+.mp-input-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+.mp-flex-row {
+  display: flex;
+  gap: 10px;
+}
+.mp-btn-generate {
+  background: #eef2f6;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  color: #2196f3;
+  font-weight: bold;
+  cursor: pointer;
+}
+.mp-btn-action {
+  background: #111;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 10px;
+}
+/* ==========================================================================
+   CINEMA MANAGER PRO - KIỂM TOÁN
+   ========================================================================== */
+.mp-report-filter {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  background: #17171b;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.mp-select-sm {
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  font-size: 12px;
+  background-color: #1c1c21;
+  color: #e4e4e7;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+.mp-btn-report {
+  padding: 8px 15px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+}
+.mp-btn-export {
+  background: #5d4037;
+  color: white;
+}
+.mp-btn-audit {
+  background: #e0551f;
+  color: white;
+}
+
+/* --- Thẻ chỉ số cảnh báo (dùng chung khung .md-metric-card) --- */
+.aud-metric-warn {
+  border-color: rgba(248, 113, 113, 0.35);
+}
+.md-badge-warn {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+
+/* --- Legend biểu đồ cột đối soát --- */
+.aud-chart-legend {
+  display: flex;
+  gap: 14px;
+  font-size: 11.5px;
+  color: #9a9aa3;
+}
+.aud-chart-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* --- Giá trị % phía trên mỗi cột --- */
+.aud-bar-value {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #cfd3da;
+  margin-bottom: 6px;
+}
+.md-bar-fill.warn {
+  background: linear-gradient(180deg, #f87171, #dc2626);
+}
+
+/* --- Nhận định & Đề xuất --- */
+.aud-insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.aud-insight-card {
+  border-radius: 10px;
+  padding: 14px 16px;
+  border-left: 3px solid;
+}
+.aud-insight-title {
+  display: block;
+  font-size: 13.5px;
+  margin-bottom: 5px;
+}
+.aud-insight-text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #cfd3da;
+}
+.aud-insight-peak {
+  background: rgba(59, 130, 246, 0.08);
+  border-left-color: #3b82f6;
+}
+.aud-insight-peak .aud-insight-title {
+  color: #60a5fa;
+}
+.aud-insight-growth {
+  background: rgba(34, 197, 94, 0.08);
+  border-left-color: #4ade80;
+}
+.aud-insight-growth .aud-insight-title {
+  color: #4ade80;
+}
+.aud-insight-warn {
+  background: rgba(248, 113, 113, 0.08);
+  border-left-color: #f87171;
+}
+.aud-insight-warn .aud-insight-title {
+  color: #f87171;
+}
+
+/* --- Bảng chi tiết đối soát doanh thu --- */
+.aud-diff-ok {
+  color: #4ade80;
+  font-weight: 700;
+}
+.aud-diff-bad {
+  color: #f87171;
+  font-weight: 700;
+}
+
+/* Khung upload file */
+.mp-upload-zone {
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  padding: 20px;
+  text-align: center;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #1c1c21;
+}
+.mp-upload-zone:hover {
+  border-color: #ff6b35;
+  background: rgba(255, 107, 53, 0.08);
+}
+
+/* Nút hủy/lưu màu sắc */
+.mp-btn-cancel {
+  background: #1c1c21;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.mp-btn-confirm {
+  background: #ff6b35;
+  color: white;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+/* ========================================================================
+   📅 LỊCH CHIẾU KIỂU GOOGLE CALENDAR (Manager - Ma trận lịch chiếu)
+   ======================================================================== */
+.mpcal-toolbar{display:flex;align-items:center;gap:10px;margin:14px 0;flex-wrap:wrap;}
+.mpcal-nav-btn{background:#151517;border:1px solid rgba(255,255,255,0.14);color:#e6e6ea;
+  height:34px;min-width:34px;padding:0 12px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;transition:.15s;}
+.mpcal-nav-btn:hover{border-color:#ff6b35;color:#fff;}
+.mpcal-title{font-size:17px;font-weight:800;color:#fff;margin-left:6px;}
+.mpcal-views{display:flex;background:#151517;border:1px solid rgba(255,255,255,0.14);border-radius:10px;overflow:hidden;}
+.mpcal-views button{background:transparent;border:0;color:#8a8a93;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700;}
+.mpcal-views button.active{background:#ff6b35;color:#fff;}
+
+.mpcal-grid{background:#141417;border:1px solid rgba(255,255,255,0.12);border-radius:14px;overflow:hidden;}
+.mpcal-head{display:grid;border-bottom:1px solid rgba(255,255,255,0.12);}
+.mpcal-dayhead{padding:9px 6px 11px;text-align:center;border-left:1px solid rgba(255,255,255,0.07);}
+.mpcal-dayhead .dow{font-size:11px;font-weight:700;letter-spacing:1px;color:#8a8a93;text-transform:uppercase;}
+.mpcal-dayhead .dnum{font-size:20px;font-weight:700;margin-top:3px;color:#e6e6ea;line-height:1.1;}
+.mpcal-dayhead.today .dow{color:#93b4ff;}
+.mpcal-dayhead.today .dnum{background:#3b82f6;color:#fff;width:36px;height:36px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;margin-top:1px;}
+
+.mpcal-body{position:relative;height:560px;overflow-y:auto;}
+.mpcal-cols{display:grid;position:relative;min-height:100%;}
+.mpcal-timecol{width:56px;}
+.mpcal-hour{height:48px;position:relative;border-top:1px solid rgba(255,255,255,0.07);}
+.mpcal-timecol .mpcal-hour{border-top:0;}
+.mpcal-tlabel{position:absolute;top:-8px;right:8px;font-size:11px;color:#8a8a93;}
+.mpcal-daycol{position:relative;border-left:1px solid rgba(255,255,255,0.07);}
+
+.mpcal-evt{position:absolute;border-radius:8px;padding:4px 8px;overflow:hidden;
+  font-size:12px;line-height:1.25;border-left:3px solid rgba(255,255,255,.55);box-shadow:0 1px 3px rgba(0,0,0,.3);}
+.mpcal-evt-compact{padding:3px 5px;}
+.mpcal-evt-compact .mpcal-evt-r{display:none;}
+.mpcal-evt-compact .mpcal-evt-h{font-size:10px;}
+.mpcal-evt-compact .mpcal-evt-t{font-size:11px;}
+.mpcal-evt-t{font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mpcal-evt-h{color:#e6e6ea;opacity:.92;font-size:11px;margin-top:1px;}
+.mpcal-evt-r{color:#cfcfd6;opacity:.78;font-size:10px;margin-top:1px;}
+.mpcal-evt-room-tag{color:#fff;opacity:1;font-weight:800;}
+.mpcal-evt-conflict{outline:2px solid #ff4d4f;outline-offset:-2px;}
+.mpcal-evt-warn{position:absolute;top:4px;right:5px;width:15px;height:15px;border-radius:50%;background:#ff4d4f;color:#fff;
+  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+
+.mpcal-month{background:#141417;border:1px solid rgba(255,255,255,0.12);border-radius:14px;overflow:hidden;}
+.mpcal-mdow{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid rgba(255,255,255,0.12);}
+.mpcal-mdow span{padding:8px;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;color:#8a8a93;text-transform:uppercase;}
+.mpcal-mgrid{display:grid;grid-template-columns:repeat(7,1fr);}
+.mpcal-cell{min-height:104px;border-left:1px solid rgba(255,255,255,0.07);border-top:1px solid rgba(255,255,255,0.07);padding:6px;overflow:hidden;}
+.mpcal-cell .dn{font-size:13px;font-weight:700;margin-bottom:4px;color:#8a8a93;}
+.mpcal-cell.today .dn{background:#3b82f6;color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;}
+.mpcal-cell.other{opacity:.35;}
+.mpcal-chip{font-size:10.5px;color:#fff;padding:2px 6px;border-radius:5px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid rgba(255,255,255,.5);}
+.mpcal-chip-conflict{outline:1.5px solid #ff4d4f;outline-offset:-1px;}
+.mpcal-more{font-size:10px;color:#8a8a93;margin-top:1px;}
+
+/* Sự kiện của phim đang ở trạng thái "Ẩn" — viền đứt để phân biệt trực quan */
+.mpcal-evt-hidden{border-style:dashed;opacity:.72;}
+.mpcal-chip-hidden{border-style:dashed;opacity:.7;}
+
+/* ========================================================================
+   🖱️ TƯƠNG TÁC TRỰC TIẾP TRÊN MA TRẬN: click / kéo-thả / resize / tạo nhanh
+   ======================================================================== */
+.mpcal-evt{cursor:grab;user-select:none;}
+.mpcal-evt-dragging{cursor:grabbing;box-shadow:0 6px 18px rgba(0,0,0,.5);z-index:50;}
+.mpcal-evt-resize{
+  position:absolute;left:0;right:0;bottom:0;height:6px;cursor:ns-resize;
+}
+.mpcal-daycol{cursor:pointer;}
+.mpcal-daycol:hover{background:rgba(255,255,255,0.02);}
+
+.mp-evt-popover{
+  display:none;position:absolute;z-index:2000;width:250px;
+  background:#1c1c21;border:1px solid rgba(255,255,255,0.16);border-radius:12px;
+  box-shadow:0 16px 40px rgba(0,0,0,.5);padding:14px;color:#e4e4e7;
+}
+.mp-evt-popover.open{display:block;}
+.mp-evt-pop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:14px;}
+.mp-evt-pop-close{cursor:pointer;color:#8a8a93;font-weight:bold;}
+.mp-evt-pop-close:hover{color:#ff6b35;}
+.mp-evt-pop-body{display:flex;flex-direction:column;gap:4px;}
+.mp-evt-pop-body label{font-size:11px;color:#9a9aa3;margin-top:6px;}
+.mp-evt-pop-body input,.mp-evt-pop-body select{
+  padding:7px 9px;border:1px solid rgba(255,255,255,0.14);border-radius:6px;
+  background:var(--surface-2,#151517);color:#e4e4e7;font-size:13px;outline:none;
+}
+.mp-evt-pop-actions{display:flex;gap:8px;margin-top:12px;}
+.mp-evt-pop-actions button{flex:1;padding:8px;border-radius:8px;font-size:12.5px;cursor:pointer;}
+
+/* ========================================================================
+   🔎 BỘ LỌC MULTI-SELECT TRÊN MA TRẬN LỊCH CHIẾU
+   (Trạng thái phim / Phòng chiếu / Phim — chọn nhiều giá trị cùng lúc)
+   ======================================================================== */
+.mp-msf-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;}
+.mp-msf{position:relative;}
+.mp-msf-btn{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 14px;border:1px solid rgba(255,255,255,0.14);border-radius:8px;
+  background:var(--surface-2,#151517);color:var(--text-dark,#e4e4e7);
+  font-size:13px;font-weight:600;cursor:pointer;transition:.15s;
+}
+.mp-msf-btn:hover{border-color:#ff6b35;}
+.mp-msf.open .mp-msf-btn{border-color:#ff6b35;color:#fff;}
+.mp-msf-count{
+  background:rgba(255,107,53,0.15);color:#ff6b35;
+  border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700;
+}
+.mp-msf-panel{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:500;
+  min-width:220px;max-height:280px;overflow-y:auto;
+  background:#1c1c21;border:1px solid rgba(255,255,255,0.14);border-radius:10px;
+  box-shadow:0 12px 30px rgba(0,0,0,0.45);padding:8px;
+}
+.mp-msf.open .mp-msf-panel{display:block;}
+.mp-msf-opt{
+  display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:6px;
+  cursor:pointer;font-size:13px;color:#d4d4d8;
+}
+.mp-msf-opt:hover{background:rgba(255,255,255,0.06);}
+.mp-msf-opt input[type="checkbox"]{width:15px;height:15px;accent-color:#ff6b35;cursor:pointer;}
+.mp-msf-opt .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.mp-msf-empty{padding:10px 8px;color:#8a8a93;font-size:12px;text-align:center;}
+.mp-msf-clear{
+  background:transparent;border:1px dashed rgba(255,255,255,0.25);color:#c4c4cc;
+  border-radius:8px;padding:8px 12px;font-size:12.5px;cursor:pointer;
+}
+.mp-msf-clear:hover{border-color:#ff6b35;color:#ff6b35;}
+/* BỔ SUNG: .cgv-input-text vốn chỉ định nghĩa trong auth.css, nhưng manager.html
+   không nhúng auth.css -> toàn bộ input/select trong các popup (Voucher, Sự kiện,
+   Suất chiếu...) bị mất style (không viền bo tròn, không nền tối, không viền cam khi
+   focus). Thêm lại rule này trực tiếp vào manager.css để không phụ thuộc auth.css. */
+.cgv-input-text {
+  width: 100%;
+  padding: 11px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  font-size: 13.5px;
+  box-sizing: border-box;
+  background: #1c1c21;
+  color: var(--text-light);
+  outline: none;
+  margin-bottom: 0;
+  transition: border-color 0.2s;
+}
+.cgv-input-text::placeholder {
+  color: var(--muted);
+}
+.cgv-input-text:focus {
+  border: 1px solid var(--cgv-red);
+}
+
+/* BỔ SUNG: .btn-cgv-submit / .btn-cgv-cancel cũng chỉ định nghĩa trong auth.css,
+   cùng nguyên nhân với .cgv-input-text ở trên -> nút Hủy/Lưu trong các popup bị
+   mất màu (cam cho nút Lưu, xám cho nút Hủy) và hiệu ứng hover. */
+.btn-cgv-submit {
+  background-color: #ff6b35;
+  color: white;
+  font-weight: bold;
+  font-size: 14.5px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  cursor: pointer;
+  margin-top: 10px;
+  border-radius: 10px;
+}
+.btn-cgv-submit:hover {
+  background-color: #e0551f;
+  transform: translateY(-1px);
+}
+.btn-cgv-cancel {
+  background-color: #26262c;
+  color: var(--text-light, #f4f4f5);
+  font-weight: bold;
+  font-size: 14.5px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.btn-cgv-cancel:hover {
+  background-color: #333338;
+  transform: translateY(-1px);
+}

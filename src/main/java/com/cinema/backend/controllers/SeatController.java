@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import com.cinema.backend.service.BookingService;
 import com.cinema.backend.entities.CheckoutRequest;
 import com.cinema.backend.entities.Order1;
+import com.cinema.backend.dto.CheckoutResponseDTO;
 
 
 import java.util.*;
@@ -110,11 +111,15 @@ public Map<String, Object> checkout(@RequestBody CheckoutRequest request) {
 
     try {
 
-        Order1 order = bookingService.checkout(request);
+        CheckoutResponseDTO checkoutResult = bookingService.checkout(request);
+        Order1 order = checkoutResult.getOrder();
 
         response.put("success", true);
         response.put("orderId", order.getOrderId());
         response.put("orderCode", order.getOrderCode());
+        response.put("seats", request.getSeats());
+        response.put("fnbSummary", checkoutResult.getFnbSummary());
+        response.put("ticketCodes", checkoutResult.getTicketCodes());
 
         return response;
 

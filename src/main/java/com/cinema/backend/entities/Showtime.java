@@ -47,4 +47,9 @@ public class Showtime {
     @JsonIgnore
     @OneToMany(mappedBy = "showtime")
     private List<Order1> orders;
+
+    // 🌟 THÊM MỚI: Trạng thái suất chiếu — ACTIVE / INACTIVE / HIDDEN
+    // (Lombok @Getter/@Setter ở trên class đã tự sinh getStatus()/setStatus())
+    @Column(name = "status")
+    private String status;
 }

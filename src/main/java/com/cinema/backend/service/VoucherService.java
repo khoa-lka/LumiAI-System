@@ -11,4 +11,7 @@ public interface VoucherService {
     Voucher createVoucher(Voucher voucher);
     Voucher updateVoucher(Integer id, Voucher voucher);
     void deleteVoucher(Integer id);
+
+    // 🌟 HÀM MỚI: Tự động quét voucher hệ thống dựa trên tổng tiền hóa đơn
+    Voucher checkAutoVoucher(Double grossAmount);
 }
