@@ -42,5 +42,6 @@ public class CheckoutRequest {
         public void setQuantity(Integer quantity) { this.quantity = quantity; }
         public Double getSubtotal() { return subtotal; }
         public void setSubtotal(Double subtotal) { this.subtotal = subtotal; }
+        
     }
 }

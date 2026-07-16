@@ -40,6 +40,9 @@ import com.cinema.backend.dto.CheckoutResponseDTO;
 @Service
 public class BookingService {
     @Autowired
+    private com.cinema.backend.controllers.PaymentController paymentController;
+
+    @Autowired
     private AccountRepository accountRepository;
 
     @Autowired
@@ -94,7 +97,16 @@ String fnbSummary = "Không có";
     // Lấy suất chiếu
     Showtime showtime = showtimeRepository.findById(request.getShowtimeId())
             .orElseThrow(() -> new RuntimeException("Showtime not found"));
-    
+    // 🔒 A3: Chặn bỏ qua thanh toán — chỉ chấp nhận nếu có bằng chứng
+    // thanh toán QR/PayOS đã SUCCESS thật sự (verify qua PaymentController).
+    // Lưu ý: luồng VNPay chưa được gate ở đây (làm ở chặng sau).
+    if ("qr".equalsIgnoreCase(request.getPaymentMethod())) {
+        if (!paymentController.isPaymentSuccess(request.getQrRef())) {
+            throw new RuntimeException(
+                "Chưa xác nhận được thanh toán. Vui lòng hoàn tất quét mã QR trước khi tạo vé!"
+            );
+        }
+    }
     // 🔒 UC-07: Chặn đặt trùng ghế — kiểm tra ghế đã bán chưa
     java.util.List<String> soldSeats =
             seatRepository.findSoldSeatCodesByShowtime(request.getShowtimeId());

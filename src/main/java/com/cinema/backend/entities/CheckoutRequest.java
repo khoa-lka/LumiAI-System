@@ -99,9 +99,20 @@ public void setVoucherCode(String voucherCode) {
 
     public BigDecimal getGrossAmount() {
         return grossAmount;
+        
     }
 
     public void setGrossAmount(BigDecimal grossAmount) {
         this.grossAmount = grossAmount;
+    }
+
+    private String qrRef;
+
+    public String getQrRef() {
+        return qrRef;
+    }
+
+    public void setQrRef(String qrRef) {
+        this.qrRef = qrRef;
     }
 }
