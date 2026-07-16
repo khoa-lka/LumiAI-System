@@ -381,6 +381,7 @@ function closeAuthModal() {
 }
 
 function renderFnbMenu() {
+  window.resetFnbIfNewBooking();  
   const container = document.getElementById("cgv-fnb-menu");
   if (!container) return;
   container.innerHTML = "";
@@ -1909,6 +1910,7 @@ window.onMovieOrTimeChange = function () {
 };
 
 window.quickBookMovie = function (movieTitle) {
+  window.markNewBookingSession(); 
   // 🌟 FIX HOÀN TIỀN/BĂNG HÌNH: Giải phóng giỏ hàng cũ và ép giao diện đặt vé quay ngược về Bước 1 (Chọn ghế)
   selectedSeats = [];
   currentPriceTotal = 0;

@@ -22,7 +22,11 @@ const ICON_INFO =
 
 // 🚀 THÊM MỚI: Khai báo mảng fnbMenu toàn cục ban đầu trống
 window.fnbMenu = [];
-
+function resetFnbSelection() {
+  if (Array.isArray(window.fnbMenu)) {
+    window.fnbMenu.forEach((item) => { item.qty = 0; });
+  }
+}
 // Hàm tự động gọi lên Spring Boot lấy toàn bộ bắp nước thật bốc từ Database
 function initFnbMenuFromServer() {
   if (typeof API !== "undefined" && typeof API.getFnbItems === "function") {
@@ -65,6 +69,8 @@ function handleBookNowClick() {
     const currentMovieTitle =
       document.getElementById("detail-movie-title").innerText;
     switchCgvTab("panel-booking");
+    window.markNewBookingSession();
+    resetFnbSelection(); 
     const selectCombo = document.getElementById("cgv-combo-movie");
     if (selectCombo && currentMovieTitle !== "-") {
       if ([...selectCombo.options].some((o) => o.value === currentMovieTitle)) {
@@ -182,6 +188,8 @@ function quickBookMovie(movieTitle) {
     return;
   }
   switchCgvTab("panel-booking");
+  window.markNewBookingSession();     
+  resetFnbSelection();    
   const selectCombo = document.getElementById("cgv-combo-movie");
   if (selectCombo) {
     selectCombo.value = movieTitle;

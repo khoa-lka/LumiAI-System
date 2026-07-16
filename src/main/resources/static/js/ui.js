@@ -215,6 +215,7 @@ function loadBannersFromDatabase() {
 // 🚀 ĐÃ NÂNG CẤP: Vẽ danh sách F&B động bốc trực tiếp từ Database mẫu
 // ==========================================================================
 function renderFnbMenu() {
+  window.resetFnbIfNewBooking(); 
   const container = document.getElementById("cgv-fnb-menu");
   if (!container) return;
   container.innerHTML = "";

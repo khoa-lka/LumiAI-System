@@ -1,6 +1,9 @@
 package com.cinema.backend.entities;
 
 import java.math.BigDecimal;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Builder;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -32,7 +35,8 @@ public class OrderDetail {
     private Integer quantity;
 
     private BigDecimal subtotal;
-
+    
+    @JsonIgnore 
     @ManyToOne
     @JoinColumn(name = "order_id")
     private Order1 order;
