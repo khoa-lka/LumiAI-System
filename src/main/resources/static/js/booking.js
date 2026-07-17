@@ -1381,6 +1381,7 @@ function executeFinalCheckout() {
     totalMoney: window.finalPriceTotal, // sau giảm
     voucherCode: document.getElementById("voucher-input")?.value.trim() || "",
     paymentMethod: window.selectedPaymentGateway,
+    qrRef: window.currentQrRef || null,     
     fnb: window.fnbMenu
       .filter((i) => i.qty > 0)
       .map((i) => ({

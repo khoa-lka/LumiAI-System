@@ -5,4 +5,5 @@ import java.util.Map;
 
 public interface ShowtimeService {
     Showtime updateShowtime(Integer id, Map<String, Object> payload);
+    Showtime addShowtime(Map<String, Object> payload);
 }
