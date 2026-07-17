@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import com.cinema.backend.entities.Voucher;
 import com.cinema.backend.repositories.VoucherRepository;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 @Service
 public class VoucherServiceImpl implements VoucherService {
 
@@ -93,29 +93,39 @@ public Voucher checkVoucher(String code) {
         return null;
     }
 
-    @Override
-    public boolean useVoucher(String code){
 
-        System.out.println("useVoucher chạy");
+// ...
 
-        Voucher voucher = checkVoucher(code);
+@Override
+@Transactional // Bắt buộc phải có khi chạy @Modifying query
+public boolean useVoucher(String code){
+    System.out.println("useVoucher chạy");
 
-        if(voucher==null){
-            System.out.println("voucher null");
-            return false;
-        }
+    // Vẫn gọi checkVoucher để tái kiểm tra ngày hết hạn, status ACTIVE...[cite: 2]
+    Voucher voucher = checkVoucher(code);
 
-        System.out.println("Before = " + voucher.getUsageLimit());
-
-        voucher.setUsageLimit(voucher.getUsageLimit()-1);
-
-        voucherRepository.save(voucher);
-
-        System.out.println("After = " + voucher.getUsageLimit());
-
-        return true;
+    if(voucher == null){
+        System.out.println("voucher null hoặc không đủ điều kiện");
+        return false;
     }
 
+    // XÓA ĐOẠN SET LẠI USAGE LIMIT VÀ SAVE:
+    // voucher.setUsageLimit(voucher.getUsageLimit()-1);
+    // voucherRepository.save(voucher);
+
+    // THAY BẰNG: Trừ trực tiếp dưới Database một cách an toàn
+    int updatedRows = voucherRepository.decrementVoucherUsage(code);
+
+    if (updatedRows == 0) {
+        // Trường hợp cả 2 request cùng lọt qua hàm checkVoucher() thành công, 
+        // request nào chạy update DB sau sẽ nhận về updatedRows = 0 vì limit đã chạm 0.
+        System.out.println("Voucher vừa bị người khác sử dụng hết lượt cuối cùng.");
+        return false;
+    }
+
+    System.out.println("Đã trừ lượt sử dụng voucher thành công.");
+    return true;
+}
     @Override
     public java.util.List<Voucher> getAllVouchers() {
         return voucherRepository.findAll();
