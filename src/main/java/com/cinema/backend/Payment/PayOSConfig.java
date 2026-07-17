@@ -6,10 +6,13 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 public class PayOSConfig {
+public static final String CLIENT_ID =
+ System.getenv().getOrDefault("PAYOS_CLIENT_ID", "");
+public static final String API_KEY =
+ System.getenv().getOrDefault("PAYOS_API_KEY", "");
+public static final String CHECKSUM_KEY =
+ System.getenv().getOrDefault("PAYOS_CHECKSUM_KEY", "");
 
-    public static final String CLIENT_ID = "4d8c59f6-8d21-4ad2-92d2-3123a0adbd31";
-    public static final String API_KEY = "04c5ee6e-62ff-4283-bf68-f951c79e5176";
-    public static final String CHECKSUM_KEY = "c7ed3d599e71e069bdca911114adaa9a9d1dc623e7e71807cfe47ebf7f264cb9";
 
     public static final String PAYOS_CREATE_URL =
             "https://api-merchant.payos.vn/v2/payment-requests";

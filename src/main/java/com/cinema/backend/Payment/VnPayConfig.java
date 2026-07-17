@@ -12,8 +12,11 @@ public class VnPayConfig {
     public static String vnp_ReturnUrl = "http://localhost:8080/index.html"; // 🚨 ĐƯỜNG DẪN TRẢ VỀ FRONTEND CỦA EM
     
     // 🌟 ĐIỀN CHÍNH XÁC THÔNG SỐ TỪ FILE PAYMEN.TXT VÀO ĐÂY:
-    public static String vnp_TmnCode = "U3MRTS75"; // 
-    public static String vnp_SecretKey = "UIONA03F53B2YBLHUS8P4BIWJ7WHHYDX"; // 
+   public static String vnp_TmnCode =
+ System.getenv().getOrDefault("VNP_TMN_CODE", "");
+public static String vnp_SecretKey =
+ System.getenv().getOrDefault("VNP_SECRET_KEY", "");
+
     
     public static String vnp_Version = "2.1.0";
     public static String vnp_Command = "pay";
