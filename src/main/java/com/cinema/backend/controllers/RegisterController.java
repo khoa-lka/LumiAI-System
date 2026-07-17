@@ -6,6 +6,7 @@ import com.cinema.backend.service.EmailService;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -21,13 +22,14 @@ public class RegisterController {
 
     private final AccountRepository accountRepository;
     private final EmailService emailService;
-
+    private final PasswordEncoder passwordEncoder; 
     private static final Map<String, String> otpStorage = new ConcurrentHashMap<>();
     private static final Map<String, LocalDateTime> otpExpiryStorage = new ConcurrentHashMap<>();
 
-    public RegisterController(AccountRepository accountRepository, EmailService emailService) {
+    public RegisterController(AccountRepository accountRepository, EmailService emailService, PasswordEncoder passwordEncoder) {
         this.accountRepository = accountRepository;
         this.emailService = emailService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/submit")
@@ -145,7 +147,7 @@ if (existingAccount != null) {
         }
 
         existingAccount.setFullname(name);
-        existingAccount.setPasswordHash(password);
+        existingAccount.setPasswordHash(passwordEncoder.encode(password));
         existingAccount.setDateOfBirth(dateOfBirth);
         existingAccount.setUpdatedDate(LocalDateTime.now());
 
@@ -207,7 +209,7 @@ if (existingAccount != null) {
             newAccount.setFullname(name);
             newAccount.setPhone(phone);
             newAccount.setEmail(email);
-            newAccount.setPasswordHash(password);
+            newAccount.setPasswordHash(passwordEncoder.encode(password));
             newAccount.setRoleId(3);
             newAccount.setStatus("PENDING");
             newAccount.setDateOfBirth(dateOfBirth);

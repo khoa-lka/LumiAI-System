@@ -12,6 +12,13 @@
     <link rel="stylesheet" href="auth.css" />
     <link rel="stylesheet" href="booking.css" />
     <link rel="stylesheet" href="account.css" />
+    <!-- BỔ SUNG: 3 file này đã được tách riêng từ style.css từ trước nhưng
+         chưa bao giờ được nhúng vào trang nào - style.css vẫn đang một mình
+         gánh style cho các phần đăng nhập/đăng ký, đặt vé, tài khoản. Nhúng
+         lại đúng chỗ để có thể dọn sạch phần trùng lặp còn lại ở style.css. -->
+    <link rel="stylesheet" href="auth.css" />
+    <link rel="stylesheet" href="booking.css" />
+    <link rel="stylesheet" href="account.css" />
   </head>
   <body>
     <div class="global-viewport-container">
@@ -475,10 +482,9 @@
           — SỰ KIỆN VÀ ƯU ĐÃI —
         </div>
 
-          <!-- 🔧 ĐÃ SỬA: home.js đã có sẵn hàm renderLasPromoGrid() tìm đúng id này
-               để đổ dữ liệu ưu đãi thật (fetch /api/promos), nhưng HTML lại thiếu
-               hẳn container này nên tab luôn trống trơn — bổ sung lại. -->
-          <div class="cgv-event-grid" id="cgv-event-grid-news" style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"></div>
+          <!-- Thêm thẻ grid này vào để hàm render của home.js bốc trúng id đổ dữ liệu -->
+          <div class="cgv-event-grid" id="customer-promo-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1200px; margin: 0 auto; padding: 0 15px;">
+          </div>
         </div>
 
         <div id="panel-profile" class="cgv-panel">
@@ -1791,19 +1797,20 @@
     </div>
   </div>
 
-
-<script src="js/state.js?v=17"></script>
+<script src="js/auth-token.js?v=1"></script>
+<script src="js/state.js?v=19"></script>
 
   <!-- 2. Nhúng file trang chủ ngay sau state.js để dùng chung 'serverData' không bị trùng lặp -->
   <!-- Thêm đuôi ?v=... để diệt tận gốc lỗi dính cache file cũ của Chrome/Edge -->
 <script src="js/home.js?v=19"></script>
 
   <!-- 3. Các file giao diện và tính năng chạy sau cùng omg omg omg omg  -->
+  <script src="js/public-feedback.js?v=17"></script>  
   <script src="js/api.js?v=17"></script>   
-  <script src="js/ui.js?v=18"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
+  <script src="js/ui.js?v=19"></script> <!-- File này chạy ở đây sẽ tìm thấy fetchSyncData ngay lập tức -->
   <script src="js/auth.js?v=19"></script>
   <script src="js/admin.js?v=17"></script>
-  <script src="js/booking.js?v=18"></script>
+  <script src="js/booking.js?v=19"></script>
   <script src="js/breadcrumb.js?v=17"></script>
   <script src="js/dashboard-access.js?v=18"></script>
 

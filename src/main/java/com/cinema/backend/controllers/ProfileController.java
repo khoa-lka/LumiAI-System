@@ -5,6 +5,7 @@ import com.cinema.backend.repositories.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.cinema.backend.config.CurrentUser;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,6 +24,12 @@ public class ProfileController {
     // 1. API LẤY THÔNG TIN HỒ SƠ CHI TIẾT (Dùng khi F5 hoặc chuyển Tab Thành Viên)
     @GetMapping("/{id}")
     public ResponseEntity<?> getProfileDetails(@PathVariable("id") Integer accountId) {
+        if (!CurrentUser.canAccess(accountId)) {                     
+            return ResponseEntity.status(403).body(Map.of(           
+                "status", "error",                                   
+                "message", "Bạn không có quyền xem hồ sơ này!"        
+            ));                                                      
+        }         
         Optional<Account> accountOpt = accountRepository.findById(accountId);
         
         if (accountOpt.isEmpty()) {
@@ -63,6 +70,12 @@ public class ProfileController {
             }
 
             Integer accountId = Integer.parseInt(updateRequest.get("accountId").toString());
+            if (!CurrentUser.canAccess(accountId)) {                
+                return ResponseEntity.status(403).body(Map.of(       
+                    "status", "error",                                
+                    "message", "Bạn không có quyền sửa hồ sơ này!"     
+                ));                                                    
+            }      
 
             String fullname = updateRequest.get("fullName") != null
                     ? updateRequest.get("fullName").toString().trim()

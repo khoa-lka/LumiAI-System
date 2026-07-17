@@ -47,6 +47,7 @@ public class Account {
     @OneToMany(mappedBy = "customer")
     private List<Order1> customerOrders;
 
+    
     @OneToMany(mappedBy = "staff")
     private List<Order1> staffOrders;
 

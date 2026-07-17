@@ -7,6 +7,7 @@ import com.cinema.backend.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -23,6 +24,7 @@ public class ForgotPasswordController {
 
     private final AccountRepository accountRepository;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
     // Lưu OTP tạm cho quên mật khẩu
     private static final Map<String, String> forgotOtpStorage = new ConcurrentHashMap<>();
@@ -184,7 +186,7 @@ public class ForgotPasswordController {
 
             Account account = accountOpt.get();
 
-            account.setPasswordHash(newPassword);
+            account.setPasswordHash(passwordEncoder.encode(newPassword));
             account.setUpdatedDate(LocalDateTime.now());
 
             accountRepository.save(account);

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LAS Cinemas - Manager Portal</title>
     <link rel="stylesheet" href="style.css?v=22" />
+    <link rel="stylesheet" href="manager.css" />
   </head>
   <body>
     <div class="manager-pro-layout">
@@ -1431,7 +1432,7 @@
         </div>
       </div>
     </div>
-
+    <script src="js/auth-token.js?v=1"></script>
     <script src="js/state.js?v=19"></script>
     <script src="js/api.js?v=19"></script>
     <script src="js/manager.js?v=22"></script>
@@ -1563,12 +1564,11 @@
           <label>Tiêu đề Chiến dịch</label>
           <input type="text" id="event-title" class="cgv-input-text" placeholder="VD: Đeo Phone Chắc Tay - Nhận Quà Khủng Liền Tay" />
         </div>
-
-        <!-- 🌟 THAY THẾ CHÍ MẠNG: Dropdown bốc danh sách Voucher động từ Database -->
+        <!-- BỔ SUNG: Dropdown bốc danh sách Voucher động từ Database
+             (thay cho ô nhập tay promo_code cũ - Promotion giờ liên kết Voucher qua quan hệ object) -->
         <div class="mp-form-group">
           <label>Chọn Voucher ưu đãi đi kèm (Nếu có)</label>
           <select id="event-voucher-select" class="cgv-input-text">
-            <!-- JavaScript sẽ tự động cào danh sách voucher thật đổ vào đây -->
             <option value="">-- Không kèm Voucher --</option>
           </select>
         </div>
@@ -1675,7 +1675,7 @@
           <input type="text" id="v-code" class="cgv-input-text" style="text-transform: uppercase;" />
         </div>
 
-        <!-- 🌟 BỔ SUNG 1: HÌNH THỨC ÁP DỤNG (NHẬP TAY / TỰ ĐỘNG) -->
+        <!-- BỔ SUNG 1: HÌNH THỨC ÁP DỤNG (NHẬP TAY / TỰ ĐỘNG) -->
         <div class="mp-form-group" style="margin-bottom: 15px;">
           <label>Hình thức áp dụng Voucher</label>
           <select id="v-apply-type" class="cgv-input-text" onchange="toggleVoucherConditionFields()">
@@ -1684,7 +1684,7 @@
           </select>
         </div>
 
-        <!-- 🌟 BỔ SUNG 2: KHỐI ĐIỀU KIỆN QUẾT NGẦM (Mặc định ẩn, tự động hiện khi chọn AUTO) -->
+        <!-- BỔ SUNG 2: KHỐI ĐIỀU KIỆN QUÉT NGẦM (Mặc định ẩn, tự động hiện khi chọn AUTO) -->
         <div id="v-auto-conditions-block" style="display: none; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1); margin-bottom: 15px;">
           <div class="mp-form-group" style="margin-bottom: 10px;">
             <label style="font-size:12px; color:#9a9aa3;">Loại điều kiện thời gian</label>
@@ -1699,7 +1699,7 @@
             <input type="text" id="v-condition-value" class="cgv-input-text" placeholder="Nhập số 3 nếu chọn Thứ 4" />
           </div>
         </div>
-        
+
         <div class="mp-form-group">
           <label>Loại giảm giá</label>
           <select id="v-type" class="cgv-input-text">

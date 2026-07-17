@@ -167,7 +167,7 @@ function updateTopBarMenu(fullName, roleName) {
     `;
   }
 }
-
+/*
 function loadEventsFromDatabase() {
   if (typeof API === "undefined" || !API.getEvents) return;
   API.getEvents()
@@ -189,7 +189,7 @@ function loadEventsFromDatabase() {
     })
     .catch((err) => console.error("Lỗi khi tải sự kiện từ Database: ", err));
 }
-
+*/
 function loadBannersFromDatabase() {
   if (typeof API === "undefined" || !API.getBanners) return;
   API.getBanners()
@@ -215,6 +215,7 @@ function loadBannersFromDatabase() {
 // 🚀 ĐÃ NÂNG CẤP: Vẽ danh sách F&B động bốc trực tiếp từ Database mẫu
 // ==========================================================================
 function renderFnbMenu() {
+  window.resetFnbIfNewBooking(); 
   const container = document.getElementById("cgv-fnb-menu");
   if (!container) return;
   container.innerHTML = "";

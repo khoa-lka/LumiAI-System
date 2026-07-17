@@ -1,5 +1,5 @@
 package com.cinema.backend.controllers;
-
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -10,6 +10,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.HashSet;
+import java.util.Set;
+
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -138,95 +143,285 @@ public class PosApiController {
         List<Map<String, Object>> showtimes = showtimeRepository.findPosShowtimesByMovieAndDate(movieId, date);
         return ResponseEntity.ok(showtimes);
     }
-
-    @Transactional
-    @PostMapping("/checkout")
-    public ResponseEntity<?> checkoutOrder(@RequestBody com.cinema.backend.dto.CheckoutRequest request) {
-        try {
-            long timestamp = System.currentTimeMillis();
-
-            // 1. TẠO HÓA ĐƠN (Bảng order1)
-            Order1 order = new Order1();
-            String orderCode = "ORD-" + timestamp;
-            order.setOrderCode(orderCode);
-
-            order.setFinalAmount(java.math.BigDecimal.valueOf(request.getTotalAmount()));
-            order.setGrossAmount(java.math.BigDecimal.valueOf(request.getTotalAmount()));
-
-            order.setOrderStatus("COMPLETELY");
-            order.setPaymentMethod(request.getPaymentMethod());
-            order.setPaymentStatus("SUCCESS");
-
-            Showtime showtime = showtimeRepository
-                    .findById(request.getShowtimeId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy suất chiếu"));
-            order.setShowtime(showtime);
-
-            com.cinema.backend.entities.Account staffObj = new com.cinema.backend.entities.Account();
-            staffObj.setAccountId(request.getStaffId());
-            order.setStaff(staffObj);
-
-            if (request.getVoucherId() != null) {
-                com.cinema.backend.entities.Voucher voucherObj = new com.cinema.backend.entities.Voucher();
-                voucherObj.setVoucherId(request.getVoucherId());
-                order.setVoucher(voucherObj);
-            }
-
-            order = orderRepository.save(order);
-
-            // 2. GHI NHẬN GIAO DỊCH (Bảng paymenttransaction)
-            PaymentTransaction pt = new PaymentTransaction();
-            pt.setTransactionCode("TXN_" + timestamp);
-            pt.setAmount(java.math.BigDecimal.valueOf(request.getTotalAmount()));
-            pt.setPaymentStatus("SUCCESS");
-            pt.setOrder(order);
-            paymentTransactionRepository.save(pt);
-
-            // 3. TẠO VÉ & CHI TIẾT ĐƠN HÀNG
-            List<Seat> allSeats = seatRepository.findSeatsByShowtimeId(request.getShowtimeId());
-            for (String seatCode : request.getSeats()) {
-                Seat seat = allSeats.stream()
-                        .filter(s -> (s.getSeatRow() + s.getSeatNumber()).equals(seatCode))
-                        .findFirst().orElseThrow(() -> new RuntimeException("Lỗi: Không tìm thấy ghế " + seatCode));
-
-                Ticket ticket = new Ticket();
-                ticket.setTicketCode("TIX-" + timestamp + "-" + seat.getSeatId());
-                ticket.setQrCode("QR_" + ticket.getTicketCode());
-                ticket.setTicketStatus("SOLD");
-                ticket.setShowtime(showtime);
-                ticket.setSeat(seat);
-                ticket.setOrder(order);
-                ticket = ticketRepository.save(ticket);
-
-                OrderDetail ticketDetail = new OrderDetail();
-                ticketDetail.setOrder(order);
-                ticketDetail.setTicket(ticket);
-                ticketDetail.setQuantity(1);
-                orderDetailRepository.save(ticketDetail);
-            }
-
-            // 4. LƯU BẮP NƯỚC (Bảng orderdetail)
-            if (request.getFoodItems() != null) {
-                for (com.cinema.backend.dto.CheckoutRequest.FoodItemRequest food : request.getFoodItems()) {
-                    OrderDetail foodDetail = new OrderDetail();
-                    foodDetail.setOrder(order);
-
-                    FoodBeverage fbObj = new FoodBeverage();
-                    fbObj.setFoodItemId(food.getFoodItemId());
-                    foodDetail.setFoodItem(fbObj);
-
-                    foodDetail.setQuantity(food.getQuantity());
-                    foodDetail.setSubtotal(java.math.BigDecimal.valueOf(food.getSubtotal()));
-                    orderDetailRepository.save(foodDetail);
-                }
-            }
-
-            return ResponseEntity.ok(orderCode);
-
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+private BigDecimal toVnd(Object value, String fieldName) {
+    if (value == null) {
+        throw new IllegalArgumentException(fieldName + " không được để trống");
     }
+
+    try {
+        BigDecimal amount = new BigDecimal(String.valueOf(value));
+
+        if (amount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException(fieldName + " không được âm");
+        }
+
+        // VND không sử dụng số lẻ.
+        return amount.setScale(0, RoundingMode.HALF_UP);
+    } catch (NumberFormatException e) {
+        throw new IllegalArgumentException(fieldName + " không hợp lệ");
+    }
+}
+   @Transactional(rollbackFor = Exception.class)
+@PostMapping("/checkout")
+public ResponseEntity<?> checkoutOrder(
+        @RequestBody com.cinema.backend.dto.CheckoutRequest request) {
+
+    try {
+        long timestamp = System.currentTimeMillis();
+
+        // 1. Lấy suất chiếu thật từ database
+        Showtime showtime = showtimeRepository
+                .findById(request.getShowtimeId())
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Không tìm thấy suất chiếu"));
+
+        if (request.getSeats() == null || request.getSeats().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn ít nhất một ghế");
+        }
+
+        // 2. Kiểm tra ghế và chuẩn bị danh sách ghế hợp lệ
+        List<Seat> allSeats =
+                seatRepository.findSeatsByShowtimeId(request.getShowtimeId());
+
+        List<String> bookedSeatList =
+                ticketRepository.findBookedSeatsByShowtime(request.getShowtimeId());
+
+        Set<String> bookedSeats = new HashSet<>();
+        for (String seatCode : bookedSeatList) {
+            if (seatCode != null) {
+                bookedSeats.add(seatCode.trim().toUpperCase());
+            }
+        }
+
+        Set<String> duplicatedSeats = new HashSet<>();
+        List<Seat> selectedSeatEntities = new ArrayList<>();
+
+        for (String seatCode : request.getSeats()) {
+            if (seatCode == null || seatCode.trim().isEmpty()) {
+                throw new IllegalArgumentException("Mã ghế không hợp lệ");
+            }
+
+            String normalizedSeatCode = seatCode.trim().toUpperCase();
+
+            if (!duplicatedSeats.add(normalizedSeatCode)) {
+                throw new IllegalArgumentException(
+                        "Ghế " + normalizedSeatCode + " đang bị gửi trùng");
+            }
+
+            if (bookedSeats.contains(normalizedSeatCode)) {
+                throw new IllegalArgumentException(
+                        "Ghế " + normalizedSeatCode + " đã được bán");
+            }
+
+            Seat seat = allSeats.stream()
+                    .filter(s -> {
+                        String code =
+                                String.valueOf(s.getSeatRow())
+                                        + String.valueOf(s.getSeatNumber());
+
+                        return code.equalsIgnoreCase(normalizedSeatCode);
+                    })
+                    .findFirst()
+                    .orElseThrow(() ->
+                            new IllegalArgumentException(
+                                    "Không tìm thấy ghế " + normalizedSeatCode));
+
+            selectedSeatEntities.add(seat);
+        }
+
+        // 3. Backend tự tính tiền vé bằng giá trong Showtime
+        BigDecimal ticketPrice =
+                toVnd(showtime.getTicketPrice(), "Giá vé");
+
+        BigDecimal ticketTotal = ticketPrice.multiply(
+                BigDecimal.valueOf(selectedSeatEntities.size()));
+
+        BigDecimal grossAmount = ticketTotal;
+
+        // Lưu FoodBeverage thật đã lấy từ database
+        Map<Integer, FoodBeverage> verifiedFoods = new HashMap<>();
+
+        // 4. Backend tự tính giá bắp nước từ database
+        if (request.getFoodItems() != null) {
+            for (com.cinema.backend.dto.CheckoutRequest.FoodItemRequest food
+                    : request.getFoodItems()) {
+
+                if (food.getQuantity() <= 0) {
+                    throw new IllegalArgumentException(
+                            "Số lượng món ăn phải lớn hơn 0");
+                }
+
+                FoodBeverage foodFromDatabase = foodBeverageRepository
+                        .findById(food.getFoodItemId())
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Không tìm thấy món ăn ID: "
+                                                + food.getFoodItemId()));
+
+                BigDecimal foodPrice =
+                        toVnd(foodFromDatabase.getPrice(), "Giá món ăn");
+
+                BigDecimal foodSubtotal = foodPrice.multiply(
+                        BigDecimal.valueOf(food.getQuantity()));
+
+                grossAmount = grossAmount.add(foodSubtotal);
+
+                verifiedFoods.put(
+                        food.getFoodItemId(),
+                        foodFromDatabase);
+            }
+        }
+
+        // 5. Lấy voucher thật và tính giảm giá tại backend
+        Voucher appliedVoucher = null;
+        BigDecimal discountAmount = BigDecimal.ZERO;
+
+        if (request.getVoucherId() != null) {
+            appliedVoucher = voucherRepository
+                    .findById(request.getVoucherId())
+                    .orElseThrow(() ->
+                            new IllegalArgumentException(
+                                    "Voucher không tồn tại"));
+
+            BigDecimal discountValue = toVnd(
+                    appliedVoucher.getDiscountValue(),
+                    "Giá trị voucher");
+
+            String discountType =
+                    String.valueOf(appliedVoucher.getDiscountType());
+
+            if ("PERCENT".equalsIgnoreCase(discountType)) {
+                discountAmount = grossAmount
+                        .multiply(discountValue)
+                        .divide(
+                                BigDecimal.valueOf(100),
+                                0,
+                                RoundingMode.HALF_UP);
+
+                Object maxDiscountValue =
+                        appliedVoucher.getMaxDiscount();
+
+                if (maxDiscountValue != null) {
+                    BigDecimal maxDiscount = toVnd(
+                            maxDiscountValue,
+                            "Giảm giá tối đa");
+
+                    discountAmount =
+                            discountAmount.min(maxDiscount);
+                }
+            } else {
+                discountAmount = discountValue;
+            }
+
+            // Không cho giảm nhiều hơn tổng hóa đơn
+            discountAmount = discountAmount.min(grossAmount);
+        }
+
+        BigDecimal finalAmount =
+                grossAmount.subtract(discountAmount);
+
+        // 6. Đối chiếu tổng tiền máy POS gửi với kết quả backend
+       
+
+        // Chỉ bắt đầu ghi database sau khi đã kiểm tra xong
+        Order1 order = new Order1();
+        String orderCode = "ORD-" + timestamp;
+
+        order.setOrderCode(orderCode);
+        order.setGrossAmount(grossAmount);
+        order.setFinalAmount(finalAmount);
+        order.setOrderStatus("COMPLETELY");
+        order.setPaymentMethod(request.getPaymentMethod());
+        order.setPaymentStatus("SUCCESS");
+        order.setShowtime(showtime);
+
+        com.cinema.backend.entities.Account staffObj =
+                new com.cinema.backend.entities.Account();
+
+        staffObj.setAccountId(request.getStaffId());
+        order.setStaff(staffObj);
+
+        if (appliedVoucher != null) {
+            order.setVoucher(appliedVoucher);
+        }
+
+        order = orderRepository.save(order);
+
+        // 7. Ghi giao dịch bằng số tiền backend đã tính
+        PaymentTransaction paymentTransaction =
+                new PaymentTransaction();
+
+        paymentTransaction.setTransactionCode("TXN_" + timestamp);
+        paymentTransaction.setAmount(finalAmount);
+        paymentTransaction.setPaymentStatus("SUCCESS");
+        paymentTransaction.setOrder(order);
+
+        paymentTransactionRepository.save(paymentTransaction);
+
+        // 8. Tạo vé
+        for (Seat seat : selectedSeatEntities) {
+            Ticket ticket = new Ticket();
+
+            ticket.setTicketCode(
+                    "TIX-" + timestamp + "-" + seat.getSeatId());
+
+            ticket.setQrCode("QR_" + ticket.getTicketCode());
+            ticket.setTicketStatus("SOLD");
+            ticket.setShowtime(showtime);
+            ticket.setSeat(seat);
+            ticket.setOrder(order);
+
+            ticket = ticketRepository.save(ticket);
+
+            OrderDetail ticketDetail = new OrderDetail();
+            ticketDetail.setOrder(order);
+            ticketDetail.setTicket(ticket);
+            ticketDetail.setQuantity(1);
+
+            // Nếu OrderDetail cần subtotal cho vé
+            ticketDetail.setSubtotal(ticketPrice);
+
+            orderDetailRepository.save(ticketDetail);
+        }
+
+        // 9. Lưu bắp nước bằng giá database
+        if (request.getFoodItems() != null) {
+            for (com.cinema.backend.dto.CheckoutRequest.FoodItemRequest food
+                    : request.getFoodItems()) {
+
+                FoodBeverage foodFromDatabase =
+                        verifiedFoods.get(food.getFoodItemId());
+
+                BigDecimal foodPrice =
+                        toVnd(foodFromDatabase.getPrice(), "Giá món ăn");
+
+                BigDecimal foodSubtotal = foodPrice.multiply(
+                        BigDecimal.valueOf(food.getQuantity()));
+
+                OrderDetail foodDetail = new OrderDetail();
+                foodDetail.setOrder(order);
+                foodDetail.setFoodItem(foodFromDatabase);
+                foodDetail.setQuantity(food.getQuantity());
+
+                // Không còn sử dụng food.getSubtotal() từ máy khách
+                foodDetail.setSubtotal(foodSubtotal);
+
+                orderDetailRepository.save(foodDetail);
+            }
+        }
+
+        return ResponseEntity.ok(orderCode);
+
+} catch (Exception e) {
+    TransactionAspectSupport
+            .currentTransactionStatus()
+            .setRollbackOnly();
+
+    return ResponseEntity
+            .badRequest()
+            .body(e.getMessage());
+}
+}
 
     // Dùng cho Máy POS (Staff), tab "In vé": tra cứu đơn hàng/vé thật trong DB
     // theo mã đơn (order_code, VD "ORD-...") hoặc mã vé (ticket_code, VD "TIX-...").

@@ -94,7 +94,18 @@ String fnbSummary = "Không có";
     // Lấy suất chiếu
     Showtime showtime = showtimeRepository.findById(request.getShowtimeId())
             .orElseThrow(() -> new RuntimeException("Showtime not found"));
-
+    
+    // 🔒 UC-07: Chặn đặt trùng ghế — kiểm tra ghế đã bán chưa
+    java.util.List<String> soldSeats =
+            seatRepository.findSoldSeatCodesByShowtime(request.getShowtimeId());
+    for (String seatCode : request.getSeats()) {
+        boolean taken = soldSeats.stream()
+                .anyMatch(s -> s != null && s.trim().equalsIgnoreCase(seatCode.trim()));
+        if (taken) {
+            throw new RuntimeException(
+                    "Ghế " + seatCode + " đã có người đặt, vui lòng chọn ghế khác!");
+        }
+    }
     // =========================
     // Tạo Order
     // =========================
@@ -144,62 +155,49 @@ if (request.getFnb() != null) {
     BigDecimal totalDiscount = BigDecimal.ZERO;
     Voucher appliedVoucher = null;
 
-    // 1. Kiểm tra mã Voucher (áp dụng cho cả luồng nhập tay MANUAL và tự động AUTO quét ngầm)
+    // 1. Kiểm tra mã Voucher (Áp dụng cho cả luồng nhập tay MANUAL và tự động AUTO quét ngầm)
     Optional<Voucher> voucherOpt = Optional.empty();
 
     if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
-        // Luồng 1: Client gửi mã cụ thể (khách tự nhập tay)
+        // Luồng 1: Nếu client gửi mã cụ thể (nhập tay hoặc FE tự quét điền)
         voucherOpt = voucherRepository.findByVoucherCode(request.getVoucherCode());
-        if (voucherOpt.isEmpty()) {
-            throw new RuntimeException("Voucher not found");
-        }
     } else {
-        // Luồng 2: Client không gửi mã — tự động quét DB tìm Voucher mang cờ AUTO đang hoạt động
-        Voucher autoVoucher = voucherService.checkAutoVoucher(grossAmount.doubleValue());
-        if (autoVoucher != null) {
-            voucherOpt = Optional.of(autoVoucher);
-        }
+        // Luồng 2: ĐÃ ĐỒNG BỘ: Tự động quét DB tìm Voucher mang cờ 'AUTO' đang hoạt động
+        voucherOpt = voucherRepository.findAll().stream()
+                .filter(v -> "ACTIVE".equalsIgnoreCase(v.getStatus()) 
+                          && "AUTO".equalsIgnoreCase(v.getApplyType())) // 🎯 Khớp chuẩn xác thuộc tính applyType của nhóm em!
+                .findFirst();
     }
 
+    // Nếu tìm thấy voucher thỏa mãn (từ luồng 1 hoặc luồng 2), tiến hành tính toán giảm giá
     if (voucherOpt.isPresent()) {
-        Voucher voucher = voucherOpt.get();
+        Voucher v = voucherOpt.get();
+        
+        // Các chốt chặn kiểm tra: trạng thái hoạt động, lượt dùng, hạn dùng và hạn mức đơn hàng tối thiểu
+        boolean isActive = "ACTIVE".equalsIgnoreCase(v.getStatus());
+        boolean isNotExpired = (v.getExpiredDate() == null || v.getExpiredDate().isAfter(LocalDateTime.now()));
+        boolean hasUsage = v.getUsageLimit() > 0;
+        boolean meetMinOrder = (v.getMinimumOrder() == null || grossAmount.compareTo(BigDecimal.valueOf(v.getMinimumOrder())) >= 0);
 
-        boolean isActive = voucher.getStatus() == null || "ACTIVE".equalsIgnoreCase(voucher.getStatus());
-        boolean isNotExpired = voucher.getExpiredDate() == null
-                || voucher.getExpiredDate().isAfter(LocalDateTime.now());
-        boolean hasUsage = voucher.getUsageLimit() != null && voucher.getUsageLimit() > 0;
-        boolean meetMinOrder = voucher.getMinimumOrder() == null
-                || grossAmount.compareTo(BigDecimal.valueOf(voucher.getMinimumOrder())) >= 0;
-
-        // Chỉ voucher NHẬP TAY mới bắt buộc phải hợp lệ (ném lỗi nếu sai điều kiện);
-        // voucher AUTO nếu lỡ không còn hợp lệ thì âm thầm bỏ qua, không chặn luồng thanh toán.
-        boolean isManualFlow = request.getVoucherCode() != null && !request.getVoucherCode().isBlank();
-
-        if (!isActive || !isNotExpired || !hasUsage || !meetMinOrder) {
-            if (isManualFlow) {
-                throw new RuntimeException("Voucher không hợp lệ hoặc đã hết hạn/hết lượt sử dụng");
+        if (isActive && isNotExpired && hasUsage && meetMinOrder) {
+            appliedVoucher = v;
+            
+            // Gán lại mã vào order để ghi nhận hóa đơn dùng voucher hệ thống tự áp dụng
+            if (request.getVoucherCode() == null || request.getVoucherCode().isBlank()) {
+                request.setVoucherCode(v.getVoucherCode());
             }
-        } else {
-            if (!isManualFlow) {
-                // Gán lại mã vào request để bước "Cập nhật Voucher" phía dưới trừ đúng lượt dùng
-                request.setVoucherCode(voucher.getVoucherCode());
-            }
-
-            if ("PERCENT".equalsIgnoreCase(voucher.getDiscountType())) {
-                BigDecimal calculatedDiscount = grossAmount
-                        .multiply(BigDecimal.valueOf(voucher.getDiscountValue()))
-                        .divide(BigDecimal.valueOf(100));
-                if (voucher.getMaxDiscount() != null
-                        && voucher.getMaxDiscount().compareTo(BigDecimal.ZERO) > 0
-                        && calculatedDiscount.compareTo(voucher.getMaxDiscount()) > 0) {
-                    calculatedDiscount = voucher.getMaxDiscount();
+            
+            if ("PERCENT".equalsIgnoreCase(v.getDiscountType())) {
+                BigDecimal calculatedDiscount = grossAmount.multiply(BigDecimal.valueOf(v.getDiscountValue())).divide(BigDecimal.valueOf(100));
+                if (v.getMaxDiscount() != null && v.getMaxDiscount().compareTo(BigDecimal.ZERO) > 0) {
+                    if (calculatedDiscount.compareTo(v.getMaxDiscount()) > 0) {
+                        calculatedDiscount = v.getMaxDiscount();
+                    }
                 }
                 totalDiscount = calculatedDiscount;
             } else {
-                totalDiscount = BigDecimal.valueOf(voucher.getDiscountValue());
+                totalDiscount = BigDecimal.valueOf(v.getDiscountValue());
             }
-
-            appliedVoucher = voucher;
         }
     }
 
@@ -254,7 +252,13 @@ System.out.println("ORDER ID = " + order.getOrderId());
         firstTicketCode = code;
         }   
 
-        ticket = ticketRepository.save(ticket);
+        try {
+            ticket = ticketRepository.save(ticket);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            // Ghế vừa bị người khác giành mất đúng khoảnh khắc này (UNIQUE index chặn)
+            throw new RuntimeException(
+                    "Ghế " + seatCode + " vừa có người khác đặt mất, vui lòng chọn lại!");
+        }
         savedTicketCodes.add(code);
 
         OrderDetail detail = new OrderDetail();

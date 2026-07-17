@@ -6,8 +6,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.cinema.backend.config.CurrentUser;
+import org.springframework.http.ResponseEntity;
 
+
+
+import com.cinema.backend.config.CurrentUser;
 import com.cinema.backend.dto.OrderHistoryDTO;
 import com.cinema.backend.entities.Order1;
 import com.cinema.backend.entities.OrderDetail;
@@ -40,10 +46,16 @@ public class OrderController {
     private OrderService orderService;
 
     @GetMapping("/history/{accountId}")
-public List<OrderHistoryDTO> getHistory(
-        @PathVariable Integer accountId) {
+    public ResponseEntity<?> getHistory(@PathVariable Integer accountId) {
 
-    return orderService.getHistory(accountId);
-}
+        if (!CurrentUser.canAccess(accountId)) {
+            return ResponseEntity.status(403).body(Map.of(
+                "status", "error",
+                "message", "Bạn không có quyền xem đơn hàng này!"
+            ));
+        }
+
+        return ResponseEntity.ok(orderService.getHistory(accountId));
+    }
 
 }
