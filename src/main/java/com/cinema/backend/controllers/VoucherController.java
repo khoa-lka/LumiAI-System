@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.cinema.backend.entities.Voucher;
 import com.cinema.backend.service.VoucherService;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/vouchers")
@@ -17,7 +19,17 @@ public class VoucherController {
     
     @GetMapping("/{code}")
     public ResponseEntity<?> checkVoucher(@PathVariable String code) {
+        // 🌟 NHÁNH 1: Nếu khách hàng muốn lấy toàn bộ danh sách Voucher đang được phát hành
+        if ("all".equalsIgnoreCase(code)) {
+            List<Voucher> publicActiveVouchers = voucherService.getAllVouchers().stream()
+                    .filter(v -> "ACTIVE".equalsIgnoreCase(v.getStatus())) // Chỉ lấy voucher đang mở
+                    .filter(v -> v.getUsageLimit() != null && v.getUsageLimit() > 0) // Còn lượt sử dụng
+                    .filter(v -> v.getExpiredDate() == null || v.getExpiredDate().isAfter(LocalDateTime.now())) // Chưa hết hạn
+                    .toList();
+            return ResponseEntity.ok(publicActiveVouchers);
+        }
 
+        // 🌟 NHÁNH 2: Kiểm tra một mã Voucher cụ thể (Logic cũ giữ nguyên)
         Voucher voucher = voucherService.checkVoucher(code);
 
         if (voucher == null) {
@@ -28,14 +40,14 @@ public class VoucherController {
             return ResponseEntity.badRequest().body("Voucher đã hết lượt sử dụng");
         }
 
-        if (voucher.getExpiredDate() != null && voucher.getExpiredDate().isBefore(java.time.LocalDateTime.now())) {
+        if (voucher.getExpiredDate() != null && voucher.getExpiredDate().isBefore(LocalDateTime.now())) {
             return ResponseEntity.badRequest().body("Voucher đã hết hạn");
         }
 
         return ResponseEntity.ok(voucher);
     }
 
-    // 🌟 API MỚI BỔ SUNG: Cho phép luồng Booking quét tìm khuyến mãi tự động (AUTO) phù hợp giá trị đơn
+    // 🌟 API BỔ SUNG: Cho phép luồng Booking quét tìm khuyến mãi tự động (AUTO) phù hợp giá trị đơn
     @GetMapping("/check-auto")
     public ResponseEntity<?> checkAutoVoucher(@RequestParam("grossAmount") Double grossAmount) {
         Voucher autoVoucher = voucherService.checkAutoVoucher(grossAmount);
@@ -44,13 +56,13 @@ public class VoucherController {
         }
         return ResponseEntity.ok(autoVoucher);
     }
-    // 🚀 API 1: Lấy toàn bộ danh sách Voucher cho bảng quản trị của Manager
+
+    // 🚀 API QUẢN TRỊ ĐƯỢC CHẶN CHO MANAGER (Giữ nguyên cấu hình cũ của nhóm)
     @GetMapping("/manager/all")
     public ResponseEntity<?> getAllVouchersForManager() {
         return ResponseEntity.ok(voucherService.getAllVouchers());
     }
 
-    // 🚀 API 2: Thêm mới Voucher chiến dịch
     @PostMapping("/manager/add")
     public ResponseEntity<?> createVoucher(@RequestBody Voucher voucher) {
         try {
@@ -61,8 +73,7 @@ public class VoucherController {
         }
     }
 
-    // 🚀 API 3: Cập nhật thông tin sửa đổi Voucher
-    @PutMapping("/manager/update/{id}") // 🎯 Đã rút gọn sạch đẹp
+    @PutMapping("/manager/update/{id}")
     public ResponseEntity<?> updateVoucher(@PathVariable Integer id, @RequestBody Voucher voucherDetails) {
         try {
             Voucher updatedVoucher = voucherService.updateVoucher(id, voucherDetails);
@@ -72,8 +83,7 @@ public class VoucherController {
         }
     }
 
-    // 🚀 API 4: Xóa Voucher vật lý khỏi hệ thống
-    @DeleteMapping("/manager/delete/{id}") // 🎯 Đã rút gọn sạch đẹp
+    @DeleteMapping("/manager/delete/{id}")
     public ResponseEntity<?> deleteVoucher(@PathVariable Integer id) {
         try {
             voucherService.deleteVoucher(id);

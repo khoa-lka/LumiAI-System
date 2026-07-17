@@ -22,7 +22,6 @@ window.addEventListener("DOMContentLoaded", () => {
   // 4. Load Dữ liệu ban đầu từ Database Spring Boot
   loadBannersFromDatabase();
   setInterval(moveBannerRight, 3000);
-  loadEventsFromDatabase();
 
   // 🚀 ĐÃ SỬA: Thay thế fetchSyncData bằng hàm đồng bộ danh sách phim thật từ DB lên màn hình và dropdown đặt vé
   initDatabaseMovies();
