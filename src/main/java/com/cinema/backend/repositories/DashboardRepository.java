@@ -49,7 +49,18 @@ public interface DashboardRepository extends JpaRepository<Order1, Integer> {
     List<Map<String, Object>> getGenreDistribution();
 
     // 6. Lấy 5 giao dịch gần đây nhất để hiển thị ở md-transactions
-    @Query(value = "SELECT TOP 5 o.order_code as orderCode, a.fullname as customerName, o.payment_method as paymentMethod, o.final_amount as finalAmount, o.order_status as orderStatus, CONVERT(VARCHAR(16), o.created_date, 120) as createdTime " +
-                   "FROM order1 o LEFT JOIN Account a ON o.account_cus_id = a.account_id ORDER BY o.created_date DESC", nativeQuery = true)
-    List<Map<String, Object>> getRecentTransactions();
+  @Query(value =
+        "SELECT TOP 5 " +
+        "o.order_code AS [orderCode], " +
+        "COALESCE(a.fullname, N'Khách vãng lai') AS [customerName], " +
+        "COALESCE(o.payment_method, 'CASH') AS [paymentMethod], " +
+        "COALESCE(o.final_amount, 0) AS [finalAmount], " +
+        "COALESCE(o.order_status, 'UNKNOWN') AS [orderStatus], " +
+        "COALESCE(CONVERT(VARCHAR(16), o.created_date, 120), " +
+        "'Không xác định') AS [createdTime] " +
+        "FROM order1 o " +
+        "LEFT JOIN Account a ON o.account_cus_id = a.account_id " +
+        "ORDER BY o.order_id DESC",
+        nativeQuery = true)
+List<Map<String, Object>> getRecentTransactions();
 }

@@ -94,6 +94,9 @@
                         <span id="adm-notif-count" class="adm-notif-count" style="display:none;">
                             0
                         </span>
+                        <span id="adm-notif-count" class="adm-notif-count" style="display:none;">
+                            0
+                        </span>
                     </div>
                     <div class="adm-notif-dropdown" id="adm-notif-dropdown">
                         Chưa có thông báo mới.
@@ -523,7 +526,7 @@
             var box = document.getElementById("adm-user-dropdown");
             if (box) box.classList.toggle("open");
         }
-        function toggleAdmNotifDropdown() {
+       function toggleAdmNotifDropdown() {
   var box = document.getElementById("adm-notif-dropdown");
   if (!box) return;
 
@@ -553,7 +556,7 @@
     <script src="js/admin-dashboard.js?v=3"></script>
     <script src="js/admin-syslog.js?v=3"></script>
     <script src="js/admin-webhook.js?v=3"></script>
-    <script src="js/home.js?v=12"></script>
+    
 
     <!-- ===== Bổ sung từ nhánh admin: popup thông báo đổi quyền / xác nhận khóa TK / chi tiết log ===== -->
     <div id="admin-role-success-popup" class="admin-role-popup-overlay">
