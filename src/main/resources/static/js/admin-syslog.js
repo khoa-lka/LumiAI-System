@@ -446,3 +446,175 @@ function renderAdminSysLogPage() {
   renderAdminSysLogActionFilter();
   renderAdminSysLogTable();
 }
+/* =========================================================
+   THÔNG BÁO CHUÔNG ADMIN — LẤY TỪ SYSLOG
+   ========================================================= */
+
+let ADM_BELL_LOGS = [];
+let admBellRefreshTimer = null;
+
+const ADM_BELL_LAST_SEEN_KEY = "adm_syslog_last_seen_time";
+
+function escapeAdminBellHtml(value) {
+  const element = document.createElement("div");
+  element.textContent = String(value ?? "");
+  return element.innerHTML;
+}
+
+async function loadAdminBellNotifications() {
+  const dropdown = document.getElementById("adm-notif-dropdown");
+  const badge = document.getElementById("adm-notif-count");
+
+  if (!dropdown || !badge) return;
+
+  try {
+    const response = await API.getSysLogs();
+
+    const allLogs = (Array.isArray(response) ? response : [])
+      .map(normalizeAdminSysLog)
+      .filter((log) => log.rawTime)
+      .sort((a, b) => b.rawTime.getTime() - a.rawTime.getTime());
+
+    // Chuông chỉ hiển thị 8 thao tác mới nhất
+    ADM_BELL_LOGS = allLogs.slice(0, 8);
+
+    const lastSeenTime = Number(
+      localStorage.getItem(ADM_BELL_LAST_SEEN_KEY) || 0
+    );
+
+    const unreadCount = allLogs.filter(
+      (log) => log.rawTime.getTime() > lastSeenTime
+    ).length;
+
+    renderAdminBellNotifications(unreadCount);
+  } catch (error) {
+    console.error("Lỗi tải thông báo chuông Admin:", error);
+
+    dropdown.innerHTML = `
+      <div class="adm-notif-empty">
+        Không tải được thông báo hệ thống.
+      </div>
+    `;
+
+    badge.style.display = "none";
+  }
+}
+
+function renderAdminBellNotifications(unreadCount) {
+  const dropdown = document.getElementById("adm-notif-dropdown");
+  const badge = document.getElementById("adm-notif-count");
+
+  if (!dropdown || !badge) return;
+
+  if (unreadCount > 0) {
+    badge.textContent = unreadCount > 99 ? "99+" : unreadCount;
+    badge.style.display = "flex";
+  } else {
+    badge.textContent = "0";
+    badge.style.display = "none";
+  }
+
+  if (ADM_BELL_LOGS.length === 0) {
+    dropdown.innerHTML = `
+      <div class="adm-notif-empty">
+        Chưa có hoạt động hệ thống.
+      </div>
+    `;
+    return;
+  }
+
+  dropdown.innerHTML = `
+    <div class="adm-notif-header">
+      <strong>Hoạt động mới</strong>
+      <span>${unreadCount} chưa xem</span>
+    </div>
+
+    <div class="adm-notif-list">
+      ${ADM_BELL_LOGS.map((log) => {
+        const levelClass =
+          log.level === "error"
+            ? "error"
+            : log.level === "warning"
+              ? "warning"
+              : "info";
+
+        return `
+          <div class="adm-notif-item ${levelClass}"
+               onclick="openAdminBellLogs()">
+
+            <span class="adm-notif-dot"></span>
+
+            <div class="adm-notif-content">
+              <strong>${escapeAdminBellHtml(log.action)}</strong>
+
+              <p>${escapeAdminBellHtml(log.detail)}</p>
+
+              <small>
+                ${escapeAdminBellHtml(log.time)}
+                · ${escapeAdminBellHtml(log.user)}
+              </small>
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+
+    <button type="button"
+            class="adm-notif-view-all"
+            onclick="openAdminBellLogs()">
+      Xem tất cả Logs hệ thống
+    </button>
+  `;
+}
+
+function markAdminBellNotificationsRead() {
+  const latestLog = ADM_BELL_LOGS[0];
+
+  if (latestLog?.rawTime) {
+    localStorage.setItem(
+      ADM_BELL_LAST_SEEN_KEY,
+      String(latestLog.rawTime.getTime())
+    );
+  }
+
+  const badge = document.getElementById("adm-notif-count");
+
+  if (badge) {
+    badge.textContent = "0";
+    badge.style.display = "none";
+  }
+
+  // Cập nhật dòng "chưa xem" thành 0
+  renderAdminBellNotifications(0);
+}
+
+function openAdminBellLogs() {
+  const dropdown = document.getElementById("adm-notif-dropdown");
+
+  if (dropdown) {
+    dropdown.classList.remove("open");
+  }
+
+  markAdminBellNotificationsRead();
+
+  if (typeof switchAdminTab === "function") {
+    switchAdminTab("syslog");
+  }
+
+  if (typeof loadAdminSysLogs === "function") {
+    loadAdminSysLogs();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  loadAdminBellNotifications();
+
+  if (!admBellRefreshTimer) {
+    // Cập nhật chuông sau mỗi 15 giây
+    admBellRefreshTimer = setInterval(
+      loadAdminBellNotifications,
+      15000
+    );
+  }
+});
+

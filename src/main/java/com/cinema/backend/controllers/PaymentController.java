@@ -53,6 +53,15 @@ import com.cinema.backend.Payment.PayOSConfig;
 @CrossOrigin(origins = "*")
 public class PaymentController {
 private final Map<String, QrPaymentSession> qrSessions = new ConcurrentHashMap<>();
+
+ public boolean isPaymentSuccess(String qrRef) {
+        if (qrRef == null || qrRef.isBlank()) return false;
+        QrPaymentSession session = qrSessions.get(qrRef);
+        return session != null && "SUCCESS".equals(session.paymentStatus);
+    }
+
+
+    
 @Autowired
 private JdbcTemplate jdbcTemplate;
 

@@ -65,49 +65,12 @@ public class ShowtimeController {
         ));
     }
     // 🚀 THÊM MỚI: API hứng yêu cầu POST từ Front-End để tạo suất chiếu và lưu xuống SQL Server
+   // 🚀 API Hứng yêu cầu POST từ Front-End (Đã được Refactor gọn gàng)
     @PostMapping("/add")
     public ResponseEntity<?> addShowtime(@RequestBody Map<String, Object> payload) {
         try {
-            Showtime newShowtime = new Showtime();
-
-            // 1. Phân rã dữ liệu từ object liên kết movie: { movie: { movieId: X } }
-            if (payload.containsKey("movie")) {
-                Map<String, Object> movieMap = (Map<String, Object>) payload.get("movie");
-                Long movieId = Long.valueOf(movieMap.get("movieId").toString());
-                
-                com.cinema.backend.entities.Movie movie = new com.cinema.backend.entities.Movie();
-                movie.setMovieId(movieId);
-                newShowtime.setMovie(movie);
-            } else {
-                return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Thiếu thông tin bộ phim!"));
-            }
-
-            // 2. Map các trường dữ liệu cơ bản cơ bản chuẩn kiểu dữ liệu
-            newShowtime.setRoomId(Integer.valueOf(payload.get("roomId").toString()));
-            newShowtime.setCreatedBy(Integer.valueOf(payload.get("createdBy").toString()));
-
-            // 3. Ép kiểu an toàn từ số thực/chuỗi JavaScript sang BigDecimal của SQL Server
-            java.math.BigDecimal price = new java.math.BigDecimal(payload.get("ticketPrice").toString());
-            newShowtime.setTicketPrice(price);
-
-            // 4. Định dạng chuỗi ISO "2026-06-20T19:00:00" ngược lại thành LocalDateTime trong Java
-            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-            
-            LocalDateTime startTime = LocalDateTime.parse(payload.get("startTime").toString(), formatter);
-            LocalDateTime endTime = LocalDateTime.parse(payload.get("endTime").toString(), formatter);
-            
-            newShowtime.setStartTime(startTime);
-            newShowtime.setEndTime(endTime);
-
-            // 🌟 THÊM MỚI: Nhặt thuộc tính status từ form tạo mới gửi sang
-            if (payload.containsKey("status")) {
-                newShowtime.setStatus(payload.get("status").toString().toUpperCase());
-            } else {
-                newShowtime.setStatus("ACTIVE"); // Mặc định nếu Front-End không truyền lên
-            }
-
-            // 5. Lưu trực tiếp xuống Database qua JpaRepository
-            Showtime savedShowtime = showtimeRepository.save(newShowtime);
+            // Đẩy toàn bộ trách nhiệm phân tích dữ liệu và kiểm tra trùng lịch xuống Service
+            Showtime savedShowtime = showtimeService.addShowtime(payload);
 
             return ResponseEntity.ok(Map.of(
                 "status", "success",
@@ -117,9 +80,10 @@ public class ShowtimeController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.internalServerError().body(Map.of(
+            // Đổi thành badRequest để trả về HTTP 400 kèm câu thông báo lỗi cho Front-End
+            return ResponseEntity.badRequest().body(Map.of( 
                 "status", "error",
-                "message", "Lỗi xử lý lưu suất chiếu hệ thống: " + e.getMessage()
+                "message", e.getMessage() // Sẽ in ra câu báo lỗi "XUNG ĐỘT LỊCH CHIẾU!" từ Service
             ));
         }
     }
