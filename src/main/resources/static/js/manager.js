@@ -541,6 +541,63 @@ window.closeAddMovie = function () {
 };
 
 window.submitAddMovie = function () {
+  // 1. Tạo mảng gom lỗi để không bị alert chồng chéo
+  const errors = [];
+
+  // Lấy các giá trị để kiểm tra validation
+  const titleVal = document.getElementById("add-title").value.trim();
+  const genreVal = document.getElementById("add-genre").value;
+  const durationInput = document.getElementById("add-duration").value;
+  const directorVal = document.getElementById("add-director").value.trim();
+  const countryVal = document.getElementById("add-country").value;
+  const performerVal = document.getElementById("add-performer").value.trim();
+  const synopsisVal = document.getElementById("add-synopsis").value.trim();
+  const mainposterVal = document.getElementById("add-mainposter").value.trim();
+  const releaseDateVal = document.getElementById("add-release").value;
+
+  // ==========================================================================
+  // 🛑 BỘ GÁC CỔNG VALIDATION (GOM LỖI)
+  // ==========================================================================
+  if (!titleVal) errors.push("- Tên phim không được bỏ trống.");
+  if (!genreVal) errors.push("- Vui lòng chọn Thể loại phim.");
+  if (!directorVal) errors.push("- Tên đạo diễn không được bỏ trống.");
+  if (!countryVal) errors.push("- Vui lòng chọn Quốc gia.");
+  if (!performerVal) errors.push("- Danh sách diễn viên không được bỏ trống.");
+  if (!synopsisVal) errors.push("- Tóm tắt nội dung phim không được bỏ trống.");
+  if (!mainposterVal) errors.push("- Poster chính (URL) không được bỏ trống.");
+  if (!releaseDateVal) errors.push("- Vui lòng chọn Ngày phát hành.");
+
+  if (titleVal && titleVal.length > 255) errors.push("- Tên phim không được vượt quá 255 ký tự.");
+  if (directorVal && directorVal.length > 100) errors.push("- Tên đạo diễn không được vượt quá 100 ký tự.");
+  if (performerVal && performerVal.length > 500) errors.push("- Danh sách diễn viên không được vượt quá 500 ký tự.");
+  if (synopsisVal && synopsisVal.length > 2000) errors.push("- Tóm tắt phim không được vượt quá 2000 ký tự.");
+
+  const durationVal = parseInt(durationInput) || 0;
+  if (!durationInput || isNaN(durationVal) || durationVal <= 0) {
+    errors.push("- Thời lượng phim phải là số nguyên dương lớn hơn 0 phút.");
+  } else if (durationVal > 500) {
+    errors.push("- Thời lượng phim không thực tế (Tối đa 500 phút).");
+  }
+
+  if (releaseDateVal) {
+    const selectedDate = new Date(releaseDateVal);
+    selectedDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) {
+      errors.push("- Ngày phát hành phim phải từ ngày hôm nay trở về sau.");
+    }
+  }
+
+  // Nếu có lỗi thì dừng lại và hiện 1 alert duy nhất
+  if (errors.length > 0) {
+    alert("🚨 Phát hiện lỗi nhập liệu, vui lòng kiểm tra lại:\n\n" + errors.join("\n"));
+    return; 
+  }
+
+  // ==========================================================================
+  // 3. GIỮ NGUYÊN VẸN 100% ĐỐI TƯỢNG MOVIEDATA VÀ CÁC TÊN KEY GỐC CỦA EM
+  // ==========================================================================
   const movieData = {
     title: document.getElementById("add-title").value,
     genre: document.getElementById("add-genre").value,
@@ -557,6 +614,7 @@ window.submitAddMovie = function () {
     rating: 0.0,
   };
 
+  // Gọi API chạy luồng của nhóm em
   API.addMovie(movieData)
     .then(() => {
       alert("Thêm phim thành công!");
@@ -752,26 +810,36 @@ window.openUpdateMovie = function (id) {
 
   document.getElementById("upd-movie-id").value = movie.movieId;
   document.getElementById("upd-title").value = movie.title || "";
-  document.getElementById("upd-genre").value = movie.genre || "";
-  document.getElementById("upd-duration").value =
-    movie.durationMinutes || movie.duration || "";
+  
+  // 🟢 Chuẩn hóa Thể loại (Viết hoa chữ cái đầu nếu DB lưu chữ thường để khớp Dropdown)
+  let rawGenre = movie.genre || "";
+  if (rawGenre && rawGenre.length > 0) {
+    rawGenre = rawGenre.charAt(0).toUpperCase() + rawGenre.slice(1).toLowerCase();
+  }
+  document.getElementById("upd-genre").value = rawGenre;
+  
+  document.getElementById("upd-duration").value = movie.durationMinutes || movie.duration || "";
   document.getElementById("upd-release").value = movie.releaseDate || "";
   document.getElementById("upd-country").value = movie.country || "";
   document.getElementById("upd-director").value = movie.director || "";
   document.getElementById("upd-performer").value = movie.performer || "";
   document.getElementById("upd-synopsis").value = movie.synopsis || "";
-  document.getElementById("upd-mainposter").value =
-    movie.mainposterUrl || movie.mainposter_url || "";
-  document.getElementById("upd-subposter").value =
-    movie.subposterUrl || movie.subposter_url || "";
+  document.getElementById("upd-mainposter").value = movie.mainposterUrl || movie.mainposter_url || "";
+  document.getElementById("upd-subposter").value = movie.subposterUrl || movie.subposter_url || "";
   document.getElementById("upd-age").value = movie.ageRating || "0";
 
-  const statusRadio = document.querySelector(
-    `input[name="upd_status"][value="${movie.status}"]`,
-  );
+  const statusRadio = document.querySelector(`input[name="upd_status"][value="${movie.status}"]`);
   if (statusRadio) statusRadio.checked = true;
 
   document.getElementById("mp-update-movie-modal").style.display = "flex";
+  
+  // 🎯 ĐÃ CHÈN: Cập nhật lại số ký tự đếm lùi dựa trên dữ liệu cũ vừa đổ vào form
+  if (typeof updateCharCount === "function") {
+    updateCharCount('upd-title', 'upd-count-title', 255);
+    updateCharCount('upd-director', 'upd-count-director', 100);
+    updateCharCount('upd-performer', 'upd-count-performer', 500);
+    updateCharCount('upd-synopsis', 'upd-count-synopsis', 2000);
+  }
 };
 
 window.closeUpdateMovie = function () {
@@ -2073,52 +2141,75 @@ window.closeAddShowtimeModal = function() {
 
 // Hàm đóng gói dữ liệu và đẩy xuống SQL Server thông qua Spring Boot
 window.submitAddShowtimeForm = function() {
+  // 1. Tạo mảng gom lỗi để né việc hiện alert chồng chéo
+  const errors = [];
+
+  // Bốc dữ liệu trực tiếp từ các ô input trên Form
   const movieId = document.getElementById("st-movie-select").value;
   const roomId = parseInt(document.getElementById("st-room-select").value) || 1;
+  const showDate = document.getElementById("st-date").value; // 🎯 ĐÃ SỬA: Lấy ngày trực tiếp từ Form để không bao giờ bị sai ngày!
   const startTimeRaw = document.getElementById("st-start-time").value; 
-  const ticketPrice = parseFloat(document.getElementById("st-ticket-price").value) || 0;
   
-  // 🌟 THÊM MỚI: Bốc trạng thái được chọn từ Form (Mặc định phòng hờ là ACTIVE)
+  // Bốc trạng thái được chọn từ Form (Mặc định phòng hờ là ACTIVE)
   const statusSelect = document.getElementById("st-status");
   const showtimeStatus = statusSelect ? statusSelect.value : "ACTIVE";
-  
-  const selectedDate = document.getElementById("mp-matrix-date-input").value;
 
-  if (!startTimeRaw) {
-    alert("Vui lòng chọn Giờ bắt đầu chiếu phim!");
+  // ==========================================================================
+  // 🛑 CHỐT CHẶN VALIDATION GOM LỖI CHUYÊN NGHIỆP
+  // ==========================================================================
+  if (!movieId) errors.push("- Vui lòng chọn bộ phim.");
+  if (!roomId) errors.push("- Vui lòng chọn phòng chiếu.");
+  if (!showDate) errors.push("- Vui lòng chọn Ngày chiếu phim.");
+  if (!startTimeRaw) errors.push("- Vui lòng chọn Giờ bắt đầu chiếu phim.");
+
+  // Ràng buộc ngày chiếu phim không được nằm ở quá khứ
+  if (showDate) {
+    const selectedDateTime = new Date(showDate);
+    selectedDateTime.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDateTime < today) {
+      errors.push("- Ngày chiếu phim phải từ ngày hôm nay trở về sau, không được xếp lịch cho quá khứ.");
+    }
+  }
+
+  // Nếu phát hiện có bất kỳ lỗi nào, bắn 1 alert tổng hợp độc nhất và dừng luồng
+  if (errors.length > 0) {
+    alert("🚨 Không thể xếp lịch. Vui lòng hoàn thành các mục sau:\n\n" + errors.join("\n"));
     return;
   }
-  if (ticketPrice <= 0) {
-    alert("Giá vé cơ bản phải lớn hơn 0 đ!");
-    return;
-  }
 
-  const formattedStartTime = `${selectedDate}T${startTimeRaw}:00`;
+  // ==========================================================================
+  // 📦 ĐÓNG GÓI DỮ LIỆU SẠCH (ĐÃ SỬA NGÀY THEO FORM & BỎ TICKET PRICE THỪA)
+  // ==========================================================================
+  const formattedStartTime = `${showDate}T${startTimeRaw}:00`;
 
   const targetMovie = window.moviesList.find(m => String(m.movieId) === String(movieId));
   const duration = targetMovie ? (targetMovie.duration || targetMovie.durationMinutes || 120) : 120;
   
-  const startDateTime = new Date(`${selectedDate} ${startTimeRaw}`);
+  // Tính toán thời gian kết thúc chuẩn xác dựa trên showDate của Form
+  const startDateTime = new Date(`${showDate} ${startTimeRaw}`);
   const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
   
   const endH = String(endDateTime.getHours()).padStart(2, "0");
   const endM = String(endDateTime.getMinutes()).padStart(2, "0");
-  const formattedEndTime = `${selectedDate}T${endH}:${endM}:00`;
+  const formattedEndTime = `${showDate}T${endH}:${endM}:00`;
 
-  // 📦 ĐÃ SỬA: Đóng gói thêm thuộc tính "status" đồng bộ sang map payload của Java
   const payload = {
     movie: { movieId: parseInt(movieId) },
     roomId: roomId,
     startTime: formattedStartTime,
     endTime: formattedEndTime,
-    ticketPrice: ticketPrice,
-    status: showtimeStatus, // 🌟 Đẩy trạng thái sang Backend xử lý
+    status: showtimeStatus, // Đẩy trạng thái sang Backend xử lý
     createdBy: 1
+    // 🎯 Đã loại bỏ ticketPrice nhập tay thừa thải, DB sẽ tự động map theo cấu hình ghế/phòng ngầm!
   };
 
-  console.log("🚀 Payload gửi lên Spring Boot tạo suất chiếu:", payload);
+  console.log("🚀 Payload sạch gửi lên Spring Boot tạo suất chiếu:", payload);
 
-  // --- Đoạn check trùng lịch Google Calendar động của nhóm em giữ nguyên 100% ---
+  // ==========================================================================
+  // 🔍 LUỒNG KIỂM TRA TRÙNG LỊCH (GIỮ NGUYÊN VẸN LOGIC GOOGLE CALENDAR CỦA EM)
+  // ==========================================================================
   const timeToMinutes = (timeStr) => {
     const [h, m] = timeStr.split(":").map(Number);
     return h * 60 + m;
@@ -2127,8 +2218,9 @@ window.submitAddShowtimeForm = function() {
   const newStartMin = timeToMinutes(startTimeRaw);
   const newEndMin = newStartMin + duration;
 
+  // Gọi check trùng lịch dựa trên showDate lấy từ Form
   const checkPromises = window.moviesList.map((movie) => {
-    return API.getShowtimes(movie.movieId, selectedDate)
+    return API.getShowtimes(movie.movieId, showDate)
       .then((resData) => (resData.showtimes || []).map(st => ({ ...st, movieTitle: movie.title })))
       .catch(() => []);
   });
@@ -2153,17 +2245,17 @@ window.submitAddShowtimeForm = function() {
       }
 
       if (isTimeConflict) {
-        alert(`KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`);
+        alert(`🚨 KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`);
         return; 
       }
 
-      // Nếu an toàn, thực hiện gọi API lưu xuống database
+      // Nếu hoàn toàn an toàn, thực hiện lưu xuống Database
       API.addShowtime(payload)
         .then(() => {
-          alert("Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.");
+          alert("🎉 Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.");
           closeAddShowtimeModal();
           
-          // Xóa mảng dữ liệu thô cũ để ép hệ thống gọi API nạp mới hoàn toàn từ DB về, hiển thị ẩn ngay tức thì
+          // Xóa mảng dữ liệu thô cũ để ép hệ thống gọi API nạp mới hoàn toàn từ DB về
           window.mpCalRawByDate = {}; 
           loadManagerMatrix();
         })
@@ -2408,5 +2500,128 @@ window.submitDeleteVoucher = function(id) {
         loadManagerVouchers();
       })
       .catch(err => alert("Lỗi khi xóa voucher: " + err.message));
+  }
+};
+
+// Hàm đếm lùi ký tự động dùng chung cho toàn bộ các ô nhập text
+window.updateCharCount = function (inputId, counterId, maxLength) {
+  const inputEl = document.getElementById(inputId);
+  const counterEl = document.getElementById(counterId);
+  
+  if (inputEl && counterEl) {
+    const currentLength = inputEl.value.length;
+    const remaining = maxLength - currentLength;
+    
+    // Cập nhật giao diện đếm số ký tự còn lại
+    counterEl.innerText = `${remaining}/${maxLength}`;
+    
+    // Mẹo UX nâng cao: Nếu gõ gần hết (còn dưới 10 ký tự), đổi chữ sang màu cam/đỏ để cảnh báo
+    if (remaining <= 10) {
+      counterEl.style.color = "#ff6b35"; // Màu cam thương hiệu của em
+    } else {
+      counterEl.style.color = "#a8a8b3"; // Màu xám mặc định ban đầu
+    }
+  }
+};
+
+// ==========================================================================
+// 🚨 HÀM 2: Cảnh báo bỏ trống lập tức khi click chuột ra ngoài (On Blur)
+// ==========================================================================
+window.validateFieldOnBlur = function (inputId, errorMessage) {
+  const element = document.getElementById(inputId);
+  if (element && !element.value.trim()) {
+    alert(`🚨 Cảnh báo hệ thống:\n${errorMessage}`);
+  }
+};
+
+// ==========================================================================
+// 🚨 HÀM 3: Kiểm tra riêng cho ô số Thời lượng phim khi rời chuột
+// ==========================================================================
+window.validateDurationOnBlur = function () {
+  const durationInput = document.getElementById("add-duration").value;
+  const duration = parseInt(durationInput) || 0;
+  
+  if (!durationInput || isNaN(duration) || duration <= 0) {
+    alert("🚨 Cảnh báo hệ thống:\n- Thời lượng phim phải là số nguyên dương lớn hơn 0 phút.");
+  } else if (duration > 500) {
+    alert("🚨 Cảnh báo hệ thống:\n- Thời lượng phim không thực tế (Tối đa 500 phút).");
+  }
+};
+
+// ==========================================================================
+// 🚨 HÀM 4: Kiểm tra Ngày phát hành không hợp lệ (Quá khứ) khi rời chuột
+// ==========================================================================
+window.validateReleaseDateOnBlur = function () {
+  const releaseDateVal = document.getElementById("add-release").value;
+  if (!releaseDateVal) {
+    alert("🚨 Cảnh báo hệ thống:\n- Vui lòng chọn Ngày phát hành.");
+    return;
+  }
+  
+  const selectedDate = new Date(releaseDateVal);
+  selectedDate.setHours(0, 0, 0, 0);
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  if (selectedDate < today) {
+    alert("🚨 Cảnh báo hệ thống:\n- Ngày phát hành phim phải từ ngày hôm nay trở về sau, không được chọn ngày trong quá khứ.");
+  }
+};
+
+// 🚨 Kiểm tra riêng cho ô số Thời lượng phim của Form Cập Nhật khi rời chuột
+window.validateUpdateDurationOnBlur = function () {
+  const durationInput = document.getElementById("upd-duration").value;
+  const duration = parseInt(durationInput) || 0;
+  
+  if (!durationInput || isNaN(duration) || duration <= 0) {
+    alert("🚨 Cảnh báo hệ thống:\n- Thời lượng phim phải là số nguyên dương lớn hơn 0 phút.");
+  } else if (duration > 500) {
+    alert("🚨 Cảnh báo hệ thống:\n- Thời lượng phim không thực tế (Tối đa 500 phút).");
+  }
+};
+
+// 🚨 Kiểm tra Ngày phát hành không hợp lệ (Quá khứ) của Form Cập Nhật khi rời chuột
+window.validateUpdateReleaseDateOnBlur = function () {
+  const releaseDateVal = document.getElementById("upd-release").value;
+  if (!releaseDateVal) {
+    alert("🚨 Cảnh báo hệ thống:\n- Vui lòng chọn Ngày phát hành.");
+    return;
+  }
+  
+  const selectedDate = new Date(releaseDateVal);
+  selectedDate.setHours(0, 0, 0, 0);
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  if (selectedDate < today) {
+    alert("🚨 Cảnh báo hệ thống:\n- Ngày phát hành phim phải từ ngày hôm nay trở về sau, không được chọn ngày trong quá khứ.");
+  }
+};
+
+// 1. Hàm kiểm tra bỏ trống suất chiếu thông thường
+window.validateShowtimeField = function (id, message) {
+  const el = document.getElementById(id);
+  if (el && !el.value) {
+    alert(`🚨 Cảnh báo suất chiếu:\n- ${message}`);
+  }
+};
+
+// 2. Hàm kiểm tra ngày chiếu không được ở quá khứ
+window.validateShowtimeDate = function () {
+  const dateVal = document.getElementById("st-date").value;
+  if (!dateVal) {
+    alert("🚨 Cảnh báo suất chiếu:\n- Vui lòng chọn Ngày chiếu phim.");
+    return;
+  }
+  
+  const selectedDate = new Date(dateVal);
+  selectedDate.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  if (selectedDate < today) {
+    alert("🚨 Cảnh báo suất chiếu:\n- Ngày chiếu phim phải từ ngày hôm nay trở về sau, không được xếp lịch cho quá khứ.");
   }
 };

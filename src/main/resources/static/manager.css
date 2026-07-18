@@ -1605,21 +1605,25 @@
   padding: 12px;
   border: none;
   cursor: pointer;
-  margin-top: 10px;
+  margin-top: 0; /* 🟢 ĐÃ SỬA: Đưa về 0 để không bị lệch trục ngang với nút Cancel */
   border-radius: 10px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   transition: background-color 0.2s, transform 0.2s;
+  box-sizing: border-box; /* 🟢 THÊM MỚI: Đảm bảo tính toán kích thước chuẩn xác */
 }
+
 .btn-cgv-submit:hover {
   background-color: #e0551f;
   transform: translateY(-1px);
 }
+
 .btn-cgv-cancel {
   background-color: #26262c;
   color: var(--text-light, #f4f4f5);
   font-weight: bold;
   font-size: 14.5px;
+  width: 100%; /* 🟢 THÊM MỚI: Đảm bảo rộng 100% tương đương nút Submit trong khối flex */
   padding: 12px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 10px;
@@ -1627,7 +1631,9 @@
   text-transform: uppercase;
   letter-spacing: 0.3px;
   transition: background-color 0.2s, transform 0.2s;
+  box-sizing: border-box; /* 🟢 THÊM MỚI: Chốt chặn ép border tính gộp vào trong padding, triệt tiêu độ lệch 2px */
 }
+
 .btn-cgv-cancel:hover {
   background-color: #333338;
   transform: translateY(-1px);
