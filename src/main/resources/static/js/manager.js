@@ -545,6 +545,63 @@ window.closeAddMovie = function () {
 };
 
 window.submitAddMovie = function () {
+  // 1. Tạo mảng gom lỗi để không bị alert chồng chéo
+  const errors = [];
+
+  // Lấy các giá trị để kiểm tra validation
+  const titleVal = document.getElementById("add-title").value.trim();
+  const genreVal = document.getElementById("add-genre").value;
+  const durationInput = document.getElementById("add-duration").value;
+  const directorVal = document.getElementById("add-director").value.trim();
+  const countryVal = document.getElementById("add-country").value;
+  const performerVal = document.getElementById("add-performer").value.trim();
+  const synopsisVal = document.getElementById("add-synopsis").value.trim();
+  const mainposterVal = document.getElementById("add-mainposter").value.trim();
+  const releaseDateVal = document.getElementById("add-release").value;
+
+  // ==========================================================================
+  // 🛑 BỘ GÁC CỔNG VALIDATION (GOM LỖI)
+  // ==========================================================================
+  if (!titleVal) errors.push("- Tên phim không được bỏ trống.");
+  if (!genreVal) errors.push("- Vui lòng chọn Thể loại phim.");
+  if (!directorVal) errors.push("- Tên đạo diễn không được bỏ trống.");
+  if (!countryVal) errors.push("- Vui lòng chọn Quốc gia.");
+  if (!performerVal) errors.push("- Danh sách diễn viên không được bỏ trống.");
+  if (!synopsisVal) errors.push("- Tóm tắt nội dung phim không được bỏ trống.");
+  if (!mainposterVal) errors.push("- Poster chính (URL) không được bỏ trống.");
+  if (!releaseDateVal) errors.push("- Vui lòng chọn Ngày phát hành.");
+
+  if (titleVal && titleVal.length > 255) errors.push("- Tên phim không được vượt quá 255 ký tự.");
+  if (directorVal && directorVal.length > 100) errors.push("- Tên đạo diễn không được vượt quá 100 ký tự.");
+  if (performerVal && performerVal.length > 500) errors.push("- Danh sách diễn viên không được vượt quá 500 ký tự.");
+  if (synopsisVal && synopsisVal.length > 2000) errors.push("- Tóm tắt phim không được vượt quá 2000 ký tự.");
+
+  const durationVal = parseInt(durationInput) || 0;
+  if (!durationInput || isNaN(durationVal) || durationVal <= 0) {
+    errors.push("- Thời lượng phim phải là số nguyên dương lớn hơn 0 phút.");
+  } else if (durationVal > 500) {
+    errors.push("- Thời lượng phim không thực tế (Tối đa 500 phút).");
+  }
+
+  if (releaseDateVal) {
+    const selectedDate = new Date(releaseDateVal);
+    selectedDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) {
+      errors.push("- Ngày phát hành phim phải từ ngày hôm nay trở về sau.");
+    }
+  }
+
+  // Nếu có lỗi thì dừng lại và hiện 1 alert duy nhất
+  if (errors.length > 0) {
+    alert("🚨 Phát hiện lỗi nhập liệu, vui lòng kiểm tra lại:\n\n" + errors.join("\n"));
+    return; 
+  }
+
+  // ==========================================================================
+  // 3. GIỮ NGUYÊN VẸN 100% ĐỐI TƯỢNG MOVIEDATA VÀ CÁC TÊN KEY GỐC CỦA EM
+  // ==========================================================================
   const movieData = {
     title: document.getElementById("add-title").value,
     genre: document.getElementById("add-genre").value,
@@ -561,6 +618,7 @@ window.submitAddMovie = function () {
     rating: 0.0,
   };
 
+  // Gọi API chạy luồng của nhóm em
   API.addMovie(movieData)
     .then(() => {
       alert("Thêm phim thành công!");
@@ -569,7 +627,6 @@ window.submitAddMovie = function () {
     })
     .catch((err) => alert("Lỗi khi thêm phim: " + err));
 };
-
 // ==========================================================================
 // --- PHẦN DÙNG CHUNG: HIỂN THỊ DANH SÁCH SUẤT CHIẾU (NGÀY / GIỜ / PHÒNG) ---
 // Dùng cho cả Modal "Xem" ở tab Ma trận và phần thông tin trong Modal "Sửa Phim"
@@ -756,26 +813,36 @@ window.openUpdateMovie = function (id) {
 
   document.getElementById("upd-movie-id").value = movie.movieId;
   document.getElementById("upd-title").value = movie.title || "";
-  document.getElementById("upd-genre").value = movie.genre || "";
-  document.getElementById("upd-duration").value =
-    movie.durationMinutes || movie.duration || "";
+  
+  // 🟢 Chuẩn hóa Thể loại (Viết hoa chữ cái đầu nếu DB lưu chữ thường để khớp Dropdown)
+  let rawGenre = movie.genre || "";
+  if (rawGenre && rawGenre.length > 0) {
+    rawGenre = rawGenre.charAt(0).toUpperCase() + rawGenre.slice(1).toLowerCase();
+  }
+  document.getElementById("upd-genre").value = rawGenre;
+  
+  document.getElementById("upd-duration").value = movie.durationMinutes || movie.duration || "";
   document.getElementById("upd-release").value = movie.releaseDate || "";
   document.getElementById("upd-country").value = movie.country || "";
   document.getElementById("upd-director").value = movie.director || "";
   document.getElementById("upd-performer").value = movie.performer || "";
   document.getElementById("upd-synopsis").value = movie.synopsis || "";
-  document.getElementById("upd-mainposter").value =
-    movie.mainposterUrl || movie.mainposter_url || "";
-  document.getElementById("upd-subposter").value =
-    movie.subposterUrl || movie.subposter_url || "";
+  document.getElementById("upd-mainposter").value = movie.mainposterUrl || movie.mainposter_url || "";
+  document.getElementById("upd-subposter").value = movie.subposterUrl || movie.subposter_url || "";
   document.getElementById("upd-age").value = movie.ageRating || "0";
 
-  const statusRadio = document.querySelector(
-    `input[name="upd_status"][value="${movie.status}"]`,
-  );
+  const statusRadio = document.querySelector(`input[name="upd_status"][value="${movie.status}"]`);
   if (statusRadio) statusRadio.checked = true;
 
   document.getElementById("mp-update-movie-modal").style.display = "flex";
+  
+  // 🎯 ĐÃ CHÈN: Cập nhật lại số ký tự đếm lùi dựa trên dữ liệu cũ vừa đổ vào form
+  if (typeof updateCharCount === "function") {
+    updateCharCount('upd-title', 'upd-count-title', 255);
+    updateCharCount('upd-director', 'upd-count-director', 100);
+    updateCharCount('upd-performer', 'upd-count-performer', 500);
+    updateCharCount('upd-synopsis', 'upd-count-synopsis', 2000);
+  }
 };
 
 window.closeUpdateMovie = function () {
