@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.cinema.backend.entities.Account;
+
 import com.cinema.backend.entities.CheckoutRequest;
 import com.cinema.backend.entities.Order1;
 import com.cinema.backend.entities.OrderDetail;
@@ -35,12 +36,11 @@ import com.cinema.backend.entities.FoodBeverage;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import com.cinema.backend.dto.CheckoutResponseDTO;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 @Service
 public class BookingService {
-    @Autowired
-    private com.cinema.backend.controllers.PaymentController paymentController;
-
     @Autowired
     private AccountRepository accountRepository;
 
@@ -74,328 +74,580 @@ public class BookingService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private BookingPriceService bookingPriceService;
+
+    @Autowired
+    private CheckoutHashService checkoutHashService;
+
     @Value("${app.public-url}")
     private String publicUrl;
+    
+@Transactional
+public CheckoutResponseDTO checkout(
+        CheckoutRequest request
+) {
+    System.out.println("===== BOOKING SERVICE =====");
+    System.out.println(request);
 
-    @Transactional
-    public CheckoutResponseDTO checkout(CheckoutRequest request) {
-        System.out.println("===== BOOKING SERVICE =====");
-        System.out.println(request);
-        List<String> savedTicketCodes = new ArrayList<>();
-        List<String> fnbSummaryList = new ArrayList<>();
-        String fnbSummary = "Không có";
-        
-        if (request.getShowtimeId() == null) {
-            throw new RuntimeException("ShowtimeId is null from client");
-        }
+    List<String> savedTicketCodes =
+            new ArrayList<>();
 
-        // Lấy khách hàng
-        Account customer = accountRepository.findById(request.getAccountId())
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+    List<String> fnbSummaryList =
+            new ArrayList<>();
 
-        // Lấy suất chiếu
-        Showtime showtime = showtimeRepository.findById(request.getShowtimeId())
-                .orElseThrow(() -> new RuntimeException("Showtime not found"));
-        
-        // 🔒 UC-07: Chặn đặt trùng ghế — kiểm tra ghế đã bán chưa
-        java.util.List<String> soldSeats =
-                seatRepository.findSoldSeatCodesByShowtime(request.getShowtimeId());
-        for (String seatCode : request.getSeats()) {
-            boolean taken = soldSeats.stream()
-                    .anyMatch(s -> s != null && s.trim().equalsIgnoreCase(seatCode.trim()));
-            if (taken) {
-                throw new RuntimeException(
-                        "Ghế " + seatCode + " đã có người đặt, vui lòng chọn ghế khác!");
+    List<String> bookedSeats =
+            new ArrayList<>();
+
+    String fnbSummary = "Không có";
+    String firstTicketCode = "";
+
+    // =====================================================
+    // 1. KIỂM TRA REQUEST
+    // =====================================================
+    if (request == null) {
+        throw new RuntimeException(
+                "Dữ liệu checkout không tồn tại"
+        );
+    }
+
+    if (request.getAccountId() == null) {
+        throw new RuntimeException(
+                "Thiếu accountId"
+        );
+    }
+
+    if (request.getShowtimeId() == null) {
+        throw new RuntimeException(
+                "Thiếu showtimeId"
+        );
+    }
+
+    if (request.getSeats() == null ||
+            request.getSeats().isEmpty()) {
+
+        throw new RuntimeException(
+                "Danh sách ghế không được để trống"
+        );
+    }
+
+// =====================================================
+// 2. KIỂM TRA PHƯƠNG THỨC THANH TOÁN
+// =====================================================
+String paymentMethod =
+        request.getPaymentMethod() == null
+                ? ""
+                : request.getPaymentMethod()
+                        .trim()
+                        .toUpperCase();
+
+String expectedProvider;
+
+if ("QR".equals(paymentMethod) ||
+        "PAYOS".equals(paymentMethod)) {
+
+    expectedProvider = "PAYOS";
+
+} else if (
+        "VNPAY".equals(paymentMethod) ||
+        "VNPAY_QR".equals(paymentMethod) ||
+        "VNPAY_ATM".equals(paymentMethod)
+) {
+    expectedProvider = "VNPAY";
+
+} else {
+    throw new RuntimeException(
+            "Phương thức thanh toán không hợp lệ"
+    );
+}
+
+// =====================================================
+// 3. BACKEND TỰ TÍNH SỐ TIỀN
+// =====================================================
+BigDecimal serverFinalAmount =
+        bookingPriceService
+                .calculateFinalAmount(
+                        request
+                );
+
+// =====================================================
+// 4. KIỂM TRA MÃ GIAO DỊCH
+// =====================================================
+String paymentReference =
+        request.getPaymentReference();
+
+if (paymentReference == null ||
+        paymentReference.isBlank()) {
+
+    throw new RuntimeException(
+            "Thiếu mã giao dịch thanh toán"
+    );
+}
+
+paymentReference =
+        paymentReference.trim();
+
+// =====================================================
+// 5. LẤY VÀ KHÓA GIAO DỊCH
+// =====================================================
+PaymentTransaction payment =
+        paymentTransactionRepository
+                .findByTransactionCodeForUpdate(
+                        paymentReference
+                )
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Không tìm thấy giao dịch thanh toán"
+                        )
+                );
+
+// =====================================================
+// 6. KIỂM TRA PROVIDER
+// =====================================================
+if (payment.getProvider() == null ||
+        !expectedProvider.equalsIgnoreCase(
+                payment.getProvider()
+        )) {
+
+    throw new RuntimeException(
+            "Mã giao dịch không thuộc phương thức đã chọn"
+    );
+}
+
+// =====================================================
+// 7. KIỂM TRA TRẠNG THÁI THANH TOÁN
+// =====================================================
+if (!"SUCCESS".equalsIgnoreCase(
+        payment.getPaymentStatus()
+)) {
+    throw new RuntimeException(
+            "Giao dịch chưa được xác nhận thanh toán"
+    );
+}
+
+// =====================================================
+// 8. CHỐNG DÙNG LẠI GIAO DỊCH
+// =====================================================
+if (Boolean.TRUE.equals(
+        payment.getConsumed()
+) || payment.getOrder() != null) {
+
+    throw new RuntimeException(
+            "Giao dịch đã được sử dụng"
+    );
+}
+
+// =====================================================
+// 9. KIỂM TRA TÀI KHOẢN
+// =====================================================
+if (payment.getAccount() == null ||
+        payment.getAccount()
+                .getAccountId() == null ||
+        !payment.getAccount()
+                .getAccountId()
+                .equals(
+                        request.getAccountId()
+                )) {
+
+    throw new RuntimeException(
+            "Giao dịch không thuộc tài khoản này"
+    );
+}
+
+// =====================================================
+// 10. KIỂM TRA SỐ TIỀN
+// =====================================================
+if (payment.getAmount() == null ||
+        payment.getAmount()
+                .compareTo(
+                        serverFinalAmount
+                ) != 0) {
+
+    throw new RuntimeException(
+            "Số tiền giao dịch không khớp đơn hàng"
+    );
+}
+
+// =====================================================
+// 11. KIỂM TRA GHẾ, F&B VÀ VOUCHER
+// =====================================================
+String currentCheckoutHash =
+        checkoutHashService.createHash(
+                request,
+                serverFinalAmount
+        );
+
+if (payment.getCheckoutHash() == null ||
+        payment.getCheckoutHash()
+                .isBlank()) {
+
+    throw new RuntimeException(
+            "Giao dịch chưa có checkout hash"
+    );
+}
+
+boolean sameCheckoutData =
+        MessageDigest.isEqual(
+                currentCheckoutHash
+                        .getBytes(
+                                StandardCharsets.UTF_8
+                        ),
+                payment.getCheckoutHash()
+                        .getBytes(
+                                StandardCharsets.UTF_8
+                        )
+        );
+
+if (!sameCheckoutData) {
+    throw new RuntimeException(
+            "Thông tin ghế, F&B hoặc voucher đã bị thay đổi"
+    );
+}
+
+    // =====================================================
+    // 12. LẤY TÀI KHOẢN VÀ SUẤT CHIẾU
+    // =====================================================
+    Account customer = accountRepository
+            .findById(request.getAccountId())
+            .orElseThrow(() ->
+                    new RuntimeException(
+                            "Không tìm thấy khách hàng"
+                    )
+            );
+
+    Showtime showtime = showtimeRepository
+            .findById(request.getShowtimeId())
+            .orElseThrow(() ->
+                    new RuntimeException(
+                            "Không tìm thấy suất chiếu"
+                    )
+            );
+
+    // =====================================================
+    // 13. TÍNH GROSS AMOUNT
+    // =====================================================
+    BigDecimal grossAmount =
+            showtime.getTicketPrice().multiply(
+                    BigDecimal.valueOf(
+                            request.getSeats().size()
+                    )
+            );
+
+    if (request.getFnb() != null) {
+        for (CheckoutFoodItem item : request.getFnb()) {
+
+            if (item == null ||
+                    item.getFoodItemId() == null ||
+                    item.getQuantity() == null ||
+                    item.getQuantity() <= 0) {
+
+                continue;
             }
-        }
-        
-        // =========================
-        // Tạo Order
-        // =========================
-        BigDecimal grossAmount = BigDecimal.ZERO;
-        String firstTicketCode = "";
-        List<String> bookedSeats = new ArrayList<>();
 
-        // Tổng tiền vé
-        grossAmount = grossAmount.add(
-                showtime.getTicketPrice().multiply(
-                        BigDecimal.valueOf(request.getSeats().size())
+            FoodBeverage food = foodRepository
+                    .findById(item.getFoodItemId())
+                    .orElseThrow(() ->
+                            new RuntimeException(
+                                    "Không tìm thấy món ăn"
+                            )
+                    );
+
+            grossAmount = grossAmount.add(
+                    food.getPrice().multiply(
+                            BigDecimal.valueOf(
+                                    item.getQuantity()
+                            )
+                    )
+            );
+        }
+    }
+
+    Order1 order = new Order1();
+
+order.setOrderCode(
+        "ORDER-" + System.currentTimeMillis()
+);
+
+order.setCreatedDate(
+        LocalDateTime.now()
+);
+
+order.setGrossAmount(
+        grossAmount
+);
+
+order.setFinalAmount(
+        serverFinalAmount
+);
+
+order.setOrderStatus(
+        "COMPLETED"
+);
+
+order.setPaymentMethod(
+        expectedProvider
+);
+
+order.setPaymentStatus(
+        "SUCCESS"
+);
+
+order.setCustomer(customer);
+
+    if (request.getVoucherCode() != null &&
+            !request.getVoucherCode().isBlank()) {
+
+        Voucher voucher = voucherRepository
+                .findByVoucherCode(request.getVoucherCode())
+                .orElseThrow(() -> new RuntimeException("Voucher not found"));
+
+        order.setVoucher(voucher);
+    }
+System.out.println("SAVE ORDER");
+    order = orderRepository.save(order);
+System.out.println("ORDER ID = " + order.getOrderId());
+    // =========================
+    // Tạo Ticket + OrderDetail
+    // =========================
+    for (String seatCode : request.getSeats()) {
+
+    String row = seatCode.substring(0, 1);
+
+    Integer number =
+            Integer.parseInt(
+                    seatCode.substring(1)
+            );
+
+    Seat seat = seatRepository
+            .findByRoomIdAndSeatRowAndSeatNumber(
+                    showtime.getRoomId(),
+                    row,
+                    number
+            )
+            .orElseThrow(() ->
+                    new RuntimeException(
+                            "Seat not found: " +
+                            seatCode
+                    )
+            );
+
+    Ticket ticket = new Ticket();
+
+    ticket.setTicketStatus("SOLD");
+
+    String code =
+            "TICKET-" +
+            System.currentTimeMillis() +
+            "-" +
+            seatCode;
+
+    ticket.setTicketCode(code);
+    ticket.setQrCode(code);
+
+    // Hai dòng đang bị thiếu
+    ticket.setShowtime(showtime);
+    ticket.setSeat(seat);
+
+    if (firstTicketCode.isBlank()) {
+        firstTicketCode = code;
+    }
+
+    Ticket savedTicket =
+            ticketRepository.save(ticket);
+    savedTicketCodes.add(code);
+
+    OrderDetail detail =
+            new OrderDetail();
+
+    detail.setOrder(order);
+    detail.setTicket(savedTicket);
+    detail.setFoodItem(null);
+    detail.setQuantity(1);
+    detail.setSubtotal(
+            showtime.getTicketPrice()
+    );
+
+    orderDetailRepository.save(detail);
+
+    bookedSeats.add(seatCode);
+}
+System.out.println("SAVE TICKET OK");
+// =========================
+// Tạo OrderDetail cho F&B
+// =========================
+if (request.getFnb() != null &&
+        !request.getFnb().isEmpty()) {
+
+    for (CheckoutFoodItem item : request.getFnb()) {
+
+        if (item == null ||
+                item.getFoodItemId() == null ||
+                item.getQuantity() == null ||
+                item.getQuantity() <= 0) {
+
+            continue;
+        }
+
+        FoodBeverage food = foodRepository
+                .findById(item.getFoodItemId())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Food not found"
+                        )
+                );
+
+        if (food.getStockQuantity() <
+                item.getQuantity()) {
+
+            throw new RuntimeException(
+                    food.getItemName()
+                            + " không đủ số lượng trong kho"
+            );
+        }
+
+        OrderDetail detail =
+                new OrderDetail();
+
+        detail.setOrder(order);
+        detail.setFoodItem(food);
+        detail.setQuantity(item.getQuantity());
+
+        detail.setSubtotal(
+                food.getPrice().multiply(
+                        BigDecimal.valueOf(
+                                item.getQuantity()
+                        )
                 )
         );
 
-        if (request.getFnb() != null) {
-            for (CheckoutFoodItem item : request.getFnb()) {
-                FoodBeverage food = foodRepository
-                        .findById(item.getFoodItemId())
-                        .orElseThrow(() -> new RuntimeException("Food not found"));
+        orderDetailRepository.save(detail);
 
-                grossAmount = grossAmount.add(
-                        food.getPrice().multiply(
-                                BigDecimal.valueOf(item.getQuantity())
-                        )
-                );
-            }
-        }
+        food.setStockQuantity(
+                food.getStockQuantity()
+                        - item.getQuantity()
+        );
 
-        Order1 order = new Order1();
-        order.setOrderCode("ORDER-" + System.currentTimeMillis());
-        order.setCreatedDate(LocalDateTime.now());
-        order.setGrossAmount(grossAmount);
+        foodRepository.save(food);
 
-        // ==========================================================
-        // 🔒 FIX BẢO MẬT: Tự tính finalAmount trên Server
-        // ==========================================================
-        BigDecimal totalDiscount = BigDecimal.ZERO;
-        Voucher appliedVoucher = null;
-
-        Optional<Voucher> voucherOpt = Optional.empty();
-
-        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
-            voucherOpt = voucherRepository.findByVoucherCode(request.getVoucherCode());
-        } else {
-            voucherOpt = voucherRepository.findAll().stream()
-                    .filter(v -> "ACTIVE".equalsIgnoreCase(v.getStatus()) 
-                              && "AUTO".equalsIgnoreCase(v.getApplyType()))
-                    .findFirst();
-        }
-
-        if (voucherOpt.isPresent()) {
-            Voucher v = voucherOpt.get();
-            
-            boolean isActive = "ACTIVE".equalsIgnoreCase(v.getStatus());
-            boolean isNotExpired = (v.getExpiredDate() == null || v.getExpiredDate().isAfter(LocalDateTime.now()));
-            boolean hasUsage = v.getUsageLimit() > 0;
-            boolean meetMinOrder = (v.getMinimumOrder() == null || grossAmount.compareTo(BigDecimal.valueOf(v.getMinimumOrder())) >= 0);
-
-            if (isActive && isNotExpired && hasUsage && meetMinOrder) {
-                appliedVoucher = v;
-                
-                if (request.getVoucherCode() == null || request.getVoucherCode().isBlank()) {
-                    request.setVoucherCode(v.getVoucherCode());
-                }
-                
-                if ("PERCENT".equalsIgnoreCase(v.getDiscountType())) {
-                    BigDecimal calculatedDiscount = grossAmount.multiply(BigDecimal.valueOf(v.getDiscountValue())).divide(BigDecimal.valueOf(100));
-                    if (v.getMaxDiscount() != null && v.getMaxDiscount().compareTo(BigDecimal.ZERO) > 0) {
-                        if (calculatedDiscount.compareTo(v.getMaxDiscount()) > 0) {
-                            calculatedDiscount = v.getMaxDiscount();
-                        }
-                    }
-                    totalDiscount = calculatedDiscount;
-                } else {
-                    totalDiscount = BigDecimal.valueOf(v.getDiscountValue());
-                }
-            }
-        }
-
-        BigDecimal finalAmount = grossAmount.subtract(totalDiscount);
-        if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
-            finalAmount = BigDecimal.ZERO;
-        }
-        order.setFinalAmount(finalAmount);
-        order.setOrderStatus("COMPLETED");
-        order.setPaymentMethod(request.getPaymentMethod());
-        order.setPaymentStatus("SUCCESS");
-        order.setCustomer(customer);
-        order.setShowtime(showtime);
-
-        if (appliedVoucher != null) {
-            order.setVoucher(appliedVoucher);
-        }
-        
-        System.out.println("SAVE ORDER SAFELY WITH FINAL AMOUNT: " + finalAmount);
-        order = orderRepository.save(order);
-        System.out.println("ORDER ID = " + order.getOrderId());
-        
-        // =========================
-        // Tạo Ticket + OrderDetail
-        // =========================
-        for (String seatCode : request.getSeats()) {
-            String row = seatCode.substring(0, 1);
-            Integer number = Integer.parseInt(seatCode.substring(1));
-
-            Seat seat = seatRepository
-                    .findByRoomIdAndSeatRowAndSeatNumber(
-                            showtime.getRoomId(),
-                            row,
-                            number)
-                    .orElseThrow(() -> new RuntimeException("Seat not found: " + seatCode));
-
-            Ticket ticket = new Ticket();
-            ticket.setOrder(order);
-            ticket.setSeat(seat);
-            ticket.setShowtime(showtime);
-            ticket.setTicketStatus("SOLD");
-
-            String code = "TICKET-" + System.currentTimeMillis() + "-" + seatCode;
-            ticket.setTicketCode(code);
-            ticket.setQrCode(code);
-
-            if (firstTicketCode.isBlank()) {
-                firstTicketCode = code;
-            }   
-
-            try {
-                ticket = ticketRepository.save(ticket);
-            } catch (org.springframework.dao.DataIntegrityViolationException ex) {
-                throw new RuntimeException(
-                        "Ghế " + seatCode + " vừa có người khác đặt mất, vui lòng chọn lại!");
-            }
-            savedTicketCodes.add(code);
-
-            OrderDetail detail = new OrderDetail();
-            detail.setOrder(order);
-            detail.setTicket(ticket);
-            detail.setQuantity(1);
-            detail.setSubtotal(showtime.getTicketPrice());
-
-            orderDetailRepository.save(detail);
-            bookedSeats.add(seatCode);
-        }
-        System.out.println("SAVE TICKET OK");
-        
-        // ==========================================================
-        // 🔒 TỐI ƯU BẢO MẬT: Tạo OrderDetail và trừ tồn kho F&B (Atomic Update)
-        // ==========================================================
-        if (request.getFnb() != null && !request.getFnb().isEmpty()) {
-            for (CheckoutFoodItem item : request.getFnb()) {
-                FoodBeverage food = foodRepository
-                        .findById(item.getFoodItemId())
-                        .orElseThrow(() -> new RuntimeException("Food not found"));
-
-                // Chốt chặn quyết định: Trực tiếp thực hiện Atomic Update xuống DB
-int updatedRows = foodRepository.decrementStockQuantity(item.getFoodItemId().longValue(), item.getQuantity());                
-                // Nếu updatedRows trả về 0 nghĩa là điều kiện số lượng lớn hơn hoặc bằng lượng mua đã bị sai 
-                // tại thời điểm câu lệnh Update thực thi (do luồng khác nhanh tay hơn trừ trước)
-                if (updatedRows == 0) {
-                    throw new RuntimeException(
-                            "Món " + food.getItemName() + " không đủ số lượng tồn kho hoặc đã hết hàng!");
-                }
-
-                // Tạo OrderDetail cho món ăn
-                OrderDetail detail = new OrderDetail();
-                detail.setOrder(order);
-                detail.setFoodItem(food);
-                detail.setQuantity(item.getQuantity());
-                detail.setSubtotal(
-                        food.getPrice().multiply(
-                                BigDecimal.valueOf(item.getQuantity())
-                        )
-                );
-
-                orderDetailRepository.save(detail);
-                fnbSummaryList.add(food.getItemName() + " x" + item.getQuantity());
-            }
-        }
-
-        fnbSummary = fnbSummaryList.isEmpty()
-                ? "Không có"
-                : String.join(", ", fnbSummaryList);
-
-        // ==========================================================
-        // 🔒 TỐI ƯU BẢO MẬT: Cập nhật lượt dùng Voucher & Xử lý đồng thời
-        // ==========================================================
-        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
-            boolean isVoucherUsed = voucherService.useVoucher(request.getVoucherCode());
-            
-            // Nếu hàm trả về false (vừa hết lượt ngay khoảnh khắc bấm đặt hàng)
-            // Lập tức ném Exception để Spring kích hoạt Transaction Rollback toàn bộ tiến trình trên
-            if (!isVoucherUsed) {
-                throw new RuntimeException("Mã giảm giá vừa hết lượt sử dụng, vui lòng kiểm tra lại đơn hàng!");
-            }
-        }
-
-        // =========================
-        // Tạo PaymentTransaction
-        // =========================
-        PaymentTransaction payment = new PaymentTransaction();
-        payment.setTransactionCode("PAY-" + System.currentTimeMillis());
-        payment.setAmount(order.getFinalAmount());
-        payment.setPaymentStatus("SUCCESS");
-        payment.setOrder(order);
-        
-        System.out.println("SAVE PAYMENT");
-        paymentTransactionRepository.save(payment);
-        
-        try {
-            String customerName = customer.getFullname();
-            String email = request.getEmail();
-            if (email == null || email.isBlank()) {
-                email = customer.getEmail();
-            }
-
-            String movieName = showtime.getMovie() != null
-                    ? showtime.getMovie().getTitle()
-                    : request.getMovieName();
-
-            String showtimeText = showtime.getStartTime() != null
-                    ? showtime.getStartTime().toString()
-                    : "Không xác định";
-
-            String seatsText = String.join(", ", request.getSeats());
-
-            String totalAmount = order.getFinalAmount() != null
-                    ? String.format("%,.0f", order.getFinalAmount())
-                    : "0";
-
-            String ticketCode = firstTicketCode != null && !firstTicketCode.isBlank()
-                    ? firstTicketCode
-                    : order.getOrderCode();
-
-            String logoPath = "img/las_logo.png";
-            String posterPath = "";
-
-            if (showtime.getMovie() != null && showtime.getMovie().getMainposterUrl() != null) {
-                posterPath = showtime.getMovie().getMainposterUrl();
-            }
-
-            String qrData = "LAS-CINEMA|ORDER=" + order.getOrderCode() + "|TICKET=" + ticketCode;
-
-            String html = emailService.buildTicketEmailHtml(
-                    customerName,
-                    order.getOrderCode(),
-                    movieName,
-                    showtimeText,
-                    seatsText,
-                    totalAmount,
-                    ticketCode,
-                    fnbSummary,
-                    qrData
-            );
-
-            emailService.sendTicketHtmlEmailWithImages(
-                    email,
-                    "LAS Cinema - Vé xem phim " + order.getOrderCode(),
-                    html,
-                    logoPath,
-                    posterPath
-            );
-
-            System.out.println("ĐÃ GỬI EMAIL HTML VÉ TỚI: " + email);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("GỬI EMAIL HTML VÉ THẤT BẠI: " + e.getMessage());
-        }
-
-        System.out.println("DONE");
-        return new CheckoutResponseDTO(order, savedTicketCodes, fnbSummary);
-    }
-
-    private String toPublicImageUrl(String imagePath) {
-        if (imagePath == null || imagePath.isBlank()) {
-            return "";
-        }
-
-        imagePath = imagePath.trim();
-
-        if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
-            return imagePath;
-        }
-
-        while (imagePath.startsWith("/")) {
-            imagePath = imagePath.substring(1);
-        }
-
-        return publicUrl + "/" + imagePath;
+        fnbSummaryList.add(
+                food.getItemName()
+                        + " x"
+                        + item.getQuantity()
+        );
     }
 }
+
+fnbSummary = fnbSummaryList.isEmpty()
+        ? "Không có"
+        : String.join(", ", fnbSummaryList);
+    // =========================
+    // Cập nhật Voucher
+    // =========================
+    if (request.getVoucherCode() != null &&
+            !request.getVoucherCode().isBlank()) {
+
+        voucherService.useVoucher(request.getVoucherCode());
+    }
+
+    // =========================
+    // Tạo PaymentTransaction
+    // =========================
+    
+payment.setOrder(order);
+payment.setConsumed(true);
+payment.setConsumedAt(LocalDateTime.now());
+
+paymentTransactionRepository.save(payment);
+
+try {
+    String customerName = customer.getFullname();
+
+    String email = request.getEmail();
+    if (email == null || email.isBlank()) {
+        email = customer.getEmail();
+    }
+
+    String movieName = showtime.getMovie() != null
+            ? showtime.getMovie().getTitle()
+            : request.getMovieName();
+
+    String showtimeText = showtime.getStartTime() != null
+            ? showtime.getStartTime().toString()
+            : "Không xác định";
+
+    String seatsText = String.join(", ", request.getSeats());
+
+String totalAmount = order.getFinalAmount() != null
+        ? String.format("%,.0f", order.getFinalAmount())
+        : "0";
+
+    String ticketCode = firstTicketCode != null && !firstTicketCode.isBlank()
+            ? firstTicketCode
+            : order.getOrderCode();
+
+    // Logo là ảnh tĩnh trong project
+    String logoPath = "img/las_logo.png";
+
+    // Poster lấy từ DB movie.mainposter_url
+    String posterPath = "";
+
+    if (showtime.getMovie() != null && showtime.getMovie().getMainposterUrl() != null) {
+        posterPath = showtime.getMovie().getMainposterUrl();
+    }
+
+    // QR code chứa thông tin vé
+    String qrData = order.getOrderCode();
+   String html = emailService.buildTicketEmailHtml(
+        customerName,
+        order.getOrderCode(),
+        movieName,
+        showtimeText,
+        seatsText,
+        fnbSummary,
+        totalAmount,
+        qrData
+);
+
+    emailService.sendTicketHtmlEmailWithImages(
+            email,
+            "LAS Cinema - Vé xem phim " + order.getOrderCode(),
+            html,
+            logoPath,
+            posterPath
+    );
+
+    System.out.println("ĐÃ GỬI EMAIL HTML VÉ TỚI: " + email);
+    System.out.println("LOGO PATH = " + logoPath);
+    System.out.println("POSTER PATH = " + posterPath);
+
+} catch (Exception e) {
+    e.printStackTrace();
+    System.out.println("GỬI EMAIL HTML VÉ THẤT BẠI: " + e.getMessage());
+}
+
+System.out.println("DONE");
+return new CheckoutResponseDTO(order, savedTicketCodes, fnbSummary);
+}
+
+private String toPublicImageUrl(String imagePath) {
+    if (imagePath == null || imagePath.isBlank()) {
+        return "";
+    }
+
+    imagePath = imagePath.trim();
+
+    // Nếu đã là URL online rồi thì giữ nguyên
+    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+        return imagePath;
+    }
+
+    // Xóa dấu / đầu nếu có
+    while (imagePath.startsWith("/")) {
+        imagePath = imagePath.substring(1);
+    }
+
+    // Ghép với public URL
+    return publicUrl + "/" + imagePath;
+}
+}
+

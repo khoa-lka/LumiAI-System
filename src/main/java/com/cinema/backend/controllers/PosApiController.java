@@ -1,5 +1,5 @@
 package com.cinema.backend.controllers;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -7,20 +7,16 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.HashSet;
-import java.util.Set;
-
 
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +41,7 @@ import com.cinema.backend.repositories.SeatRepository;
 import com.cinema.backend.repositories.ShowtimeRepository;
 import com.cinema.backend.repositories.TicketRepository;
 import com.cinema.backend.repositories.VoucherRepository;
+import org.springframework.http.HttpStatus;
 
 // ==========================================================================
 // 🖥️ API DÀNH RIÊNG CHO MÁY POS CỦA STAFF (bán vé/bắp nước tại quầy)
@@ -89,6 +86,9 @@ public class PosApiController {
     // Gọi Service VNPAY
     @Autowired
     private com.cinema.backend.Payment.VNPayService vnPayService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @GetMapping("/movies")
     public ResponseEntity<List<Movie>> getActiveMovies() {
@@ -143,319 +143,96 @@ public class PosApiController {
         List<Map<String, Object>> showtimes = showtimeRepository.findPosShowtimesByMovieAndDate(movieId, date);
         return ResponseEntity.ok(showtimes);
     }
-private BigDecimal toVnd(Object value, String fieldName) {
-    if (value == null) {
-        throw new IllegalArgumentException(fieldName + " không được để trống");
-    }
 
-    try {
-        BigDecimal amount = new BigDecimal(String.valueOf(value));
+    @Transactional
+    @PostMapping("/checkout")
+    public ResponseEntity<?> checkoutOrder(@RequestBody com.cinema.backend.dto.CheckoutRequest request) {
+        try {
+            long timestamp = System.currentTimeMillis();
 
-        if (amount.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException(fieldName + " không được âm");
-        }
+            // 1. TẠO HÓA ĐƠN (Bảng order1)
+            Order1 order = new Order1();
+            String orderCode = "ORD-" + timestamp;
+            order.setOrderCode(orderCode);
 
-        // VND không sử dụng số lẻ.
-        return amount.setScale(0, RoundingMode.HALF_UP);
-    } catch (NumberFormatException e) {
-        throw new IllegalArgumentException(fieldName + " không hợp lệ");
-    }
-}
-   @Transactional(rollbackFor = Exception.class)
-@PostMapping("/checkout")
-public ResponseEntity<?> checkoutOrder(
-        @RequestBody com.cinema.backend.dto.CheckoutRequest request) {
+            order.setFinalAmount(java.math.BigDecimal.valueOf(request.getTotalAmount()));
+            order.setGrossAmount(java.math.BigDecimal.valueOf(request.getTotalAmount()));
 
-    try {
-        long timestamp = System.currentTimeMillis();
+            order.setOrderStatus("COMPLETELY");
+            order.setPaymentMethod(request.getPaymentMethod());
+            order.setPaymentStatus("SUCCESS");
 
-        // 1. Lấy suất chiếu thật từ database
-        Showtime showtime = showtimeRepository
-                .findById(request.getShowtimeId())
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Không tìm thấy suất chiếu"));
+            com.cinema.backend.entities.Account staffObj = new com.cinema.backend.entities.Account();
+            staffObj.setAccountId(request.getStaffId());
+            order.setStaff(staffObj);
 
-        if (request.getSeats() == null || request.getSeats().isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng chọn ít nhất một ghế");
-        }
-
-        // 2. Kiểm tra ghế và chuẩn bị danh sách ghế hợp lệ
-        List<Seat> allSeats =
-                seatRepository.findSeatsByShowtimeId(request.getShowtimeId());
-
-        List<String> bookedSeatList =
-                ticketRepository.findBookedSeatsByShowtime(request.getShowtimeId());
-
-        Set<String> bookedSeats = new HashSet<>();
-        for (String seatCode : bookedSeatList) {
-            if (seatCode != null) {
-                bookedSeats.add(seatCode.trim().toUpperCase());
-            }
-        }
-
-        Set<String> duplicatedSeats = new HashSet<>();
-        List<Seat> selectedSeatEntities = new ArrayList<>();
-
-        for (String seatCode : request.getSeats()) {
-            if (seatCode == null || seatCode.trim().isEmpty()) {
-                throw new IllegalArgumentException("Mã ghế không hợp lệ");
+            if (request.getVoucherId() != null) {
+                com.cinema.backend.entities.Voucher voucherObj = new com.cinema.backend.entities.Voucher();
+                voucherObj.setVoucherId(request.getVoucherId());
+                order.setVoucher(voucherObj);
             }
 
-            String normalizedSeatCode = seatCode.trim().toUpperCase();
+            order = orderRepository.save(order);
 
-            if (!duplicatedSeats.add(normalizedSeatCode)) {
-                throw new IllegalArgumentException(
-                        "Ghế " + normalizedSeatCode + " đang bị gửi trùng");
-            }
+            // 2. GHI NHẬN GIAO DỊCH (Bảng paymenttransaction)
+            PaymentTransaction pt = new PaymentTransaction();
+            pt.setTransactionCode("TXN_" + timestamp);
+            pt.setAmount(java.math.BigDecimal.valueOf(request.getTotalAmount()));
+            pt.setPaymentStatus("SUCCESS");
+            pt.setOrder(order);
+            paymentTransactionRepository.save(pt);
 
-            if (bookedSeats.contains(normalizedSeatCode)) {
-                throw new IllegalArgumentException(
-                        "Ghế " + normalizedSeatCode + " đã được bán");
-            }
-
-            Seat seat = allSeats.stream()
-                    .filter(s -> {
-                        String code =
-                                String.valueOf(s.getSeatRow())
-                                        + String.valueOf(s.getSeatNumber());
-
-                        return code.equalsIgnoreCase(normalizedSeatCode);
-                    })
-                    .findFirst()
+Showtime showtime = showtimeRepository
+                    .findById(request.getShowtimeId())
                     .orElseThrow(() ->
-                            new IllegalArgumentException(
-                                    "Không tìm thấy ghế " + normalizedSeatCode));
+                        new RuntimeException("Không tìm thấy suất chiếu")
+                    );
 
-            selectedSeatEntities.add(seat);
-        }
+            // 3. TẠO VÉ & CHI TIẾT ĐƠN HÀNG
+            List<Seat> allSeats = seatRepository.findSeatsByShowtimeId(request.getShowtimeId());
+            for (String seatCode : request.getSeats()) {
+                Seat seat = allSeats.stream()
+                        .filter(s -> (s.getSeatRow() + s.getSeatNumber()).equals(seatCode))
+                        .findFirst().orElseThrow(() -> new RuntimeException("Lỗi: Không tìm thấy ghế " + seatCode));
 
-        // 3. Backend tự tính tiền vé bằng giá trong Showtime
-        BigDecimal ticketPrice =
-                toVnd(showtime.getTicketPrice(), "Giá vé");
+                Ticket ticket = new Ticket();
+                ticket.setTicketCode("TIX-" + timestamp + "-" + seat.getSeatId());
+                ticket.setQrCode("QR_" + ticket.getTicketCode());
+                ticket.setTicketStatus("SOLD");
+ 
 
-        BigDecimal ticketTotal = ticketPrice.multiply(
-                BigDecimal.valueOf(selectedSeatEntities.size()));
+                ticket.setShowtime(showtime);
+                ticket.setSeat(seat);
+                ticket = ticketRepository.save(ticket);
 
-        BigDecimal grossAmount = ticketTotal;
+                OrderDetail ticketDetail = new OrderDetail();
+                ticketDetail.setOrder(order);
+                ticketDetail.setTicket(ticket);
+                ticketDetail.setQuantity(1);
+                orderDetailRepository.save(ticketDetail);
+            }
 
-        // Lưu FoodBeverage thật đã lấy từ database
-        Map<Integer, FoodBeverage> verifiedFoods = new HashMap<>();
+            // 4. LƯU BẮP NƯỚC (Bảng orderdetail)
+            if (request.getFoodItems() != null) {
+                for (com.cinema.backend.dto.CheckoutRequest.FoodItemRequest food : request.getFoodItems()) {
+                    OrderDetail foodDetail = new OrderDetail();
+                    foodDetail.setOrder(order);
 
-        // 4. Backend tự tính giá bắp nước từ database
-        if (request.getFoodItems() != null) {
-            for (com.cinema.backend.dto.CheckoutRequest.FoodItemRequest food
-                    : request.getFoodItems()) {
+                    FoodBeverage fbObj = new FoodBeverage();
+                    fbObj.setFoodItemId(food.getFoodItemId());
+                    foodDetail.setFoodItem(fbObj);
 
-                if (food.getQuantity() <= 0) {
-                    throw new IllegalArgumentException(
-                            "Số lượng món ăn phải lớn hơn 0");
+                    foodDetail.setQuantity(food.getQuantity());
+                    foodDetail.setSubtotal(java.math.BigDecimal.valueOf(food.getSubtotal()));
+                    orderDetailRepository.save(foodDetail);
                 }
-
-                FoodBeverage foodFromDatabase = foodBeverageRepository
-                        .findById(food.getFoodItemId())
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Không tìm thấy món ăn ID: "
-                                                + food.getFoodItemId()));
-
-                BigDecimal foodPrice =
-                        toVnd(foodFromDatabase.getPrice(), "Giá món ăn");
-
-                BigDecimal foodSubtotal = foodPrice.multiply(
-                        BigDecimal.valueOf(food.getQuantity()));
-
-                grossAmount = grossAmount.add(foodSubtotal);
-
-                verifiedFoods.put(
-                        food.getFoodItemId(),
-                        foodFromDatabase);
-            }
-        }
-
-        // 5. Lấy voucher thật và tính giảm giá tại backend
-        Voucher appliedVoucher = null;
-        BigDecimal discountAmount = BigDecimal.ZERO;
-
-        if (request.getVoucherId() != null) {
-            appliedVoucher = voucherRepository
-                    .findById(request.getVoucherId())
-                    .orElseThrow(() ->
-                            new IllegalArgumentException(
-                                    "Voucher không tồn tại"));
-
-            BigDecimal discountValue = toVnd(
-                    appliedVoucher.getDiscountValue(),
-                    "Giá trị voucher");
-
-            String discountType =
-                    String.valueOf(appliedVoucher.getDiscountType());
-
-            if ("PERCENT".equalsIgnoreCase(discountType)) {
-                discountAmount = grossAmount
-                        .multiply(discountValue)
-                        .divide(
-                                BigDecimal.valueOf(100),
-                                0,
-                                RoundingMode.HALF_UP);
-
-                Object maxDiscountValue =
-                        appliedVoucher.getMaxDiscount();
-
-                if (maxDiscountValue != null) {
-                    BigDecimal maxDiscount = toVnd(
-                            maxDiscountValue,
-                            "Giảm giá tối đa");
-
-                    discountAmount =
-                            discountAmount.min(maxDiscount);
-                }
-            } else {
-                discountAmount = discountValue;
             }
 
-            // Không cho giảm nhiều hơn tổng hóa đơn
-            discountAmount = discountAmount.min(grossAmount);
+            return ResponseEntity.ok(orderCode);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-
-        BigDecimal finalAmount =
-                grossAmount.subtract(discountAmount);
-
-        // 6. Đối chiếu tổng tiền máy POS gửi với kết quả backend
-       
-
-        // Chỉ bắt đầu ghi database sau khi đã kiểm tra xong
-        Order1 order = new Order1();
-        String orderCode = "ORD-" + timestamp;
-
-        order.setOrderCode(orderCode);
-        order.setGrossAmount(grossAmount);
-        order.setFinalAmount(finalAmount);
-        order.setOrderStatus("COMPLETELY");
-        order.setPaymentMethod(request.getPaymentMethod());
-        order.setPaymentStatus("SUCCESS");
-        order.setShowtime(showtime);
-
-        com.cinema.backend.entities.Account staffObj =
-                new com.cinema.backend.entities.Account();
-
-        staffObj.setAccountId(request.getStaffId());
-        order.setStaff(staffObj);
-
-        if (appliedVoucher != null) {
-            order.setVoucher(appliedVoucher);
-        }
-
-        order = orderRepository.save(order);
-
-        // 7. Ghi giao dịch bằng số tiền backend đã tính
-        PaymentTransaction paymentTransaction =
-                new PaymentTransaction();
-
-        paymentTransaction.setTransactionCode("TXN_" + timestamp);
-        paymentTransaction.setAmount(finalAmount);
-        paymentTransaction.setPaymentStatus("SUCCESS");
-        paymentTransaction.setOrder(order);
-
-        paymentTransactionRepository.save(paymentTransaction);
-
-        // 8. Tạo vé
-        for (Seat seat : selectedSeatEntities) {
-            Ticket ticket = new Ticket();
-
-            ticket.setTicketCode(
-                    "TIX-" + timestamp + "-" + seat.getSeatId());
-
-            ticket.setQrCode("QR_" + ticket.getTicketCode());
-            ticket.setTicketStatus("SOLD");
-            ticket.setShowtime(showtime);
-            ticket.setSeat(seat);
-            ticket.setOrder(order);
-
-            ticket = ticketRepository.save(ticket);
-
-            OrderDetail ticketDetail = new OrderDetail();
-            ticketDetail.setOrder(order);
-            ticketDetail.setTicket(ticket);
-            ticketDetail.setQuantity(1);
-
-            // Nếu OrderDetail cần subtotal cho vé
-            ticketDetail.setSubtotal(ticketPrice);
-
-            orderDetailRepository.save(ticketDetail);
-        }
-
-        // 9. Lưu bắp nước bằng giá database
-        if (request.getFoodItems() != null) {
-            for (com.cinema.backend.dto.CheckoutRequest.FoodItemRequest food
-                    : request.getFoodItems()) {
-
-                FoodBeverage foodFromDatabase =
-                        verifiedFoods.get(food.getFoodItemId());
-
-                BigDecimal foodPrice =
-                        toVnd(foodFromDatabase.getPrice(), "Giá món ăn");
-
-                BigDecimal foodSubtotal = foodPrice.multiply(
-                        BigDecimal.valueOf(food.getQuantity()));
-
-                OrderDetail foodDetail = new OrderDetail();
-                foodDetail.setOrder(order);
-                foodDetail.setFoodItem(foodFromDatabase);
-                foodDetail.setQuantity(food.getQuantity());
-
-                // Không còn sử dụng food.getSubtotal() từ máy khách
-                foodDetail.setSubtotal(foodSubtotal);
-
-                orderDetailRepository.save(foodDetail);
-            }
-        }
-
-        return ResponseEntity.ok(orderCode);
-
-} catch (Exception e) {
-    TransactionAspectSupport
-            .currentTransactionStatus()
-            .setRollbackOnly();
-
-    return ResponseEntity
-            .badRequest()
-            .body(e.getMessage());
-}
-}
-
-    // Dùng cho Máy POS (Staff), tab "In vé": tra cứu đơn hàng/vé thật trong DB
-    // theo mã đơn (order_code, VD "ORD-...") hoặc mã vé (ticket_code, VD "TIX-...").
-    // BO SUNG: staff.js đã gọi sẵn /api/pos/orders/search nhưng backend chưa có
-    // endpoint này — trước đây tab này chỉ so khớp với đơn vừa bán gần nhất lưu trong
-    // localStorage của trình duyệt đó (không tra được đơn cũ / đơn từ máy khác).
-    @GetMapping("/orders/search")
-    public ResponseEntity<?> searchOrder(@RequestParam String code) {
-        String trimmedCode = code == null ? "" : code.trim();
-        if (trimmedCode.isEmpty()) {
-            return ResponseEntity.badRequest().body("Vui lòng nhập mã vé hoặc mã đơn hàng.");
-        }
-
-        List<Map<String, Object>> rows = ticketRepository.findTicketsByOrderOrTicketCode(trimmedCode);
-        if (rows.isEmpty()) {
-            return ResponseEntity.badRequest().body("Không tìm thấy vé/đơn hàng với mã: " + trimmedCode);
-        }
-
-        Map<String, Object> first = rows.get(0);
-        List<String> seats = new ArrayList<>();
-        for (Map<String, Object> row : rows) {
-            Object seatCode = row.get("seatCode");
-            if (seatCode != null) seats.add(String.valueOf(seatCode));
-        }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("orderCode", first.get("orderCode"));
-        result.put("ticketCode", first.get("ticketCode"));
-        result.put("movie", first.get("movieTitle"));
-        result.put("date", first.get("showDate"));
-        result.put("showtime", first.get("showTime"));
-        result.put("seats", seats);
-        result.put("totalPaid", first.get("totalPaid"));
-        return ResponseEntity.ok(result);
     }
 
     // API Kiểm tra và áp dụng mã giảm giá
@@ -484,13 +261,8 @@ public ResponseEntity<?> checkoutOrder(
 
     // ==========================================================
     // API 2: NHẬN KẾT QUẢ TỪ VNPAY TRẢ VỀ (vnp_ReturnUrl)
-    // Trang này được mở ở TAB MỚI (do staff.js dùng window.open() thay vì
-    // redirect nguyên tab POS). Vì vậy sau khi có kết quả, trang tự động
-    // postMessage() về window.opener (chính là tab máy POS đang chờ) để
-    // POS tự nhảy tiếp bước hoàn tất đơn — không cần nhân viên tự bấm gì
-    // ngoài việc tab này tự đóng lại.
     // ==========================================================
-    @GetMapping(value = "/vnpay-return", produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping("/vnpay-return")
     public ResponseEntity<String> vnpayReturn(HttpServletRequest request) {
         try {
             Map<String, String> fields = new HashMap<>();
@@ -525,43 +297,211 @@ public ResponseEntity<?> checkoutOrder(
 
             if (signValue.equals(vnp_SecureHash)) {
                 if ("00".equals(request.getParameter("vnp_ResponseCode"))) {
-                    return ResponseEntity.ok(buildVnpayResultPage(true,
-                            "GIAO DỊCH THÀNH CÔNG!",
-                            "Bạn đã thanh toán thành công. Đang quay lại máy POS..."));
+                    return ResponseEntity.ok("<h1>GIAO DỊCH THÀNH CÔNG!</h1><p>Bạn đã thanh toán thành công, vui lòng nhận vé tại quầy.</p>");
                 } else {
-                    return ResponseEntity.badRequest().body(buildVnpayResultPage(false,
-                            "GIAO DỊCH THẤT BẠI",
-                            "Giao dịch đã bị hủy hoặc không thành công."));
+                    return ResponseEntity.badRequest().body("<h1>GIAO DỊCH THẤT BẠI</h1><p>Giao dịch đã bị hủy hoặc không thành công.</p>");
                 }
             } else {
-                return ResponseEntity.badRequest().body(buildVnpayResultPage(false,
-                        "LỖI BẢO MẬT",
-                        "Chữ ký không hợp lệ."));
+                return ResponseEntity.badRequest().body("<h1>LỖI BẢO MẬT</h1><p>Chữ ký không hợp lệ.</p>");
             }
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(buildVnpayResultPage(false,
-                    "LỖI HỆ THỐNG",
-                    "Đã có lỗi xảy ra: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body("Lỗi hệ thống: " + e.getMessage());
         }
     }
 
-    // Trang kết quả VNPAY dùng chung cho tab con: báo kết quả về tab POS (window.opener)
-    // qua postMessage rồi tự đóng tab. Nếu không có window.opener (ví dụ người dùng mở
-    // trực tiếp URL này) thì chỉ hiển thị kết quả, không làm gì thêm.
-    private String buildVnpayResultPage(boolean success, String title, String message) {
-        String color = success ? "#22c55e" : "#f87171";
-        return "<!DOCTYPE html><html lang=\"vi\"><head><meta charset=\"UTF-8\">"
-                + "<title>Kết quả thanh toán VNPAY</title>"
-                + "<style>body{font-family:Arial,sans-serif;background:#0e0e11;color:#fff;"
-                + "display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center}"
-                + ".box{padding:32px}h1{color:" + color + ";margin:0 0 10px}p{color:#9a9aa3;font-size:14px}</style>"
-                + "</head><body><div class=\"box\"><h1>" + title + "</h1><p>" + message + "</p></div>"
-                + "<script>"
-                + "try{if(window.opener&&!window.opener.closed){"
-                + "window.opener.postMessage({type:'VNPAY_POS_RESULT',success:" + success + "},'*');"
-                + "window.opener.focus();}}catch(e){}"
-                + "setTimeout(function(){window.close();},1200);"
-                + "</script>"
-                + "</body></html>";
+    @GetMapping("/orders/search")
+public ResponseEntity<?> searchOrderByCode(
+        @RequestParam("code") String code
+) {
+    if (code == null ||
+            code.isBlank()) {
+
+        return ResponseEntity
+                .badRequest()
+                .body(
+                        "Vui lòng nhập mã đơn hàng."
+                );
     }
+
+    String normalizedCode =
+            code.trim();
+
+    String sql = """
+            SELECT
+                o.order_code AS [orderCode],
+
+                STRING_AGG(
+                    CAST(
+                        t.ticket_code
+                        AS NVARCHAR(MAX)
+                    ),
+                    ', '
+                ) AS [ticketCode],
+
+                MAX(m.title) AS [movie],
+
+                CONVERT(
+                    VARCHAR(5),
+                    MAX(st.start_time),
+                    108
+                ) AS [showtime],
+
+                CONVERT(
+                    VARCHAR(10),
+                    MAX(st.start_time),
+                    23
+                ) AS [date],
+
+                STRING_AGG(
+                    CAST(
+                        CONCAT(
+                            s.seat_row,
+                            s.seat_number
+                        )
+                        AS NVARCHAR(MAX)
+                    ),
+                    ', '
+                ) AS [seatsCsv],
+
+                MAX(o.final_amount)
+                    AS [totalMoney],
+
+                MAX(o.payment_method)
+                    AS [paymentMethod],
+
+                MAX(o.payment_status)
+                    AS [paymentStatus]
+
+            FROM order1 o
+
+            LEFT JOIN orderdetail od
+                ON od.order_id =
+                   o.order_id
+
+            LEFT JOIN ticket t
+                ON t.ticket_id =
+                   od.ticket_id
+
+            LEFT JOIN seat s
+                ON s.seat_id =
+                   t.seat_id
+
+            LEFT JOIN showtime st
+                ON st.showtime_id =
+                   t.showtime_id
+
+            LEFT JOIN movie m
+                ON m.movie_id =
+                   st.movie_id
+
+            WHERE UPPER(
+                LTRIM(
+                    RTRIM(o.order_code)
+                )
+            ) = UPPER(
+                LTRIM(
+                    RTRIM(?)
+                )
+            )
+
+            GROUP BY
+                o.order_code
+            """;
+
+    List<Map<String, Object>> rows =
+            jdbcTemplate.queryForList(
+                    sql,
+                    normalizedCode
+            );
+
+    if (rows.isEmpty()) {
+        return ResponseEntity
+                .status(
+                        HttpStatus.NOT_FOUND
+                )
+                .body(
+                        "Không tìm thấy đơn hàng: "
+                                + normalizedCode
+                );
+    }
+
+    Map<String, Object> row =
+            rows.get(0);
+
+    String seatsCsv =
+            row.get("seatsCsv") == null
+                    ? ""
+                    : row.get("seatsCsv")
+                            .toString();
+
+    List<String> seats =
+            new ArrayList<>();
+
+    if (!seatsCsv.isBlank()) {
+        for (String seat :
+                seatsCsv.split(",")) {
+
+            String normalizedSeat =
+                    seat.trim();
+
+            if (!normalizedSeat.isBlank()) {
+                seats.add(
+                        normalizedSeat
+                );
+            }
+        }
+    }
+
+    Map<String, Object> result =
+            new LinkedHashMap<>();
+
+    result.put(
+            "orderCode",
+            row.get("orderCode")
+    );
+
+    result.put(
+            "ticketCode",
+            row.get("ticketCode")
+    );
+
+    result.put(
+            "movie",
+            row.get("movie")
+    );
+
+    result.put(
+            "showtime",
+            row.get("showtime")
+    );
+
+    result.put(
+            "date",
+            row.get("date")
+    );
+
+    result.put(
+            "seats",
+            seats
+    );
+
+    result.put(
+            "totalMoney",
+            row.get("totalMoney")
+    );
+
+    result.put(
+            "paymentMethod",
+            row.get("paymentMethod")
+    );
+
+    result.put(
+            "paymentStatus",
+            row.get("paymentStatus")
+    );
+
+    return ResponseEntity.ok(
+            result
+    );
+}
 }

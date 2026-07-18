@@ -1,5 +1,6 @@
 package com.cinema.backend.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -10,7 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import com.cinema.backend.entities.Voucher;
 import com.cinema.backend.repositories.VoucherRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
 @Service
 public class VoucherServiceImpl implements VoucherService {
 
@@ -55,77 +56,103 @@ public Voucher checkVoucher(String code) {
 }
 
     // 🌟 HÀM MỚI BỔ SUNG: Xử lý quét các khuyến mãi tự động chạy ngầm hệ thống
-    @Override
-    public Voucher checkAutoVoucher(Double grossAmount) {
-        List<Voucher> autoVouchers = voucherRepository.findActiveAutoVouchers();
-        LocalDateTime now = LocalDateTime.now();
-
-        for (Voucher voucher : autoVouchers) {
-            if (voucher.getExpiredDate() != null && voucher.getExpiredDate().isBefore(now)) {
-                continue;
-            }
-
-            if (voucher.getUsageLimit() <= 0) {
-                continue;
-            }
-
-            if (voucher.getMinimumOrder() != null && grossAmount < voucher.getMinimumOrder()) {
-                continue;
-            }
-
-            // --- KIỂM TRA ĐIỀU KIỆN THỜI GIAN ĐỘNG ---
-            if ("DAY_OF_WEEK".equals(voucher.getConditionType()) && voucher.getConditionValue() != null) {
-                int targetDay = Integer.parseInt(voucher.getConditionValue()); // Ví dụ: "3" cho thứ 4
-                int currentDay = now.getDayOfWeek().getValue(); // Thứ 2 = 1, Thứ 3 = 2, Thứ 4 = 3...
-
-                if (currentDay == targetDay) {
-                    return voucher;
-                }
-            } else if ("LAST_DAY_OF_MONTH".equals(voucher.getConditionType())) {
-                int today = now.getDayOfMonth();
-                int lastDayOfThisMonth = now.toLocalDate().lengthOfMonth();
-
-                if (today == lastDayOfThisMonth) {
-                    return voucher;
-                }
-            }
-        }
+@Override
+public Voucher checkAutoVoucher(
+        BigDecimal grossAmount
+) {
+    if (grossAmount == null) {
         return null;
     }
 
+    List<Voucher> autoVouchers =
+            voucherRepository.findActiveAutoVouchers();
 
-// ...
+    LocalDateTime now =
+            LocalDateTime.now();
 
-@Override
-@Transactional // Bắt buộc phải có khi chạy @Modifying query
-public boolean useVoucher(String code){
-    System.out.println("useVoucher chạy");
+    for (Voucher voucher : autoVouchers) {
 
-    // Vẫn gọi checkVoucher để tái kiểm tra ngày hết hạn, status ACTIVE...[cite: 2]
-    Voucher voucher = checkVoucher(code);
+        if (voucher.getExpiredDate() != null &&
+                voucher.getExpiredDate()
+                        .isBefore(now)) {
 
-    if(voucher == null){
-        System.out.println("voucher null hoặc không đủ điều kiện");
-        return false;
+            continue;
+        }
+
+        if (voucher.getUsageLimit() == null ||
+                voucher.getUsageLimit() <= 0) {
+
+            continue;
+        }
+
+        if (voucher.getMinimumOrder() != null &&
+                grossAmount.compareTo(
+                        voucher.getMinimumOrder()
+                ) < 0) {
+
+            continue;
+        }
+
+        if ("DAY_OF_WEEK".equalsIgnoreCase(
+                voucher.getConditionType()
+        ) && voucher.getConditionValue() != null) {
+
+            int targetDay =
+                    Integer.parseInt(
+                            voucher.getConditionValue()
+                    );
+
+            int currentDay =
+                    now.getDayOfWeek().getValue();
+
+            if (currentDay == targetDay) {
+                return voucher;
+            }
+
+        } else if ("LAST_DAY_OF_MONTH"
+                .equalsIgnoreCase(
+                        voucher.getConditionType()
+                )) {
+
+            int today =
+                    now.getDayOfMonth();
+
+            int lastDayOfThisMonth =
+                    now.toLocalDate()
+                            .lengthOfMonth();
+
+            if (today == lastDayOfThisMonth) {
+                return voucher;
+            }
+        }
     }
 
-    // XÓA ĐOẠN SET LẠI USAGE LIMIT VÀ SAVE:
-    // voucher.setUsageLimit(voucher.getUsageLimit()-1);
-    // voucherRepository.save(voucher);
-
-    // THAY BẰNG: Trừ trực tiếp dưới Database một cách an toàn
-    int updatedRows = voucherRepository.decrementVoucherUsage(code);
-
-    if (updatedRows == 0) {
-        // Trường hợp cả 2 request cùng lọt qua hàm checkVoucher() thành công, 
-        // request nào chạy update DB sau sẽ nhận về updatedRows = 0 vì limit đã chạm 0.
-        System.out.println("Voucher vừa bị người khác sử dụng hết lượt cuối cùng.");
-        return false;
-    }
-
-    System.out.println("Đã trừ lượt sử dụng voucher thành công.");
-    return true;
+    return null;
 }
+
+    @Override
+    public boolean useVoucher(String code){
+
+        System.out.println("useVoucher chạy");
+
+        Voucher voucher = checkVoucher(code);
+
+        if(voucher==null){
+            System.out.println("voucher null");
+            return false;
+        }
+
+        System.out.println("Before = " + voucher.getUsageLimit());
+
+        voucher.setUsageLimit(voucher.getUsageLimit()-1);
+
+        voucherRepository.save(voucher);
+
+        System.out.println("After = " + voucher.getUsageLimit());
+
+        return true;
+    }
+
     @Override
     public java.util.List<Voucher> getAllVouchers() {
         return voucherRepository.findAll();

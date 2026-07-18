@@ -120,12 +120,22 @@ const API = {
       method: "POST",
     }).then(handleResponse),
 
-  createPayOSPayment: (amount) =>
-    fetch(`${BASE_URL}/payment/payos/create`, {
+  // Hỗ trợ cả cách gọi cũ API.createPayOSPayment(amount)
+  // và cách gọi mới API.createPayOSPayment({ amount, description, returnUrl, cancelUrl, ... }).
+  createPayOSPayment: (paymentData) => {
+    const paymentPayload =
+      paymentData !== null &&
+      typeof paymentData === "object" &&
+      !Array.isArray(paymentData)
+        ? paymentData
+        : { amount: paymentData };
+
+    return fetch(`${BASE_URL}/payment/payos/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount }),
-    }).then(handleResponse),
+      body: JSON.stringify(paymentPayload),
+    }).then(handleResponse);
+  },
 
   // 6. ADMIN / MANAGER
   getAdminUsers: () => fetch(`${BASE_URL}/admin/users`).then(handleResponse),
@@ -162,14 +172,17 @@ const API = {
 
   // 6b. THÔNG BÁO TÀI KHOẢN (từ nhánh admin)
   getUnreadNotifications: (accountId) =>
-    fetch(`${BASE_URL}/notifications/unread/${encodeURIComponent(accountId)}`).then(
-      handleResponse,
-    ),
+    fetch(
+      `${BASE_URL}/notifications/unread/${encodeURIComponent(accountId)}`,
+    ).then(handleResponse),
 
   markNotificationAsRead: (notificationId) =>
-    fetch(`${BASE_URL}/notifications/read/${encodeURIComponent(notificationId)}`, {
-      method: "PUT",
-    }).then(handleResponse),
+    fetch(
+      `${BASE_URL}/notifications/read/${encodeURIComponent(notificationId)}`,
+      {
+        method: "PUT",
+      },
+    ).then(handleResponse),
 
   getOrderHistory: (accountId) =>
     fetch(`${BASE_URL}/orders/history/${encodeURIComponent(accountId)}`).then(

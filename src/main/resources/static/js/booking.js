@@ -1,6 +1,11 @@
 console.log("BOOKING JS LOADED");
 window.selectedPaymentGateway = "qr";
 
+// ============================================================================
+// MERGED FILE: booking(21) is the base. Missing upgrades from booking(20) were
+// restored, while booking(21)'s newer voucher/timer/UI fixes were preserved.
+// ============================================================================
+
 // Thông báo thống nhất theo FE của booking(15): luôn ưu tiên showCgvToast.
 // 🎨 Icon outline trắng dùng chung cho khối Rà soát hóa đơn
 const ICON_MOVIE =
@@ -24,9 +29,111 @@ const ICON_INFO =
 window.fnbMenu = [];
 function resetFnbSelection() {
   if (Array.isArray(window.fnbMenu)) {
-    window.fnbMenu.forEach((item) => { item.qty = 0; });
+    window.fnbMenu.forEach((item) => {
+      item.qty = 0;
+    });
   }
 }
+
+// ============================================================================
+// MERGE booking(20) -> booking(21): dọn dữ liệu của đơn trước.
+// Chỉ dùng khi bắt đầu một đơn mới hoặc sau khi checkout thành công.
+// ============================================================================
+function resetPreviousOrderExtras() {
+  window.currentVoucher = null;
+  window.selectedVoucherCode = null;
+  appliedVoucherDiscount = 0;
+  currentPriceTotal = 0;
+  window.finalPriceTotal = 0;
+
+  resetFnbSelection();
+
+  // Xóa dữ liệu phục hồi/thanh toán cũ để đơn sau không dùng nhầm.
+  window.vnpayRestoreFnb = null;
+  window.fnbRestorePromise = null;
+  window.currentVnpayReference = null;
+  window.currentQrRef = null;
+  window.currentPayOSOrderCode = null;
+  window.currentPayOSPaymentLinkId = null;
+
+  sessionStorage.removeItem("checkoutPayload");
+  sessionStorage.removeItem("pendingBooking");
+  localStorage.removeItem("pending_booking");
+  localStorage.removeItem("las_current_booking_cache");
+
+  const voucherInput = document.getElementById("voucher-input");
+  if (voucherInput) voucherInput.value = "";
+
+  const sumFnb = document.getElementById("sum-fnb");
+  if (sumFnb) sumFnb.innerText = "0 Combo";
+
+  const sumTotal = document.getElementById("sum-total");
+  if (sumTotal) sumTotal.innerText = "0 đ";
+
+  const reviewTotal = document.getElementById("review-final-total");
+  if (reviewTotal) reviewTotal.innerText = "0 đ";
+
+  const rawTotal = document.querySelector(".inv-total-amt");
+  if (rawTotal) rawTotal.innerText = "0 đ";
+
+  if (typeof renderFnbMenu === "function") renderFnbMenu();
+}
+window.resetPreviousOrderExtras = resetPreviousOrderExtras;
+
+// Giữ các bản sửa của booking(21) về timer/ghế cũ, nhưng chỉ chạy khi mở đơn mới.
+function resetBookingVisualState() {
+  if (typeof timerInterval !== "undefined" && timerInterval !== null) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  if (typeof paymentTimerInterval !== "undefined" && paymentTimerInterval) {
+    clearInterval(paymentTimerInterval);
+    paymentTimerInterval = null;
+  }
+
+  if (typeof stopVietQRTimer === "function") stopVietQRTimer();
+  if (typeof stopQrPaymentPolling === "function") stopQrPaymentPolling();
+
+  const holdTimer = document.getElementById("hold-timer");
+  if (holdTimer) holdTimer.style.display = "none";
+
+  const timerString = document.getElementById("timer-string");
+  if (timerString) timerString.innerText = "10:00";
+
+  document
+    .querySelectorAll(".seat.selected, .seat.active")
+    .forEach((seatEl) => seatEl.classList.remove("selected", "active"));
+
+  const invoiceContent = document.getElementById("review-invoice-content");
+  if (invoiceContent) invoiceContent.innerHTML = "";
+}
+
+function startFreshBookingSession() {
+  if (typeof window.markNewBookingSession === "function") {
+    window.markNewBookingSession();
+  }
+
+  resetPreviousOrderExtras();
+  resetBookingVisualState();
+
+  selectedSeats = [];
+  selectedShowtime = "";
+  selectedDateStr = "";
+  window.currentSelectedShowtimeId = null;
+  currentBookingStep = 1;
+  isHoldingState = false;
+  window.bookingExpireAt = null;
+
+  if (typeof bookingTimeoutHandled !== "undefined") {
+    bookingTimeoutHandled = false;
+  }
+
+  if (typeof _qrCheckoutDone !== "undefined") {
+    _qrCheckoutDone = false;
+  }
+}
+window.startFreshBookingSession = startFreshBookingSession;
 // Hàm tự động gọi lên Spring Boot lấy toàn bộ bắp nước thật bốc từ Database
 function initFnbMenuFromServer() {
   if (typeof API !== "undefined" && typeof API.getFnbItems === "function") {
@@ -56,42 +163,45 @@ function handleBookNowClick() {
     typeof window.isBookingRestrictedRole === "function" &&
     window.isBookingRestrictedRole()
   ) {
-    if (typeof showBookingRestrictedModal === "function")
+    if (typeof showBookingRestrictedModal === "function") {
       showBookingRestrictedModal();
+    }
     return;
   }
+
   const ticket = document.getElementById("final-ticket-result");
   if (ticket) ticket.innerHTML = "";
+
   if (!isUserLoggedInState) {
     window.showCgvToast("Vui lòng đăng nhập hệ thống để tiếp tục đặt vé!");
     openAuthModal();
-  } else {
-    const currentMovieTitle =
-      document.getElementById("detail-movie-title").innerText;
-    switchCgvTab("panel-booking");
-    window.markNewBookingSession();
-    resetFnbSelection(); 
-    const selectCombo = document.getElementById("cgv-combo-movie");
-    if (selectCombo && currentMovieTitle !== "-") {
-      if ([...selectCombo.options].some((o) => o.value === currentMovieTitle)) {
-        selectCombo.value = currentMovieTitle;
-      }
-      // 🚀 BỔ SUNG TẠI ĐÂY: Xóa sạch các ghế đang chọn dở trước đó khi chuyển sang phim mới này
-      selectedSeats = [];
-      selectedShowtime = "";
-      selectedDateStr = "";
-      window.currentSelectedShowtimeId = null;
-      currentBookingStep = 1;
-      isHoldingState = false;
-      window.bookingExpireAt = null;
-      if (typeof selectedShowtime !== "undefined") selectedShowtime = "";
-      if (typeof window.currentSelectedShowtimeId !== "undefined")
-        window.currentSelectedShowtimeId = null;
-
-      onMovieOrTimeChange();
-    }
-    if (typeof goToBookingStep === "function") goToBookingStep(1);
+    return;
   }
+
+  // Không reset khi đang phục hồi giao dịch VNPAY.
+  if (!window.isVnpayReturn) {
+    startFreshBookingSession();
+  }
+
+  const detailMovieTitle = document.getElementById("detail-movie-title");
+  const currentMovieTitle = detailMovieTitle?.innerText || "-";
+
+  switchCgvTab("panel-booking");
+
+  const selectCombo = document.getElementById("cgv-combo-movie");
+  if (selectCombo && currentMovieTitle !== "-") {
+    if (
+      [...selectCombo.options].some(
+        (option) => option.value === currentMovieTitle,
+      )
+    ) {
+      selectCombo.value = currentMovieTitle;
+    }
+
+    onMovieOrTimeChange();
+  }
+
+  if (typeof goToBookingStep === "function") goToBookingStep(1);
 }
 
 // 🚀 THÊM MỚI: Hàm chịu trách nhiệm gọi API lấy lịch chiếu động từ Database
@@ -183,18 +293,25 @@ function quickBookMovie(movieTitle) {
     typeof window.isBookingRestrictedRole === "function" &&
     window.isBookingRestrictedRole()
   ) {
-    if (typeof showBookingRestrictedModal === "function")
+    if (typeof showBookingRestrictedModal === "function") {
       showBookingRestrictedModal();
+    }
     return;
   }
+
+  if (!window.isVnpayReturn) {
+    startFreshBookingSession();
+  }
+
   switchCgvTab("panel-booking");
-  window.markNewBookingSession();     
-  resetFnbSelection();    
+
   const selectCombo = document.getElementById("cgv-combo-movie");
   if (selectCombo) {
     selectCombo.value = movieTitle;
     onMovieOrTimeChange();
   }
+
+  if (typeof goToBookingStep === "function") goToBookingStep(1);
 }
 
 function loadSeatMap(showtimeId) {
@@ -401,73 +518,6 @@ function goToBookingStep(step) {
       backBtn.innerText = "←";
       backBtn.setAttribute("onclick", "goHomeFromBc()");
     }
-    // ==========================================================================
-    // 🧹 RESET TOÀN DIỆN GIỎ HÀNG & BIẾN SỐ TIỀN TẠI BƯỚC 1: Sửa bug tiền âm
-    // ==========================================================================
-    window.currentVoucher = null;
-    if (typeof currentPriceTotal !== "undefined") currentPriceTotal = 0;
-    if (typeof finalPriceTotal !== "undefined") window.finalPriceTotal = 0;
-
-    // Xóa sạch mảng ghế tận gốc (Clear reference)
-    if (typeof selectedSeats !== "undefined" && selectedSeats !== null) {
-      selectedSeats.length = 0;
-    }
-    
-    // Reset số lượng bắp nước về 0
-    if (window.fnbMenu) {
-      window.fnbMenu.forEach(item => item.qty = 0); 
-    } else if (typeof fnbMenu !== "undefined") {
-      fnbMenu.forEach(item => item.qty = 0);
-    }
-
-    // Bọc chốt chặn an toàn chặn đứng số âm cho hàm tính toán tiền giỏ hàng
-    const originalCalculate = window.calculateCgvCart || calculateCgvCart;
-    if (typeof originalCalculate === "function") {
-      originalCalculate();
-      if (typeof currentPriceTotal !== "undefined" && currentPriceTotal < 0) currentPriceTotal = 0;
-      if (typeof finalPriceTotal !== "undefined" && window.finalPriceTotal < 0) window.finalPriceTotal = 0;
-    }
-
-    // ==========================================================================
-    // 🎯 ĐÃ SỬA: DIỆT TẬN GỐC BUG ĐẾM GIỜ & XOÁ SẠCH Ô MÀU XANH GHẾ CŨ
-    // ==========================================================================
-    
-    // 1. Dập tắt bộ đếm thời gian cũ chuẩn theo biến của nhóm em
-    if (typeof timerInterval !== "undefined" && timerInterval !== null) {
-      clearInterval(timerInterval);
-      timerInterval = null; // Khai tử bộ đếm chạy ngầm
-    }
-    
-    // Đưa chữ hiển thị thời gian về trạng thái ban đầu chuẩn ID "timer-string"
-    const timerStringEl = document.getElementById("timer-string");
-    if (timerStringEl) {
-      timerStringEl.innerText = "10:00"; // Đưa về 10 phút mặc định như thông báo của em
-    }
-
-    // 2. Quét sạch các ô ghế màu xanh đang bị kẹt trên giao diện trực quan
-    // Vì sơ đồ cũ vẫn lưu trong DOM, ta chủ động xóa bỏ class được chọn của chúng
-    const ketElements = document.querySelectorAll(".seat.selected, .seat.active");
-    ketElements.forEach(seatEl => {
-      seatEl.classList.remove("selected", "active");
-    });
-
-    // 3. Dọn dẹp các ô hiển thị tiền và hóa đơn tạm trên sidebar
-    const reviewTotalEl = document.getElementById("review-final-total");
-    if (reviewTotalEl) reviewTotalEl.innerText = "0 đ";
-
-    const sumTotalEl = document.getElementById("sum-total");
-    if (sumTotalEl) sumTotalEl.innerText = "0 đ";
-
-    const rawTotalEl = document.querySelector(".inv-total-amt");
-    if (rawTotalEl) rawTotalEl.innerText = "0 đ";
-    
-    const vInput = document.getElementById("voucher-input");
-    if (vInput) vInput.value = "";
-
-    const invoiceContentEl = document.getElementById("review-invoice-content");
-    if (invoiceContentEl) invoiceContentEl.innerHTML = "";
-
-    console.log("🧹 Đã làm sạch hoàn toàn: Tắt đếm giờ ngầm, xóa màu xanh của ghế kẹt!");
   } else if (step === 2) {
     // 🚀 NÂNG CẤP BẤT TỬ: Đồng bộ dữ liệu từ DB nhưng bảo toàn số lượng qty cực kỳ nghiêm ngặt
     if (typeof API !== "undefined" && typeof API.getFnbItems === "function") {
@@ -540,22 +590,31 @@ function goToBookingStep(step) {
     // ==========================================================================
     // 🌟 TỰ ĐỘNG ÁP DỤNG VOUCHER: Đã sửa sang API Public rẽ nhánh & chống lặp UI
     // ==========================================================================
-    if (currentPriceTotal > 0 && !window.currentVoucher && document.getElementById("voucher-input")?.value.trim() === "") {
+    if (
+      currentPriceTotal > 0 &&
+      !window.currentVoucher &&
+      document.getElementById("voucher-input")?.value.trim() === ""
+    ) {
       console.log("🔍 Đang gọi API Public rẽ nhánh tìm Voucher tự động...");
 
       // Gọi đến endpoint public đã được rẽ nhánh xử lý[cite: 2, 4]
       fetch("http://localhost:8080/api/vouchers/all")
-        .then(res => {
+        .then((res) => {
           if (!res.ok) return null;
           // 🟢 ĐÃ SỬA: Đọc dạng chuỗi text trước để bọc lót nếu body rỗng, tránh lỗi SyntaxError
-          return res.text().then(text => text ? JSON.parse(text) : null);
+          return res.text().then((text) => (text ? JSON.parse(text) : null));
         })
-        .then(vouchers => {
+        .then((vouchers) => {
           // Lọc tìm voucher tự động từ danh sách an toàn nhả về
-          const autoVoucher = (vouchers || []).find(v => v.applyType && v.applyType.toUpperCase() === "AUTO");
+          const autoVoucher = (vouchers || []).find(
+            (v) => v.applyType && v.applyType.toUpperCase() === "AUTO",
+          );
 
           if (autoVoucher) {
-            console.log("🎯 Tìm thấy voucher tự động hợp lệ:", autoVoucher.voucherCode);
+            console.log(
+              "🎯 Tìm thấy voucher tự động hợp lệ:",
+              autoVoucher.voucherCode,
+            );
             window.currentVoucher = autoVoucher;
 
             const vInput = document.getElementById("voucher-input");
@@ -567,15 +626,21 @@ function goToBookingStep(step) {
             const liveFinalPrice = window.finalPriceTotal || 0;
 
             const reviewTotalEl = document.getElementById("review-final-total");
-            if (reviewTotalEl) reviewTotalEl.innerText = liveFinalPrice.toLocaleString("vi-VN") + " đ";
+            if (reviewTotalEl)
+              reviewTotalEl.innerText =
+                liveFinalPrice.toLocaleString("vi-VN") + " đ";
 
             const sumTotalEl = document.getElementById("sum-total");
-            if (sumTotalEl) sumTotalEl.innerText = liveFinalPrice.toLocaleString("vi-VN") + " đ";
+            if (sumTotalEl)
+              sumTotalEl.innerText =
+                liveFinalPrice.toLocaleString("vi-VN") + " đ";
           } else {
-            console.log("ℹ️ Không tìm thấy voucher tự động nào thỏa mãn đơn hàng hiện tại.");
+            console.log(
+              "ℹ️ Không tìm thấy voucher tự động nào thỏa mãn đơn hàng hiện tại.",
+            );
           }
         })
-        .catch(err => console.error("🚨 Lỗi quét Voucher tự động:", err));
+        .catch((err) => console.error("🚨 Lỗi quét Voucher tự động:", err));
     } else if (currentPriceTotal <= 0) {
       // 🟢 BỔ SUNG: Nếu tổng tiền bằng 0, đảm bảo xóa sạch chữ voucher hiển thị trên giao diện ô input
       const vInput = document.getElementById("voucher-input");
@@ -683,10 +748,19 @@ function handleMainAction() {
 }
 
 function selectPaymentGatewayType(type, element) {
-  selectedPaymentGateway = type;
+  window.selectedPaymentGateway = type;
+
+  // Giữ tương thích với các file cũ đang đọc biến global không có window.
+  try {
+    selectedPaymentGateway = type;
+  } catch (error) {
+    console.debug("selectedPaymentGateway chỉ được lưu trên window", error);
+  }
+
   document.querySelectorAll(".payment-option-row").forEach((row) => {
     row.classList.remove("active");
   });
+
   if (element) element.classList.add("active");
 }
 
@@ -722,18 +796,35 @@ function closeCheckoutReview() {
 }
 
 function processToPaymentGateway() {
-  closeCheckoutReview();
+  const finalTotal = Number(window.finalPriceTotal) || 0;
 
-  const finalTotal = window.finalPriceTotal;
-  if (!selectedPaymentGateway) {
-    window.showCgvToast("Vui lòng chọn phương thức thanh toán!");
+  const reviewModal = document.getElementById("checkout-review-modal");
+  if (reviewModal?.classList.contains("open")) {
+    closeCheckoutReview();
+  }
+
+  if (finalTotal <= 0) {
+    window.showCgvToast("Tổng tiền không hợp lệ!", "error");
     return;
   }
-  if (selectedPaymentGateway === "qr") {
-    openQrPayment(finalTotal);
-  } else if (selectedPaymentGateway === "vnpay") {
-    openVnpayPayment(finalTotal);
+
+  const gateway = window.selectedPaymentGateway;
+  if (!gateway) {
+    window.showCgvToast("Vui lòng chọn phương thức thanh toán!", "error");
+    return;
   }
+
+  if (gateway === "qr") {
+    openQrPayment(finalTotal);
+    return;
+  }
+
+  if (gateway === "vnpay") {
+    openVnpayPayment(finalTotal);
+    return;
+  }
+
+  window.showCgvToast("Phương thức thanh toán không hợp lệ!", "error");
 }
 
 function openQrPayment(finalTotal) {
@@ -741,6 +832,24 @@ function openQrPayment(finalTotal) {
     handleBookingExpired(
       "Phiên giữ ghế đã hết hạn. Vui lòng chọn lại phim và ghế.",
     );
+    return;
+  }
+
+  let currentAccountId = Number(sessionStorage.getItem("accountId"));
+
+  if (!currentAccountId) {
+    try {
+      const cachedUser = JSON.parse(
+        localStorage.getItem("las_logged_in_user") || "{}",
+      );
+      currentAccountId = Number(cachedUser.accountId || cachedUser.account_id);
+    } catch (error) {
+      console.error("Không đọc được tài khoản:", error);
+    }
+  }
+
+  if (!currentAccountId) {
+    window.showCgvToast("Bạn chưa đăng nhập!", "error");
     return;
   }
 
@@ -768,8 +877,10 @@ function openQrPayment(finalTotal) {
   }
   updatePaymentTimerText();
 
-  document.getElementById("qr-total-price").innerText =
-    finalTotal.toLocaleString("vi-VN") + " đ";
+  const qrTotal = document.getElementById("qr-total-price");
+  if (qrTotal) {
+    qrTotal.innerText = finalTotal.toLocaleString("vi-VN") + " đ";
+  }
 
   const genView = document.getElementById("vietqr-generate-view");
   const codeView = document.getElementById("vietqr-code-view");
@@ -786,12 +897,43 @@ function openQrPayment(finalTotal) {
     paymentModal.classList.add("open");
   }
 
-  API.createPayOSPayment(finalTotal)
+  const currentMovie =
+    document.getElementById("cgv-combo-movie")?.value?.trim() || "";
+  const currentEmail =
+    document.getElementById("profile-field-email")?.value?.trim() || "";
+
+  // Payload nâng cấp từ booking(20), đồng thời giữ amount/totalMoney để tương thích backend cũ.
+  const paymentPayload = {
+    accountId: currentAccountId,
+    movieName: currentMovie,
+    showtimeId: window.currentSelectedShowtimeId,
+    seats: [...selectedSeats],
+    email: currentEmail,
+    amount: Math.round(finalTotal),
+    grossAmount: Number(currentPriceTotal) || 0,
+    totalMoney: Math.round(finalTotal),
+    voucherCode: document.getElementById("voucher-input")?.value?.trim() || "",
+    paymentMethod: "qr",
+    fnb: (window.fnbMenu || [])
+      .filter((item) => Number(item.qty) > 0)
+      .map((item) => ({
+        foodItemId: item.id,
+        quantity: Number(item.qty) || 0,
+      })),
+  };
+
+  console.log("PAYOS CREATE PAYLOAD:", paymentPayload);
+
+  API.createPayOSPayment(paymentPayload)
     .then((res) => {
       console.log("PAYOS CREATE RESPONSE:", res);
 
-      if (res.code !== "00") {
-        window.showCgvToast("Không tạo được thanh toán payOS: " + res.desc);
+      if (!res || res.code !== "00" || !res.data) {
+        window.showCgvToast(
+          "Không tạo được thanh toán payOS: " +
+            (res?.desc || "Lỗi không xác định"),
+          "error",
+        );
         return;
       }
 
@@ -801,14 +943,17 @@ function openQrPayment(finalTotal) {
       window.currentPayOSOrderCode = data.orderCode;
       window.currentPayOSPaymentLinkId = data.paymentLinkId;
 
-      const qrImg = document.getElementById("bank-qr-img");
+      const bankQrImg = document.getElementById("bank-qr-img");
+      if (bankQrImg) {
+        bankQrImg.src =
+          "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=" +
+          encodeURIComponent(data.qrCode);
+      }
 
-      qrImg.src =
-        "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=" +
-        encodeURIComponent(data.qrCode);
-
-      document.getElementById("qr-total-price").innerText =
-        Number(data.amount).toLocaleString("vi-VN") + " đ";
+      if (qrTotal) {
+        qrTotal.innerText =
+          Number(data.amount ?? finalTotal).toLocaleString("vi-VN") + " đ";
+      }
 
       if (genView) genView.style.display = "none";
       if (codeView) codeView.style.display = "";
@@ -817,12 +962,9 @@ function openQrPayment(finalTotal) {
     })
     .catch((err) => {
       console.error("Lỗi tạo thanh toán payOS:", err);
-
       handleBookingExpired(
         "Có lỗi xảy ra trong quá trình tạo thanh toán. Vui lòng thực hiện lại.",
       );
-
-      return;
     });
 }
 
@@ -938,158 +1080,298 @@ function startQrPaymentPolling() {
 }
 
 function openVnpayPayment(finalTotal) {
-  const safeAmount = Math.round(finalTotal);
+  let accountId = Number(sessionStorage.getItem("accountId"));
 
-  fetch(
-    `http://localhost:8080/api/payment/create-vnpay-url?amount=${safeAmount}`,
-  )
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.paymentUrl) {
-        // Lưu thông tin checkout trước khi sang VNPAY
-        console.log("===== SAVE BEFORE VNPAY =====");
-        console.log({
-          movie: document.getElementById("cgv-combo-movie").value,
-          showtime: window.currentSelectedShowtimeId,
-          seats: [...selectedSeats],
-        });
-        sessionStorage.setItem(
-          "checkoutPayload",
-          JSON.stringify({
-            movie: document.getElementById("cgv-combo-movie").value,
-            showtime: window.currentSelectedShowtimeId,
-            seats: [...selectedSeats],
-            email: document.getElementById("profile-field-email").value,
-            total: window.finalPriceTotal,
-            originalTotal: currentPriceTotal,
-            discount: appliedVoucherDiscount,
-            voucherCode: document.getElementById("voucher-input").value.trim(),
-            voucher: window.currentVoucher,
-            fnb: window.fnbMenu.map((i) => ({ ...i })),
-          }),
-        );
+  if (!accountId) {
+    try {
+      const cachedUser = JSON.parse(
+        localStorage.getItem("las_logged_in_user") || "{}",
+      );
+      accountId = Number(cachedUser.accountId || cachedUser.account_id);
+    } catch (error) {
+      console.error("Không đọc được tài khoản:", error);
+    }
+  }
 
-        window.location.href = data.paymentUrl;
-      } else {
-        window.showCgvToast("Không tạo được link VNPAY");
+  if (!accountId) {
+    window.showCgvToast("Bạn chưa đăng nhập!", "error");
+    return;
+  }
+
+  const currentMovie =
+    document.getElementById("cgv-combo-movie")?.value?.trim() || "";
+  const currentEmail =
+    document.getElementById("profile-field-email")?.value?.trim() || "";
+  const voucherCode =
+    document.getElementById("voucher-input")?.value?.trim() || "";
+
+  const vnpayRequest = {
+    accountId,
+    movieName: currentMovie,
+    showtimeId: window.currentSelectedShowtimeId,
+    seats: [...selectedSeats],
+    email: currentEmail,
+    amount: Math.round(finalTotal),
+    grossAmount: Number(currentPriceTotal) || 0,
+    totalMoney: Math.round(finalTotal),
+    voucherCode,
+    paymentMethod: "vnpay",
+    fnb: (window.fnbMenu || [])
+      .filter((item) => Number(item.qty) > 0)
+      .map((item) => ({
+        foodItemId: item.id,
+        quantity: Number(item.qty) || 0,
+      })),
+  };
+
+  console.log("VNPAY CREATE REQUEST:", vnpayRequest);
+
+  fetch("http://localhost:8080/api/payment/vnpay/create", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(vnpayRequest),
+  })
+    .then(async (response) => {
+      const responseText = await response.text();
+      let result = {};
+
+      try {
+        result = responseText ? JSON.parse(responseText) : {};
+      } catch (error) {
+        result = { message: responseText };
       }
+
+      if (!response.ok) {
+        throw new Error(result.message || "Không thể tạo giao dịch VNPAY");
+      }
+
+      return result;
     })
-    .catch((err) => {
-      console.error(err);
-      window.showCgvToast("Không kết nối được VNPAY");
+    .then((result) => {
+      if (!result.paymentUrl || !result.paymentReference) {
+        throw new Error("Backend không trả về đủ thông tin VNPAY");
+      }
+
+      // Lưu đủ dữ liệu để quay về từ VNPAY không bị mất phim, ghế, F&B và voucher.
+      sessionStorage.setItem(
+        "checkoutPayload",
+        JSON.stringify({
+          ...vnpayRequest,
+          movie: currentMovie,
+          showtime: window.currentSelectedShowtimeId,
+          selectedShowtime,
+          date: selectedDateStr,
+          originalTotal: Number(currentPriceTotal) || 0,
+          total: Number(window.finalPriceTotal) || Number(finalTotal) || 0,
+          discount: Number(appliedVoucherDiscount) || 0,
+          voucher: window.currentVoucher || null,
+          voucherCode,
+          fnb: (window.fnbMenu || []).map((item) => ({ ...item })),
+          vnpayReference: result.paymentReference,
+        }),
+      );
+
+      window.currentVnpayReference = result.paymentReference;
+      console.log("VNPAY paymentReference:", result.paymentReference);
+      window.location.href = result.paymentUrl;
+    })
+    .catch((error) => {
+      console.error("Lỗi tạo giao dịch VNPAY:", error);
+      window.showCgvToast(error.message || "Không thể kết nối VNPAY", "error");
     });
 }
 
 function checkVnpayReturn() {
-  console.log("===== CHECK VNPAY =====");
-  console.log("URL =", window.location.href);
-  console.log("SEARCH =", window.location.search);
+  console.log("===== CHECK VNPAY RETURN =====");
+
   const params = new URLSearchParams(window.location.search);
   const responseCode = params.get("vnp_ResponseCode");
-  if (!responseCode) {
-    return;
-  }
-  if (responseCode !== "00") {
-    window.showCgvToast("Thanh toán đã bị hủy hoặc thất bại.");
 
-    sessionStorage.removeItem("checkoutPayload");
-
-    window.history.replaceState({}, document.title, window.location.pathname);
-
-    return;
-  }
-
+  // Không phải URL VNPAY trả về.
   if (!responseCode) return;
 
-  const payload = sessionStorage.getItem("checkoutPayload");
+  const savedPayload = sessionStorage.getItem("checkoutPayload");
+  if (!savedPayload) {
+    window.showCgvToast("Không tìm thấy thông tin đơn hàng VNPAY!", "error");
+    window.history.replaceState({}, document.title, window.location.pathname);
+    return;
+  }
 
-  if (!payload) return;
+  let checkoutCache;
+  try {
+    checkoutCache = JSON.parse(savedPayload);
+  } catch (error) {
+    console.error("Không đọc được checkoutPayload:", error);
+    sessionStorage.removeItem("checkoutPayload");
+    window.showCgvToast("Dữ liệu đơn hàng VNPAY bị lỗi!", "error");
+    window.history.replaceState({}, document.title, window.location.pathname);
+    return;
+  }
 
-  const data = JSON.parse(payload);
+  const verifyUrl =
+    "http://localhost:8080/api/payment/vnpay/verify?" + params.toString();
 
-  currentPriceTotal = data.originalTotal;
-  appliedVoucherDiscount = data.discount;
-  window.finalPriceTotal = data.total;
+  fetch(verifyUrl, { method: "GET" })
+    .then(async (response) => {
+      const responseText = await response.text();
+      let result = {};
 
-  document.getElementById("voucher-input").value = data.voucherCode || "";
+      try {
+        result = responseText ? JSON.parse(responseText) : {};
+      } catch (error) {
+        result = { message: responseText };
+      }
 
+      if (!response.ok) {
+        throw new Error(result.message || "Không thể xác minh giao dịch VNPAY");
+      }
+
+      return result;
+    })
+    .then((verification) => {
+      console.log("VNPAY VERIFY RESPONSE:", verification);
+
+      if (responseCode !== "00" || verification.paymentStatus !== "SUCCESS") {
+        throw new Error(
+          verification.message || "Thanh toán VNPAY đã bị hủy hoặc thất bại",
+        );
+      }
+
+      window.currentVnpayReference =
+        verification.paymentReference ||
+        checkoutCache.vnpayReference ||
+        params.get("vnp_TxnRef");
+
+      if (!window.currentVnpayReference) {
+        throw new Error("Không tìm thấy mã giao dịch VNPAY");
+      }
+
+      window.selectedPaymentGateway = "vnpay";
+      window.isVnpayReturn = true;
+
+      window.history.replaceState({}, document.title, window.location.pathname);
+      restoreVnpayCheckout(checkoutCache);
+    })
+    .catch((error) => {
+      console.error("Lỗi xác minh VNPAY:", error);
+      window.showCgvToast(
+        error.message || "Xác minh thanh toán VNPAY thất bại",
+        "error",
+      );
+      sessionStorage.removeItem("checkoutPayload");
+      window.isVnpayReturn = false;
+      window.history.replaceState({}, document.title, window.location.pathname);
+    });
+}
+
+function restoreVnpayCheckout(data) {
+  console.log("===== RESTORE VNPAY CHECKOUT =====");
+
+  currentPriceTotal = Number(data.originalTotal ?? data.grossAmount) || 0;
+  appliedVoucherDiscount = Number(data.discount) || 0;
+  window.finalPriceTotal = Number(data.total ?? data.totalMoney) || 0;
+
+  window.currentSelectedShowtimeId = data.showtimeId || data.showtime || null;
+  selectedSeats = Array.isArray(data.seats) ? [...data.seats] : [];
+  selectedShowtime = data.selectedShowtime || "";
+  selectedDateStr = data.date || selectedDateStr || "";
   window.currentVoucher = data.voucher || null;
-  console.log("Voucher restored:", window.currentVoucher);
 
-  console.log("window.fnbMenu =", window.fnbMenu);
-  console.log("data.fnb =", data.fnb);
-  window.vnpayRestoreFnb = data.fnb || [];
-  // 🚀 FIX RACE CONDITION: lưu lại promise để executeFinalCheckout có thể
-  // "chờ" cho việc restore qty FnB hoàn tất trước khi build payload gửi server.
-  // Trước đây promise này không được lưu lại, nên restoreMovie() (chạy độc lập,
-  // chỉ đợi dropdown phim) có thể gọi executeFinalCheckout() TRƯỚC KHI qty
-  // được gán vào window.fnbMenu -> server nhận toàn bộ fnb với qty=0.
-  window.fnbRestorePromise = API.getFnbItems().then((dbItems) => {
-    const oldMenu = data.fnb || [];
+  const voucherInput = document.getElementById("voucher-input");
+  if (voucherInput) voucherInput.value = data.voucherCode || "";
 
-    // Không tạo Array mới nữa
-    window.fnbMenu.length = 0;
+  window.vnpayRestoreFnb = Array.isArray(data.fnb) ? data.fnb : [];
 
-    dbItems.forEach((item) => {
-      const old = oldMenu.find((x) => String(x.id) === String(item.foodItemId));
+  const restoreVoucherPromise =
+    !window.currentVoucher && data.voucherCode
+      ? fetch(
+          "http://localhost:8080/api/vouchers/" +
+            encodeURIComponent(data.voucherCode),
+        )
+          .then((response) => (response.ok ? response.json() : null))
+          .then((voucher) => {
+            if (voucher) window.currentVoucher = voucher;
+          })
+          .catch((error) => {
+            console.warn("Không khôi phục được voucher VNPAY:", error);
+          })
+      : Promise.resolve();
 
-      window.fnbMenu.push({
-        id: item.foodItemId,
-        name: item.itemName,
-        price: Number(item.price) || 0,
-        qty: old ? old.qty : 0,
+  window.fnbRestorePromise = Promise.all([
+    API.getFnbItems(),
+    restoreVoucherPromise,
+  ])
+    .then(([dbItems]) => {
+      const oldMenu = window.vnpayRestoreFnb || [];
+      window.fnbMenu.length = 0;
+
+      dbItems.forEach((dbItem) => {
+        const oldItem = oldMenu.find((item) => {
+          const oldId = item.id ?? item.foodItemId;
+          return String(oldId) === String(dbItem.foodItemId);
+        });
+
+        const oldQuantity = oldItem
+          ? Number(oldItem.qty ?? oldItem.quantity ?? 0)
+          : 0;
+
+        window.fnbMenu.push({
+          id: dbItem.foodItemId,
+          name: dbItem.itemName,
+          price: Number(dbItem.price) || 0,
+          qty: oldQuantity,
+        });
       });
+
+      if (typeof renderFnbMenu === "function") renderFnbMenu();
+      if (typeof calculateCgvCart === "function") calculateCgvCart();
+    })
+    .catch((error) => {
+      console.error("Không khôi phục được F&B:", error);
+      throw new Error("Không thể khôi phục bắp nước của đơn hàng");
     });
 
-    renderFnbMenu();
-    calculateCgvCart();
-    console.log("Sau restore:", JSON.stringify(window.fnbMenu, null, 2));
-  });
-  console.log("restoreFnb =", window.vnpayRestoreFnb);
+  const movieName = data.movie || data.movieName || "";
+  let restoreAttempts = 0;
 
-  console.log("===== VNPAY RETURN =====");
-  console.log(data);
-
-  window.history.replaceState({}, document.title, window.location.pathname);
-  window.isVnpayReturn = true;
-
-  window.currentSelectedShowtimeId = data.showtime;
-  selectedSeats = data.seats;
-  selectedShowtime = "";
-  renderFnbMenu();
-  calculateCgvCart();
-  // Đợi dropdown phim load xong mới gán
   const restoreMovie = () => {
-    const combo = document.getElementById("cgv-combo-movie");
+    restoreAttempts++;
 
-    if (
+    const combo = document.getElementById("cgv-combo-movie");
+    const movieAvailable =
       combo &&
       combo.options.length > 0 &&
-      [...combo.options].some((o) => o.value === data.movie)
-    ) {
-      combo.value = data.movie;
+      [...combo.options].some((option) => option.value === movieName);
 
-      console.log("✔ Restore movie:", combo.value);
+    if (movieAvailable) {
+      combo.value = movieName;
       switchCgvTab("panel-booking");
-      loadSeatMap(data.showtime);
-      renderCgvInterface();
 
-      console.log("showtime =", window.currentSelectedShowtimeId);
-      console.log("movie =", combo.value);
-      console.log("seats =", selectedSeats);
-      console.log(serverData.movies);
-      console.log(serverData.showtimes);
-      console.log(document.getElementById("cgv-combo-movie").value);
-      console.log(window.currentSelectedShowtimeId);
+      if (window.currentSelectedShowtimeId) {
+        loadSeatMap(window.currentSelectedShowtimeId);
+      }
 
-      // 🚀 FIX RACE CONDITION: đợi restore FnB (qty bắp nước) xong hẳn
-      // rồi mới build & gửi payload checkout, tránh gửi qty=0 lên server
-      Promise.resolve(window.fnbRestorePromise).then(() => {
-        executeFinalCheckout();
-      });
-    } else {
-      setTimeout(restoreMovie, 100);
+      if (typeof renderCgvInterface === "function") renderCgvInterface();
+
+      Promise.resolve(window.fnbRestorePromise)
+        .then(() => executeFinalCheckout())
+        .catch((error) => {
+          window.showCgvToast(
+            error.message || "Không thể khôi phục đơn hàng",
+            "error",
+          );
+        });
+      return;
     }
+
+    if (restoreAttempts >= 100) {
+      window.showCgvToast("Không thể khôi phục phim của đơn hàng!", "error");
+      return;
+    }
+
+    setTimeout(restoreMovie, 100);
   };
 
   restoreMovie();
@@ -1457,25 +1739,40 @@ function executeFinalCheckout() {
     return;
   }
 
+  const paymentReference =
+    window.selectedPaymentGateway === "vnpay"
+      ? window.currentVnpayReference
+      : window.currentQrRef;
+
   const checkoutPayload = {
     accountId: currentAccountId,
     movieName: currentMovie,
-    movieId: movieId,
+    movieId,
     showtimeId: window.currentSelectedShowtimeId,
     seats: [...selectedSeats],
     email: currentEmail,
-    grossAmount: currentPriceTotal, // thêm
-    totalMoney: window.finalPriceTotal, // sau giảm
+    grossAmount: Number(currentPriceTotal) || 0,
+    totalMoney: Number(window.finalPriceTotal) || 0,
     voucherCode: document.getElementById("voucher-input")?.value.trim() || "",
     paymentMethod: window.selectedPaymentGateway,
-    qrRef: window.currentQrRef || null,     
-    fnb: window.fnbMenu
-      .filter((i) => i.qty > 0)
-      .map((i) => ({
-        foodItemId: i.id,
-        quantity: i.qty,
+    paymentReference,
+    // Giữ field cũ để backend chưa nâng cấp vẫn nhận được mã PayOS.
+    qrRef: window.currentQrRef || null,
+    fnb: (window.fnbMenu || [])
+      .filter((item) => Number(item.qty) > 0)
+      .map((item) => ({
+        foodItemId: item.id,
+        quantity: Number(item.qty) || 0,
       })),
   };
+
+  console.log("PAYMENT METHOD:", checkoutPayload.paymentMethod);
+  console.log("PAYMENT REFERENCE:", checkoutPayload.paymentReference);
+
+  if (!checkoutPayload.paymentReference) {
+    window.showCgvToast("Không tìm thấy mã giao dịch thanh toán!", "error");
+    return;
+  }
   console.log("Checkout payload:", checkoutPayload);
   console.log("Showtime:", window.currentSelectedShowtimeId);
   console.log("Selected:", selectedShowtime);
@@ -1512,10 +1809,25 @@ function executeFinalCheckout() {
           });
         }
 
-        // Tạo mã ID vé (Nếu Java không trả về thì tự gen ngẫu nhiên)
+        // Ưu tiên mã đơn thật từ backend, vẫn hỗ trợ ticketId của luồng cũ.
+        const bookingCode =
+          data.orderCode !== undefined && data.orderCode !== null
+            ? String(data.orderCode)
+            : null;
         const lasTicketId = data.ticketId
-          ? data.ticketId.replace("CGV-", "LAS-")
-          : "LAS-" + Math.floor(Math.random() * 1000000);
+          ? String(data.ticketId).replace("CGV-", "LAS-")
+          : null;
+        const invoiceCode = bookingCode || lasTicketId;
+
+        if (!invoiceCode) {
+          window.showCgvToast(
+            "Backend không trả về mã đơn hàng hoặc mã vé. Không thể tạo QR vé!",
+            "error",
+          );
+          return;
+        }
+
+        const invoiceCodeLabel = bookingCode ? "Mã đơn" : "Mã vé";
 
         // 🚀 ĐÃ SỬA: Lấy đúng data bắp nước từ database để lưu lịch sử hóa đơn
         const activeFnb = window.fnbMenu;
@@ -1527,7 +1839,9 @@ function executeFinalCheckout() {
         console.log("appliedVoucherDiscount =", appliedVoucherDiscount);
 
         const invoiceObj = {
-          id: lasTicketId,
+          id: invoiceCode,
+          orderCode: bookingCode,
+          ticketId: lasTicketId,
           movie: currentMovie,
           date: selectedDateStr,
           time: selectedShowtime,
@@ -1538,15 +1852,15 @@ function executeFinalCheckout() {
         };
         userPastInvoices.unshift(invoiceObj);
 
-        // Reset trạng thái chọn ghế & giỏ hàng
+        // Chụp hóa đơn xong mới dọn state để đơn kế tiếp không dùng dữ liệu cũ.
         resetHoldState();
         selectedSeats = [];
+        selectedShowtime = "";
+        selectedDateStr = "";
+        window.currentSelectedShowtimeId = null;
+        resetPreviousOrderExtras();
 
-        // 🚀 ĐÃ SỬA CHỖ 2: Đưa số lượng combo động về lại 0 sau khi thanh toán xong
-        window.fnbMenu.forEach((i) => (i.qty = 0));
-
-        renderFnbMenu();
-        calculateCgvCart();
+        if (typeof calculateCgvCart === "function") calculateCgvCart();
         //renderCgvInterface();
 
         // Chuẩn bị in vé xịn xò ra màn hình
@@ -1562,7 +1876,7 @@ function executeFinalCheckout() {
               <div class="bc-check">✓</div>
               <h2 class="bc-title">Đặt Vé Thành Công!</h2>
               <p class="bc-subtitle">Vé xem phim của bạn đã được đặt thành công.</p>
-              <div class="bc-id-pill">Mã vé: ${invoiceObj.id}</div>
+              <div class="bc-id-pill">${invoiceCodeLabel}: ${invoiceObj.id}</div>
             </div>
 
             <div class="bc-card">
@@ -1766,14 +2080,18 @@ function resetHoldState() {
 }
 
 function applyVoucher() {
-  const code = document.getElementById("voucher-input").value.trim();
+  const voucherInput = document.getElementById("voucher-input");
+  const code = voucherInput?.value.trim() || "";
 
   if (code === "") {
+    window.currentVoucher = null;
+    appliedVoucherDiscount = 0;
+    calculateCgvCart();
     window.showCgvToast("Vui lòng nhập mã voucher!");
     return;
   }
 
-  fetch("http://localhost:8080/api/vouchers/" + code)
+  fetch("http://localhost:8080/api/vouchers/" + encodeURIComponent(code))
     .then((res) => {
       if (!res.ok) {
         throw new Error("Voucher không hợp lệ!");
@@ -1782,21 +2100,16 @@ function applyVoucher() {
     })
     .then((voucher) => {
       console.log("Voucher =", voucher);
-      console.log("discountValue =", voucher.discountValue);
-      console.log("discountType =", voucher.discountType);
-      console.log("maxDiscount =", voucher.maxDiscount);
       window.currentVoucher = voucher;
-
       calculateCgvCart();
-
       window.showCgvToast("Áp dụng voucher thành công!", "success");
     })
     .catch((err) => {
+      // Không để voucher cũ tiếp tục giảm tiền khi mã mới bị sai.
+      window.currentVoucher = null;
       appliedVoucherDiscount = 0;
-
       calculateCgvCart();
-
-      window.showCgvToast(err.message);
+      window.showCgvToast(err.message, "error");
     });
 }
 
@@ -1915,5 +2228,18 @@ function handleBookingExpired(reasonMessage) {
       "error",
     );
   }, 300);
+}
+
+function activatePayOSPaymentFlow() {
+  window.processToPaymentGateway = processToPaymentGateway;
+  window.selectPaymentGatewayType = selectPaymentGatewayType;
+
+  console.log("Đã kích hoạt luồng thanh toán PayOS từ booking.js");
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", activatePayOSPaymentFlow);
+} else {
+  activatePayOSPaymentFlow();
 }
 window.addEventListener("load", checkVnpayReturn);

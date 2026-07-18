@@ -22,43 +22,97 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+
             .authorizeHttpRequests(auth -> auth
 
-                // ===== 1. ADMIN: chỉ quản trị viên =====
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // 1. ADMIN
+                .requestMatchers("/api/admin/**")
+                .hasRole("ADMIN")
 
-                // ===== 2. STAFF (máy POS bán vé tại quầy) =====
-                .requestMatchers("/api/pos/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
+                // 2. POS — mở tạm để frontend hiện tại gọi được
+                .requestMatchers("/api/pos/**")
+                .permitAll()
 
-                // ===== 3. MANAGER: dashboard, đối soát, quản lý voucher/khuyến mãi =====
-                .requestMatchers("/api/manager/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers("/api/dashboard/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers("/api/audit/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers("/api/vouchers/manager/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers("/api/promos/manager/**").hasAnyRole("MANAGER", "ADMIN")
+                // 3. MANAGER
+                .requestMatchers("/api/manager/**")
+                .hasAnyRole("MANAGER", "ADMIN")
 
-                // ===== 4. MANAGER: thao tác GHI phim/suất chiếu/đồ ăn (GET vẫn public) =====
-                .requestMatchers(HttpMethod.POST,   "/api/movies/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers(HttpMethod.PUT,    "/api/movies/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/movies/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers(HttpMethod.POST,   "/api/showtimes/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers(HttpMethod.PUT,    "/api/showtimes/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/showtimes/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers(HttpMethod.POST,   "/api/fnb/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers(HttpMethod.PUT,    "/api/fnb/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/fnb/**").hasAnyRole("MANAGER", "ADMIN")
+                .requestMatchers("/api/dashboard/**")
+                .hasAnyRole("MANAGER", "ADMIN")
 
-                // ===== 5. Cần ĐĂNG NHẬP (bất kỳ role nào): dữ liệu cá nhân =====
+                .requestMatchers("/api/audit/**")
+                .hasAnyRole("MANAGER", "ADMIN")
+
+                .requestMatchers("/api/vouchers/manager/**")
+                .hasAnyRole("MANAGER", "ADMIN")
+
+                .requestMatchers("/api/promos/manager/**")
+                .hasAnyRole("MANAGER", "ADMIN")
+
+                // 4. MANAGER ghi dữ liệu
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/movies/**"
+                ).hasAnyRole("MANAGER", "ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/movies/**"
+                ).hasAnyRole("MANAGER", "ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/movies/**"
+                ).hasAnyRole("MANAGER", "ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/showtimes/**"
+                ).hasAnyRole("MANAGER", "ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/showtimes/**"
+                ).hasAnyRole("MANAGER", "ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/showtimes/**"
+                ).hasAnyRole("MANAGER", "ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/fnb/**"
+                ).hasAnyRole("MANAGER", "ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/fnb/**"
+                ).hasAnyRole("MANAGER", "ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/fnb/**"
+                ).hasAnyRole("MANAGER", "ADMIN")
+
+                // 5. Dữ liệu cá nhân
                 .requestMatchers("/api/profile/**").authenticated()
                 .requestMatchers("/api/orders/**").authenticated()
                 .requestMatchers("/api/bookings/**").authenticated()
                 .requestMatchers("/api/notifications/**").authenticated()
 
-                // ===== 6. Còn lại (trang chủ, xem phim, login, đặt vé, thanh toán...) mở =====
+                // Không khai báo /api/pos/** lần thứ hai
                 .anyRequest().permitAll()
             )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+            .addFilterBefore(
+                jwtAuthFilter,
+                UsernamePasswordAuthenticationFilter.class
+            );
 
         return http.build();
     }

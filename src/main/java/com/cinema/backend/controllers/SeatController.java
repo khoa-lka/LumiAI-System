@@ -1,18 +1,11 @@
 package com.cinema.backend.controllers;
 import com.cinema.backend.repositories.ShowtimeRepository; // Thêm dòng này
-import com.cinema.backend.repositories.TicketRepository;
-import com.cinema.backend.entities.FoodBeverage;
 import com.cinema.backend.entities.Seat;
 import com.cinema.backend.entities.Showtime;
-import com.cinema.backend.entities.Ticket;
-import com.cinema.backend.repositories.FoodBeverageRepository;
 import com.cinema.backend.repositories.SeatRepository;
 
-import com.cinema.backend.service.VoucherService;
-
-import org.springframework.transaction.annotation.Transactional;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.cinema.backend.service.BookingService;
@@ -32,23 +25,11 @@ public class SeatController {
      @Autowired
     private SeatRepository seatRepository;
 
-
-
     @Autowired
     private ShowtimeRepository showtimeRepository;
 
     @Autowired
-    private VoucherService voucherService;
-
-    @Autowired
     private BookingService bookingService;
-
-
-    @Autowired
-    private TicketRepository ticketRepository;
-
-    @Autowired
-    private FoodBeverageRepository foodBeverageRepository;
 
 
     // 🚀 API: Lấy ma trận ghế
@@ -101,37 +82,73 @@ public class SeatController {
 
     
 @PostMapping("/checkout")
-public Map<String, Object> checkout(@RequestBody CheckoutRequest request) {
-      System.out.println("accountId = " + request.getAccountId());
-    System.out.println("showtimeId = " + request.getShowtimeId());
-    System.out.println("totalMoney = " + request.getTotalMoney());
-    System.out.println("paymentMethod = " + request.getPaymentMethod());
-    System.out.println(request.getShowtimeId());
+public ResponseEntity<Map<String, Object>> checkout(
+        @RequestBody CheckoutRequest request
+) {
     Map<String, Object> response = new HashMap<>();
 
     try {
+        System.out.println(
+                "accountId = " + request.getAccountId()
+        );
 
-        CheckoutResponseDTO checkoutResult = bookingService.checkout(request);
+        System.out.println(
+                "showtimeId = " + request.getShowtimeId()
+        );
+
+        System.out.println(
+                "paymentMethod = " + request.getPaymentMethod()
+        );
+
+        System.out.println(
+                "paymentReference = "
+                        + request.getPaymentReference()
+        );
+
+        CheckoutResponseDTO checkoutResult =
+                bookingService.checkout(request);
+
         Order1 order = checkoutResult.getOrder();
 
         response.put("success", true);
         response.put("orderId", order.getOrderId());
         response.put("orderCode", order.getOrderCode());
         response.put("seats", request.getSeats());
-        response.put("fnbSummary", checkoutResult.getFnbSummary());
-        response.put("ticketCodes", checkoutResult.getTicketCodes());
 
-        return response;
+        response.put(
+                "fnbSummary",
+                checkoutResult.getFnbSummary()
+        );
 
-    } catch (Exception e) {
+        response.put(
+                "ticketCodes",
+                checkoutResult.getTicketCodes()
+        );
 
-          e.printStackTrace();
+        response.put(
+                "paymentStatus",
+                order.getPaymentStatus()
+        );
 
-    response.put("success",false);
-    response.put("message",e.getMessage());
+        response.put(
+                "totalMoney",
+                order.getFinalAmount()
+        );
 
-    return response;
+        return ResponseEntity.ok(response);
+
+    } catch (RuntimeException exception) {
+        exception.printStackTrace();
+
+        response.put("success", false);
+        response.put(
+                "message",
+                exception.getMessage()
+        );
+
+        return ResponseEntity
+                .badRequest()
+                .body(response);
     }
 }
-
 }

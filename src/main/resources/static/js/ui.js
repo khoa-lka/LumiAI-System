@@ -1,3 +1,11 @@
+// MERGED VERSION
+// Base: ui(4).js
+// Added/synchronized from: ui(3).js
+// - Hỗ trợ mở đúng sub-tab Profile thông qua window.profileOpenTarget
+// - Khôi phục loadEventsFromDatabase()
+// - Thêm fallback API.getShowtimes() khi endpoint /showtimes/customer lỗi
+// - Không reset F&B trong mỗi lần render để tránh mất combo vừa chọn
+
 // js/ui.js
 window.addEventListener("DOMContentLoaded", () => {
   // 1. Khởi tạo slider ngày
@@ -58,9 +66,7 @@ function initDatabaseMovies() {
         renderCgvInterface();
       }
     })
-    .catch((err) =>
-      console.error("Lỗi khởi tạo danh sách phim từ DB:", err),
-    );
+    .catch((err) => console.error("Lỗi khởi tạo danh sách phim từ DB:", err));
 }
 
 // --- CÁC HÀM UI ---
@@ -84,7 +90,18 @@ async function switchCgvTab(panelId, filterType = "now_showing") {
       loadShowtimesFromServer();
     }
   } else if (panelId === "panel-profile") {
-    switchProfileSubTab("chung");
+    // Mặc định mở thông tin chung. Home có thể đặt "lichsu" trước khi mở Profile.
+    const targetProfileSubTab = window.profileOpenTarget || "chung";
+
+    // Chỉ dùng cho lần mở hiện tại; lần sau trở về tab thông tin chung.
+    window.profileOpenTarget = null;
+
+    switchProfileSubTab(targetProfileSubTab);
+
+    // Lịch sử giao dịch có luồng tải riêng, không cần gọi API hồ sơ.
+    if (targetProfileSubTab === "lichsu") {
+      return;
+    }
 
     const loggedInId =
       sessionStorage.getItem("accountId") || window.currentLoggedInId;
@@ -167,7 +184,6 @@ function updateTopBarMenu(fullName, roleName) {
     `;
   }
 }
-/*
 function loadEventsFromDatabase() {
   if (typeof API === "undefined" || !API.getEvents) return;
   API.getEvents()
@@ -189,7 +205,6 @@ function loadEventsFromDatabase() {
     })
     .catch((err) => console.error("Lỗi khi tải sự kiện từ Database: ", err));
 }
-*/
 function loadBannersFromDatabase() {
   if (typeof API === "undefined" || !API.getBanners) return;
   API.getBanners()
@@ -215,7 +230,6 @@ function loadBannersFromDatabase() {
 // 🚀 ĐÃ NÂNG CẤP: Vẽ danh sách F&B động bốc trực tiếp từ Database mẫu
 // ==========================================================================
 function renderFnbMenu() {
-  window.resetFnbIfNewBooking(); 
   const container = document.getElementById("cgv-fnb-menu");
   if (!container) return;
   container.innerHTML = "";
@@ -464,11 +478,33 @@ function renderCgvInterface() {
         `🎬 [Customer Security] Gửi request lấy suất chiếu ACTIVE cho phim ID: ${movieId} ngày: ${dateStr}`,
       );
 
-      // 🌟 ĐÃ SỬA: Chuyển sang gọi API bảo mật /customer thay vì hàm matrix của Admin cũ
-      fetch(`http://localhost:8080/api/showtimes/customer?movieId=${movieId}&date=${dateStr}`)
+      // Ưu tiên endpoint Customer. Nếu backend chưa hỗ trợ hoặc endpoint lỗi,
+      // tự động dùng API.getShowtimes() để giữ tương thích với luồng cũ.
+      const customerShowtimeUrl =
+        `http://localhost:8080/api/showtimes/customer?movieId=${encodeURIComponent(movieId)}` +
+        `&date=${encodeURIComponent(dateStr)}`;
+
+      fetch(customerShowtimeUrl)
         .then((res) => {
-          if (!res.ok) throw new Error("Lỗi fetch lịch chiếu");
+          if (!res.ok) {
+            throw new Error(`Customer showtime API trả về HTTP ${res.status}`);
+          }
           return res.json();
+        })
+        .catch((customerError) => {
+          console.warn(
+            "⚠️ Endpoint lịch chiếu Customer không khả dụng, chuyển sang API.getShowtimes():",
+            customerError,
+          );
+
+          if (
+            typeof API !== "undefined" &&
+            typeof API.getShowtimes === "function"
+          ) {
+            return API.getShowtimes(movieId, dateStr);
+          }
+
+          throw customerError;
         })
         .then((resData) => {
           timeGrid.innerHTML = "";

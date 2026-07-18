@@ -1,429 +1,766 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LumiAI System - Máy POS</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LumiAI System - Máy POS</title>
 
-  <link rel="stylesheet" href="staff.css?v=1" />
-<script src="/js/auth-token.js?v=1"></script>
-<script src="/js/staff.js" defer></script>
-</head>
+    <link rel="stylesheet" href="staff.css?v=1" />
 
-<body>
-  <div class="pos-layout">
-    <aside class="sidebar">
-      <div class="brand">MÁY POS</div>
+    <script src="/js/staff.js" defer></script>
+  </head>
 
-      <ul class="nav-menu">
-        <li>
-          <button class="nav-item active" type="button" onclick="openTab('buy-ticket', this)">
-            <span class="nav-icon">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 9a3 3 0 1 0 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
-                <path d="M13 5v2"></path>
-                <path d="M13 11v2"></path>
-                <path d="M13 17v2"></path>
+  <body>
+    <div class="pos-layout">
+      <aside class="sidebar">
+        <div class="brand">MÁY POS</div>
+
+        <ul class="nav-menu">
+          <li>
+            <button
+              class="nav-item active"
+              type="button"
+              onclick="openTab('buy-ticket', this)"
+            >
+              <span class="nav-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="white"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M2 9a3 3 0 1 0 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"
+                  ></path>
+                  <path d="M13 5v2"></path>
+                  <path d="M13 11v2"></path>
+                  <path d="M13 17v2"></path>
+                </svg>
+              </span>
+              <span>Mua vé</span>
+            </button>
+          </li>
+
+          <li>
+            <button
+              class="nav-item"
+              type="button"
+              onclick="openTab('print-ticket', this)"
+            >
+              <span class="nav-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="white"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                  <path
+                    d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
+                  ></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+              </span>
+              <span>In vé</span>
+            </button>
+          </li>
+
+          <li>
+            <button
+              class="nav-item"
+              type="button"
+              onclick="openTab('feedback', this)"
+            >
+              <span class="nav-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="white"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path>
+                </svg>
+              </span>
+              <span>Phản hồi khách hàng</span>
+            </button>
+          </li>
+
+          <li>
+            <button
+              class="nav-item logout-btn"
+              type="button"
+              onclick="logout()"
+            >
+              <span class="nav-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="white"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+              </span>
+              <span>Đăng xuất</span>
+            </button>
+          </li>
+        </ul>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <h1 id="pageTitle">Xin chào, Nhân viên 👋</h1>
+
+          <div class="staff-profile">
+            <div class="avatar">
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
               </svg>
-            </span>
-            <span>Mua vé</span>
-          </button>
-        </li>
-
-        <li>
-          <button class="nav-item" type="button" onclick="openTab('print-ticket', this)">
-            <span class="nav-icon">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                <rect x="6" y="14" width="12" height="8"></rect>
-              </svg>
-            </span>
-            <span>In vé</span>
-          </button>
-        </li>
-
-        <li>
-          <button class="nav-item" type="button" onclick="openTab('feedback', this)">
-            <span class="nav-icon">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path>
-              </svg>
-            </span>
-            <span>Phản hồi khách hàng</span>
-          </button>
-        </li>
-
-        <li>
-          <button class="nav-item logout-btn" type="button" onclick="logout()">
-            <span class="nav-icon">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg>
-            </span>
-            <span>Đăng xuất</span>
-          </button>
-        </li>
-      </ul>
-    </aside>
-
-    <main class="main-content">
-      <header class="topbar">
-        <h1 id="pageTitle">Xin chào, Nhân viên 👋</h1>
-
-        <div class="staff-profile">
-          <div class="avatar">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </div>
-          <div>
-            <strong id="staffName">Nhân viên</strong>
-            <span>Nhân viên / Staff</span>
-          </div>
-        </div>
-      </header>
-
-      <div class="content-wrap">
-        <section id="buy-ticket" class="tab-content active">
-          <h2 class="step-title"><span class="white">1.</span> CHỌN PHIM TRỰC THUỘC</h2>
-
-          <div class="field-card">
-            <select id="movie">
-              <option value="">Chọn phim</option>
-              <option value="Mắt Biếc">Mắt Biếc</option>
-              <option value="Lật Mặt 8">Lật Mặt 8</option>
-              <option value="Thám Tử Kiên">Thám Tử Kiên</option>
-              <option value="Doraemon Movie">Doraemon Movie</option>
-            </select>
-          </div>
-
-          <h2 class="step-title">2. CHỌN NGÀY CHIẾU PHIM</h2>
-
-          <div class="date-card">
-            <div class="date-list" id="dateListContainer">
-                </div>
-          </div>
-
-<input type="hidden" id="date" value="" />
-          <h2 class="step-title">3. CHỌN SUẤT CHIẾU HÔM NAY</h2>
-
-          <div class="showtime-card">
-            <div class="showtime-list">
-              <p style="color: #5c5c62;">Vui lòng chọn phim và ngày chiếu.</p>
+            </div>
+            <div>
+              <strong id="staffName">Nhân viên</strong>
+              <span>Nhân viên / Staff</span>
             </div>
           </div>
+        </header>
 
-          <input type="hidden" id="showtime" value="" />
+        <div class="content-wrap">
+          <section id="buy-ticket" class="tab-content active">
+            <h2 class="step-title">
+              <span class="white">1.</span> CHỌN PHIM TRỰC THUỘC
+            </h2>
 
-          <h2 class="step-title">4. CHỌN GHẾ NGỒI PHÒNG CHIẾU</h2>
-
-          <div class="seat-card">
-            <div class="screen">MÀN HÌNH CHÍNH (SCREEN)</div>
-            <div id="seatMap" class="seat-map"></div>
-
-            <div class="seat-legend">
-              <div class="legend-item"><span class="legend-box"></span> Standard</div>
-              <div class="legend-item"><span class="legend-box vip"></span> Ghế VIP</div>
-              <div class="legend-item"><span class="legend-box sweetbox"></span> Sweetbox</div>
-              <div class="legend-item"><span class="legend-box booked">✕</span> Đã bán</div>
-              <div class="legend-item"><span class="legend-box selected"></span> Ghế chọn</div>
-            </div>
-          </div>
-
-          <h2 class="step-title">5. CHỌN BẮP NƯỚC (F&B)</h2>
-          <div class="field-card">
-            <div id="foodList" class="fb-list">
-              <p style="color: #5c5c62;">Đang tải danh sách...</p>
-            </div>
-          </div>
-
-          <div class="order-card">
-            <div class="order-header">
-               ĐƠN HÀNG (<span id="ticketQuantity">0</span> VÉ)
+            <div class="field-card">
+              <select id="movie">
+                <option value="">Chọn phim</option>
+                <option value="Mắt Biếc">Mắt Biếc</option>
+                <option value="Lật Mặt 8">Lật Mặt 8</option>
+                <option value="Thám Tử Kiên">Thám Tử Kiên</option>
+                <option value="Doraemon Movie">Doraemon Movie</option>
+              </select>
             </div>
 
-            <div class="order-seats">
-              <span id="selectedSeats">Chưa chọn ghế</span>
-            </div>
-            <div class="order-row">
-              <span>Bắp nước</span>
-               <span id="fbTotalPrice">0đ</span>
-            </div>
-            <div class="order-row">
-              <span>Tạm tính</span>
-              <span id="subtotalPrice">0đ</span>
+            <h2 class="step-title">2. CHỌN NGÀY CHIẾU PHIM</h2>
+
+            <div class="date-card">
+              <div class="date-list" id="dateListContainer"></div>
             </div>
 
-            <div class="order-row">
-              <span>Mã giảm giá</span>
-              <div style="display: flex; gap: 6px;">
-                <input id="voucherInput" type="text" placeholder="Nhập mã..." style="width: 110px; padding: 4px 8px; background: #17171b; color: white; border: 1px solid #3b3b42; border-radius: 5px; font-size: 13px; outline: none; text-transform: uppercase;">
-                <button type="button" onclick="applyVoucher()" style="padding: 4px 10px; background: #4a4a52; color: white; border: none; border-radius: 5px; font-size: 12px; font-weight: bold;">Áp dụng</button>
+            <input type="hidden" id="date" value="" />
+            <h2 class="step-title">3. CHỌN SUẤT CHIẾU HÔM NAY</h2>
+
+            <div class="showtime-card">
+              <div class="showtime-list">
+                <p style="color: #5c5c62">Vui lòng chọn phim và ngày chiếu.</p>
               </div>
             </div>
 
-            <div class="order-row">
-              <span>Được giảm</span>
-              <span id="discountPrice" style="color: #ce628f; font-weight: bold;">0đ</span>
+            <input type="hidden" id="showtime" value="" />
+
+            <h2 class="step-title">4. CHỌN GHẾ NGỒI PHÒNG CHIẾU</h2>
+
+            <div class="seat-card">
+              <div class="screen">MÀN HÌNH CHÍNH (SCREEN)</div>
+              <div id="seatMap" class="seat-map"></div>
+
+              <div class="seat-legend">
+                <div class="legend-item">
+                  <span class="legend-box"></span> Standard
+                </div>
+                <div class="legend-item">
+                  <span class="legend-box vip"></span> Ghế VIP
+                </div>
+                <div class="legend-item">
+                  <span class="legend-box sweetbox"></span> Sweetbox
+                </div>
+                <div class="legend-item">
+                  <span class="legend-box booked">✕</span> Đã bán
+                </div>
+                <div class="legend-item">
+                  <span class="legend-box selected"></span> Ghế chọn
+                </div>
+              </div>
             </div>
 
-            <div class="payment-methods-container">
-              <span style="color: #a7a7b0; font-size: 14px; font-weight: 800; text-transform: uppercase;">Hình thức thanh toán</span>
-
-              <label class="payment-method-card active" data-method="CASH">
-                <input type="radio" name="paymentMethod" value="CASH" checked onchange="changePaymentMethod(this)">
-                <div class="pm-radio-circle"></div>
-                <div class="pm-icon">
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="6" width="20" height="12" rx="2"></rect>
-                    <circle cx="12" cy="12" r="2"></circle>
-                    <path d="M6 12h.01M18 12h.01"></path>
-                  </svg>
-                </div>
-                <div class="pm-info">
-                  <b>Tiền mặt tại quầy</b>
-                  <small>Thanh toán trực tiếp bằng tiền mặt</small>
-                </div>
-                <div class="pm-badge">Cash</div>
-              </label>
-
-              <label class="payment-method-card" data-method="VIETQR">
-                <input type="radio" name="paymentMethod" value="VIETQR" onchange="changePaymentMethod(this)">
-                <div class="pm-radio-circle"></div>
-                <div class="pm-icon">
-                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="5" height="5" rx="1"></rect>
-                    <rect x="16" y="3" width="5" height="5" rx="1"></rect>
-                    <rect x="3" y="16" width="5" height="5" rx="1"></rect>
-                    <path d="M21 16h-3a2 2 0 0 0-2 2v3"></path>
-                    <path d="M21 21v.01"></path>
-                    <path d="M12 7v3a2 2 0 0 1-2 2H7"></path>
-                    <path d="M3 12h.01"></path>
-                    <path d="M12 3h.01"></path>
-                    <path d="M12 16v.01"></path>
-                    <path d="M16 12h1"></path>
-                    <path d="M21 12v.01"></path>
-                    <path d="M12 21v-1"></path>
-                  </svg>
-                </div>
-                <div class="pm-info">
-                  <b>Chuyển khoản / QR Quốc Gia</b>
-                  <small>Quét mã bằng ứng dụng ngân hàng</small>
-                </div>
-                <div class="pm-badge">VietQR</div>
-              </label>
-
+            <h2 class="step-title">5. CHỌN BẮP NƯỚC (F&B)</h2>
+            <div class="field-card">
+              <div id="foodList" class="fb-list">
+                <p style="color: #5c5c62">Đang tải danh sách...</p>
+              </div>
             </div>
 
-            <div class="order-row order-total">
-              <span>TỔNG TIỀN</span>
-              <span id="totalPrice">0đ</span>
-            </div>
+            <div class="order-card">
+              <div class="order-header">
+                ĐƠN HÀNG (<span id="ticketQuantity">0</span> VÉ)
+              </div>
 
-            <button class="pay-btn" type="button" onclick="createOrder()">Thanh toán →</button>
-          </div>
-        </section>
+              <div class="order-seats">
+                <span id="selectedSeats">Chưa chọn ghế</span>
+              </div>
+              <div class="order-row">
+                <span>Bắp nước</span>
+                <span id="fbTotalPrice">0đ</span>
+              </div>
+              <div class="order-row">
+                <span>Tạm tính</span>
+                <span id="subtotalPrice">0đ</span>
+              </div>
 
-        <section id="print-ticket" class="tab-content">
-          <div class="ticket-search-card">
-            <h2>In vé</h2>
-            <p>Nhập mã đơn hàng để tìm lại giao dịch.</p>
+              <div class="order-row">
+                <span>Mã giảm giá</span>
+                <div style="display: flex; gap: 6px">
+                  <input
+                    id="voucherInput"
+                    type="text"
+                    placeholder="Nhập mã..."
+                    style="
+                      width: 110px;
+                      padding: 4px 8px;
+                      background: #17171b;
+                      color: white;
+                      border: 1px solid #3b3b42;
+                      border-radius: 5px;
+                      font-size: 13px;
+                      outline: none;
+                      text-transform: uppercase;
+                    "
+                  />
+                  <button
+                    type="button"
+                    onclick="applyVoucher()"
+                    style="
+                      padding: 4px 10px;
+                      background: #4a4a52;
+                      color: white;
+                      border: none;
+                      border-radius: 5px;
+                      font-size: 12px;
+                      font-weight: bold;
+                    "
+                  >
+                    Áp dụng
+                  </button>
+                </div>
+              </div>
 
-            <div class="search-row">
-              <input id="ticketSearch" type="text" placeholder="Ví dụ: LUMI-123456 hoặc ORD-123456" />
-              <button class="primary-btn" type="button" onclick="searchTicket()">Tìm vé</button>
-            </div>
+              <div class="order-row">
+                <span>Được giảm</span>
+                <span
+                  id="discountPrice"
+                  style="color: #ce628f; font-weight: bold"
+                  >0đ</span
+                >
+              </div>
 
-            <div id="ticketResult" class="ticket-result">
-              <p><strong>Mã đơn:</strong> <span id="resultOrderCode"></span></p>
-              <p><strong>Mã vé:</strong> <span id="resultTicketCode"></span></p>
-              <p><strong>Phim:</strong> <span id="resultMovie"></span></p>
-              <p><strong>Suất chiếu:</strong> <span id="resultShowtime"></span></p>
-              <p><strong>Ghế:</strong> <span id="resultSeats"></span></p>
+              <div class="payment-methods-container">
+                <span
+                  style="
+                    color: #a7a7b0;
+                    font-size: 14px;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                  "
+                  >Hình thức thanh toán</span
+                >
 
-              <button class="primary-btn" type="button" onclick="printTicket()" style="margin-top: 14px;">
-                In vé
+                <label class="payment-method-card active" data-method="CASH">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="CASH"
+                    checked
+                    onchange="changePaymentMethod(this)"
+                  />
+                  <div class="pm-radio-circle"></div>
+                  <div class="pm-icon">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="22"
+                      height="22"
+                      fill="none"
+                      stroke="white"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                      <circle cx="12" cy="12" r="2"></circle>
+                      <path d="M6 12h.01M18 12h.01"></path>
+                    </svg>
+                  </div>
+                  <div class="pm-info">
+                    <b>Tiền mặt tại quầy</b>
+                    <small>Thanh toán trực tiếp bằng tiền mặt</small>
+                  </div>
+                  <div class="pm-badge">Cash</div>
+                </label>
+
+                <label class="payment-method-card" data-method="VIETQR">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="VIETQR"
+                    onchange="changePaymentMethod(this)"
+                  />
+                  <div class="pm-radio-circle"></div>
+                  <div class="pm-icon">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="22"
+                      height="22"
+                      fill="none"
+                      stroke="white"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <rect x="3" y="3" width="5" height="5" rx="1"></rect>
+                      <rect x="16" y="3" width="5" height="5" rx="1"></rect>
+                      <rect x="3" y="16" width="5" height="5" rx="1"></rect>
+                      <path d="M21 16h-3a2 2 0 0 0-2 2v3"></path>
+                      <path d="M21 21v.01"></path>
+                      <path d="M12 7v3a2 2 0 0 1-2 2H7"></path>
+                      <path d="M3 12h.01"></path>
+                      <path d="M12 3h.01"></path>
+                      <path d="M12 16v.01"></path>
+                      <path d="M16 12h1"></path>
+                      <path d="M21 12v.01"></path>
+                      <path d="M12 21v-1"></path>
+                    </svg>
+                  </div>
+                  <div class="pm-info">
+                    <b>Chuyển khoản / QR Quốc Gia</b>
+                    <small>Quét mã bằng ứng dụng ngân hàng</small>
+                  </div>
+                  <div class="pm-badge">VietQR</div>
+                </label>
+              </div>
+
+              <div class="order-row order-total">
+                <span>TỔNG TIỀN</span>
+                <span id="totalPrice">0đ</span>
+              </div>
+
+              <button class="pay-btn" type="button" onclick="createOrder()">
+                Thanh toán →
               </button>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section id="feedback" class="tab-content">
-  <div class="feedback-card">
-    <h2 style="margin-bottom: 20px;">Phản hồi khách hàng</h2>
-    <div id="feedbackList" class="fb-list-wrap"></div>
-  </div>
-</section>
-      </div>
-    </main>
-  </div>
-  <div id="qrModal" class="qr-modal-overlay">
-    <div class="qr-modal-box">
-      <button class="close-qr" onclick="closeQRModal()">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 6 6 18"></path>
-          <path d="m6 6 12 12"></path>
-        </svg>
-      </button>
+          <section id="print-ticket" class="tab-content">
+            <div class="ticket-search-card">
+              <h2>In vé</h2>
 
-      <div class="qr-header">
-        <h3 id="qrTitle">Chuyển khoản QR Quốc Gia</h3>
-        <p id="qrSubtitle">Thanh toán an toàn qua VietQR - Napas 247</p>
-      </div>
+              <p>
+                Nhập mã đơn hàng để tìm lại giao dịch. Ví dụ: ORD-1784303784451
+              </p>
 
-      <div class="qr-body">
-        <div class="qr-image-wrapper" id="qrImageWrapper">
-          <img id="qrImage" src="" alt="VietQR Thực Tế" />
-          <p class="qr-caption" id="qrCaption">Mã QR VietQR — Napas 247</p>
+              <div class="ticket-search-box">
+                <input
+                  type="text"
+                  id="ticketSearch"
+                  placeholder="Nhập mã đơn hàng..."
+                  autocomplete="off"
+                  onkeydown="if (event.key === 'Enter') searchTicket();"
+                />
+
+                <button
+                  type="button"
+                  class="ticket-action-btn ticket-search-btn"
+                  onclick="searchTicket()"
+                >
+                  <span>🔍</span>
+                  Tìm đơn hàng
+                </button>
+              </div>
+
+              <div id="ticketResult" class="ticket-result">
+                <p>
+                  <strong>Mã đơn hàng:</strong>
+                  <span id="resultOrderCode">N/A</span>
+                </p>
+
+                <p>
+                  <strong>Mã vé:</strong>
+                  <span id="resultTicketCode">N/A</span>
+                </p>
+
+                <p>
+                  <strong>Phim:</strong>
+                  <span id="resultMovie">N/A</span>
+                </p>
+
+                <p>
+                  <strong>Suất chiếu:</strong>
+                  <span id="resultShowtime">N/A</span>
+                </p>
+
+                <p>
+                  <strong>Ghế:</strong>
+                  <span id="resultSeats">N/A</span>
+                </p>
+
+                <button
+                  type="button"
+                  class="ticket-action-btn ticket-print-btn"
+                  onclick="printTicket()"
+                >
+                  <span>🖨️</span>
+                  In vé
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section id="feedback" class="tab-content">
+            <div class="feedback-card">
+              <h2 style="margin-bottom: 20px">Phản hồi khách hàng</h2>
+              <div id="feedbackList" class="fb-list-wrap"></div>
+            </div>
+          </section>
         </div>
-
-        <p class="qr-banks-label" id="qrBanksLabel">Hỗ trợ mọi ngân hàng &amp; ví điện tử:</p>
-        <div class="qr-bank-badges" id="qrBankBadges">
-          <span class="qr-bank-badge b-vcb">Vietcombank</span>
-          <span class="qr-bank-badge b-tcb">Techcombank</span>
-          <span class="qr-bank-badge b-mb">MB Bank</span>
-          <span class="qr-bank-badge b-momo">Momo</span>
-        </div>
-
-        <div class="qr-amount-box">
-          <span>Số tiền cần thanh toán</span>
-          <strong id="qrAmountDisplay">0đ</strong>
-        </div>
-
-        <p class="qr-timer" id="qrTimerRow"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Thời gian thanh toán còn lại <b id="qrCountdown">15:00</b></p>
-
-        <div class="qr-steps" id="qrStepsRow">
-          <div class="qr-step">
-            <div class="qr-step-no">1</div>
-            <div class="qr-step-txt"><b id="qrStep1Title">Mở app ngân hàng</b><span id="qrStep1Desc">Chọn quét mã QR</span></div>
-          </div>
-          <div class="qr-step">
-            <div class="qr-step-no">2</div>
-            <div class="qr-step-txt"><b id="qrStep2Title">Quét mã QR</b><span id="qrStep2Desc">Kiểm tra số tiền</span></div>
-          </div>
-          <div class="qr-step">
-            <div class="qr-step-no">3</div>
-            <div class="qr-step-txt"><b id="qrStep3Title">Xác nhận</b><span id="qrStep3Desc">Hoàn tất thanh toán</span></div>
-          </div>
-        </div>
-
-        <p class="qr-status" id="qrStatusText">Đang chờ thanh toán...</p>
-
-        <button class="qr-confirm-btn" onclick="confirmQRPayment()">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          Đã Nhận Tiền & Xuất Vé
-        </button>
-      </div>
+      </main>
     </div>
-  </div>
-  <div id="ticketSuccessModal" class="ticket-success-overlay">
-    <div class="ticket-success-box">
-      <div class="ticket-header">
-        <span class="ticket-icon">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 9a3 3 0 1 0 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
-            <path d="M13 5v2"></path>
-            <path d="M13 11v2"></path>
-            <path d="M13 17v2"></path>
+    <div id="qrModal" class="qr-modal-overlay">
+      <div class="qr-modal-box">
+        <button class="close-qr" onclick="closeQRModal()">
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M18 6 6 18"></path>
+            <path d="m6 6 12 12"></path>
           </svg>
-        </span> Thông tin vé
-      </div>
-      <h2 id="successMovieName">Tên Phim</h2>
-      <div class="ticket-meta">
-        <span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><span id="successDate">2026-07-10</span></span>
-        <span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><span id="successTime">19:45</span></span>
-        <span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"></path><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"></path><path d="M5 18v2"></path><path d="M19 18v2"></path></svg><span id="successSeatCount">0</span> ghế</span>
-      </div>
+        </button>
 
-      <div class="ticket-section">
-        <span class="section-title">GHẾ ĐÃ CHỌN</span>
-        <div id="successSeats" class="seat-badge-container">
+        <div class="qr-header">
+          <h3 id="qrTitle">Chuyển khoản QR Quốc Gia</h3>
+          <p id="qrSubtitle">Thanh toán an toàn qua VietQR - Napas 247</p>
+        </div>
+
+        <div class="qr-body">
+          <div class="qr-image-wrapper" id="qrImageWrapper">
+            <img id="qrImage" src="" alt="VietQR Thực Tế" />
+            <p class="qr-caption" id="qrCaption">Mã QR VietQR — Napas 247</p>
           </div>
-      </div>
 
-      <div class="ticket-section">
-        <span class="section-title">BẮP NƯỚC</span>
-        <ul id="successFoodList" class="food-list">
-          </ul>
-      </div>
+          <p class="qr-banks-label" id="qrBanksLabel">
+            Hỗ trợ mọi ngân hàng &amp; ví điện tử:
+          </p>
+          <div class="qr-bank-badges" id="qrBankBadges">
+            <span class="qr-bank-badge b-vcb">Vietcombank</span>
+            <span class="qr-bank-badge b-tcb">Techcombank</span>
+            <span class="qr-bank-badge b-mb">MB Bank</span>
+            <span class="qr-bank-badge b-momo">Momo</span>
+          </div>
 
-      <div class="qr-ticket-box">
-        <img id="successQrImg" src="" alt="Ticket QR">
-        <div class="qr-text">
-          Xuất trình mã QR này tại quầy soát vé.<br>
-          Mã đơn hàng: <b id="successOrderCode"></b>
+          <div class="qr-amount-box">
+            <span>Số tiền cần thanh toán</span>
+            <strong id="qrAmountDisplay">0đ</strong>
+          </div>
+
+          <p class="qr-timer" id="qrTimerRow">
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="white"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="vertical-align: -2px; margin-right: 4px"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline></svg
+            >Thời gian thanh toán còn lại <b id="qrCountdown">15:00</b>
+          </p>
+
+          <div class="qr-steps" id="qrStepsRow">
+            <div class="qr-step">
+              <div class="qr-step-no">1</div>
+              <div class="qr-step-txt">
+                <b id="qrStep1Title">Mở app ngân hàng</b
+                ><span id="qrStep1Desc">Chọn quét mã QR</span>
+              </div>
+            </div>
+            <div class="qr-step">
+              <div class="qr-step-no">2</div>
+              <div class="qr-step-txt">
+                <b id="qrStep2Title">Quét mã QR</b
+                ><span id="qrStep2Desc">Kiểm tra số tiền</span>
+              </div>
+            </div>
+            <div class="qr-step">
+              <div class="qr-step-no">3</div>
+              <div class="qr-step-txt">
+                <b id="qrStep3Title">Xác nhận</b
+                ><span id="qrStep3Desc">Hoàn tất thanh toán</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="qr-status" id="qrStatusText">Đang chờ thanh toán...</p>
+
+          <button class="qr-confirm-btn" onclick="confirmQRPayment()">
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="white"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Đã Nhận Tiền & Xuất Vé
+          </button>
         </div>
       </div>
+    </div>
+    <div id="ticketSuccessModal" class="ticket-success-overlay">
+      <div class="ticket-success-box">
+        <div class="ticket-header">
+          <span class="ticket-icon">
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="white"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M2 9a3 3 0 1 0 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"
+              ></path>
+              <path d="M13 5v2"></path>
+              <path d="M13 11v2"></path>
+              <path d="M13 17v2"></path>
+            </svg>
+          </span>
+          Thông tin vé
+        </div>
+        <h2 id="successMovieName">Tên Phim</h2>
+        <div class="ticket-meta">
+          <span
+            ><svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="white"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="vertical-align: -2px; margin-right: 4px"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line></svg
+            ><span id="successDate">2026-07-10</span></span
+          >
+          <span
+            ><svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="white"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="vertical-align: -2px; margin-right: 4px"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline></svg
+            ><span id="successTime">19:45</span></span
+          >
+          <span
+            ><svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="white"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="vertical-align: -2px; margin-right: 4px"
+            >
+              <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"></path>
+              <path
+                d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"
+              ></path>
+              <path d="M5 18v2"></path>
+              <path d="M19 18v2"></path></svg
+            ><span id="successSeatCount">0</span> ghế</span
+          >
+        </div>
 
-      <div class="ticket-footer">
-        <span>ĐÃ THANH TOÁN</span>
-        <strong id="successTotalPaid">0 đ</strong>
-      </div>
+        <div class="ticket-section">
+          <span class="section-title">GHẾ ĐÃ CHỌN</span>
+          <div id="successSeats" class="seat-badge-container"></div>
+        </div>
 
-      <div class="info-box">
-        <h4 class="info-title">ℹ️ Thông tin quan trọng</h4>
-        <ul>
-          <li>Vui lòng đến rạp trước giờ chiếu ít nhất 15 phút.</li>
-          <li>Mang theo giấy tờ tùy thân (CCCD) nếu phim giới hạn độ tuổi.</li>
-          <li>Không mang đồ ăn, thức uống bên ngoài vào rạp.</li>
-          <li>Vé không hoàn/đổi trong vòng 2 giờ trước suất chiếu.</li>
-        </ul>
-      </div>
+        <div class="ticket-section">
+          <span class="section-title">BẮP NƯỚC</span>
+          <ul id="successFoodList" class="food-list"></ul>
+        </div>
 
-      <div class="action-buttons">
-        <button class="btn-print" onclick="window.print()">⬇ Tải / In vé</button>
-        <button class="btn-home" onclick="closeTicketSuccessModal()">Về trang chủ</button>
+        <div class="qr-ticket-box">
+          <img id="successQrImg" src="" alt="Ticket QR" />
+          <div class="qr-text">
+            Xuất trình mã QR này tại quầy soát vé.<br />
+            Mã đơn hàng: <b id="successOrderCode"></b>
+          </div>
+        </div>
+
+        <div class="ticket-footer">
+          <span>ĐÃ THANH TOÁN</span>
+          <strong id="successTotalPaid">0 đ</strong>
+        </div>
+
+        <div class="info-box">
+          <h4 class="info-title">ℹ️ Thông tin quan trọng</h4>
+          <ul>
+            <li>Vui lòng đến rạp trước giờ chiếu ít nhất 15 phút.</li>
+            <li>
+              Mang theo giấy tờ tùy thân (CCCD) nếu phim giới hạn độ tuổi.
+            </li>
+            <li>Không mang đồ ăn, thức uống bên ngoài vào rạp.</li>
+            <li>Vé không hoàn/đổi trong vòng 2 giờ trước suất chiếu.</li>
+          </ul>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn-print" onclick="window.print()">
+            ⬇ Tải / In vé
+          </button>
+          <button class="btn-home" onclick="closeTicketSuccessModal()">
+            Về trang chủ
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-  <div id="replyModal" class="modal-overlay" style="display:none;">
-    <div class="modal-content">
+    <div id="replyModal" class="modal-overlay" style="display: none">
+      <div class="modal-content">
         <button class="close-modal" onclick="closeModal()">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M18 6 6 18"></path>
             <path d="m6 6 12 12"></path>
           </svg>
         </button>
         <h3>Phản hồi khách hàng</h3>
-        <p id="replyTargetInfo" style="color:#9b9ba5; font-size: 13px;"></p>
-        <textarea id="modalReplyText" placeholder="Nhập nội dung phản hồi..."></textarea>
-        <input type="hidden" id="modalFeedbackId">
-        <button class="reply-btn" onclick="submitModalReply()">Gửi phản hồi</button>
+        <p id="replyTargetInfo" style="color: #9b9ba5; font-size: 13px"></p>
+        <textarea
+          id="modalReplyText"
+          placeholder="Nhập nội dung phản hồi..."
+        ></textarea>
+        <input type="hidden" id="modalFeedbackId" />
+        <button class="reply-btn" onclick="submitModalReply()">
+          Gửi phản hồi
+        </button>
+      </div>
     </div>
-</div>
-<div id="toastNotification" class="toast-popup" style="display:none;">
-    <div class="toast-content" style="display: flex; align-items: center;">
+    <div id="toastNotification" class="toast-popup" style="display: none">
+      <div class="toast-content" style="display: flex; align-items: center">
         <div class="toast-icon">
-            <svg id="toastIconSvg" viewBox="0 0 24 24" width="24" height="24" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
+          <svg
+            id="toastIconSvg"
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
+            stroke="white"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
         </div>
         <div class="toast-text">
-            <strong id="toastTitle">Thành công!</strong> <p id="toastMessage">Đã gửi phản hồi thành công.</p>
+          <strong id="toastTitle">Thành công!</strong>
+          <p id="toastMessage">Đã gửi phản hồi thành công.</p>
         </div>
+      </div>
     </div>
-  </div>
-  <div id="confirmModal" class="confirm-overlay" style="display:none;">
-    <div class="confirm-box">
+    <div id="confirmModal" class="confirm-overlay" style="display: none">
+      <div class="confirm-box">
         <div class="confirm-icon">
-            <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" fill="none" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
+          <svg
+            viewBox="0 0 24 24"
+            width="32"
+            height="32"
+            stroke="currentColor"
+            fill="none"
+            stroke-width="2"
+          >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
         </div>
         <h3>Cảnh báo đăng xuất</h3>
         <p>Bạn có chắc chắn muốn đăng xuất khỏi máy POS không?</p>
         <div class="confirm-actions">
-            <button class="btn-cancel" onclick="closeConfirmModal()">Hủy bỏ</button>
-            <button class="btn-confirm" onclick="executeLogout()">Đồng ý thoát</button>
+          <button class="btn-cancel" onclick="closeConfirmModal()">
+            Hủy bỏ
+          </button>
+          <button class="btn-confirm" onclick="executeLogout()">
+            Đồng ý thoát
+          </button>
         </div>
+      </div>
     </div>
-</div>
-</body>
+  </body>
 </html>

@@ -25,8 +25,12 @@ public class Voucher {
     @Column(name = "voucher_code")
     private String voucherCode;
 
-    @Column(name = "discount_value")
-    private Double discountValue;
+    @Column(
+    name = "discount_value",
+    precision = 18,
+    scale = 2
+)
+private BigDecimal discountValue;
 
     @Column(name = "expired_date")
     private LocalDateTime expiredDate;
@@ -40,8 +44,12 @@ public class Voucher {
     @Column(name = "max_discount")
     private BigDecimal maxDiscount;
 
-    @Column(name = "minimum_order")
-    private Integer minimumOrder;
+    @Column(
+    name = "minimum_order",
+    precision = 18,
+    scale = 2
+)
+private BigDecimal minimumOrder;
 
     // 🌟 THÊM MỚI: Trạng thái đồng bộ ACTIVE / INACTIVE
     @Column(name = "status")
@@ -88,11 +96,11 @@ public class Voucher {
         this.voucherCode = voucherCode;
     }
 
-    public Double getDiscountValue() {
+    public BigDecimal getDiscountValue() {
         return discountValue;
     }
 
-    public void setDiscountValue(Double discountValue) {
+    public void setDiscountValue(BigDecimal discountValue) {
         this.discountValue = discountValue;
     }
 
@@ -144,11 +152,11 @@ public class Voucher {
         this.maxDiscount = maxDiscount;
     }
 
-    public Integer getMinimumOrder() {
+    public BigDecimal getMinimumOrder() {
         return minimumOrder;
     }
 
-    public void setMinimumOrder(Integer minimumOrder) {
+    public void setMinimumOrder(BigDecimal minimumOrder) {
         this.minimumOrder = minimumOrder;
     }
 

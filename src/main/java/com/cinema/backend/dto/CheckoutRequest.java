@@ -29,6 +29,15 @@ public class CheckoutRequest {
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
     public Integer getVoucherId() { return voucherId; }
     public void setVoucherId(Integer voucherId) { this.voucherId = voucherId; }
+    private String paymentReference;
+
+public String getPaymentReference() {
+    return paymentReference;
+}
+
+public void setPaymentReference(String paymentReference) {
+    this.paymentReference = paymentReference;
+}
 
     // Class con dành cho từng món bắp nước
     public static class FoodItemRequest {
@@ -42,6 +51,5 @@ public class CheckoutRequest {
         public void setQuantity(Integer quantity) { this.quantity = quantity; }
         public Double getSubtotal() { return subtotal; }
         public void setSubtotal(Double subtotal) { this.subtotal = subtotal; }
-        
     }
 }

@@ -1,5 +1,7 @@
 package com.cinema.backend.service;
 
+import java.math.BigDecimal;
+
 import com.cinema.backend.entities.Voucher;
 
 public interface VoucherService {
@@ -13,5 +15,5 @@ public interface VoucherService {
     void deleteVoucher(Integer id);
 
     // 🌟 HÀM MỚI: Tự động quét voucher hệ thống dựa trên tổng tiền hóa đơn
-    Voucher checkAutoVoucher(Double grossAmount);
+    Voucher checkAutoVoucher(BigDecimal grossAmount);
 }
