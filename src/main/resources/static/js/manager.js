@@ -2736,3 +2736,100 @@ document.addEventListener("DOMContentLoaded", function () {
     );
   }
 });
+
+// Hàm đếm lùi ký tự động dùng chung cho toàn bộ các ô nhập text
+window.updateCharCount = function (inputId, counterId, maxLength) {
+  const inputEl = document.getElementById(inputId);
+  const counterEl = document.getElementById(counterId);
+  
+  if (inputEl && counterEl) {
+    const currentLength = inputEl.value.length;
+    const remaining = maxLength - currentLength;
+    
+    // Cập nhật giao diện đếm số ký tự còn lại
+    counterEl.innerText = `${remaining}/${maxLength}`;
+    
+    // Mẹo UX nâng cao: Nếu gõ gần hết (còn dưới 10 ký tự), đổi chữ sang màu cam/đỏ để cảnh báo
+    if (remaining <= 10) {
+      counterEl.style.color = "#ff6b35"; // Màu cam thương hiệu của em
+    } else {
+      counterEl.style.color = "#a8a8b3"; // Màu xám mặc định ban đầu
+    }
+  }
+};
+
+// ==========================================================================
+// 🚨 HÀM 2: Cảnh báo bỏ trống lập tức khi click chuột ra ngoài (On Blur)
+// ==========================================================================
+window.validateFieldOnBlur = function (inputId, errorMessage) {
+  const element = document.getElementById(inputId);
+  if (element && !element.value.trim()) {
+    alert(`🚨 Cảnh báo hệ thống:\n${errorMessage}`);
+  }
+};
+
+// ==========================================================================
+// 🚨 HÀM 3: Kiểm tra riêng cho ô số Thời lượng phim khi rời chuột
+// ==========================================================================
+window.validateDurationOnBlur = function () {
+  const durationInput = document.getElementById("add-duration").value;
+  const duration = parseInt(durationInput) || 0;
+  
+  if (!durationInput || isNaN(duration) || duration <= 0) {
+    alert("🚨 Cảnh báo hệ thống:\n- Thời lượng phim phải là số nguyên dương lớn hơn 0 phút.");
+  } else if (duration > 500) {
+    alert("🚨 Cảnh báo hệ thống:\n- Thời lượng phim không thực tế (Tối đa 500 phút).");
+  }
+};
+
+// ==========================================================================
+// 🚨 HÀM 4: Kiểm tra Ngày phát hành không hợp lệ (Quá khứ) khi rời chuột
+// ==========================================================================
+window.validateReleaseDateOnBlur = function () {
+  const releaseDateVal = document.getElementById("add-release").value;
+  if (!releaseDateVal) {
+    alert("🚨 Cảnh báo hệ thống:\n- Vui lòng chọn Ngày phát hành.");
+    return;
+  }
+  
+  const selectedDate = new Date(releaseDateVal);
+  selectedDate.setHours(0, 0, 0, 0);
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  if (selectedDate < today) {
+    alert("🚨 Cảnh báo hệ thống:\n- Ngày phát hành phim phải từ ngày hôm nay trở về sau, không được chọn ngày trong quá khứ.");
+  }
+};
+
+// 🚨 Kiểm tra riêng cho ô số Thời lượng phim của Form Cập Nhật khi rời chuột
+window.validateUpdateDurationOnBlur = function () {
+  const durationInput = document.getElementById("upd-duration").value;
+  const duration = parseInt(durationInput) || 0;
+  
+  if (!durationInput || isNaN(duration) || duration <= 0) {
+    alert("🚨 Cảnh báo hệ thống:\n- Thời lượng phim phải là số nguyên dương lớn hơn 0 phút.");
+  } else if (duration > 500) {
+    alert("🚨 Cảnh báo hệ thống:\n- Thời lượng phim không thực tế (Tối đa 500 phút).");
+  }
+};
+
+// 🚨 Kiểm tra Ngày phát hành không hợp lệ (Quá khứ) của Form Cập Nhật khi rời chuột
+window.validateUpdateReleaseDateOnBlur = function () {
+  const releaseDateVal = document.getElementById("upd-release").value;
+  if (!releaseDateVal) {
+    alert("🚨 Cảnh báo hệ thống:\n- Vui lòng chọn Ngày phát hành.");
+    return;
+  }
+  
+  const selectedDate = new Date(releaseDateVal);
+  selectedDate.setHours(0, 0, 0, 0);
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  if (selectedDate < today) {
+    alert("🚨 Cảnh báo hệ thống:\n- Ngày phát hành phim phải từ ngày hôm nay trở về sau, không được chọn ngày trong quá khứ.");
+  }
+};
