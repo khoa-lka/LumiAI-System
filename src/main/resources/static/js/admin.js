@@ -69,11 +69,12 @@ function renderAdminBanRows(users, isMock) {
     : "";
 
   tbody.innerHTML = mockNotice + users.map((u) => {
-      const status = u.status || "Active";
-      const badge = status === "Active"
-          ? '<span class="status-badge">Hoạt động</span>'
-          : '<span class="status-badge" style="background:#e71a0f;">Bị khóa</span>';
+     const status = String(u.status || "").trim().toLowerCase();
+const isActive = status === "active";
 
+const badge = isActive
+    ? '<span class="status-badge">Hoạt động</span>'
+    : '<span class="status-badge" style="background:#e71a0f;">Bị khóa</span>';
       // Role ID chuẩn theo backend (AdminController.getRoleName): 1=Manager, 2=Staff, 3=Member, 4=Admin
       return `<tr>
           <td>${u.accountId}</td>
@@ -91,10 +92,10 @@ function renderAdminBanRows(users, isMock) {
           </td>
           <td>${badge}</td>
           <td>
-            <button class="btn-admin-action ${status === 'Active' ? 'delete' : 'edit'}"
-                    onclick="banUserAction('${u.accountId}')">
-                ${status === 'Active' ? 'Khóa (Ban)' : 'Mở (Unban)'}
-            </button>
+            <button class="btn-admin-action ${isActive ? 'delete' : 'edit'}"
+        onclick="banUserAction('${u.accountId}')">
+    ${isActive ? 'Khóa (Ban)' : 'Mở (Unban)'}
+</button>
           </td>
       </tr>`;
     }).join("");
@@ -105,9 +106,10 @@ function filterAdminBanList() {
   const statusFilter = document.getElementById("adm-ban-status-filter").value;
 
   const filtered = _admBanUsersCache.filter((u) => {
-    const status = u.status || "Active";
-    const matchStatus = !statusFilter || status === statusFilter;
-    const matchKeyword = !keyword ||
+const status = String(u.status || "").trim().toLowerCase();
+const filterValue = String(statusFilter || "").trim().toLowerCase();
+
+const matchStatus = !filterValue || status === filterValue;    const matchKeyword = !keyword ||
       String(u.accountId).toLowerCase().includes(keyword) ||
       (u.email || "").toLowerCase().includes(keyword);
     return matchStatus && matchKeyword;
@@ -217,8 +219,9 @@ function banUserAction(userId) {
   const currentUser = _admBanUsersCache.find(
     (user) => String(user.accountId) === String(userId)
   );
-  const isBanned = currentUser && currentUser.status === "Banned";
-  const actionText = isBanned ? "mở khóa" : "khóa";
+const isBanned =
+    currentUser &&
+    String(currentUser.status || "").trim().toLowerCase() === "banned";  const actionText = isBanned ? "mở khóa" : "khóa";
 
   showBanPopup(
     "confirm",
@@ -232,8 +235,8 @@ function banUserAction(userId) {
 
       API.banUser(userId)
         .then((result) => {
-          const newStatus = result.status;
-          const successMessage = newStatus === "Banned"
+          const newStatus = String(result.status || "").trim().toLowerCase();
+          const successMessage = newStatus === "banned"
             ? `Đã khóa tài khoản ID: ${userId} thành công.`
             : `Đã mở khóa tài khoản ID: ${userId} thành công.`;
 
