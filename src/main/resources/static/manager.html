@@ -666,94 +666,144 @@
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px">
+          <!-- 1. Tên phim -->
           <div class="mp-form-group">
-            <label>Tên phim (Tiếng Việt)</label
-            ><input type="text" id="add-title" class="cgv-input-text" />
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="margin: 0;">Tên phim (Tiếng Việt) <span style="color:red">*</span></label>
+              <span id="count-title" style="font-size: 11px; color: #a8a8b3;">Còn 255 ký tự</span>
+            </div>
+            <input type="text" id="add-title" class="cgv-input-text" maxlength="255" placeholder="Nhập tên phim..." 
+                   oninput="updateCharCount('add-title', 'count-title', 255)" 
+                   onblur="validateFieldOnBlur('add-title', 'Tên phim không được bỏ trống.')" required />
           </div>
+          
           <div class="mp-form-group">
-            <label>Thể loại</label
-            ><input type="text" id="add-genre" class="cgv-input-text" />
+            <label>Thể loại <span style="color:red">*</span></label>
+            <select id="add-genre" class="cgv-input-text" 
+                    onblur="validateFieldOnBlur('add-genre', 'Vui lòng chọn Thể loại phim.')" required>
+              <option value="">-- Chọn thể loại phim --</option>
+              <option value="Action">Hành động</option>
+              <option value="Horror">Kinh dị</option>
+              <option value="Romance">Tình cảm</option>
+              <option value="Comedy">Hài hước</option>
+              <option value="Animation">Hoạt hình</option>
+              <option value="Sci-Fi">Viễn tưởng</option>
+              <option value="Drama">Chính kịch</option>
+              <option value="Documentary">Tài liệu</option>
+              <option value="Adventure">Phiêu lưu</option>
+              <option value="Fantasy">Giả tưởng</option>
+              <option value="Mystery">Bí ẩn</option>
+              <option value="Musical">Nhạc kịch</option>
+            </select>
           </div>
+          
           <div class="mp-form-group">
-            <label>Thời lượng (phút)</label
-            ><input type="number" id="add-duration" class="cgv-input-text" />
+            <label>Thời lượng (phút) <span style="color:red">*</span></label>
+            <input type="number" id="add-duration" class="cgv-input-text" min="1" max="500" placeholder="Ví dụ: 120" 
+                   onblur="validateDurationOnBlur()" required />
           </div>
+          
           <div class="mp-form-group">
-            <label>Đạo diễn</label
-            ><input type="text" id="add-director" class="cgv-input-text" />
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="margin: 0;">Đạo diễn <span style="color:red">*</span></label>
+              <span id="count-director" style="font-size: 11px; color: #a8a8b3;">Còn 100 ký tự</span>
+            </div>
+            <input type="text" id="add-director" class="cgv-input-text" maxlength="100" placeholder="Tên đạo diễn..." 
+                   oninput="updateCharCount('add-director', 'count-director', 100)" 
+                   onblur="validateFieldOnBlur('add-director', 'Tên đạo diễn không được bỏ trống.')" required />
           </div>
+          
           <div class="mp-form-group">
-            <label>Quốc gia</label
-            ><input type="text" id="add-country" class="cgv-input-text" />
+            <label>Quốc gia <span style="color:red">*</span></label>
+            <select id="add-country" class="cgv-input-text" 
+                    onblur="validateFieldOnBlur('add-country', 'Vui lòng chọn Quốc gia.')" required>
+              <option value="">-- Chọn quốc gia --</option>
+              <option value="Việt Nam">Việt Nam</option>
+              <option value="Mỹ">Mỹ (USA)</option>
+              <option value="Nhật Bản">Nhật Bản</option>
+              <option value="Hàn Quốc">Hàn Quốc</option>
+              <option value="Trung Quốc">Trung Quốc</option>
+              <option value="Anh">Anh</option>
+              <option value="Pháp">Pháp</option>
+              <option value="Ấn Độ">Ấn Độ</option>
+              <option value="Đức">Đức</option>
+              <option value="Úc">Úc</option>
+              <option value="Canada">Canada</option>
+              <option value="Thailand">Thái Lan</option>
+              <option value="Nga">Nga</option>
+              <option value="Philippines">Philippines</option>
+              <option value="Tây Ban Nha">Tây Ban Nha</option>
+              <option value="Italia">Ý</option>
+              <option value="Singapore">Singapore</option>
+              <option value="Malaysia">Malaysia</option>
+            </select>
           </div>
+          
           <div class="mp-form-group" style="grid-column: span 2">
-            <label>Diễn viên</label
-            ><input type="text" id="add-performer" class="cgv-input-text" />
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="margin: 0;">Diễn viên <span style="color:red">*</span></label>
+              <span id="count-performer" style="font-size: 11px; color: #a8a8b3;">Còn 500 ký tự</span>
+            </div>
+            <input type="text" id="add-performer" class="cgv-input-text" maxlength="500" placeholder="Tên các diễn viên..." oninput="updateCharCount('add-performer', 'count-performer', 500)" 
+                   onblur="validateFieldOnBlur('add-performer', 'Vui lòng nhập tên các diễn viên.')" required />
           </div>
+          
           <div class="mp-form-group" style="grid-column: span 2">
-            <label>Tóm tắt (Synopsis)</label
-            ><textarea
-              id="add-synopsis"
-              class="cgv-input-text"
-              rows="2"
-            ></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="margin: 0;">Tóm tắt (Synopsis) <span style="color:red">*</span></label>
+              <span id="count-synopsis" style="font-size: 11px; color: #a8a8b3;">Còn 2000 ký tự</span>
+            </div>
+            <textarea id="add-synopsis" class="cgv-input-text" rows="3" maxlength="2000" placeholder="Viết tóm tắt nội dung phim..." oninput="updateCharCount('add-synopsis', 'count-synopsis', 2000)" 
+                      onblur="validateFieldOnBlur('add-synopsis', 'Vui lòng nhập tóm tắt nội dung phim.')" required></textarea>
           </div>
+          
           <div class="mp-form-group">
-            <label>Poster chính (URL)</label
-            ><input type="text" id="add-mainposter" class="cgv-input-text" />
+            <label>Poster chính (URL) <span style="color:red">*</span></label>
+            <input type="url" id="add-mainposter" class="cgv-input-text" placeholder="https://example.com/poster.jpg" required />
           </div>
+          
           <div class="mp-form-group">
-            <label>Poster phụ (URL)</label
-            ><input type="text" id="add-subposter" class="cgv-input-text" />
+            <label>Poster phụ (URL)</label>
+            <input type="url" id="add-subposter" class="cgv-input-text" placeholder="https://example.com/banner.jpg" />
           </div>
+          
           <div class="mp-form-group">
-            <label>Ngày phát hành</label
-            ><input type="date" id="add-release" class="cgv-input-text" />
+            <label>Ngày phát hành <span style="color:red">*</span></label>
+            <input type="date" id="add-release" class="cgv-input-text" 
+                   onblur="validateReleaseDateOnBlur()" required />
           </div>
+          
           <div class="mp-form-group">
-            <label>Độ tuổi</label>
-            <select id="add-age" class="cgv-input-text">
-              <option value="0">P</option>
-              <option value="13">T13</option>
-              <option value="16">T16</option>
-              <option value="18">T18</option>
+            <label>Độ tuổi giới hạn <span style="color:red">*</span></label>
+            <select id="add-age" class="cgv-input-text" 
+                    onblur="validateFieldOnBlur('add-age', 'Vui lòng chọn độ tuổi giới hạn.')" required>
+              <option value="0">P (Mọi lứa tuổi)</option>
+              <option value="13">K (Trẻ em dưới 13 tuổi)</option>
+              <option value="13">T13 (Từ 13 tuổi)</option>
+              <option value="16">T16 (Từ 16 tuổi)</option>
+              <option value="18">T18 (Từ 18 tuổi)</option>
             </select>
           </div>
         </div>
 
-        <div class="mp-form-group" style="margin-top: 6px">
-          <label>Trạng thái</label>
+        <div class="mp-form-group" style="margin-top: 12px">
+          <label>Trạng thái phát hành</label>
           <div style="display: flex; gap: 20px; align-items: center;">
-            <label style="display:flex; align-items:center; gap:6px; font-weight:normal; color: var(--text-light); margin:0;">
-              <input type="radio" name="add_status" value="now_showing" checked />
-              Đang chiếu
+            <label style="display:flex; align-items:center; gap:6px; font-weight:normal; color: var(--text-light); margin:0; cursor:pointer;">
+              <input type="radio" name="add_status" value="now_showing" checked /> Đang chiếu
             </label>
-            <label style="display:flex; align-items:center; gap:6px; font-weight:normal; color: var(--text-light); margin:0;">
-              <input type="radio" name="add_status" value="coming_soon" />
-              Sắp chiếu
+            <label style="display:flex; align-items:center; gap:6px; font-weight:normal; color: var(--text-light); margin:0; cursor:pointer;">
+              <input type="radio" name="add_status" value="coming_soon" /> Sắp chiếu
             </label>
-            <label style="display:flex; align-items:center; gap:6px; font-weight:normal; color: var(--text-light); margin:0;">
-              <input type="radio" name="add_status" value="hidden" />
-              Ẩn
+            <label style="display:flex; align-items:center; gap:6px; font-weight:normal; color: var(--text-light); margin:0; cursor:pointer;">
+              <input type="radio" name="add_status" value="hidden" /> Ẩn
             </label>
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 20px">
-          <button
-            class="btn-cgv-cancel"
-            onclick="closeAddMovie()"
-            style="flex: 1; cursor: pointer"
-          >
-            Hủy
-          </button>
-          <button
-            class="btn-cgv-submit"
-            onclick="submitAddMovie()"
-            style="flex: 1; cursor: pointer"
-          >
-            LƯU
-          </button>
+        <div style="display: flex; gap: 10px; margin-top: 25px">
+          <button class="btn-cgv-cancel" onclick="closeAddMovie()" style="flex: 1; cursor: pointer">HỦY</button>
+          <button class="btn-cgv-submit" onclick="submitAddMovie()" style="flex: 1; cursor: pointer">LƯU PHIM</button>
         </div>
       </div>
     </div>
