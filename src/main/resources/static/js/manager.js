@@ -304,13 +304,17 @@ function toggleUserDropdown() {
   if (dropdown) dropdown.classList.toggle("open");
 }
 
-function toggleNotifDropdown() {
+window.toggleNotifDropdown = function () {
   const dropdown = document.getElementById("mp-notif-dropdown");
-  if (dropdown) dropdown.classList.toggle("open");
+  if (!dropdown) return;
 
-  const bell = document.querySelector(".mp-bell");
-  if (bell) bell.classList.remove("has-new"); // Xóa chấm đỏ khi xem thông báo
-}
+  const isOpening = !dropdown.classList.contains("open");
+  dropdown.classList.toggle("open");
+
+  if (isOpening) {
+    markManagerNotificationsRead();
+  }
+};
 
 // LẮNG NGHE SỰ KIỆN CLICK TOÀN TRANG (GỘP CHUNG ĐÓNG DROPDOWN & MODAL)
 window.addEventListener("click", function (event) {
@@ -2462,3 +2466,325 @@ window.submitDeleteVoucher = function(id) {
       .catch(err => alert("Lỗi khi xóa voucher: " + err.message));
   }
 };
+/* =========================================================
+   CHUÔNG THÔNG BÁO MANAGER
+   Chỉ dùng F&B, Voucher và Audit.
+   Không gọi lại Dashboard Overview.
+   ========================================================= */
+
+let MP_MANAGER_NOTIFICATIONS = [];
+let mpNotificationRefreshTimer = null;
+
+const MP_SEEN_NOTIFICATION_KEY =
+  "mp_seen_manager_notifications";
+
+function mpEscapeHtml(value) {
+  const element = document.createElement("div");
+  element.textContent = String(value ?? "");
+  return element.innerHTML;
+}
+
+function mpGetSeenNotifications() {
+  try {
+    const value = JSON.parse(
+      localStorage.getItem(MP_SEEN_NOTIFICATION_KEY) || "[]"
+    );
+
+    return new Set(Array.isArray(value) ? value : []);
+  } catch (error) {
+    return new Set();
+  }
+}
+
+function mpSaveSeenNotifications(seen) {
+  localStorage.setItem(
+    MP_SEEN_NOTIFICATION_KEY,
+    JSON.stringify(Array.from(seen))
+  );
+}
+
+function mpGetTodayString() {
+  const date = new Date();
+
+  return (
+    date.getFullYear() +
+    "-" +
+    String(date.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(date.getDate()).padStart(2, "0")
+  );
+}
+
+window.loadManagerNotifications = async function () {
+  const listElement = document.getElementById("mp-notif-list");
+
+  if (listElement) {
+    listElement.innerHTML = `
+      <div class="mp-notif-item">
+        Đang kiểm tra vận hành rạp...
+      </div>
+    `;
+  }
+
+  /*
+   * Không gọi API.getDashboardOverviewData() tại đây.
+   * Dashboard đã tự gọi API đó trong manager-dashboard.js.
+   */
+  const results = await Promise.allSettled([
+    API.getFnbItems(),
+    API.getManagerVouchers(),
+    API.getAuditReportData(mpGetTodayString())
+  ]);
+
+  const notifications = [];
+
+  // 1. Cảnh báo F&B
+  if (results[0].status === "fulfilled") {
+    const items = Array.isArray(results[0].value)
+      ? results[0].value
+      : [];
+
+    items.forEach((item) => {
+      const stock = Number(item.stockQuantity || 0);
+
+      if (stock <= 0) {
+        notifications.push({
+          id: `fnb-${item.foodItemId}-out`,
+          level: "error",
+          title: `${item.itemName} đã hết hàng`,
+          detail: "Cần nhập thêm hàng.",
+          tab: "fnb"
+        });
+      } else if (stock <= 30) {
+        notifications.push({
+          id: `fnb-${item.foodItemId}-low`,
+          level: "warning",
+          title: `${item.itemName} sắp hết hàng`,
+          detail: `Số lượng tồn hiện tại: ${stock}.`,
+          tab: "fnb"
+        });
+      }
+    });
+  }
+
+  // 2. Cảnh báo Voucher
+  if (results[1].status === "fulfilled") {
+    const vouchers = Array.isArray(results[1].value)
+      ? results[1].value
+      : [];
+
+    const now = new Date();
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
+
+    vouchers.forEach((voucher) => {
+      if (
+        String(voucher.status || "ACTIVE").toUpperCase() !==
+        "ACTIVE"
+      ) {
+        return;
+      }
+
+      if (!voucher.expiredDate) return;
+
+      const expiredDate = new Date(voucher.expiredDate);
+      const remainingTime =
+        expiredDate.getTime() - now.getTime();
+
+      if (Number.isNaN(remainingTime)) return;
+
+      if (remainingTime <= 0) {
+        notifications.push({
+          id: `voucher-${voucher.voucherId}-expired`,
+          level: "error",
+          title: `Voucher ${voucher.voucherCode} đã hết hạn`,
+          detail: "Voucher vẫn đang ở trạng thái hoạt động.",
+          tab: "promo"
+        });
+      } else if (remainingTime <= threeDays) {
+        const hours = Math.ceil(
+          remainingTime / (60 * 60 * 1000)
+        );
+
+        notifications.push({
+          id: `voucher-${voucher.voucherId}-soon`,
+          level: "warning",
+          title: `Voucher ${voucher.voucherCode} sắp hết hạn`,
+          detail: `Còn khoảng ${hours} giờ.`,
+          tab: "promo"
+        });
+      }
+    });
+  }
+
+  // 3. Cảnh báo đối soát
+  if (results[2].status === "fulfilled") {
+    const rows = results[2].value?.auditRows || [];
+
+    const mismatchRows = rows.filter(
+      (row) => Number(row.deviation || 0) !== 0
+    );
+
+    if (mismatchRows.length > 0) {
+      const totalDeviation = mismatchRows.reduce(
+        (total, row) =>
+          total + Math.abs(Number(row.deviation || 0)),
+        0
+      );
+
+      notifications.push({
+        id:
+          "audit-" +
+          mismatchRows
+            .map(
+              (row) =>
+                `${row.labelDate}-${row.deviation}`
+            )
+            .join("_"),
+        level: "error",
+        title: "Phát hiện chênh lệch doanh thu",
+        detail:
+          `${mismatchRows.length} ngày bị lệch, tổng ` +
+          `${totalDeviation.toLocaleString("vi-VN")}đ.`,
+        tab: "audit"
+      });
+    }
+  }
+
+  const priority = {
+    error: 1,
+    warning: 2,
+    info: 3
+  };
+
+  MP_MANAGER_NOTIFICATIONS = notifications
+    .sort(
+      (first, second) =>
+        priority[first.level] - priority[second.level]
+    )
+    .slice(0, 10);
+
+  renderManagerNotifications();
+};
+
+function renderManagerNotifications() {
+  const listElement = document.getElementById("mp-notif-list");
+  const badge = document.getElementById("mp-notif-count");
+  const unreadLabel = document.getElementById(
+    "mp-notif-unread-label"
+  );
+
+if (!listElement) {
+  console.error("Thiếu phần tử #mp-notif-list");
+  return;
+}
+
+  const seen = mpGetSeenNotifications();
+
+  const unreadCount = MP_MANAGER_NOTIFICATIONS.filter(
+    (item) => !seen.has(item.id)
+  ).length;
+
+ if (badge) {
+  if (unreadCount > 0) {
+    badge.textContent = unreadCount > 99
+      ? "99+"
+      : unreadCount;
+
+    badge.style.display = "flex";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+  if (unreadLabel) {
+    unreadLabel.textContent = unreadCount > 0
+      ? `${unreadCount} chưa xem`
+      : "Đã xem hết";
+  }
+
+  if (MP_MANAGER_NOTIFICATIONS.length === 0) {
+    listElement.innerHTML = `
+      <div class="mp-notif-item">
+        Không có cảnh báo vận hành mới.
+      </div>
+    `;
+    return;
+  }
+
+  listElement.innerHTML = MP_MANAGER_NOTIFICATIONS
+    .map((item) => {
+      const icon =
+        item.level === "error" ? "!" : "⚠";
+
+      const color =
+        item.level === "error"
+          ? "#ef4444"
+          : "#f59e0b";
+
+      return `
+        <div
+          class="mp-notif-item"
+          onclick="openManagerNotificationTab('${item.tab}')"
+        >
+          <span
+            class="mp-notif-icon"
+            style="color:${color}; font-weight:800;"
+          >
+            ${icon}
+          </span>
+
+          <div>
+            <strong>${mpEscapeHtml(item.title)}</strong>
+
+            <div style="
+              margin-top:4px;
+              color:#9a9aa3;
+              font-size:12px;
+              line-height:1.4;
+            ">
+              ${mpEscapeHtml(item.detail)}
+            </div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+window.markManagerNotificationsRead = function () {
+  const seen = mpGetSeenNotifications();
+
+  MP_MANAGER_NOTIFICATIONS.forEach((item) => {
+    seen.add(item.id);
+  });
+
+  mpSaveSeenNotifications(seen);
+  renderManagerNotifications();
+};
+
+window.openManagerNotificationTab = function (tabId) {
+  markManagerNotificationsRead();
+
+  const dropdown = document.getElementById(
+    "mp-notif-dropdown"
+  );
+
+  if (dropdown) {
+    dropdown.classList.remove("open");
+  }
+
+  if (typeof switchMpTab === "function") {
+    switchMpTab(tabId);
+  }
+};
+
+document.addEventListener("DOMContentLoaded", function () {
+  loadManagerNotifications();
+
+  if (!mpNotificationRefreshTimer) {
+    mpNotificationRefreshTimer = setInterval(
+      loadManagerNotifications,
+      60000
+    );
+  }
+});

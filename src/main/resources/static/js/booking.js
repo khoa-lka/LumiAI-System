@@ -402,6 +402,73 @@ function goToBookingStep(step) {
       backBtn.innerText = "←";
       backBtn.setAttribute("onclick", "goHomeFromBc()");
     }
+    // ==========================================================================
+    // 🧹 RESET TOÀN DIỆN GIỎ HÀNG & BIẾN SỐ TIỀN TẠI BƯỚC 1: Sửa bug tiền âm
+    // ==========================================================================
+    window.currentVoucher = null;
+    if (typeof currentPriceTotal !== "undefined") currentPriceTotal = 0;
+    if (typeof finalPriceTotal !== "undefined") window.finalPriceTotal = 0;
+
+    // Xóa sạch mảng ghế tận gốc (Clear reference)
+    if (typeof selectedSeats !== "undefined" && selectedSeats !== null) {
+      selectedSeats.length = 0;
+    }
+    
+    // Reset số lượng bắp nước về 0
+    if (window.fnbMenu) {
+      window.fnbMenu.forEach(item => item.qty = 0); 
+    } else if (typeof fnbMenu !== "undefined") {
+      fnbMenu.forEach(item => item.qty = 0);
+    }
+
+    // Bọc chốt chặn an toàn chặn đứng số âm cho hàm tính toán tiền giỏ hàng
+    const originalCalculate = window.calculateCgvCart || calculateCgvCart;
+    if (typeof originalCalculate === "function") {
+      originalCalculate();
+      if (typeof currentPriceTotal !== "undefined" && currentPriceTotal < 0) currentPriceTotal = 0;
+      if (typeof finalPriceTotal !== "undefined" && window.finalPriceTotal < 0) window.finalPriceTotal = 0;
+    }
+
+    // ==========================================================================
+    // 🎯 ĐÃ SỬA: DIỆT TẬN GỐC BUG ĐẾM GIỜ & XOÁ SẠCH Ô MÀU XANH GHẾ CŨ
+    // ==========================================================================
+    
+    // 1. Dập tắt bộ đếm thời gian cũ chuẩn theo biến của nhóm em
+    if (typeof timerInterval !== "undefined" && timerInterval !== null) {
+      clearInterval(timerInterval);
+      timerInterval = null; // Khai tử bộ đếm chạy ngầm
+    }
+    
+    // Đưa chữ hiển thị thời gian về trạng thái ban đầu chuẩn ID "timer-string"
+    const timerStringEl = document.getElementById("timer-string");
+    if (timerStringEl) {
+      timerStringEl.innerText = "10:00"; // Đưa về 10 phút mặc định như thông báo của em
+    }
+
+    // 2. Quét sạch các ô ghế màu xanh đang bị kẹt trên giao diện trực quan
+    // Vì sơ đồ cũ vẫn lưu trong DOM, ta chủ động xóa bỏ class được chọn của chúng
+    const ketElements = document.querySelectorAll(".seat.selected, .seat.active");
+    ketElements.forEach(seatEl => {
+      seatEl.classList.remove("selected", "active");
+    });
+
+    // 3. Dọn dẹp các ô hiển thị tiền và hóa đơn tạm trên sidebar
+    const reviewTotalEl = document.getElementById("review-final-total");
+    if (reviewTotalEl) reviewTotalEl.innerText = "0 đ";
+
+    const sumTotalEl = document.getElementById("sum-total");
+    if (sumTotalEl) sumTotalEl.innerText = "0 đ";
+
+    const rawTotalEl = document.querySelector(".inv-total-amt");
+    if (rawTotalEl) rawTotalEl.innerText = "0 đ";
+    
+    const vInput = document.getElementById("voucher-input");
+    if (vInput) vInput.value = "";
+
+    const invoiceContentEl = document.getElementById("review-invoice-content");
+    if (invoiceContentEl) invoiceContentEl.innerHTML = "";
+
+    console.log("🧹 Đã làm sạch hoàn toàn: Tắt đếm giờ ngầm, xóa màu xanh của ghế kẹt!");
   } else if (step === 2) {
     // 🚀 NÂNG CẤP BẤT TỬ: Đồng bộ dữ liệu từ DB nhưng bảo toàn số lượng qty cực kỳ nghiêm ngặt
     if (typeof API !== "undefined" && typeof API.getFnbItems === "function") {
@@ -466,45 +533,65 @@ function goToBookingStep(step) {
       backBtn.setAttribute("onclick", "goToBookingStep(2)");
     }
 
-    // ==========================================================================
-    // 🌟 TỰ ĐỘNG ÁP DỤNG VOUCHER: Tự quét DB tìm mã Auto khi ô nhập đang trống
-    // ==========================================================================
-    if (!window.currentVoucher && document.getElementById("voucher-input")?.value.trim() === "") {
-      console.log("🔍 Đang quét tìm Voucher tự động áp dụng...");
-      
-      fetch("http://localhost:8080/api/vouchers/manager/all")
-        .then(res => res.ok ? res.json() : [])
-        .then(vouchers => {
-          // Mò tìm voucher thỏa mãn: trạng thái ACTIVE và là loại tự động (autoApply hoặc isAuto)
-          const autoVoucher = (vouchers || []).find(v => v.status === "ACTIVE" && v.applyType === "AUTO");
-          
-          if (autoVoucher) {
-            console.log("🎯 Tìm thấy voucher tự động:", autoVoucher.voucherCode);
-            window.currentVoucher = autoVoucher;
-            
-            const vInput = document.getElementById("voucher-input");
-            if (vInput) vInput.value = autoVoucher.voucherCode; // Điền mã lên giao diện
-            
-            calculateCgvCart(); // Tính lại tiền ở FE
-            goToBookingStep(3); // Khởi động lại giao diện hóa đơn bước 3 đã trừ tiền
-          }
-        })
-        .catch(err => console.error("🚨 Lỗi quét Voucher tự động:", err));
-    }
-
-    // 🚀 Ép hàm tính toán lại giỏ hàng chạy trước để đảm bảo tính đúng
+    // 🚀 BƯỚC 1: Tính toán lại giỏ hàng giá gốc trước để lấy currentPriceTotal chuẩn làm bộ lọc đơn hàng
     if (typeof calculateCgvCart === "function") {
       calculateCgvCart();
     }
 
-    const currentMovie = document.getElementById("cgv-combo-movie").value;
+    // ==========================================================================
+    // 🌟 TỰ ĐỘNG ÁP DỤNG VOUCHER: Đã sửa sang API Public rẽ nhánh & chống lặp UI
+    // ==========================================================================
+    if (currentPriceTotal > 0 && !window.currentVoucher && document.getElementById("voucher-input")?.value.trim() === "") {
+      console.log("🔍 Đang gọi API Public rẽ nhánh tìm Voucher tự động...");
 
-    const verifiedInvoiceTotal = currentPriceTotal;
+      // Gọi đến endpoint public đã được rẽ nhánh xử lý[cite: 2, 4]
+      fetch("http://localhost:8080/api/vouchers/all")
+        .then(res => {
+          if (!res.ok) return null;
+          // 🟢 ĐÃ SỬA: Đọc dạng chuỗi text trước để bọc lót nếu body rỗng, tránh lỗi SyntaxError
+          return res.text().then(text => text ? JSON.parse(text) : null);
+        })
+        .then(vouchers => {
+          // Lọc tìm voucher tự động từ danh sách an toàn nhả về
+          const autoVoucher = (vouchers || []).find(v => v.applyType && v.applyType.toUpperCase() === "AUTO");
+
+          if (autoVoucher) {
+            console.log("🎯 Tìm thấy voucher tự động hợp lệ:", autoVoucher.voucherCode);
+            window.currentVoucher = autoVoucher;
+
+            const vInput = document.getElementById("voucher-input");
+            if (vInput) vInput.value = autoVoucher.voucherCode; // Điền mã lên giao diện
+
+            calculateCgvCart(); // Tính toán lại số tiền thực tế sau khi giảm trừ thành công
+
+            // 🟢 ĐÃ SỬA: Cập nhật trực tiếp số tiền đã giảm lên UI (Tuyệt đối không dùng goToBookingStep)
+            const liveFinalPrice = window.finalPriceTotal || 0;
+
+            const reviewTotalEl = document.getElementById("review-final-total");
+            if (reviewTotalEl) reviewTotalEl.innerText = liveFinalPrice.toLocaleString("vi-VN") + " đ";
+
+            const sumTotalEl = document.getElementById("sum-total");
+            if (sumTotalEl) sumTotalEl.innerText = liveFinalPrice.toLocaleString("vi-VN") + " đ";
+          } else {
+            console.log("ℹ️ Không tìm thấy voucher tự động nào thỏa mãn đơn hàng hiện tại.");
+          }
+        })
+        .catch(err => console.error("🚨 Lỗi quét Voucher tự động:", err));
+    } else if (currentPriceTotal <= 0) {
+      // 🟢 BỔ SUNG: Nếu tổng tiền bằng 0, đảm bảo xóa sạch chữ voucher hiển thị trên giao diện ô input
+      const vInput = document.getElementById("voucher-input");
+      if (vInput) vInput.value = "";
+      window.currentVoucher = null;
+    }
+
+    // ==========================================================================
+    // 🎨 RENDER GIAO DIỆN HÓA ĐƠN ĐỒNG BỘ
+    // ==========================================================================
+    const currentMovie = document.getElementById("cgv-combo-movie").value;
     const activeFnbReview = window.fnbMenu || fnbMenu || [];
 
     const fnbItems = activeFnbReview.filter((i) => i.qty > 0);
     let fnbHtml = fnbItems
-      .filter((i) => i.qty > 0)
       .map(
         (i) =>
           `<div class="inv-fnb"><span>${i.name} × ${i.qty}</span><span>${(i.price * i.qty).toLocaleString("vi-VN")} đ</span></div>`,
@@ -521,8 +608,8 @@ function goToBookingStep(step) {
               <div class="inv-total"><span>Tổng cộng (chưa giảm)</span><span class="inv-total-amt">${currentPriceTotal.toLocaleString("vi-VN")} đ</span></div>
             </div>
         `;
-    const finalPrice = window.finalPriceTotal || 0;
 
+    const finalPrice = window.finalPriceTotal || 0;
     console.log("Step3 currentPriceTotal =", currentPriceTotal);
 
     const reviewTotalEl = document.getElementById("review-final-total");
@@ -1382,6 +1469,7 @@ function executeFinalCheckout() {
     totalMoney: window.finalPriceTotal, // sau giảm
     voucherCode: document.getElementById("voucher-input")?.value.trim() || "",
     paymentMethod: window.selectedPaymentGateway,
+    qrRef: window.currentQrRef || null,     
     fnb: window.fnbMenu
       .filter((i) => i.qty > 0)
       .map((i) => ({

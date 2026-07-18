@@ -73,19 +73,63 @@ public class DashboardServiceImpl implements DashboardService {
         dto.setTopMovies(topMovieNodes);
 
         // 5. Nạp danh sách 5 giao dịch gần đây nhất từ DB
-        List<Map<String, Object>> rawOrders = dashboardRepository.getRecentTransactions();
-        List<DashboardTotalDTO.RecentOrderNode> recentOrderNodes = new ArrayList<>();
-        for (Map<String, Object> map : rawOrders) {
-            DashboardTotalDTO.RecentOrderNode node = new DashboardTotalDTO.RecentOrderNode();
-            node.setOrderCode(map.get("orderCode").toString());
-            node.setCustomerName(map.get("customerName") != null ? map.get("customerName").toString() : "Khách vãng lai");
-            node.setPaymentMethod(map.get("paymentMethod") != null ? map.get("paymentMethod").toString() : "CASH");
-            node.setFinalAmount((BigDecimal) map.get("finalAmount"));
-            node.setOrderStatus(map.get("orderStatus").toString());
-            node.setCreatedTime(map.get("createdTime").toString());
-            recentOrderNodes.add(node);
-        }
-        dto.setRecentOrders(recentOrderNodes);
+        List<Map<String, Object>> rawOrders =
+        dashboardRepository.getRecentTransactions();
+
+List<DashboardTotalDTO.RecentOrderNode> recentOrderNodes =
+        new ArrayList<>();
+
+for (Map<String, Object> map : rawOrders) {
+    DashboardTotalDTO.RecentOrderNode node =
+            new DashboardTotalDTO.RecentOrderNode();
+
+    Object orderCode = map.get("orderCode");
+    Object customerName = map.get("customerName");
+    Object paymentMethod = map.get("paymentMethod");
+    Object finalAmount = map.get("finalAmount");
+    Object orderStatus = map.get("orderStatus");
+    Object createdTime = map.get("createdTime");
+
+    node.setOrderCode(
+            orderCode != null
+                    ? orderCode.toString()
+                    : "Không xác định"
+    );
+
+    node.setCustomerName(
+            customerName != null
+                    ? customerName.toString()
+                    : "Khách vãng lai"
+    );
+
+    node.setPaymentMethod(
+            paymentMethod != null
+                    ? paymentMethod.toString()
+                    : "CASH"
+    );
+
+    node.setFinalAmount(
+            finalAmount != null
+                    ? new BigDecimal(finalAmount.toString())
+                    : BigDecimal.ZERO
+    );
+
+    node.setOrderStatus(
+            orderStatus != null
+                    ? orderStatus.toString()
+                    : "UNKNOWN"
+    );
+
+    node.setCreatedTime(
+            createdTime != null
+                    ? createdTime.toString()
+                    : "Không xác định"
+    );
+
+    recentOrderNodes.add(node);
+}
+
+dto.setRecentOrders(recentOrderNodes);
 
         return dto;
     }
