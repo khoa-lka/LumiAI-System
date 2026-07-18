@@ -487,10 +487,14 @@ function renderCgvInterface() {
           actualShowtimes.forEach((st) => {
             const isSelected = st.startTime === selectedShowtime;
             const activeClass = isSelected ? "active" : "";
-            const roomDisplayName =
-              st.roomId === 2 || st.room_id === 2
-                ? "Phòng 2 (IMAX Siêu Đại)"
-                : "Phòng 1 (3D Standard)";
+            const roomId = Number(st.roomId ?? st.room_id);
+
+const roomDisplayName =
+  {
+    1: "Phòng Chiếu 1 (3D Standard)",
+    2: "Phòng Chiếu 2 (IMAX Siêu Đại)",
+    3: "Phòng Chiếu 3 (Dự phòng)",
+  }[roomId] || `Phòng ${roomId}`;
 
             timeGrid.innerHTML += `
               <div class="showtime-btn ${activeClass}" onclick="selectCgvShowtimeSlot('${st.startTime}', ${st.showtimeId})">
