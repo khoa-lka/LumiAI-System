@@ -852,105 +852,145 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px">
           <div class="mp-form-group">
-            <label>Tên phim (Tiếng Việt)</label
-            ><input type="text" id="upd-title" class="cgv-input-text" />
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="margin: 0;">Tên phim (Tiếng Việt) <span style="color:red">*</span></label>
+              <span id="upd-count-title" style="font-size: 11px; color: #a8a8b3;">Còn 255 ký tự</span>
+            </div>
+            <input type="text" id="upd-title" class="cgv-input-text" maxlength="255" required 
+                   oninput="updateCharCount('upd-title', 'upd-count-title', 255)" 
+                   onblur="validateFieldOnBlur('upd-title', 'Tên phim không được bỏ trống.')" />
           </div>
+          
           <div class="mp-form-group">
-            <label>Thể loại</label
-            ><input type="text" id="upd-genre" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group">
-            <label>Thời lượng (phút)</label
-            ><input type="number" id="upd-duration" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group">
-            <label>Quốc gia</label
-            ><input type="text" id="upd-country" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group">
-            <label>Đạo diễn</label
-            ><input type="text" id="upd-director" class="cgv-input-text" />
-          </div>
-          <div class="mp-form-group">
-            <label>Phân loại độ tuổi</label>
-            <select id="upd-age" class="cgv-input-text">
-              <option value="0">P (Mọi lứa tuổi)</option>
-              <option value="13">T13</option>
-              <option value="16">T16</option>
-              <option value="18">T18</option>
+            <label>Thể loại <span style="color:red">*</span></label>
+            <select id="upd-genre" class="cgv-input-text" required
+                    onblur="validateFieldOnBlur('upd-genre', 'Vui lòng chọn Thể loại phim.')">
+              <option value="">-- Chọn thể loại phim --</option>
+              <option value="Action">Hành động</option>
+              <option value="Horror">Kinh dị</option>
+              <option value="Romance">Tình cảm</option>
+              <option value="Comedy">Hài hước</option>
+              <option value="Animation">Hoạt hình</option>
+              <option value="Sci-Fi">Viễn tưởng</option>
+              <option value="Drama">Chính kịch</option>
+              <option value="Documentary">Tài liệu</option>
+              <option value="Adventure">Phiêu lưu</option>
+              <option value="Fantasy">Giả tưởng</option>
+              <option value="Mystery">Bí ẩn</option>
+              <option value="Musical">Nhạc kịch</option>
             </select>
           </div>
+          
+          <div class="mp-form-group">
+            <label>Thời lượng (phút) <span style="color:red">*</span></label>
+            <input type="number" id="upd-duration" class="cgv-input-text" min="1" max="500" required
+                   onblur="validateUpdateDurationOnBlur()" />
+          </div>
+          
+          <div class="mp-form-group">
+            <label>Quốc gia <span style="color:red">*</span></label>
+            <select id="upd-country" class="cgv-input-text" required
+                    onblur="validateFieldOnBlur('upd-country', 'Vui lòng chọn Quốc gia.')">
+              <option value="">-- Chọn quốc gia --</option>
+              <option value="Việt Nam">Việt Nam</option>
+              <option value="Mỹ">Mỹ (USA)</option>
+              <option value="Nhật Bản">Nhật Bản</option>
+              <option value="Hàn Quốc">Hàn Quốc</option>
+              <option value="Trung Quốc">Trung Quốc</option>
+              <option value="Anh">Anh</option>
+              <option value="Pháp">Pháp</option>
+              <option value="Ấn Độ">Ấn Độ</option>
+              <option value="Đức">Đức</option>
+              <option value="Úc">Úc</option>
+              <option value="Canada">Canada</option>
+              <option value="Thailand">Thái Lan</option>
+              <option value="Nga">Nga</option>
+              <option value="Philippines">Philippines</option>
+              <option value="Tây Ban Nha">Tây Ban Nha</option>
+              <option value="Italia">Ý</option>
+              <option value="Singapore">Singapore</option>
+              <option value="Malaysia">Malaysia</option>
+            </select>
+          </div>
+          
+          <div class="mp-form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="margin: 0;">Đạo diễn <span style="color:red">*</span></label>
+              <span id="upd-count-director" style="font-size: 11px; color: #a8a8b3;">Còn 100 ký tự</span>
+            </div>
+            <input type="text" id="upd-director" class="cgv-input-text" maxlength="100" required
+                   oninput="updateCharCount('upd-director', 'upd-count-director', 100)" 
+                   onblur="validateFieldOnBlur('upd-director', 'Tên đạo diễn không được bỏ trống.')" />
+          </div>
+          
+          <div class="mp-form-group">
+            <label>Phân loại độ tuổi <span style="color:red">*</span></label>
+            <select id="upd-age" class="cgv-input-text" required
+                    onblur="validateFieldOnBlur('upd-age', 'Vui lòng chọn độ tuổi giới hạn.')">
+              <option value="0">P (Mọi lứa tuổi)</option>
+              <option value="13">K (Trẻ em dưới 13 tuổi)</option>
+              <option value="13">T13 (Từ 13 tuổi)</option>
+              <option value="16">T16 (Từ 16 tuổi)</option>
+              <option value="18">T18 (Từ 18 tuổi)</option>
+            </select>
+          </div>
+          
           <div class="mp-form-group" style="grid-column: span 2">
-            <label>Diễn viên</label
-            ><input type="text" id="upd-performer" class="cgv-input-text" />
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="margin: 0;">Diễn viên <span style="color:red">*</span></label>
+              <span id="upd-count-performer" style="font-size: 11px; color: #a8a8b3;">Còn 500 ký tự</span>
+            </div>
+            <input type="text" id="upd-performer" class="cgv-input-text" maxlength="500" required 
+                   oninput="updateCharCount('upd-performer', 'upd-count-performer', 500)" 
+                   onblur="validateFieldOnBlur('upd-performer', 'Vui lòng nhập tên các diễn viên.')" />
           </div>
+          
           <div class="mp-form-group" style="grid-column: span 2">
-            <label>Tóm tắt (Synopsis)</label
-            ><textarea
-              id="upd-synopsis"
-              class="cgv-input-text"
-              rows="2"
-            ></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="margin: 0;">Tóm tắt (Synopsis) <span style="color:red">*</span></label>
+              <span id="upd-count-synopsis" style="font-size: 11px; color: #a8a8b3;">Còn 2000 ký tự</span>
+            </div>
+            <textarea id="upd-synopsis" class="cgv-input-text" rows="3" maxlength="2000" required
+                      oninput="updateCharCount('upd-synopsis', 'upd-count-synopsis', 2000)" 
+                      onblur="validateFieldOnBlur('upd-synopsis', 'Vui lòng nhập tóm tắt nội dung phim.')"></textarea>
           </div>
+          
           <div class="mp-form-group">
-            <label>Poster chính (URL)</label
-            ><input type="text" id="upd-mainposter" class="cgv-input-text" />
+            <label>Poster chính (URL) <span style="color:red">*</span></label>
+            <input type="url" id="upd-mainposter" class="cgv-input-text" required />
           </div>
+          
           <div class="mp-form-group">
-            <label>Poster phụ (URL)</label
-            ><input type="text" id="upd-subposter" class="cgv-input-text" />
+            <label>Poster phụ (URL)</label>
+            <input type="url" id="upd-subposter" class="cgv-input-text" />
           </div>
+          
           <div class="mp-form-group">
-            <label>Ngày phát hành</label
-            ><input type="date" id="upd-release" class="cgv-input-text" />
+            <label>Ngày phát hành <span style="color:red">*</span></label>
+            <input type="date" id="upd-release" class="cgv-input-text" required
+                   onblur="validateUpdateReleaseDateOnBlur()" />
           </div>
+          
           <div class="mp-form-group">
             <label>Trạng thái</label><br />
-            <input type="radio" name="upd_status" value="now_showing" /> Đang
-            chiếu
-            <input
-              type="radio"
-              name="upd_status"
-              value="coming_soon"
-              style="margin-left: 15px"
-            />
-            Sắp chiếu
-            <input
-              type="radio"
-              name="upd_status"
-              value="hidden"
-              style="margin-left: 15px"
-            />
-            Ẩn
+            <label style="display:inline-flex; align-items:center; gap:4px; font-weight:normal; color: var(--text-light); cursor:pointer;">
+              <input type="radio" name="upd_status" value="now_showing" /> Đang chiếu
+            </label>
+            <label style="display:inline-flex; align-items:center; gap:4px; font-weight:normal; color: var(--text-light); cursor:pointer; margin-left:15px;">
+              <input type="radio" name="upd_status" value="coming_soon" /> Sắp chiếu
+            </label>
+            <label style="display:inline-flex; align-items:center; gap:4px; font-weight:normal; color: var(--text-light); cursor:pointer; margin-left:15px;">
+              <input type="radio" name="upd_status" value="hidden" /> Ẩn
+            </label>
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 20px">
-          <button
-            class="btn-cgv-cancel"
-            onclick="closeUpdateMovie()"
-            style="flex: 1; cursor: pointer"
-          >
-            Hủy
-          </button>
-          <button
-            class="btn-cgv-submit"
-            onclick="submitUpdateMovie()"
-            style="
-              flex: 1;
-              cursor: pointer;
-              background: var(--cgv-red, #ff6b35);
-              color: white;
-              border: none;
-              padding: 10px;
-            "
-          >
-            LƯU CẬP NHẬT
-          </button>
+        <div style="display: flex; gap: 10px; margin-top: 25px">
+          <button class="btn-cgv-cancel" onclick="closeUpdateMovie()" style="flex: 1; cursor: pointer">HỦY</button>
+          <button class="btn-cgv-submit" onclick="submitUpdateMovie()" style="flex: 1; cursor: pointer; background: var(--cgv-red, #ff6b35); color: white; border: none; padding: 10px;">LƯU CẬP NHẬT</button>
         </div>
       </div>
     </div>
-
     <div
       class="mp-modal-overlay"
       id="mp-delete-modal"
