@@ -29,16 +29,17 @@ public class OrderService {
     @Autowired
     private OrderDetailRepository orderDetailRepository;
 
-    // BO SUNG: getHistory() giờ trả về DTO an toàn (ShowtimeHistoryDTO/MovieHistoryDTO)
-    // thay vì trả thẳng Hibernate Entity (Showtime) như trước - tránh rủi ro lazy-loading
+    // BO SUNG: getHistory() giờ trả về DTO an toàn
+    // (ShowtimeHistoryDTO/MovieHistoryDTO)
+    // thay vì trả thẳng Hibernate Entity (Showtime) như trước - tránh rủi ro
+    // lazy-loading
     // proxy / vòng lặp serialization khi Jackson chuyển đối tượng sang JSON.
     // ticket.getSeat() lấy trực tiếp từ quan hệ object mới của Ticket, không cần
     // gọi lại SeatRepository.findById() như bản cũ.
     @Transactional(readOnly = true)
     public List<OrderHistoryDTO> getHistory(Integer accountId) {
 
-        List<Order1> orders =
-                orderRepository.findByCustomerAccountIdOrderByCreatedDateDesc(accountId);
+        List<Order1> orders = orderRepository.findByCustomerAccountIdOrderByCreatedDateDesc(accountId);
 
         List<OrderHistoryDTO> result = new ArrayList<>();
 
@@ -61,8 +62,7 @@ public class OrderService {
             Showtime historyShowtime = null;
             String databaseTicketStatus = null;
 
-            List<OrderDetail> details =
-                    orderDetailRepository.findByOrderOrderId(order.getOrderId());
+            List<OrderDetail> details = orderDetailRepository.findByOrderOrderId(order.getOrderId());
 
             for (OrderDetail detail : details) {
 
@@ -98,7 +98,8 @@ public class OrderService {
                 }
             }
 
-            // Map Showtime Entity sang ShowtimeHistoryDTO - không trả Hibernate Entity trực tiếp.
+            // Map Showtime Entity sang ShowtimeHistoryDTO - không trả Hibernate Entity trực
+            // tiếp.
             ShowtimeHistoryDTO showtimeDTO = mapShowtime(historyShowtime);
 
             dto.setShowtime(showtimeDTO);
