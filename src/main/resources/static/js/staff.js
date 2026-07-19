@@ -1031,7 +1031,7 @@ window.searchTicket = async function () {
 
     setText("resultOrderCode", order.orderCode || "N/A");
 
-    setText("resultTicketCode", order.ticketCode || "N/A");
+    setText("resultRoom", order.roomName || "N/A");
 
     setText("resultMovie", order.movie || "N/A");
 
@@ -1041,12 +1041,24 @@ window.searchTicket = async function () {
 
     setText("resultShowtime", showtimeText || "N/A");
 
-    setText(
-      "resultSeats",
+    const seatList =
       Array.isArray(order.seats) && order.seats.length > 0
-        ? order.seats.join(", ")
-        : "N/A",
+        ? order.seats
+        : [];
+
+    setText("resultSeats", seatList.length > 0 ? seatList.join(", ") : "N/A");
+
+    setText(
+      "resultSeatStub",
+      seatList.length > 0 ? seatList.join(" · ") : "—",
     );
+
+    const qrImg = document.getElementById("resultQrImg");
+    if (qrImg) {
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=0&data=${encodeURIComponent(
+        order.orderCode || order.ticketCode || "LAS-CINEMAS",
+      )}`;
+    }
 
     ticketResult?.classList.add("show");
 

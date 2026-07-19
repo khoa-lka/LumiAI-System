@@ -27,12 +27,12 @@ public interface TicketRepository extends JpaRepository<Ticket, Integer> {
     // Trả 1 dòng / ghế, phía Java gộp lại thành 1 đơn hàng kèm danh sách ghế.
     // BỔ SUNG: hàm này bị thiếu ở bản merge trước (staff.js đã gọi sẵn
     // /api/pos/orders/search nhưng backend chưa có endpoint/hàm tương ứng).
-    @Query(value = "SELECT o.order_code AS orderCode, t.ticket_code AS ticketCode, " +
-                   "m.title AS movieTitle, " +
-                   "CONVERT(VARCHAR(10), s.start_time, 120) AS showDate, " +
-                   "CONVERT(VARCHAR(5), s.start_time, 108) AS showTime, " +
-                   "CONCAT(seat.seat_row, seat.seat_number) AS seatCode, " +
-                   "o.final_amount AS totalPaid " +
+    @Query(value = "SELECT o.order_code AS \"orderCode\", t.ticket_code AS \"ticketCode\", " +
+                   "m.title AS \"movieTitle\", " +
+                   "TO_CHAR(s.start_time, 'YYYY-MM-DD') AS \"showDate\", " +
+                   "TO_CHAR(s.start_time, 'HH24:MI') AS \"showTime\", " +
+                   "CONCAT(seat.seat_row, seat.seat_number) AS \"seatCode\", " +
+                   "o.final_amount AS \"totalPaid\" " +
                    "FROM ticket t " +
                    "JOIN order1 o ON t.order_id = o.order_id " +
                    "JOIN showtime s ON o.showtime_id = s.showtime_id " +

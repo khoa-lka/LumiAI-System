@@ -6,6 +6,12 @@
     <title>LumiAI System - Máy POS</title>
 
     <link rel="stylesheet" href="staff.css?v=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
 
     <script src="/js/staff.js" defer></script>
   </head>
@@ -403,30 +409,66 @@
               </div>
 
               <div id="ticketResult" class="ticket-result">
-                <p>
-                  <strong>Mã đơn hàng:</strong>
-                  <span id="resultOrderCode">N/A</span>
-                </p>
+                <div class="movie-ticket" id="movieTicket">
+                  <div class="film-strip"></div>
 
-                <p>
-                  <strong>Mã vé:</strong>
-                  <span id="resultTicketCode">N/A</span>
-                </p>
+                  <div class="ticket-main">
+                    <div class="ticket-brand">
+                      <span class="ticket-brand-mark">LAS</span>
+                      <span class="ticket-brand-sub">CINEMAS</span>
+                    </div>
 
-                <p>
-                  <strong>Phim:</strong>
-                  <span id="resultMovie">N/A</span>
-                </p>
+                    <h3 class="ticket-movie-title" id="resultMovie">N/A</h3>
 
-                <p>
-                  <strong>Suất chiếu:</strong>
-                  <span id="resultShowtime">N/A</span>
-                </p>
+                    <div class="ticket-meta-row">
+                      <div class="ticket-meta">
+                        <span class="ticket-meta-label">Suất chiếu</span>
+                        <span class="ticket-meta-value" id="resultShowtime"
+                          >N/A</span
+                        >
+                      </div>
+                      <div class="ticket-meta">
+                        <span class="ticket-meta-label">Ghế</span>
+                        <span class="ticket-meta-value" id="resultSeats"
+                          >N/A</span
+                        >
+                      </div>
+                    </div>
 
-                <p>
-                  <strong>Ghế:</strong>
-                  <span id="resultSeats">N/A</span>
-                </p>
+                    <div class="ticket-meta-row">
+                      <div class="ticket-meta">
+                        <span class="ticket-meta-label">Mã đơn hàng</span>
+                        <span class="ticket-meta-value mono" id="resultOrderCode"
+                          >N/A</span
+                        >
+                      </div>
+                      <div class="ticket-meta">
+                        <span class="ticket-meta-label">Phòng chiếu</span>
+                        <span class="ticket-meta-value mono" id="resultRoom"
+                          >N/A</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="ticket-perforation">
+                    <span class="notch notch-top"></span>
+                    <span class="notch notch-bottom"></span>
+                  </div>
+
+                  <div class="ticket-stub">
+                    <img
+                      class="ticket-qr"
+                      id="resultQrImg"
+                      src=""
+                      alt="QR vé"
+                    />
+                    <span class="ticket-stub-admit">ADMIT ONE</span>
+                    <span class="ticket-stub-seat" id="resultSeatStub"
+                      >—</span
+                    >
+                  </div>
+                </div>
 
                 <button
                   type="button"

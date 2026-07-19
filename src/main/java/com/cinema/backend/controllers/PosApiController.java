@@ -328,29 +328,29 @@ public ResponseEntity<?> searchOrderByCode(
 
     String sql = """
             SELECT
-                o.order_code AS [orderCode],
+                o.order_code AS "orderCode",
 
                 STRING_AGG(
                     CAST(
                         t.ticket_code
-                        AS NVARCHAR(MAX)
+                        AS TEXT
                     ),
                     ', '
-                ) AS [ticketCode],
+                ) AS "ticketCode",
 
-                MAX(m.title) AS [movie],
+                MAX(m.title) AS "movie",
 
-                CONVERT(
-                    VARCHAR(5),
+                MAX(r.room_name) AS "roomName",
+
+                TO_CHAR(
                     MAX(st.start_time),
-                    108
-                ) AS [showtime],
+                    'HH24:MI'
+                ) AS "showtime",
 
-                CONVERT(
-                    VARCHAR(10),
+                TO_CHAR(
                     MAX(st.start_time),
-                    23
-                ) AS [date],
+                    'YYYY-MM-DD'
+                ) AS "date",
 
                 STRING_AGG(
                     CAST(
@@ -358,19 +358,19 @@ public ResponseEntity<?> searchOrderByCode(
                             s.seat_row,
                             s.seat_number
                         )
-                        AS NVARCHAR(MAX)
+                        AS TEXT
                     ),
                     ', '
-                ) AS [seatsCsv],
+                ) AS "seatsCsv",
 
                 MAX(o.final_amount)
-                    AS [totalMoney],
+                    AS "totalMoney",
 
                 MAX(o.payment_method)
-                    AS [paymentMethod],
+                    AS "paymentMethod",
 
                 MAX(o.payment_status)
-                    AS [paymentStatus]
+                    AS "paymentStatus"
 
             FROM order1 o
 
@@ -393,6 +393,10 @@ public ResponseEntity<?> searchOrderByCode(
             LEFT JOIN movie m
                 ON m.movie_id =
                    st.movie_id
+
+            LEFT JOIN room r
+                ON r.room_id =
+                   st.room_id
 
             WHERE UPPER(
                 LTRIM(
@@ -468,6 +472,11 @@ public ResponseEntity<?> searchOrderByCode(
     result.put(
             "movie",
             row.get("movie")
+    );
+
+    result.put(
+            "roomName",
+            row.get("roomName")
     );
 
     result.put(

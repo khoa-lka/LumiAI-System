@@ -1437,7 +1437,7 @@ private void savePayOSWebhookLog(
                 )
                 VALUES
                 (
-                    GETDATE(),
+                    NOW(),
                     ?, ?, ?, ?, ?, ?
                 )
                 """,

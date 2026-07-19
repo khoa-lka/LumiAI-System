@@ -550,19 +550,188 @@ button {
 .ticket-result {
   display: none;
   margin-top: 20px;
-  border: 1px solid #414147;
-  border-radius: 6px;
-  padding: 18px;
-  background: #141417;
 }
 
 .ticket-result.show {
   display: block;
 }
 
-.ticket-result p {
-  margin: 7px 0;
-  color: #e5e5e8;
+/* =========================================================
+   VÉ XEM PHIM — thiết kế dạng vé giấy thật (stub + xé rách)
+   ========================================================= */
+.movie-ticket {
+  --ticket-paper: #0d0d0f;
+  --ticket-ink: #f4f4f5;
+  --ticket-red: #ff6b35;
+  --ticket-gold: #ffb084;
+  --ticket-orange: #ff6b35;
+
+  position: relative;
+  display: flex;
+  background: var(--ticket-paper);
+  color: var(--ticket-ink);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 107, 53, 0.25);
+  font-family: "IBM Plex Mono", "Courier New", monospace;
+}
+
+.movie-ticket .film-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--ticket-ink) 0 10px,
+      transparent 10px 22px
+    );
+  opacity: 0.85;
+}
+
+.ticket-main {
+  flex: 1 1 auto;
+  padding: 26px 24px 18px;
+  min-width: 0;
+}
+
+.ticket-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ticket-brand-mark {
+  font-family: "Oswald", sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: var(--ticket-red);
+}
+
+.ticket-brand-sub {
+  font-family: "Oswald", sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 4px;
+  color: var(--ticket-gold);
+  text-transform: uppercase;
+}
+
+.ticket-movie-title {
+  font-family: "Oswald", sans-serif;
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.15;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 0 0 18px;
+  color: var(--ticket-ink);
+  overflow-wrap: anywhere;
+}
+
+.ticket-meta-row {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 12px;
+}
+
+.movie-ticket .ticket-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ticket-meta-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ticket-gold);
+  font-weight: 600;
+}
+
+.ticket-meta-value {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ticket-ink);
+  overflow-wrap: anywhere;
+}
+
+.ticket-meta-value.mono {
+  letter-spacing: 0.5px;
+}
+
+/* Đường xé rách giữa vé chính và cuống vé */
+.ticket-perforation {
+  position: relative;
+  flex: 0 0 0;
+  width: 0;
+  border-left: 2px dashed rgba(255, 107, 53, 0.45);
+  margin: 14px 0;
+}
+
+.ticket-perforation .notch {
+  position: absolute;
+  left: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg, #0d0d0f);
+}
+
+.ticket-perforation .notch-top {
+  top: -18px;
+}
+
+.ticket-perforation .notch-bottom {
+  bottom: -18px;
+}
+
+/* Cuống vé bên phải */
+.ticket-stub {
+  flex: 0 0 108px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px 14px;
+  background: rgba(255, 107, 53, 0.06);
+}
+
+.ticket-qr {
+  width: 72px;
+  height: 72px;
+  border-radius: 4px;
+  background: #fff;
+  padding: 4px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.ticket-stub-admit {
+  font-family: "Oswald", sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--ticket-red);
+  text-transform: uppercase;
+}
+
+.ticket-stub-seat {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: "Oswald", sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: var(--ticket-ink);
+  max-height: 130px;
 }
 
 .feedback-card textarea {
@@ -1210,7 +1379,9 @@ button {
     visibility: hidden;
   }
   #ticketSuccessModal,
-  #ticketSuccessModal * {
+  #ticketSuccessModal *,
+  #ticketResult.show,
+  #ticketResult.show * {
     visibility: visible;
   }
   #ticketSuccessModal {
@@ -1220,6 +1391,24 @@ button {
     background: white !important;
     color: black !important;
     display: block;
+  }
+  #ticketResult.show {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+  }
+  #ticketResult.show .ticket-print-btn {
+    display: none !important;
+  }
+  .movie-ticket {
+    box-shadow: none !important;
+    border: 1px solid #000;
+  }
+  .ticket-perforation .notch {
+    background: white !important;
+    border: 1px solid #000;
   }
   .ticket-success-box {
     box-shadow: none;
@@ -1244,7 +1433,7 @@ button {
   }
   .ticket-header,
   .section-title,
-  .ticket-meta,
+  .ticket-success-box .ticket-meta,
   .qr-text,
   .seat-badge {
     color: black !important;
@@ -1482,6 +1671,39 @@ button {
   width: 100%;
   margin-top: 18px;
   padding: 15px;
+}
+
+@media (max-width: 480px) {
+  .movie-ticket {
+    flex-direction: column;
+  }
+  .ticket-perforation {
+    width: auto;
+    height: 0;
+    border-left: none;
+    border-top: 2px dashed rgba(255, 107, 53, 0.45);
+    margin: 0 14px;
+  }
+  .ticket-perforation .notch {
+    top: -9px;
+    left: auto;
+  }
+  .ticket-perforation .notch-top {
+    left: -9px;
+  }
+  .ticket-perforation .notch-bottom {
+    right: -9px;
+    left: auto;
+  }
+  .ticket-stub {
+    flex-direction: row;
+    padding: 14px 20px;
+  }
+  .ticket-stub-seat {
+    writing-mode: horizontal-tb;
+    transform: none;
+    max-height: none;
+  }
 }
 
 .reply-btn {

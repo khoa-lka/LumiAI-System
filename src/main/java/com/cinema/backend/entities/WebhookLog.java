@@ -36,6 +36,6 @@ public class WebhookLog {
     @Column(name = "size_kb", nullable = false)
     private BigDecimal sizeKb;
 
-    @Column(name = "payload", columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "payload", columnDefinition = "TEXT")
     private String payload;
 }
