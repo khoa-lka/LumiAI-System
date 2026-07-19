@@ -580,17 +580,36 @@
                 </div>
 
                 <div class="cgv-membership-dashboard-table">
-                  <div class="dash-stat-box">
-                    <span class="dash-stat-icon">🎫</span>
-                    <b class="dash-stat-value">0</b>
-                    <span class="dash-stat-label">Tổng lượt đặt vé</span>
-                  </div>
-                  <div class="dash-stat-box">
-                    <span class="dash-stat-icon">💳</span>
-                    <b class="dash-stat-value">0 đ</b>
-                    <span class="dash-stat-label">Tổng chi tiêu</span>
-                  </div>
-                </div>
+  <div class="dash-stat-box">
+    <span class="dash-stat-icon">🎫</span>
+
+    <b
+      class="dash-stat-value"
+      id="profile-total-bookings"
+    >
+      0
+    </b>
+
+    <span class="dash-stat-label">
+      Tổng lượt đặt vé
+    </span>
+  </div>
+
+  <div class="dash-stat-box">
+    <span class="dash-stat-icon">💳</span>
+
+    <b
+      class="dash-stat-value"
+      id="profile-total-spending"
+    >
+      0 đ
+    </b>
+
+    <span class="dash-stat-label">
+      Tổng chi tiêu
+    </span>
+  </div>
+</div>
 
                 <div class="account-details-section">
                   <div class="details-section-title">
@@ -1621,6 +1640,130 @@
   <script src="js/dashboard-access.js?v=18"></script>
 <script src="js/chatbot.js?v=1"></script>
   <!-- ===== Bổ sung từ nhánh admin: popup thông báo tài khoản (VD: bị đổi quyền) ===== -->
+ <script>
+ async function loadBookingStatisticsFromDatabase() {
+  const bookingElement =
+    document.getElementById(
+      "profile-total-bookings"
+    );
+
+  const spendingElement =
+    document.getElementById(
+      "profile-total-spending"
+    );
+
+  if (!bookingElement || !spendingElement) {
+    console.error(
+      "Không tìm thấy hai ô thống kê"
+    );
+    return;
+  }
+
+  let accountId =
+    localStorage.getItem("accountId");
+
+  if (!accountId) {
+    try {
+      const loggedUser = JSON.parse(
+        localStorage.getItem(
+          "las_logged_in_user"
+        ) || "{}"
+      );
+
+      accountId =
+        loggedUser.accountId ||
+        loggedUser.id ||
+        loggedUser.data?.accountId ||
+        null;
+
+    } catch (error) {
+      accountId = null;
+    }
+  }
+
+  console.log(
+    "Account đang lấy thống kê:",
+    accountId
+  );
+
+  if (!accountId) {
+    bookingElement.textContent = "0";
+    spendingElement.textContent = "0 đ";
+    return;
+  }
+
+  try {
+    // Lấy trực tiếp thống kê từ bảng order1
+   const response = await fetch(
+  `/api/orders/user/${accountId}/summary`
+);
+
+    const result = await response.json();
+
+    console.log(
+      "API thống kê trả về:",
+      result
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        result.message ||
+        "Không lấy được thống kê đơn hàng"
+      );
+    }
+
+    bookingElement.textContent =
+      Number(result.totalBookings || 0);
+
+    spendingElement.textContent =
+      Number(result.totalSpending || 0)
+        .toLocaleString("vi-VN") + " đ";
+
+  } catch (error) {
+    console.error(
+      "Lỗi cập nhật thống kê:",
+      error
+    );
+  }
+}
+document.addEventListener(
+  "DOMContentLoaded",
+  function () {
+    loadBookingStatisticsFromDatabase();
+
+    const profileButton =
+      document.getElementById("lnk-profile");
+
+    if (profileButton) {
+      profileButton.addEventListener(
+        "click",
+        loadBookingStatisticsFromDatabase
+      );
+    }
+
+    const finalTicketResult =
+      document.getElementById(
+        "final-ticket-result"
+      );
+
+    if (finalTicketResult) {
+      const observer =
+        new MutationObserver(function () {
+          setTimeout(
+            loadBookingStatisticsFromDatabase,
+            500
+          );
+        });
+
+      observer.observe(finalTicketResult, {
+        childList: true,
+        subtree: true
+      });
+    }
+  }
+);
+</script>
+ 
   <div id="account-notification-popup" class="account-notification-overlay">
     <div class="account-notification-box">
       <div class="account-notification-icon">🔔</div>

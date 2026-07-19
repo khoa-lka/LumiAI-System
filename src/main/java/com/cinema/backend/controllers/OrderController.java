@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.cinema.backend.config.CurrentUser;
-import org.springframework.http.ResponseEntity;
+
 
 
 
@@ -57,5 +57,47 @@ public class OrderController {
 
         return ResponseEntity.ok(orderService.getHistory(accountId));
     }
+@GetMapping("/user/{accountId}/summary")
+public ResponseEntity<?> getCustomerBookingSummary(
+        @PathVariable Integer accountId) {
 
+    if (!CurrentUser.canAccess(accountId)) {
+        return ResponseEntity.status(403).body(Map.of(
+            "status", "error",
+            "message", "Bạn không có quyền xem thống kê này!"
+        ));
+    }
+
+    List<Object[]> rows =
+        orderRepository
+            .getCustomerBookingSummary(accountId);
+
+    long totalBookings = 0;
+    double totalSpending = 0;
+
+    if (rows != null && !rows.isEmpty()) {
+        Object[] result = rows.get(0);
+
+        if (
+            result.length >= 2 &&
+            result[0] instanceof Number
+        ) {
+            totalBookings =
+                ((Number) result[0]).longValue();
+        }
+
+        if (
+            result.length >= 2 &&
+            result[1] instanceof Number
+        ) {
+            totalSpending =
+                ((Number) result[1]).doubleValue();
+        }
+    }
+
+    return ResponseEntity.ok(Map.of(
+        "totalBookings", totalBookings,
+        "totalSpending", totalSpending
+    ));
+}
 }
