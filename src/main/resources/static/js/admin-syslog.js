@@ -10,18 +10,55 @@
 const ADM_SYSLOG_METRICS = [
   // BỔ SUNG: đồng bộ nền tối đồng nhất + icon outline trắng cho cả 4 thẻ
   // (trước đây mỗi thẻ 1 màu nền/icon riêng theo loại: xanh lá/xanh dương/cam/đỏ).
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>', bg: "var(--adm-surface-2)", fg: "#ffffff", label: "Tổng log", value: "0", delta: "0%", trend: "up", sub: "so với 7 ngày trước" },
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>', bg: "var(--adm-surface-2)", fg: "#ffffff", label: "Thông tin", value: "0", delta: "0%", trend: "up", sub: "so với 7 ngày trước" },
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 19h18z"/><path d="M12 10v4M12 17h.01"/></svg>', bg: "var(--adm-surface-2)", fg: "#ffffff", label: "Cảnh báo", value: "0", delta: "0%", trend: "up", sub: "so với 7 ngày trước" },
-  { icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>', bg: "var(--adm-surface-2)", fg: "#ffffff", label: "Lỗi", value: "0", delta: "0%", trend: "down", sub: "so với 7 ngày trước" },
+  {
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>',
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
+    label: "Tổng log",
+    value: "0",
+    delta: "0%",
+    trend: "up",
+    sub: "so với 7 ngày trước",
+  },
+  {
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
+    label: "Thông tin",
+    value: "0",
+    delta: "0%",
+    trend: "up",
+    sub: "so với 7 ngày trước",
+  },
+  {
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 19h18z"/><path d="M12 10v4M12 17h.01"/></svg>',
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
+    label: "Cảnh báo",
+    value: "0",
+    delta: "0%",
+    trend: "up",
+    sub: "so với 7 ngày trước",
+  },
+  {
+    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>',
+    bg: "var(--adm-surface-2)",
+    fg: "#ffffff",
+    label: "Lỗi",
+    value: "0",
+    delta: "0%",
+    trend: "down",
+    sub: "so với 7 ngày trước",
+  },
 ];
 
 /* --- 2. DỮ LIỆU LOG ĐƯỢC LẤY TỪ API --- */
 const ADM_SYSLOG_DATA = [];
 
-
 // Danh sách hành động (dùng để đổ vào dropdown "Tất cả hành động")
-const ADM_SYSLOG_ACTIONS = [...new Set(ADM_SYSLOG_DATA.map((l) => l.action))].sort();
+const ADM_SYSLOG_ACTIONS = [
+  ...new Set(ADM_SYSLOG_DATA.map((l) => l.action)),
+].sort();
 
 // Trạng thái phân trang hiện tại
 let admSyslogCurrentPage = 1;
@@ -50,9 +87,7 @@ function normalizeAdminSysLog(log) {
 
   if (!["info", "warning", "error"].includes(level)) {
     level =
-      String(log.status || "").toUpperCase() === "FAILED"
-        ? "error"
-        : "info";
+      String(log.status || "").toUpperCase() === "FAILED" ? "error" : "info";
   }
 
   return {
@@ -84,7 +119,7 @@ function updateAdminSysLogMetrics(currentLogs, previousLogs) {
       percent = currentValue === 0 ? 0 : 100;
     } else {
       percent = Math.abs(
-        ((currentValue - previousValue) / previousValue) * 100
+        ((currentValue - previousValue) / previousValue) * 100,
       );
     }
 
@@ -111,8 +146,9 @@ async function loadAdminSysLogs() {
 
   try {
     const response = await API.getSysLogs();
-    const allLogs = (Array.isArray(response) ? response : [])
-      .map(normalizeAdminSysLog);
+    const allLogs = (Array.isArray(response) ? response : []).map(
+      normalizeAdminSysLog,
+    );
 
     const endDate = new Date();
 
@@ -125,33 +161,23 @@ async function loadAdminSysLogs() {
 
     const currentLogs = allLogs.filter(
       (log) =>
-        log.rawTime &&
-        log.rawTime >= currentStart &&
-        log.rawTime <= endDate
+        log.rawTime && log.rawTime >= currentStart && log.rawTime <= endDate,
     );
 
     const previousLogs = allLogs.filter(
       (log) =>
         log.rawTime &&
         log.rawTime >= previousStart &&
-        log.rawTime < currentStart
+        log.rawTime < currentStart,
     );
 
-    ADM_SYSLOG_DATA.splice(
-      0,
-      ADM_SYSLOG_DATA.length,
-      ...currentLogs
-    );
+    ADM_SYSLOG_DATA.splice(0, ADM_SYSLOG_DATA.length, ...currentLogs);
 
     const actions = [
       ...new Set(ADM_SYSLOG_DATA.map((log) => log.action)),
     ].sort();
 
-    ADM_SYSLOG_ACTIONS.splice(
-      0,
-      ADM_SYSLOG_ACTIONS.length,
-      ...actions
-    );
+    ADM_SYSLOG_ACTIONS.splice(0, ADM_SYSLOG_ACTIONS.length, ...actions);
 
     updateAdminSysLogMetrics(currentLogs, previousLogs);
 
@@ -187,19 +213,31 @@ async function loadAdminSysLogs() {
   }
 }
 
-const ADM_SYSLOG_LEVEL_LABEL = { info: "Thông tin", warning: "Cảnh báo", error: "Lỗi" };
-const ADM_SYSLOG_LEVEL_CLASS = { info: "log-level-info", warning: "log-level-warning", error: "log-level-error" };
+const ADM_SYSLOG_LEVEL_LABEL = {
+  info: "Thông tin",
+  warning: "Cảnh báo",
+  error: "Lỗi",
+};
+const ADM_SYSLOG_LEVEL_CLASS = {
+  info: "log-level-info",
+  warning: "log-level-warning",
+  error: "log-level-error",
+};
 
 function admSyslogGetFilteredData() {
   const level = document.getElementById("adm-syslog-level-filter")?.value || "";
-  const action = document.getElementById("adm-syslog-action-filter")?.value || "";
-  const keyword = (document.getElementById("adm-syslog-search")?.value || "").toLowerCase().trim();
+  const action =
+    document.getElementById("adm-syslog-action-filter")?.value || "";
+  const keyword = (document.getElementById("adm-syslog-search")?.value || "")
+    .toLowerCase()
+    .trim();
 
   return ADM_SYSLOG_DATA.filter((l) => {
     if (level && l.level !== level) return false;
     if (action && l.action !== action) return false;
     if (keyword) {
-      const haystack = `${l.action} ${l.user} ${l.ip} ${l.detail}`.toLowerCase();
+      const haystack =
+        `${l.action} ${l.user} ${l.ip} ${l.detail}`.toLowerCase();
       if (!haystack.includes(keyword)) return false;
     }
     return true;
@@ -234,7 +272,9 @@ function renderAdminSysLogActionFilter() {
   const current = select.value;
   select.innerHTML =
     `<option value="">Tất cả hành động</option>` +
-    ADM_SYSLOG_ACTIONS.map((a) => `<option value="${a}">${a}</option>`).join("");
+    ADM_SYSLOG_ACTIONS.map((a) => `<option value="${a}">${a}</option>`).join(
+      "",
+    );
   select.value = current;
 }
 
@@ -285,8 +325,12 @@ function renderAdminSysLogPagination(totalItems, totalPages) {
   const host = document.getElementById("adm-syslog-pagination");
   if (!host) return;
 
-  const startShown = totalItems === 0 ? 0 : (admSyslogCurrentPage - 1) * admSyslogPageSize + 1;
-  const endShown = Math.min(admSyslogCurrentPage * admSyslogPageSize, totalItems);
+  const startShown =
+    totalItems === 0 ? 0 : (admSyslogCurrentPage - 1) * admSyslogPageSize + 1;
+  const endShown = Math.min(
+    admSyslogCurrentPage * admSyslogPageSize,
+    totalItems,
+  );
 
   // Xây danh sách số trang (rút gọn kiểu 1 2 3 4 5 ... N khi nhiều trang)
   let pageBtns = "";
@@ -369,13 +413,11 @@ function viewAdminSysLogDetail(globalIdx) {
   const levelLabel =
     ADM_SYSLOG_LEVEL_LABEL[item.level] || item.level || "Không xác định";
 
-  const levelClass =
-    ADM_SYSLOG_LEVEL_CLASS[item.level] || "";
+  const levelClass = ADM_SYSLOG_LEVEL_CLASS[item.level] || "";
 
   levelElement.textContent = levelLabel;
 
-  levelElement.className =
-    `log-level-badge ${levelClass}`.trim();
+  levelElement.className = `log-level-badge ${levelClass}`.trim();
 
   popup.classList.add("open");
   document.body.style.overflow = "hidden";
@@ -412,7 +454,14 @@ function exportAdminSysLogCsv() {
     return;
   }
 
-  const header = ["Thời gian", "Mức độ", "Hành động", "User", "IP Address", "Chi tiết"];
+  const header = [
+    "Thời gian",
+    "Mức độ",
+    "Hành động",
+    "User",
+    "IP Address",
+    "Chi tiết",
+  ];
   const rows = filtered.map((l) => [
     l.time,
     ADM_SYSLOG_LEVEL_LABEL[l.level] || l.level,
@@ -423,11 +472,15 @@ function exportAdminSysLogCsv() {
   ]);
 
   const csvContent = [header, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .map((row) =>
+      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+    )
     .join("\r\n");
 
   // Thêm BOM để Excel hiển thị đúng tiếng Việt có dấu
-  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["\uFEFF" + csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -479,11 +532,11 @@ async function loadAdminBellNotifications() {
     ADM_BELL_LOGS = allLogs.slice(0, 8);
 
     const lastSeenTime = Number(
-      localStorage.getItem(ADM_BELL_LAST_SEEN_KEY) || 0
+      localStorage.getItem(ADM_BELL_LAST_SEEN_KEY) || 0,
     );
 
     const unreadCount = allLogs.filter(
-      (log) => log.rawTime.getTime() > lastSeenTime
+      (log) => log.rawTime.getTime() > lastSeenTime,
     ).length;
 
     renderAdminBellNotifications(unreadCount);
@@ -573,7 +626,7 @@ function markAdminBellNotificationsRead() {
   if (latestLog?.rawTime) {
     localStorage.setItem(
       ADM_BELL_LAST_SEEN_KEY,
-      String(latestLog.rawTime.getTime())
+      String(latestLog.rawTime.getTime()),
     );
   }
 
@@ -611,10 +664,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (!admBellRefreshTimer) {
     // Cập nhật chuông sau mỗi 15 giây
-    admBellRefreshTimer = setInterval(
-      loadAdminBellNotifications,
-      15000
-    );
+    admBellRefreshTimer = setInterval(loadAdminBellNotifications, 15000);
   }
 });
-

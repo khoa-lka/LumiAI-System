@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.cinema.backend.entities.Voucher;
 import com.cinema.backend.service.VoucherService;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -49,7 +51,7 @@ public class VoucherController {
 
     // 🌟 API BỔ SUNG: Cho phép luồng Booking quét tìm khuyến mãi tự động (AUTO) phù hợp giá trị đơn
     @GetMapping("/check-auto")
-    public ResponseEntity<?> checkAutoVoucher(@RequestParam("grossAmount") Double grossAmount) {
+    public ResponseEntity<?> checkAutoVoucher(@RequestParam("grossAmount") BigDecimal grossAmount) {
         Voucher autoVoucher = voucherService.checkAutoVoucher(grossAmount);
         if (autoVoucher == null) {
             return ResponseEntity.ok().body(null); // Trả về null êm đẹp nếu hiện tại không có ưu đãi tự động

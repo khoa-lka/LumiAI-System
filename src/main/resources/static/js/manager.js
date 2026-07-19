@@ -77,7 +77,8 @@ function dismissToast(toast) {
 function showToast(message, type, duration = 5000) {
   const container = ensureToastContainer();
   const finalType = type || detectToastType(message);
-  const borderColor = TOAST_BORDER_COLORS[finalType] || TOAST_BORDER_COLORS.info;
+  const borderColor =
+    TOAST_BORDER_COLORS[finalType] || TOAST_BORDER_COLORS.info;
 
   const toast = document.createElement("div");
   toast.style.cssText = `
@@ -224,7 +225,8 @@ window.switchMpTab = function (tabId) {
     audit: "Báo cáo và Kiểm toán Tài chính",
   };
   const titleEl = document.getElementById("mp-dynamic-title");
-  if (titleEl) titleEl.innerText = titles[tabId] || "Chức năng đang phát triển...";
+  if (titleEl)
+    titleEl.innerText = titles[tabId] || "Chức năng đang phát triển...";
 
   // 0. Vẽ lại Dashboard mỗi khi quay lại Tab Dashboard
   if (tabId === "dashboard" && typeof renderManagerDashboard === "function") {
@@ -271,7 +273,8 @@ window.switchMpTab = function (tabId) {
   if (tabId === "audit") {
     try {
       if (typeof renderAuditReport === "function") renderAuditReport();
-      else if (typeof window.loadManagerAudit === "function") window.loadManagerAudit();
+      else if (typeof window.loadManagerAudit === "function")
+        window.loadManagerAudit();
     } catch (err) {
       console.error("Lỗi khi render Báo cáo & Kiểm toán:", err);
     }
@@ -311,7 +314,12 @@ window.toggleNotifDropdown = function () {
   const isOpening = !dropdown.classList.contains("open");
   dropdown.classList.toggle("open");
 
-  if (isOpening) {
+  // Cập nhật từ manager(1): xóa chấm đỏ cũ khi mở thông báo.
+  const bell = document.querySelector(".mp-bell");
+  if (bell) bell.classList.remove("has-new");
+
+  // Giữ hệ thống thông báo nâng cấp của manager.js.
+  if (isOpening && typeof markManagerNotificationsRead === "function") {
     markManagerNotificationsRead();
   }
 };
@@ -391,13 +399,17 @@ function renderMoviesTable(movies) {
   }
 
   // Thay thế đoạn vẽ bảng trong hàm renderMoviesTable thành đoạn này:
-  movies.forEach((m, index) => { // 🚀 ĐÃ SỬA: Thêm index để đếm số thứ tự
-    let ageBadgeClass = m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
+  movies.forEach((m, index) => {
+    // 🚀 ĐÃ SỬA: Thêm index để đếm số thứ tự
+    let ageBadgeClass =
+      m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
     let ageText = m.ageRating === 0 ? "P" : `T${m.ageRating}`;
     let statusMeta = mpStatusMeta(m.status);
     let statusClass = statusMeta.class;
     let statusText = statusMeta.text;
-    let posterUrl = m.mainposter_url ? m.mainposter_url : "img/default-poster.jpg";
+    let posterUrl = m.mainposter_url
+      ? m.mainposter_url
+      : "img/default-poster.jpg";
 
     tbody.innerHTML += `
       <tr>
@@ -472,16 +484,19 @@ function loadManagerMovies() {
       window.moviesList = movies; // Lưu tạm danh sách phim vào biến toàn cục để dùng cho bộ lọc filter
 
       // Duyệt danh sách phim và gán index tăng dần làm số thứ tự (STT) tự động cập nhật
-      movies.forEach((m, index) => { 
-        let ageBadgeClass = m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
+      movies.forEach((m, index) => {
+        let ageBadgeClass =
+          m.ageRating >= 18 ? "c18" : m.ageRating >= 13 ? "c13" : "p";
         let ageText = m.ageRating === 0 ? "P" : `T${m.ageRating}`;
 
         let statusMeta = mpStatusMeta(m.status);
         let statusClass = statusMeta.class;
         let statusText = statusMeta.text;
-        let rowClass = m.status !== "now_showing" ? 'class="mp-row-inactive"' : "";
+        let rowClass =
+          m.status !== "now_showing" ? 'class="mp-row-inactive"' : "";
 
-        let posterUrl = m.mainposterUrl || m.mainposter_url || "img/default-poster.jpg";
+        let posterUrl =
+          m.mainposterUrl || m.mainposter_url || "img/default-poster.jpg";
 
         tbody.innerHTML += `
             <tr ${rowClass}>
@@ -545,6 +560,70 @@ window.closeAddMovie = function () {
 };
 
 window.submitAddMovie = function () {
+  // 1. Tạo mảng gom lỗi để không bị alert chồng chéo
+  const errors = [];
+
+  // Lấy các giá trị để kiểm tra validation
+  const titleVal = document.getElementById("add-title").value.trim();
+  const genreVal = document.getElementById("add-genre").value;
+  const durationInput = document.getElementById("add-duration").value;
+  const directorVal = document.getElementById("add-director").value.trim();
+  const countryVal = document.getElementById("add-country").value;
+  const performerVal = document.getElementById("add-performer").value.trim();
+  const synopsisVal = document.getElementById("add-synopsis").value.trim();
+  const mainposterVal = document.getElementById("add-mainposter").value.trim();
+  const releaseDateVal = document.getElementById("add-release").value;
+
+  // ==========================================================================
+  // 🛑 BỘ GÁC CỔNG VALIDATION (GOM LỖI)
+  // ==========================================================================
+  if (!titleVal) errors.push("- Tên phim không được bỏ trống.");
+  if (!genreVal) errors.push("- Vui lòng chọn Thể loại phim.");
+  if (!directorVal) errors.push("- Tên đạo diễn không được bỏ trống.");
+  if (!countryVal) errors.push("- Vui lòng chọn Quốc gia.");
+  if (!performerVal) errors.push("- Danh sách diễn viên không được bỏ trống.");
+  if (!synopsisVal) errors.push("- Tóm tắt nội dung phim không được bỏ trống.");
+  if (!mainposterVal) errors.push("- Poster chính (URL) không được bỏ trống.");
+  if (!releaseDateVal) errors.push("- Vui lòng chọn Ngày phát hành.");
+
+  if (titleVal && titleVal.length > 255)
+    errors.push("- Tên phim không được vượt quá 255 ký tự.");
+  if (directorVal && directorVal.length > 100)
+    errors.push("- Tên đạo diễn không được vượt quá 100 ký tự.");
+  if (performerVal && performerVal.length > 500)
+    errors.push("- Danh sách diễn viên không được vượt quá 500 ký tự.");
+  if (synopsisVal && synopsisVal.length > 2000)
+    errors.push("- Tóm tắt phim không được vượt quá 2000 ký tự.");
+
+  const durationVal = parseInt(durationInput) || 0;
+  if (!durationInput || isNaN(durationVal) || durationVal <= 0) {
+    errors.push("- Thời lượng phim phải là số nguyên dương lớn hơn 0 phút.");
+  } else if (durationVal > 500) {
+    errors.push("- Thời lượng phim không thực tế (Tối đa 500 phút).");
+  }
+
+  if (releaseDateVal) {
+    const selectedDate = new Date(releaseDateVal);
+    selectedDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) {
+      errors.push("- Ngày phát hành phim phải từ ngày hôm nay trở về sau.");
+    }
+  }
+
+  // Nếu có lỗi thì dừng lại và hiện 1 alert duy nhất
+  if (errors.length > 0) {
+    alert(
+      "🚨 Phát hiện lỗi nhập liệu, vui lòng kiểm tra lại:\n\n" +
+        errors.join("\n"),
+    );
+    return;
+  }
+
+  // ==========================================================================
+  // 3. GIỮ NGUYÊN VẸN 100% ĐỐI TƯỢNG MOVIEDATA VÀ CÁC TÊN KEY GỐC CỦA EM
+  // ==========================================================================
   const movieData = {
     title: document.getElementById("add-title").value,
     genre: document.getElementById("add-genre").value,
@@ -561,6 +640,7 @@ window.submitAddMovie = function () {
     rating: 0.0,
   };
 
+  // Gọi API chạy luồng của nhóm em
   API.addMovie(movieData)
     .then(() => {
       alert("Thêm phim thành công!");
@@ -647,12 +727,16 @@ window.openMatrixViewMovie = function (id) {
   }
 
   document.getElementById("mxview-movie-id").value = id;
-  document.getElementById("mxview-title").innerText = movie.title || "Chưa cập nhật";
-  document.getElementById("mxview-genre").innerText = movie.genre || "Chưa cập nhật";
+  document.getElementById("mxview-title").innerText =
+    movie.title || "Chưa cập nhật";
+  document.getElementById("mxview-genre").innerText =
+    movie.genre || "Chưa cập nhật";
   document.getElementById("mxview-duration").innerText =
     movie.durationMinutes || movie.duration || "0";
-  document.getElementById("mxview-director").innerText = movie.director || "Chưa cập nhật";
-  document.getElementById("mxview-country").innerText = movie.country || "Chưa cập nhật";
+  document.getElementById("mxview-director").innerText =
+    movie.director || "Chưa cập nhật";
+  document.getElementById("mxview-country").innerText =
+    movie.country || "Chưa cập nhật";
 
   const statusEl = document.getElementById("mxview-status");
   const mxViewStatusMeta = mpStatusMeta(movie.status);
@@ -693,7 +777,8 @@ window.openMatrixEditMovie = function (id) {
   const imgUrl =
     movie.mainposterUrl || movie.mainposter_url || "img/default-poster.jpg";
   document.getElementById("mxedit-poster").src = imgUrl;
-  document.getElementById("mxedit-title").innerText = movie.title || "Chưa cập nhật";
+  document.getElementById("mxedit-title").innerText =
+    movie.title || "Chưa cập nhật";
   document.getElementById("mxedit-meta").innerText =
     `${movie.genre || "Chưa cập nhật"} · Dir. ${movie.director || "Chưa cập nhật"}`;
 
@@ -727,12 +812,16 @@ window.submitMatrixEditMovie = function () {
   const original = window.moviesList.find((item) => item.movieId === id);
   if (!original) return;
 
-  const statusChecked = document.querySelector('input[name="mxedit_status"]:checked');
+  const statusChecked = document.querySelector(
+    'input[name="mxedit_status"]:checked',
+  );
 
   // Giữ nguyên toàn bộ thông tin gốc của phim, chỉ ghi đè 2 trường được phép sửa ở đây
   const movieData = {
     ...original,
-    duration: parseInt(document.getElementById("mxedit-duration").value) || original.duration,
+    duration:
+      parseInt(document.getElementById("mxedit-duration").value) ||
+      original.duration,
     status: statusChecked ? statusChecked.value : original.status,
   };
 
@@ -741,7 +830,8 @@ window.submitMatrixEditMovie = function () {
       alert("Cập nhật thành công!");
       closeMatrixEditMovie();
       loadManagerMovies();
-      if (typeof window.loadManagerMatrix === "function") window.loadManagerMatrix();
+      if (typeof window.loadManagerMatrix === "function")
+        window.loadManagerMatrix();
     })
     .catch((err) => alert("Lỗi khi cập nhật: " + err));
 };
@@ -756,7 +846,15 @@ window.openUpdateMovie = function (id) {
 
   document.getElementById("upd-movie-id").value = movie.movieId;
   document.getElementById("upd-title").value = movie.title || "";
-  document.getElementById("upd-genre").value = movie.genre || "";
+
+  // 🟢 Chuẩn hóa Thể loại (Viết hoa chữ cái đầu nếu DB lưu chữ thường để khớp Dropdown)
+  let rawGenre = movie.genre || "";
+  if (rawGenre && rawGenre.length > 0) {
+    rawGenre =
+      rawGenre.charAt(0).toUpperCase() + rawGenre.slice(1).toLowerCase();
+  }
+  document.getElementById("upd-genre").value = rawGenre;
+
   document.getElementById("upd-duration").value =
     movie.durationMinutes || movie.duration || "";
   document.getElementById("upd-release").value = movie.releaseDate || "";
@@ -776,6 +874,14 @@ window.openUpdateMovie = function (id) {
   if (statusRadio) statusRadio.checked = true;
 
   document.getElementById("mp-update-movie-modal").style.display = "flex";
+
+  // 🎯 ĐÃ CHÈN: Cập nhật lại số ký tự đếm lùi dựa trên dữ liệu cũ vừa đổ vào form
+  if (typeof updateCharCount === "function") {
+    updateCharCount("upd-title", "upd-count-title", 255);
+    updateCharCount("upd-director", "upd-count-director", 100);
+    updateCharCount("upd-performer", "upd-count-performer", 500);
+    updateCharCount("upd-synopsis", "upd-count-synopsis", 2000);
+  }
 };
 
 window.closeUpdateMovie = function () {
@@ -903,9 +1009,12 @@ document.addEventListener("DOMContentLoaded", displayCurrentDate);
 // Hàm tự động phân loại sản phẩm dựa theo từ khóa trong tên (dùng chung cho load + filter)
 function getFnbTypeMeta(itemName) {
   const nameLower = (itemName || "").toLowerCase();
-  if (nameLower.includes("combo")) return { key: "combo", text: "Combo", icon: "🎁" };
-  if (nameLower.includes("nuoc") || nameLower.includes("coca")) return { key: "nuoc", text: "Nước ngọt", icon: "🥤" };
-  if (nameLower.includes("khoai") || nameLower.includes("chien")) return { key: "anvat", text: "Đồ ăn vặt", icon: "🍟" };
+  if (nameLower.includes("combo"))
+    return { key: "combo", text: "Combo", icon: "🎁" };
+  if (nameLower.includes("nuoc") || nameLower.includes("coca"))
+    return { key: "nuoc", text: "Nước ngọt", icon: "🥤" };
+  if (nameLower.includes("khoai") || nameLower.includes("chien"))
+    return { key: "anvat", text: "Đồ ăn vặt", icon: "🍟" };
   return { key: "bap", text: "Bắp rang", icon: "🍿" };
 }
 
@@ -940,11 +1049,12 @@ function renderFnbRow(item, index) {
 }
 
 // Hàm tải danh sách F&B thực tế từ database lên giao diện
-window.loadManagerFnb = function() {
+window.loadManagerFnb = function () {
   const tbody = document.getElementById("mp-fnb-tbody");
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Đang quét dữ liệu kho hàng...</td></tr>';
+  tbody.innerHTML =
+    '<tr><td colspan="7" style="text-align:center; padding:15px;">Đang quét dữ liệu kho hàng...</td></tr>';
 
   API.getFnbItems()
     .then((items) => {
@@ -952,7 +1062,8 @@ window.loadManagerFnb = function() {
       window.fnbItemsList = items; // Lưu cache danh sách toàn cục để sửa
 
       if (!items || items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Kho trống! Chưa có sản phẩm bắp nước nào.</td></tr>';
+        tbody.innerHTML =
+          '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Kho trống! Chưa có sản phẩm bắp nước nào.</td></tr>';
         return;
       }
 
@@ -967,33 +1078,35 @@ window.loadManagerFnb = function() {
 };
 
 // Điều khiển mở đóng Modal Form điền dữ liệu
-window.openAddFnbModal = function() {
+window.openAddFnbModal = function () {
   document.getElementById("fnb-item-id").value = "";
   document.getElementById("fnb-name").value = "";
   document.getElementById("fnb-price").value = "";
   document.getElementById("fnb-stock").value = "";
-  document.getElementById("fnb-modal-title").innerText = "Thêm Sản Phẩm F&B Mới";
+  document.getElementById("fnb-modal-title").innerText =
+    "Thêm Sản Phẩm F&B Mới";
   document.getElementById("mp-fnb-modal").style.display = "flex";
 };
 
-window.openEditFnbModal = function(id) {
-  const item = window.fnbItemsList.find(x => x.foodItemId === id);
+window.openEditFnbModal = function (id) {
+  const item = window.fnbItemsList.find((x) => x.foodItemId === id);
   if (!item) return;
 
   document.getElementById("fnb-item-id").value = item.foodItemId;
   document.getElementById("fnb-name").value = item.itemName;
   document.getElementById("fnb-price").value = item.price;
   document.getElementById("fnb-stock").value = item.stockQuantity;
-  document.getElementById("fnb-modal-title").innerText = "Cập Nhật Thông Tin Sản Phẩm";
+  document.getElementById("fnb-modal-title").innerText =
+    "Cập Nhật Thông Tin Sản Phẩm";
   document.getElementById("mp-fnb-modal").style.display = "flex";
 };
 
-window.closeFnbModal = function() {
+window.closeFnbModal = function () {
   document.getElementById("mp-fnb-modal").style.display = "none";
 };
 
 // Hàm xử lý chung gửi request Thêm hoặc Sửa lên Spring Boot
-window.submitFnbForm = function() {
+window.submitFnbForm = function () {
   const id = document.getElementById("fnb-item-id").value;
   const name = document.getElementById("fnb-name").value.trim();
   const price = parseFloat(document.getElementById("fnb-price").value) || 0;
@@ -1014,7 +1127,7 @@ window.submitFnbForm = function() {
         closeFnbModal();
         loadManagerFnb();
       })
-      .catch(err => alert("Lỗi khi sửa bắp nước: " + err.message));
+      .catch((err) => alert("Lỗi khi sửa bắp nước: " + err.message));
   } else {
     // Nếu ID trống -> Gọi API thêm sản phẩm mới vào DB
     API.addFnbItem(fnbData)
@@ -1023,12 +1136,12 @@ window.submitFnbForm = function() {
         closeFnbModal();
         loadManagerFnb();
       })
-      .catch(err => alert("Lỗi khi thêm bắp nước: " + err.message));
+      .catch((err) => alert("Lỗi khi thêm bắp nước: " + err.message));
   }
 };
 
 // --- XÁC NHẬN XÓA SẢN PHẨM F&B BẰNG MODAL RIÊNG (thay cho confirm() mặc định) ---
-window.submitDeleteFnb = function(id) {
+window.submitDeleteFnb = function (id) {
   const item = (window.fnbItemsList || []).find((x) => x.foodItemId === id);
   window._pendingDeleteFnbId = id;
 
@@ -1042,12 +1155,12 @@ window.submitDeleteFnb = function(id) {
   document.getElementById("mp-fnb-delete-modal").style.display = "flex";
 };
 
-window.closeFnbDeleteModal = function() {
+window.closeFnbDeleteModal = function () {
   document.getElementById("mp-fnb-delete-modal").style.display = "none";
   window._pendingDeleteFnbId = null;
 };
 
-window.confirmDeleteFnb = function() {
+window.confirmDeleteFnb = function () {
   const id = window._pendingDeleteFnbId;
   if (!id) return;
 
@@ -1058,7 +1171,9 @@ window.confirmDeleteFnb = function() {
       loadManagerFnb();
     })
     .catch(() => {
-      alert("Thất bại! Sản phẩm này đang dính vào lịch sử hóa đơn đặt vé cũ nên không thể xóa vật lý.");
+      alert(
+        "Thất bại! Sản phẩm này đang dính vào lịch sử hóa đơn đặt vé cũ nên không thể xóa vật lý.",
+      );
       closeFnbDeleteModal();
     });
 };
@@ -1080,8 +1195,10 @@ function filterManagerFnb() {
 
   const filteredResult = window.fnbItemsList.filter((item) => {
     // 1. Tìm kiếm theo tên sản phẩm thật bốc từ Database (itemName)
-    const matchesKeyword = item.itemName ? item.itemName.toLowerCase().includes(keyword) : false;
-    
+    const matchesKeyword = item.itemName
+      ? item.itemName.toLowerCase().includes(keyword)
+      : false;
+
     // 2. Tự động nhận diện Phân loại dựa theo từ khóa chuỗi tên tương tự hàm load gốc
     const currentType = getFnbTypeMeta(item.itemName).key;
 
@@ -1112,7 +1229,8 @@ function renderFilteredFnbTable(items) {
   tbody.innerHTML = "";
 
   if (!items || items.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Không tìm thấy sản phẩm bắp nước nào khớp với bộ lọc!</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;">Không tìm thấy sản phẩm bắp nước nào khớp với bộ lọc!</td></tr>';
     return;
   }
 
@@ -1126,28 +1244,35 @@ function renderFilteredFnbTable(items) {
 // ==========================================================================
 
 // --- CHỨC NĂNG 1: TÁI CUNG ỨNG TỰ ĐỘNG (AUTO-REPLENISH) ---
-window.handleAutoReplenish = function() {
+window.handleAutoReplenish = function () {
   if (!window.fnbItemsList || window.fnbItemsList.length === 0) {
     alert("Không có dữ liệu sản phẩm để tái cung ứng!");
     return;
   }
 
   // Lọc ra các sản phẩm có tồn kho thấp (<= 30)
-  const lowStockItems = window.fnbItemsList.filter(item => item.stockQuantity <= 30);
+  const lowStockItems = window.fnbItemsList.filter(
+    (item) => item.stockQuantity <= 30,
+  );
 
   if (lowStockItems.length === 0) {
-    alert("Tất cả sản phẩm trong kho đều đang ở mức an toàn (>30 ly). Không cần tái cung ứng!");
+    alert(
+      "Tất cả sản phẩm trong kho đều đang ở mức an toàn (>30 ly). Không cần tái cung ứng!",
+    );
     return;
   }
 
-  if (confirm(`Hệ thống tìm thấy ${lowStockItems.length} sản phẩm đang sắp hết hàng (tồn thấp).\nBạn có muốn tự động bù hàng lên mức an toàn (100 ly) không?`)) {
-    
+  if (
+    confirm(
+      `Hệ thống tìm thấy ${lowStockItems.length} sản phẩm đang sắp hết hàng (tồn thấp).\nBạn có muốn tự động bù hàng lên mức an toàn (100 ly) không?`,
+    )
+  ) {
     // Tạo danh sách các Promise để cập nhật đồng thời lên Server Spring Boot
-    const updatePromises = lowStockItems.map(item => {
+    const updatePromises = lowStockItems.map((item) => {
       const updatedData = {
         itemName: item.itemName,
         price: item.price,
-        stockQuantity: 100 // Tự động đưa lên mức an toàn 100 đơn vị
+        stockQuantity: 100, // Tự động đưa lên mức an toàn 100 đơn vị
       };
       return API.updateFnbItem(item.foodItemId, updatedData);
     });
@@ -1155,12 +1280,16 @@ window.handleAutoReplenish = function() {
     // Chờ tất cả API cập nhật xong xuôi
     Promise.all(updatePromises)
       .then(() => {
-        alert("Chiến dịch tái cung ứng hoàn tất! Toàn bộ sản phẩm tồn thấp đã được đưa về mức an toàn.");
+        alert(
+          "Chiến dịch tái cung ứng hoàn tất! Toàn bộ sản phẩm tồn thấp đã được đưa về mức an toàn.",
+        );
         loadManagerFnb(); // Tải lại bảng để cập nhật số lượng mới
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Lỗi tái cung ứng:", err);
-        alert("Có lỗi xảy ra trong quá trình cập nhật kho hàng: " + err.message);
+        alert(
+          "Có lỗi xảy ra trong quá trình cập nhật kho hàng: " + err.message,
+        );
       });
   }
 };
@@ -1168,7 +1297,7 @@ window.handleAutoReplenish = function() {
 // --- CHỨC NĂNG 2: NHẬP HÀNG NHANH (QUICK RESTOCK) ---
 // 🚀 ĐÃ SỬA: Thay thế hoàn toàn prompt()/confirm() mặc định xấu xí của trình duyệt
 // bằng modal riêng #mp-restock-modal, đồng bộ giao diện với modal Thêm/Sửa F&B.
-window.openQuickRestockModal = function() {
+window.openQuickRestockModal = function () {
   if (!window.fnbItemsList || window.fnbItemsList.length === 0) {
     alert("Kho hàng trống, vui lòng thêm sản phẩm mới trước!");
     return;
@@ -1176,7 +1305,10 @@ window.openQuickRestockModal = function() {
 
   const select = document.getElementById("restock-product-select");
   select.innerHTML = window.fnbItemsList
-    .map((item) => `<option value="${item.foodItemId}">${item.itemName} (Tồn: ${item.stockQuantity})</option>`)
+    .map(
+      (item) =>
+        `<option value="${item.foodItemId}">${item.itemName} (Tồn: ${item.stockQuantity})</option>`,
+    )
     .join("");
 
   document.getElementById("restock-add-qty").value = "";
@@ -1185,26 +1317,33 @@ window.openQuickRestockModal = function() {
 };
 
 // Cập nhật số tồn kho hiện tại hiển thị khi đổi sản phẩm trong dropdown
-window.onRestockProductChange = function() {
+window.onRestockProductChange = function () {
   const select = document.getElementById("restock-product-select");
-  const item = window.fnbItemsList.find((x) => String(x.foodItemId) === String(select.value));
-  document.getElementById("restock-current-stock").innerText = item ? `${item.stockQuantity} ly` : "0";
+  const item = window.fnbItemsList.find(
+    (x) => String(x.foodItemId) === String(select.value),
+  );
+  document.getElementById("restock-current-stock").innerText = item
+    ? `${item.stockQuantity} ly`
+    : "0";
 };
 
-window.closeRestockModal = function() {
+window.closeRestockModal = function () {
   document.getElementById("mp-restock-modal").style.display = "none";
 };
 
 // Xử lý xác nhận nhập hàng: cộng dồn số lượng mới vào tồn kho hiện tại rồi gửi API
-window.submitRestockForm = function() {
+window.submitRestockForm = function () {
   const select = document.getElementById("restock-product-select");
-  const item = window.fnbItemsList.find((x) => String(x.foodItemId) === String(select.value));
+  const item = window.fnbItemsList.find(
+    (x) => String(x.foodItemId) === String(select.value),
+  );
   if (!item) {
     alert("Vui lòng chọn sản phẩm cần nhập hàng!");
     return;
   }
 
-  const addQty = parseInt(document.getElementById("restock-add-qty").value) || 0;
+  const addQty =
+    parseInt(document.getElementById("restock-add-qty").value) || 0;
   if (addQty <= 0) {
     alert("Số lượng nhập kho phải lớn hơn 0!");
     return;
@@ -1218,7 +1357,9 @@ window.submitRestockForm = function() {
 
   API.updateFnbItem(item.foodItemId, fnbData)
     .then(() => {
-      alert(`Nhập hàng thành công! Đã cộng thêm ${addQty} đơn vị vào sản phẩm ${item.itemName}.`);
+      alert(
+        `Nhập hàng thành công! Đã cộng thêm ${addQty} đơn vị vào sản phẩm ${item.itemName}.`,
+      );
       closeRestockModal();
       loadManagerFnb();
     })
@@ -1242,7 +1383,9 @@ function renderMatrixMovieList(movies) {
 
   tbody.innerHTML = "";
   movies.forEach((m) => {
-    const posterUrl = m.mainposter_url ? m.mainposter_url : "img/default-poster.jpg";
+    const posterUrl = m.mainposter_url
+      ? m.mainposter_url
+      : "img/default-poster.jpg";
     const matrixStatusMeta = mpStatusMeta(m.status);
     const statusClass = matrixStatusMeta.class;
     const statusText = matrixStatusMeta.text;
@@ -1289,14 +1432,57 @@ window.renderMatrixMovieList = renderMatrixMovieList;
 window.mpCalView = window.mpCalView || "week";
 window.mpCalCursor = window.mpCalCursor || new Date();
 const MPCAL_HOUR_H = 48;
-const MPCAL_PALETTE = ["#4f7cff","#e0457b","#8b5cf6","#ef8a3c","#22b8a6","#eab308","#f43f5e","#38bdf8","#a855f7","#10b981","#f59e0b","#ec4899"];
-function mpCalColor(t){ t=t||""; let h=0; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))>>>0; return MPCAL_PALETTE[h % MPCAL_PALETTE.length]; }
-function mpCalYMD(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0"); return `${y}-${m}-${dd}`; }
-function mpCalToMin(t){ const[a,b]=(t||"0:0").split(":").map(Number); return a*60+(b||0); }
-function mpCalFmtH(t){ let[h,m]=(t||"0:0").split(":").map(Number); const ap=h<12?"am":"pm"; let hh=h%12; if(hh===0)hh=12; return `${hh}:${String(m||0).padStart(2,"0")}${ap}`; }
-function mpCalSameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
-function mpCalStartOfWeek(d){ const x=new Date(d); x.setDate(x.getDate()-x.getDay()); x.setHours(0,0,0,0); return x; }
-const MPCAL_DOW = ["CN","T2","T3","T4","T5","T6","T7"];
+const MPCAL_PALETTE = [
+  "#4f7cff",
+  "#e0457b",
+  "#8b5cf6",
+  "#ef8a3c",
+  "#22b8a6",
+  "#eab308",
+  "#f43f5e",
+  "#38bdf8",
+  "#a855f7",
+  "#10b981",
+  "#f59e0b",
+  "#ec4899",
+];
+function mpCalColor(t) {
+  t = t || "";
+  let h = 0;
+  for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0;
+  return MPCAL_PALETTE[h % MPCAL_PALETTE.length];
+}
+function mpCalYMD(d) {
+  const y = d.getFullYear(),
+    m = String(d.getMonth() + 1).padStart(2, "0"),
+    dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+function mpCalToMin(t) {
+  const [a, b] = (t || "0:0").split(":").map(Number);
+  return a * 60 + (b || 0);
+}
+function mpCalFmtH(t) {
+  let [h, m] = (t || "0:0").split(":").map(Number);
+  const ap = h < 12 ? "am" : "pm";
+  let hh = h % 12;
+  if (hh === 0) hh = 12;
+  return `${hh}:${String(m || 0).padStart(2, "0")}${ap}`;
+}
+function mpCalSameDay(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+function mpCalStartOfWeek(d) {
+  const x = new Date(d);
+  x.setDate(x.getDate() - x.getDay());
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+const MPCAL_DOW = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 // ==========================================================================
 // 🎦 DANH SÁCH PHÒNG CHIẾU — CẤU HÌNH ĐỘNG (chưa có data mẫu cố định nên
@@ -1309,14 +1495,19 @@ window.MP_ROOMS = window.MP_ROOMS || [
   { id: 2, label: "Phòng 2 · IMAX" },
   { id: 3, label: "Phòng 3 · Standard" },
 ];
-function mpEnsureRoomKnown(roomId){
+function mpEnsureRoomKnown(roomId) {
   if (roomId === undefined || roomId === null) return;
-  if (!window.MP_ROOMS.some(r => r.id === roomId)) {
+  if (!window.MP_ROOMS.some((r) => r.id === roomId)) {
     window.MP_ROOMS.push({ id: roomId, label: `Phòng ${roomId}` });
   }
 }
-function mpCalRoomLabel(r){ const room = window.MP_ROOMS.find(x=>x.id===r); return room ? room.label : `Phòng ${r}`; }
-function mpCalRoomShort(r){ return `P${r}`; }
+function mpCalRoomLabel(r) {
+  const room = window.MP_ROOMS.find((x) => x.id === r);
+  return room ? room.label : `Phòng ${r}`;
+}
+function mpCalRoomShort(r) {
+  return `P${r}`;
+}
 
 // ==========================================================================
 // 🛠️ LỚP "OVERRIDE" TẠM Ở FRONT-END CHO SỬA/XÓA SUẤT CHIẾU
@@ -1331,30 +1522,36 @@ function mpCalRoomShort(r){ return `P${r}`; }
 // bỏ lớp localStorage này đi mà không ảnh hưởng phần UI/UX phía trên.
 // ==========================================================================
 const MP_OVERRIDE_KEY = "mp_showtime_overrides_v1";
-function mpLoadOverrides(){
-  try { return JSON.parse(localStorage.getItem(MP_OVERRIDE_KEY)) || {}; }
-  catch(e){ return {}; }
+function mpLoadOverrides() {
+  try {
+    return JSON.parse(localStorage.getItem(MP_OVERRIDE_KEY)) || {};
+  } catch (e) {
+    return {};
+  }
 }
-function mpSaveOverrides(map){
-  try { localStorage.setItem(MP_OVERRIDE_KEY, JSON.stringify(map)); }
-  catch(e){ console.warn("Không thể lưu override suất chiếu vào localStorage:", e); }
+function mpSaveOverrides(map) {
+  try {
+    localStorage.setItem(MP_OVERRIDE_KEY, JSON.stringify(map));
+  } catch (e) {
+    console.warn("Không thể lưu override suất chiếu vào localStorage:", e);
+  }
 }
-function mpSetShowtimeOverride(showtimeId, patch){
+function mpSetShowtimeOverride(showtimeId, patch) {
   const map = mpLoadOverrides();
-  map[showtimeId] = { ...(map[showtimeId]||{}), ...patch };
+  map[showtimeId] = { ...(map[showtimeId] || {}), ...patch };
   mpSaveOverrides(map);
 }
-function mpDeleteShowtimeLocal(showtimeId){
+function mpDeleteShowtimeLocal(showtimeId) {
   mpSetShowtimeOverride(showtimeId, { deleted: true });
 }
-function mpClearShowtimeOverride(showtimeId){
+function mpClearShowtimeOverride(showtimeId) {
   const map = mpLoadOverrides();
   delete map[showtimeId];
   mpSaveOverrides(map);
 }
 // Áp override (nếu có) lên 1 suất chiếu lấy từ server; trả về null nếu suất
 // chiếu đó đã bị xóa tạm ở FE (để loại khỏi danh sách hiển thị).
-function mpApplyOverride(st){
+function mpApplyOverride(st) {
   const map = mpLoadOverrides();
   const ov = map[st.showtimeId];
   if (!ov) return st;
@@ -1366,29 +1563,35 @@ function mpApplyOverride(st){
 // 🟢 ĐÃ SỬA: Hàm nạp dữ liệu gốc - Lấy từ DB, gỡ bỏ hoàn toàn localStorage
 // ==========================================================================
 function mpCalFetchDate(dateStr) {
-  return Promise.all((window.moviesList || []).map(movie =>
-    API.getShowtimes(movie.movieId, dateStr)
-      .then(res => (res.showtimes || []).map(st => ({
-        ...st,
-        movieId: movie.movieId,
-        movieTitle: movie.title,
-        movieStatus: movie.status,
-        // 🌟 Đồng bộ trường status chữ hoa từ SQL Server nhả về qua Controller
-        status: st.status ? st.status.toUpperCase() : "ACTIVE" 
-      })))
-      .catch(() => [])
-  )).then(arr => {
+  return Promise.all(
+    (window.moviesList || []).map((movie) =>
+      API.getShowtimes(movie.movieId, dateStr)
+        .then((res) =>
+          (res.showtimes || []).map((st) => ({
+            ...st,
+            movieId: movie.movieId,
+            movieTitle: movie.title,
+            movieStatus: movie.status,
+            // 🌟 Đồng bộ trường status chữ hoa từ SQL Server nhả về qua Controller
+            status: st.status ? st.status.toUpperCase() : "ACTIVE",
+          })),
+        )
+        .catch(() => []),
+    ),
+  ).then((arr) => {
     // 🌟 CHỐT CHẶN: Lấy danh sách gốc từ DB trả về thẳng, KHÔNG gọi mpApplyOverride nữa
-    const list = arr.flat().filter(Boolean); 
-    
+    const list = arr.flat().filter(Boolean);
+
     // Thuật toán quét và tự động cảnh báo xung đột (Conflict) giữ nguyên
-    list.forEach(cur => {
+    list.forEach((cur) => {
       mpEnsureRoomKnown(cur.roomId);
       cur.isConflict = false;
-      const cs = mpCalToMin(cur.startTime), ce = mpCalToMin(cur.endTime);
-      list.forEach(o => {
+      const cs = mpCalToMin(cur.startTime),
+        ce = mpCalToMin(cur.endTime);
+      list.forEach((o) => {
         if (cur.showtimeId !== o.showtimeId && cur.roomId === o.roomId) {
-          const os = mpCalToMin(o.startTime), oe = mpCalToMin(o.endTime);
+          const os = mpCalToMin(o.startTime),
+            oe = mpCalToMin(o.endTime);
           if (cs < oe && ce > os) cur.isConflict = true;
         }
       });
@@ -1397,23 +1600,32 @@ function mpCalFetchDate(dateStr) {
   });
 }
 
-function mpCalEventHTML(st, col, cols){
+function mpCalEventHTML(st, col, cols) {
   const c = mpCalColor(st.movieTitle);
-  const top = mpCalToMin(st.startTime)/60*MPCAL_HOUR_H;
-  const h = Math.max(20, (mpCalToMin(st.endTime)-mpCalToMin(st.startTime))/60*MPCAL_HOUR_H - 3);
+  const top = (mpCalToMin(st.startTime) / 60) * MPCAL_HOUR_H;
+  const h = Math.max(
+    20,
+    ((mpCalToMin(st.endTime) - mpCalToMin(st.startTime)) / 60) * MPCAL_HOUR_H -
+      3,
+  );
   const cf = st.isConflict ? " mpcal-evt-conflict" : "";
-  
+
   // Suất chiếu mờ đi nếu Phim bị ẩn HOẶC bản thân Suất chiếu đó mang trạng thái HIDDEN
-  const hiddenCls = (st.movieStatus === "hidden" || st.status === "HIDDEN") ? " mpcal-evt-hidden" : "";
-  const badge = st.isConflict ? '<span class="mpcal-evt-warn" title="Xung đột lịch chiếu!">!</span>' : '';
-  
+  const hiddenCls =
+    st.movieStatus === "hidden" || st.status === "HIDDEN"
+      ? " mpcal-evt-hidden"
+      : "";
+  const badge = st.isConflict
+    ? '<span class="mpcal-evt-warn" title="Xung đột lịch chiếu!">!</span>'
+    : "";
+
   // 🌟 ĐÃ XÓA: Bỏ biến editedBadge (icon dấu bút chì chỉnh sửa tạm ở local cũ) để giao diện đồng bộ chuẩn DB 100%
-  
+
   const n = cols || 1;
   const w = 100 / n;
   const left = (col || 0) * w;
   const compact = n > 1 ? " mpcal-evt-compact" : "";
-  
+
   return `<div class="mpcal-evt${cf}${hiddenCls}${compact}" data-showtime-id="${st.showtimeId}" style="top:${top}px;height:${h}px;left:calc(${left}% + 2px);width:calc(${w}% - 4px);background:${c}22;border-left-color:${c};"
       title="${st.movieTitle} (${st.startTime} - ${st.endTime}) · ${mpCalRoomLabel(st.roomId)}"
       onmousedown="mpEvtMouseDown(event, ${st.showtimeId})">
@@ -1426,64 +1638,125 @@ function mpCalEventHTML(st, col, cols){
 }
 
 // Xếp các suất CHỒNG GIỜ nằm cạnh nhau (chia cột con như Google Calendar)
-function mpCalLayout(list){
-  const evs = (list||[]).map(st => ({ st, s:mpCalToMin(st.startTime), e:mpCalToMin(st.endTime), col:0, cols:1 }));
-  evs.sort((a,b)=> a.s-b.s || a.e-b.e);
-  let cluster=[], clusterEnd=-1;
-  const flush=()=>{
-    if(!cluster.length) return;
-    const colsArr=[];
-    cluster.forEach(ev=>{
-      let placed=false;
-      for(let i=0;i<colsArr.length;i++){ if(colsArr[i][colsArr[i].length-1].e <= ev.s){ colsArr[i].push(ev); ev.col=i; placed=true; break; } }
-      if(!placed){ ev.col=colsArr.length; colsArr.push([ev]); }
+function mpCalLayout(list) {
+  const evs = (list || []).map((st) => ({
+    st,
+    s: mpCalToMin(st.startTime),
+    e: mpCalToMin(st.endTime),
+    col: 0,
+    cols: 1,
+  }));
+  evs.sort((a, b) => a.s - b.s || a.e - b.e);
+  let cluster = [],
+    clusterEnd = -1;
+  const flush = () => {
+    if (!cluster.length) return;
+    const colsArr = [];
+    cluster.forEach((ev) => {
+      let placed = false;
+      for (let i = 0; i < colsArr.length; i++) {
+        if (colsArr[i][colsArr[i].length - 1].e <= ev.s) {
+          colsArr[i].push(ev);
+          ev.col = i;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        ev.col = colsArr.length;
+        colsArr.push([ev]);
+      }
     });
-    cluster.forEach(ev=> ev.cols=colsArr.length); cluster = []; clusterEnd=-1;
+    cluster.forEach((ev) => (ev.cols = colsArr.length));
+    cluster = [];
+    clusterEnd = -1;
   };
-  evs.forEach(ev=>{
-    if(cluster.length && ev.s>=clusterEnd) flush();
-    cluster.push(ev); clusterEnd=Math.max(clusterEnd, ev.e);
+  evs.forEach((ev) => {
+    if (cluster.length && ev.s >= clusterEnd) flush();
+    cluster.push(ev);
+    clusterEnd = Math.max(clusterEnd, ev.e);
   });
   flush();
   return evs;
 }
 
-function mpCalRenderTimeGrid(days, byDate){
-  const today=new Date();
-  const gc=`56px repeat(${days.length},1fr)`;
-  let head=`<div class="mpcal-head" style="grid-template-columns:${gc}"><div></div>`;
-  days.forEach(d=>{ const t=mpCalSameDay(d,today)?"today":""; head+=`<div class="mpcal-dayhead ${t}"><div class="dow">${MPCAL_DOW[d.getDay()]}</div><div class="dnum">${d.getDate()}</div></div>`; });
-  head+=`</div>`;
-  let cols=`<div class="mpcal-cols" style="grid-template-columns:${gc}"><div class="mpcal-timecol">`;
-  for(let h=0;h<24;h++){ const lbl=h===0?"":(h<12?`${h} AM`:(h===12?"12 PM":`${h-12} PM`)); cols+=`<div class="mpcal-hour"><span class="mpcal-tlabel">${lbl}</span></div>`; }
-  cols+=`</div>`;
-  days.forEach(d=>{ const dstr=mpCalYMD(d); cols+=`<div class="mpcal-daycol" data-date="${dstr}" onclick="mpDayColClick(event, '${dstr}')">`; for(let h=0;h<24;h++) cols+=`<div class="mpcal-hour"></div>`; mpCalLayout(byDate[dstr]||[]).forEach(o=> cols+=mpCalEventHTML(o.st, o.col, o.cols)); cols+=`</div>`; });
-  cols+=`</div>`;
+function mpCalRenderTimeGrid(days, byDate) {
+  const today = new Date();
+  const gc = `56px repeat(${days.length},1fr)`;
+  let head = `<div class="mpcal-head" style="grid-template-columns:${gc}"><div></div>`;
+  days.forEach((d) => {
+    const t = mpCalSameDay(d, today) ? "today" : "";
+    head += `<div class="mpcal-dayhead ${t}"><div class="dow">${MPCAL_DOW[d.getDay()]}</div><div class="dnum">${d.getDate()}</div></div>`;
+  });
+  head += `</div>`;
+  let cols = `<div class="mpcal-cols" style="grid-template-columns:${gc}"><div class="mpcal-timecol">`;
+  for (let h = 0; h < 24; h++) {
+    const lbl =
+      h === 0 ? "" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`;
+    cols += `<div class="mpcal-hour"><span class="mpcal-tlabel">${lbl}</span></div>`;
+  }
+  cols += `</div>`;
+  days.forEach((d) => {
+    const dstr = mpCalYMD(d);
+    cols += `<div class="mpcal-daycol" data-date="${dstr}" onclick="mpDayColClick(event, '${dstr}')">`;
+    for (let h = 0; h < 24; h++) cols += `<div class="mpcal-hour"></div>`;
+    mpCalLayout(byDate[dstr] || []).forEach(
+      (o) => (cols += mpCalEventHTML(o.st, o.col, o.cols)),
+    );
+    cols += `</div>`;
+  });
+  cols += `</div>`;
   return `<div class="mpcal-grid">${head}<div class="mpcal-body">${cols}</div></div>`;
 }
 
-function mpCalRenderMonth(byDate){
-  const today=new Date();
-  const first=new Date(window.mpCalCursor.getFullYear(), window.mpCalCursor.getMonth(), 1);
-  const start=mpCalStartOfWeek(first);
-  let html=`<div class="mpcal-month"><div class="mpcal-mdow">`+MPCAL_DOW.map(x=>`<span>${x}</span>`).join("")+`</div><div class="mpcal-mgrid">`;
-  for(let i=0;i<42;i++){
-    const d=new Date(start); d.setDate(start.getDate()+i);
-    const other=d.getMonth()!==window.mpCalCursor.getMonth()?"other":"";
-    const t=mpCalSameDay(d,today)?"today":"";
-    const evs=(byDate[mpCalYMD(d)]||[]).slice().sort((a,b)=>mpCalToMin(a.startTime)-mpCalToMin(b.startTime));
-    let chips=evs.slice(0,3).map(st=>{ const c=mpCalColor(st.movieTitle); const cf=st.isConflict?" mpcal-chip-conflict":""; const hd=st.movieStatus==="hidden"?" mpcal-chip-hidden":""; return `<div class="mpcal-chip${cf}${hd}" style="background:${c}22;border-left-color:${c};" title="${st.movieTitle} ${st.startTime} · ${mpCalRoomLabel(st.roomId)}" onclick="mpOpenShowtimePopover(${st.showtimeId}, this)">${st.startTime} ${st.movieTitle} · ${mpCalRoomShort(st.roomId)}</div>`; }).join("");
-    if(evs.length>3) chips+=`<div class="mpcal-more">+${evs.length-3} suất nữa</div>`;
-    html+=`<div class="mpcal-cell ${other} ${t}"><div class="dn">${d.getDate()}</div>${chips}</div>`;
+function mpCalRenderMonth(byDate) {
+  const today = new Date();
+  const first = new Date(
+    window.mpCalCursor.getFullYear(),
+    window.mpCalCursor.getMonth(),
+    1,
+  );
+  const start = mpCalStartOfWeek(first);
+  let html =
+    `<div class="mpcal-month"><div class="mpcal-mdow">` +
+    MPCAL_DOW.map((x) => `<span>${x}</span>`).join("") +
+    `</div><div class="mpcal-mgrid">`;
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const other = d.getMonth() !== window.mpCalCursor.getMonth() ? "other" : "";
+    const t = mpCalSameDay(d, today) ? "today" : "";
+    const evs = (byDate[mpCalYMD(d)] || [])
+      .slice()
+      .sort((a, b) => mpCalToMin(a.startTime) - mpCalToMin(b.startTime));
+    let chips = evs
+      .slice(0, 3)
+      .map((st) => {
+        const c = mpCalColor(st.movieTitle);
+        const cf = st.isConflict ? " mpcal-chip-conflict" : "";
+        const hd = st.movieStatus === "hidden" ? " mpcal-chip-hidden" : "";
+        return `<div class="mpcal-chip${cf}${hd}" style="background:${c}22;border-left-color:${c};" title="${st.movieTitle} ${st.startTime} · ${mpCalRoomLabel(st.roomId)}" onclick="mpOpenShowtimePopover(${st.showtimeId}, this)">${st.startTime} ${st.movieTitle} · ${mpCalRoomShort(st.roomId)}</div>`;
+      })
+      .join("");
+    if (evs.length > 3)
+      chips += `<div class="mpcal-more">+${evs.length - 3} suất nữa</div>`;
+    html += `<div class="mpcal-cell ${other} ${t}"><div class="dn">${d.getDate()}</div>${chips}</div>`;
   }
-  html+=`</div></div>`;
+  html += `</div></div>`;
   return html;
 }
 
-function mpCalFmtTitle(){
-  const c=window.mpCalCursor, mm=c.getMonth()+1, yy=c.getFullYear();
-  if(window.mpCalView==="day") return `Ngày ${c.getDate()}/${mm}/${yy}`;
-  if(window.mpCalView==="week"){ const s=mpCalStartOfWeek(c); const e=new Date(s); e.setDate(s.getDate()+6); return `${s.getDate()}/${s.getMonth()+1} – ${e.getDate()}/${e.getMonth()+1}, ${yy}`; }
+function mpCalFmtTitle() {
+  const c = window.mpCalCursor,
+    mm = c.getMonth() + 1,
+    yy = c.getFullYear();
+  if (window.mpCalView === "day") return `Ngày ${c.getDate()}/${mm}/${yy}`;
+  if (window.mpCalView === "week") {
+    const s = mpCalStartOfWeek(c);
+    const e = new Date(s);
+    e.setDate(s.getDate() + 6);
+    return `${s.getDate()}/${s.getMonth() + 1} – ${e.getDate()}/${e.getMonth() + 1}, ${yy}`;
+  }
   return `Tháng ${mm}, ${yy}`;
 }
 
@@ -1496,7 +1769,11 @@ function mpCalFmtTitle(){
 // ảnh hưởng bởi filter — vì filter chỉ là hiển thị, xung đột thật vẫn phải
 // cảnh báo dù đang lọc ẩn bớt phòng/phim khác.
 // ==========================================================================
-window.mpFilterState = window.mpFilterState || { status: new Set(), room: new Set(), movie: new Set() };
+window.mpFilterState = window.mpFilterState || {
+  status: new Set(),
+  room: new Set(),
+  movie: new Set(),
+};
 window.mpCalRawByDate = window.mpCalRawByDate || {};
 window.mpCalDays = window.mpCalDays || [];
 window.mpMsfOpenKey = null;
@@ -1504,135 +1781,223 @@ window.mpMsfOpenKey = null;
 // ==========================================================================
 // 🟢 ĐÃ SỬA: Hàm quyết định vẽ hay ẩn - Đồng bộ giá trị bộ lọc tĩnh & DB thật
 // ==========================================================================
-function mpCalApplyFilters(list){
+function mpCalApplyFilters(list) {
   const f = window.mpFilterState;
-  return (list||[]).filter(st => {
+  return (list || []).filter((st) => {
     // 🌟 1. XỬ LÝ CHO BỘ LỌC TRẠNG THÁI (Đa lựa chọn)
     if (f.status.size) {
       // Ép toàn bộ trạng thái phim và suất chiếu về chữ thường để đồng bộ với giao diện
-      const movieStat = String(st.movieStatus || "").toLowerCase();  // now_showing, coming_soon, hidden
-      const showtimeStat = String(st.status || "").toLowerCase();   // active, inactive, hidden
-      
+      const movieStat = String(st.movieStatus || "").toLowerCase(); // now_showing, coming_soon, hidden
+      const showtimeStat = String(st.status || "").toLowerCase(); // active, inactive, hidden
+
       // 🟢 Mấu chốt: Map chữ "active" của suất chiếu thành "now_showing" để ăn khớp với checkbox "Đang chiếu" trên UI nhóm em
-      const mappedShowtimeStat = showtimeStat === "active" ? "now_showing" : showtimeStat;
+      const mappedShowtimeStat =
+        showtimeStat === "active" ? "now_showing" : showtimeStat;
 
       // Nếu trạng thái của bộ phim KHÔNG khớp VÀ trạng thái của suất chiếu KHÔNG khớp bộ lọc -> Ẩn khối lịch
-      if (!f.status.has(movieStat) && !f.status.has(mappedShowtimeStat)) return false;
+      if (!f.status.has(movieStat) && !f.status.has(mappedShowtimeStat))
+        return false;
     }
-    
+
     // 🌟 2. LỌC THEO PHÒNG CHIẾU (Giữ nguyên logic id số của em)
     if (f.room.size && !f.room.has(st.roomId)) return false;
-    
+
     // 🌟 3. LỌC THEO TÊN BỘ PHIM (Giữ nguyên logic id số của em)
     if (f.movie.size && !f.movie.has(st.movieId)) return false;
-    
+
     return true;
   });
 }
 
-function mpCalRenderCurrent(){
-  const area=document.getElementById("mp-cal-area");
-  if(!area) return;
+function mpCalRenderCurrent() {
+  const area = document.getElementById("mp-cal-area");
+  if (!area) return;
   const days = window.mpCalDays;
   const byDate = {};
-  days.forEach(d=>{ const k=mpCalYMD(d); byDate[k] = mpCalApplyFilters(window.mpCalRawByDate[k]||[]); });
+  days.forEach((d) => {
+    const k = mpCalYMD(d);
+    byDate[k] = mpCalApplyFilters(window.mpCalRawByDate[k] || []);
+  });
 
-  if(window.mpCalView==="month") area.innerHTML=mpCalRenderMonth(byDate);
-  else { area.innerHTML=mpCalRenderTimeGrid(days,byDate); const body=area.querySelector(".mpcal-body"); if(body) body.scrollTop=7*MPCAL_HOUR_H; }
+  if (window.mpCalView === "month") area.innerHTML = mpCalRenderMonth(byDate);
+  else {
+    area.innerHTML = mpCalRenderTimeGrid(days, byDate);
+    const body = area.querySelector(".mpcal-body");
+    if (body) body.scrollTop = 7 * MPCAL_HOUR_H;
+  }
 
-  const allRaw = days.map(d=>window.mpCalRawByDate[mpCalYMD(d)]||[]).flat();
-  let filteredMovies = window.moviesList||[];
-  if (window.mpFilterState.status.size) filteredMovies = filteredMovies.filter(m=>window.mpFilterState.status.has(m.status));
-  if (window.mpFilterState.movie.size) filteredMovies = filteredMovies.filter(m=>window.mpFilterState.movie.has(m.movieId));
-  if(typeof renderMatrixMovieList==="function") renderMatrixMovieList(filteredMovies);
+  const allRaw = days
+    .map((d) => window.mpCalRawByDate[mpCalYMD(d)] || [])
+    .flat();
+  let filteredMovies = window.moviesList || [];
+  if (window.mpFilterState.status.size)
+    filteredMovies = filteredMovies.filter((m) =>
+      window.mpFilterState.status.has(m.status),
+    );
+  if (window.mpFilterState.movie.size)
+    filteredMovies = filteredMovies.filter((m) =>
+      window.mpFilterState.movie.has(m.movieId),
+    );
+  if (typeof renderMatrixMovieList === "function")
+    renderMatrixMovieList(filteredMovies);
 
   mpMsfBuildPanels();
 }
 
-window.loadManagerMatrix = function(){
-  const area=document.getElementById("mp-cal-area");
-  if(!area) return;
-  const dateInput=document.getElementById("mp-matrix-date-input");
-  if(dateInput){
-    if(!dateInput.value){ dateInput.value=mpCalYMD(window.mpCalCursor); }
-    else { const p=dateInput.value.split("-").map(Number); window.mpCalCursor=new Date(p[0],p[1]-1,p[2]); }
+window.loadManagerMatrix = function () {
+  const area = document.getElementById("mp-cal-area");
+  if (!area) return;
+  const dateInput = document.getElementById("mp-matrix-date-input");
+  if (dateInput) {
+    if (!dateInput.value) {
+      dateInput.value = mpCalYMD(window.mpCalCursor);
+    } else {
+      const p = dateInput.value.split("-").map(Number);
+      window.mpCalCursor = new Date(p[0], p[1] - 1, p[2]);
+    }
   }
-  const titleEl=document.getElementById("mpcal-title"); if(titleEl) titleEl.innerText=mpCalFmtTitle();
-  document.querySelectorAll("#mpcal-views button").forEach(b=> b.classList.toggle("active", b.dataset.v===window.mpCalView));
+  const titleEl = document.getElementById("mpcal-title");
+  if (titleEl) titleEl.innerText = mpCalFmtTitle();
+  document
+    .querySelectorAll("#mpcal-views button")
+    .forEach((b) =>
+      b.classList.toggle("active", b.dataset.v === window.mpCalView),
+    );
 
-  if(!window.moviesList || window.moviesList.length===0){
-    area.innerHTML='<p style="color:#777;padding:15px;">Đang tải phim...</p>';
-    API.getMovies().then(m=>{ window.moviesList=m; window.loadManagerMatrix(); }).catch(e=>{ area.innerHTML=`<span style="color:red;padding:10px;">Lỗi tải phim: ${e.message}</span>`; });
+  if (!window.moviesList || window.moviesList.length === 0) {
+    area.innerHTML = '<p style="color:#777;padding:15px;">Đang tải phim...</p>';
+    API.getMovies()
+      .then((m) => {
+        window.moviesList = m;
+        window.loadManagerMatrix();
+      })
+      .catch((e) => {
+        area.innerHTML = `<span style="color:red;padding:10px;">Lỗi tải phim: ${e.message}</span>`;
+      });
     return;
   }
 
-  let days=[];
-  if(window.mpCalView==="day") days=[new Date(window.mpCalCursor)];
-  else if(window.mpCalView==="week"){ const s=mpCalStartOfWeek(window.mpCalCursor); for(let i=0;i<7;i++){ const d=new Date(s); d.setDate(s.getDate()+i); days.push(d);} }
-  else { const first=new Date(window.mpCalCursor.getFullYear(),window.mpCalCursor.getMonth(),1); const s=mpCalStartOfWeek(first); for(let i=0;i<42;i++){ const d=new Date(s); d.setDate(s.getDate()+i); days.push(d);} }
+  let days = [];
+  if (window.mpCalView === "day") days = [new Date(window.mpCalCursor)];
+  else if (window.mpCalView === "week") {
+    const s = mpCalStartOfWeek(window.mpCalCursor);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(s);
+      d.setDate(s.getDate() + i);
+      days.push(d);
+    }
+  } else {
+    const first = new Date(
+      window.mpCalCursor.getFullYear(),
+      window.mpCalCursor.getMonth(),
+      1,
+    );
+    const s = mpCalStartOfWeek(first);
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(s);
+      d.setDate(s.getDate() + i);
+      days.push(d);
+    }
+  }
   window.mpCalDays = days;
 
-  area.innerHTML='<p style="color:#777;padding:15px;">Đang quét lịch chiếu...</p>';
-  Promise.all(days.map(d=> mpCalFetchDate(mpCalYMD(d)).then(list=>[mpCalYMD(d),list])))
-    .then(pairs=>{
-      pairs.forEach(([k,v])=> window.mpCalRawByDate[k]=v);
+  area.innerHTML =
+    '<p style="color:#777;padding:15px;">Đang quét lịch chiếu...</p>';
+  Promise.all(
+    days.map((d) =>
+      mpCalFetchDate(mpCalYMD(d)).then((list) => [mpCalYMD(d), list]),
+    ),
+  )
+    .then((pairs) => {
+      pairs.forEach(([k, v]) => (window.mpCalRawByDate[k] = v));
       mpCalRenderCurrent();
     })
-    .catch(err=>{ area.innerHTML=`<span style="color:red;padding:10px;display:block;">Lỗi đồng bộ lịch: ${err.message}</span>`; });
+    .catch((err) => {
+      area.innerHTML = `<span style="color:red;padding:10px;display:block;">Lỗi đồng bộ lịch: ${err.message}</span>`;
+    });
 };
 
-window.mpCalSetView=function(v){ window.mpCalView=v; window.loadManagerMatrix(); };
-window.mpCalToday=function(){ window.mpCalCursor=new Date(); const di=document.getElementById("mp-matrix-date-input"); if(di) di.value=mpCalYMD(window.mpCalCursor); window.loadManagerMatrix(); };
-window.mpCalNav=function(dir){
-  const c=window.mpCalCursor;
-  if(window.mpCalView==="month") c.setMonth(c.getMonth()+dir);
-  else if(window.mpCalView==="week") c.setDate(c.getDate()+7*dir);
-  else c.setDate(c.getDate()+dir);
-  const di=document.getElementById("mp-matrix-date-input"); if(di) di.value=mpCalYMD(c);
+window.mpCalSetView = function (v) {
+  window.mpCalView = v;
+  window.loadManagerMatrix();
+};
+window.mpCalToday = function () {
+  window.mpCalCursor = new Date();
+  const di = document.getElementById("mp-matrix-date-input");
+  if (di) di.value = mpCalYMD(window.mpCalCursor);
+  window.loadManagerMatrix();
+};
+window.mpCalNav = function (dir) {
+  const c = window.mpCalCursor;
+  if (window.mpCalView === "month") c.setMonth(c.getMonth() + dir);
+  else if (window.mpCalView === "week") c.setDate(c.getDate() + 7 * dir);
+  else c.setDate(c.getDate() + dir);
+  const di = document.getElementById("mp-matrix-date-input");
+  if (di) di.value = mpCalYMD(c);
   window.loadManagerMatrix();
 };
 
 // --- Xây nội dung 3 panel multi-select dựa trên dữ liệu thô đang có ---
-function mpMsfBuildPanels(){
+function mpMsfBuildPanels() {
   // Trạng thái phim
   const statusPanel = document.getElementById("mp-msf-panel-status");
   if (statusPanel) {
-    statusPanel.innerHTML = Object.entries(MP_MOVIE_STATUS).map(([key, meta]) => `
+    statusPanel.innerHTML = Object.entries(MP_MOVIE_STATUS)
+      .map(
+        ([key, meta]) => `
       <label class="mp-msf-opt">
-        <input type="checkbox" ${window.mpFilterState.status.has(key)?"checked":""} onchange="mpMsfToggle('status', '${key}', this.checked)" />
+        <input type="checkbox" ${window.mpFilterState.status.has(key) ? "checked" : ""} onchange="mpMsfToggle('status', '${key}', this.checked)" />
         <span class="dot" style="background:${meta.color}"></span> ${meta.text}
       </label>
-    `).join("");
+    `,
+      )
+      .join("");
   }
   // Phòng chiếu — lấy từ MP_ROOMS (đã tự mở rộng theo dữ liệu thực tế)
   const roomPanel = document.getElementById("mp-msf-panel-room");
   if (roomPanel) {
-    const rooms = window.MP_ROOMS.slice().sort((a,b)=>a.id-b.id);
-    roomPanel.innerHTML = rooms.length ? rooms.map(r => `
+    const rooms = window.MP_ROOMS.slice().sort((a, b) => a.id - b.id);
+    roomPanel.innerHTML = rooms.length
+      ? rooms
+          .map(
+            (r) => `
       <label class="mp-msf-opt">
-        <input type="checkbox" ${window.mpFilterState.room.has(r.id)?"checked":""} onchange="mpMsfToggle('room', ${r.id}, this.checked)" />
+        <input type="checkbox" ${window.mpFilterState.room.has(r.id) ? "checked" : ""} onchange="mpMsfToggle('room', ${r.id}, this.checked)" />
         ${r.label}
       </label>
-    `).join("") : `<div class="mp-msf-empty">Chưa có phòng chiếu nào trong dữ liệu</div>`;
+    `,
+          )
+          .join("")
+      : `<div class="mp-msf-empty">Chưa có phòng chiếu nào trong dữ liệu</div>`;
   }
   // Phim
   const moviePanel = document.getElementById("mp-msf-panel-movie");
   if (moviePanel) {
-    const movies = window.moviesList||[];
-    moviePanel.innerHTML = movies.length ? movies.map(m => `
+    const movies = window.moviesList || [];
+    moviePanel.innerHTML = movies.length
+      ? movies
+          .map(
+            (m) => `
       <label class="mp-msf-opt">
-        <input type="checkbox" ${window.mpFilterState.movie.has(m.movieId)?"checked":""} onchange="mpMsfToggle('movie', ${m.movieId}, this.checked)" />
+        <input type="checkbox" ${window.mpFilterState.movie.has(m.movieId) ? "checked" : ""} onchange="mpMsfToggle('movie', ${m.movieId}, this.checked)" />
         <span class="dot" style="background:${mpCalColor(m.title)}"></span> ${m.title}
       </label>
-    `).join("") : `<div class="mp-msf-empty">Chưa có phim nào</div>`;
+    `,
+          )
+          .join("")
+      : `<div class="mp-msf-empty">Chưa có phim nào</div>`;
   }
   mpMsfUpdateCounts();
 }
 
-function mpMsfUpdateCounts(){
-  const labels = { status: "Trạng thái phim", room: "Phòng chiếu", movie: "Phim" };
+function mpMsfUpdateCounts() {
+  const labels = {
+    status: "Trạng thái phim",
+    room: "Phòng chiếu",
+    movie: "Phim",
+  };
   let anyActive = false;
-  ["status","room","movie"].forEach(key=>{
+  ["status", "room", "movie"].forEach((key) => {
     const n = window.mpFilterState[key].size;
     const el = document.getElementById(`mp-msf-count-${key}`);
     if (el) el.innerText = n ? `${n} đã chọn` : "Tất cả";
@@ -1642,36 +2007,44 @@ function mpMsfUpdateCounts(){
   if (clearBtn) clearBtn.style.display = anyActive ? "inline-flex" : "none";
 }
 
-window.mpMsfToggle = function(key, value, checked){
+window.mpMsfToggle = function (key, value, checked) {
   const set = window.mpFilterState[key];
-  if (checked) set.add(value); else set.delete(value);
+  if (checked) set.add(value);
+  else set.delete(value);
   mpCalRenderCurrent();
 };
 
-window.mpClearFilters = function(){
-  window.mpFilterState = { status: new Set(), room: new Set(), movie: new Set() };
+window.mpClearFilters = function () {
+  window.mpFilterState = {
+    status: new Set(),
+    room: new Set(),
+    movie: new Set(),
+  };
   mpCalRenderCurrent();
 };
 
-window.mpToggleMsf = function(key){
+window.mpToggleMsf = function (key) {
   const isOpen = window.mpMsfOpenKey === key;
   window.mpMsfOpenKey = isOpen ? null : key;
-  document.querySelectorAll(".mp-msf").forEach(el => {
+  document.querySelectorAll(".mp-msf").forEach((el) => {
     el.classList.toggle("open", el.id === `mp-msf-${key}` && !isOpen);
   });
 };
 
 // Đóng panel filter khi click ra ngoài
-document.addEventListener("click", function(e){
+document.addEventListener("click", function (e) {
   if (!window.mpMsfOpenKey) return;
   if (e.target.closest(".mp-msf")) return;
   window.mpMsfOpenKey = null;
-  document.querySelectorAll(".mp-msf").forEach(el => el.classList.remove("open"));
+  document
+    .querySelectorAll(".mp-msf")
+    .forEach((el) => el.classList.remove("open"));
 });
 // Đóng popover sửa suất chiếu khi click ra ngoài
-document.addEventListener("click", function(e){
+document.addEventListener("click", function (e) {
   if (!window.mpEvtPopoverOpenId) return;
-  if (e.target.closest("#mp-evt-popover") || e.target.closest(".mpcal-evt")) return;
+  if (e.target.closest("#mp-evt-popover") || e.target.closest(".mpcal-evt"))
+    return;
   mpCloseShowtimePopover();
 });
 
@@ -1685,47 +2058,60 @@ document.addEventListener("click", function(e){
 //    vì backend chưa có API update/delete suất chiếu — xem ghi chú ở khối
 //    "LỚP OVERRIDE TẠM" phía trên.
 // ==========================================================================
-function mpMinToHHMM(min){
+function mpMinToHHMM(min) {
   min = ((min % 1440) + 1440) % 1440;
-  const h = Math.floor(min / 60), m = min % 60;
+  const h = Math.floor(min / 60),
+    m = min % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 // ==========================================================================
 // 🟢 ĐÃ SỬA: Hàm định vị suất chiếu - Ép kiểu chuỗi để tránh lệch kiểu dữ liệu
 // ==========================================================================
-function mpFindRawShowtime(id){
+function mpFindRawShowtime(id) {
   for (const k in window.mpCalRawByDate) {
     // 🌟 SỬA TẠI ĐÂY: Ép cả 2 vế về String() để so khớp chuẩn xác giữa Số và Chuỗi
-    const found = (window.mpCalRawByDate[k] || []).find(s => String(s.showtimeId) === String(id));
+    const found = (window.mpCalRawByDate[k] || []).find(
+      (s) => String(s.showtimeId) === String(id),
+    );
     if (found) return found;
   }
   return null;
 }
 
-function mpFindShowtimeDateKey(id){
+function mpFindShowtimeDateKey(id) {
   for (const k in window.mpCalRawByDate) {
     // 🌟 SỬA TẠI ĐÂY: Ép cả 2 vế về String() tương tự để tìm đúng ngày của suất chiếu
-    if ((window.mpCalRawByDate[k] || []).some(s => String(s.showtimeId) === String(id))) return k;
+    if (
+      (window.mpCalRawByDate[k] || []).some(
+        (s) => String(s.showtimeId) === String(id),
+      )
+    )
+      return k;
   }
   return null;
 }
 
-function mpPatchRawShowtime(showtimeId, patch){
+function mpPatchRawShowtime(showtimeId, patch) {
   const dateKey = mpFindShowtimeDateKey(showtimeId);
   if (!dateKey || !window.mpCalRawByDate[dateKey]) return dateKey;
-  
+
   // 🌟 SỬA TẠI ĐÂY: Ép kiểu String() cho hàm tìm vị trí index
-  const idx = window.mpCalRawByDate[dateKey].findIndex(s => String(s.showtimeId) === String(showtimeId));
-  
+  const idx = window.mpCalRawByDate[dateKey].findIndex(
+    (s) => String(s.showtimeId) === String(showtimeId),
+  );
+
   if (idx >= 0) {
-    window.mpCalRawByDate[dateKey][idx] = { ...window.mpCalRawByDate[dateKey][idx], ...patch };
+    window.mpCalRawByDate[dateKey][idx] = {
+      ...window.mpCalRawByDate[dateKey][idx],
+      ...patch,
+    };
   }
   return dateKey;
 }
 
 // --- Click / kéo-thả trên 1 sự kiện ---
-window.mpEvtMouseDown = function(evt, showtimeId){
+window.mpEvtMouseDown = function (evt, showtimeId) {
   if (evt.target.closest(".mpcal-evt-resize")) return; // để handle resize tự xử lý riêng
   if (evt.button !== 0) return; // chỉ xử lý chuột trái
   evt.stopPropagation();
@@ -1733,16 +2119,19 @@ window.mpEvtMouseDown = function(evt, showtimeId){
   const st = mpFindRawShowtime(showtimeId);
   if (!st) return;
   const startY = evt.clientY;
-  const baseTop = mpCalToMin(st.startTime) / 60 * MPCAL_HOUR_H;
+  const baseTop = (mpCalToMin(st.startTime) / 60) * MPCAL_HOUR_H;
   let dragging = false;
 
-  function onMove(e){
+  function onMove(e) {
     const dy = e.clientY - startY;
-    if (!dragging && Math.abs(dy) > 5) { dragging = true; evtEl.classList.add("mpcal-evt-dragging"); }
+    if (!dragging && Math.abs(dy) > 5) {
+      dragging = true;
+      evtEl.classList.add("mpcal-evt-dragging");
+    }
     if (!dragging) return;
-    evtEl.style.top = (baseTop + dy) + "px";
+    evtEl.style.top = baseTop + dy + "px";
   }
-  function onUp(e){
+  function onUp(e) {
     document.removeEventListener("mousemove", onMove);
     document.removeEventListener("mouseup", onUp);
     evtEl.classList.remove("mpcal-evt-dragging");
@@ -1751,91 +2140,116 @@ window.mpEvtMouseDown = function(evt, showtimeId){
       return;
     }
     const dy = e.clientY - startY;
-    const deltaMin = Math.round((dy / MPCAL_HOUR_H * 60) / 5) * 5;
+    const deltaMin = Math.round(((dy / MPCAL_HOUR_H) * 60) / 5) * 5;
     mpCommitShowtimeMove(st, deltaMin);
   }
   document.addEventListener("mousemove", onMove);
   document.addEventListener("mouseup", onUp);
 };
 
-function mpCommitShowtimeMove(st, deltaMin){
-  if (!deltaMin) { mpCalRenderCurrent(); return; }
+function mpCommitShowtimeMove(st, deltaMin) {
+  if (!deltaMin) {
+    mpCalRenderCurrent();
+    return;
+  }
   const durMin = mpCalToMin(st.endTime) - mpCalToMin(st.startTime);
-  const newStartMin = Math.max(0, Math.min(1440 - durMin, mpCalToMin(st.startTime) + deltaMin));
+  const newStartMin = Math.max(
+    0,
+    Math.min(1440 - durMin, mpCalToMin(st.startTime) + deltaMin),
+  );
   const newEndMin = newStartMin + durMin;
   const newStart = mpMinToHHMM(newStartMin);
   const newEnd = mpMinToHHMM(newEndMin);
 
   const dateKey = mpFindShowtimeDateKey(st.showtimeId);
-  const conflict = (window.mpCalRawByDate[dateKey] || []).find(o => {
+  const conflict = (window.mpCalRawByDate[dateKey] || []).find((o) => {
     if (o.showtimeId === st.showtimeId || o.roomId !== st.roomId) return false;
-    const os = mpCalToMin(o.startTime), oe = mpCalToMin(o.endTime);
+    const os = mpCalToMin(o.startTime),
+      oe = mpCalToMin(o.endTime);
     return newStartMin < oe && newEndMin > os;
   });
   if (conflict) {
-    alert(`Không thể dời giờ: trùng với "${conflict.movieTitle}" (${conflict.startTime}-${conflict.endTime}) tại ${mpCalRoomLabel(st.roomId)}. Vui lòng chọn khung giờ khác!`);
+    alert(
+      `Không thể dời giờ: trùng với "${conflict.movieTitle}" (${conflict.startTime}-${conflict.endTime}) tại ${mpCalRoomLabel(st.roomId)}. Vui lòng chọn khung giờ khác!`,
+    );
     mpCalRenderCurrent();
     return;
   }
 
-  mpSetShowtimeOverride(st.showtimeId, { startTime: newStart, endTime: newEnd });
+  mpSetShowtimeOverride(st.showtimeId, {
+    startTime: newStart,
+    endTime: newEnd,
+  });
   mpPatchRawShowtime(st.showtimeId, { startTime: newStart, endTime: newEnd });
-  alert(`Đã dời "${st.movieTitle}" sang ${newStart} (lưu tạm trên trình duyệt, chưa đồng bộ server).`);
+  alert(
+    `Đã dời "${st.movieTitle}" sang ${newStart} (lưu tạm trên trình duyệt, chưa đồng bộ server).`,
+  );
   mpCalRenderCurrent();
 }
 
 // --- Kéo cạnh dưới sự kiện để đổi thời lượng (giờ kết thúc) ---
-window.mpEvtResizeMouseDown = function(evt, showtimeId){
+window.mpEvtResizeMouseDown = function (evt, showtimeId) {
   evt.stopPropagation();
   evt.preventDefault();
   const st = mpFindRawShowtime(showtimeId);
   if (!st) return;
   const evtEl = evt.currentTarget.closest(".mpcal-evt");
   const startY = evt.clientY;
-  const baseTop = mpCalToMin(st.startTime) / 60 * MPCAL_HOUR_H;
-  const baseH = mpCalToMin(st.endTime) / 60 * MPCAL_HOUR_H - baseTop;
+  const baseTop = (mpCalToMin(st.startTime) / 60) * MPCAL_HOUR_H;
+  const baseH = (mpCalToMin(st.endTime) / 60) * MPCAL_HOUR_H - baseTop;
 
-  function onMove(e){
+  function onMove(e) {
     const dy = e.clientY - startY;
     evtEl.style.height = Math.max(20, baseH + dy) + "px";
   }
-  function onUp(e){
+  function onUp(e) {
     document.removeEventListener("mousemove", onMove);
     document.removeEventListener("mouseup", onUp);
     const dy = e.clientY - startY;
-    const deltaMin = Math.round((dy / MPCAL_HOUR_H * 60) / 5) * 5;
-    if (!deltaMin) { mpCalRenderCurrent(); return; }
+    const deltaMin = Math.round(((dy / MPCAL_HOUR_H) * 60) / 5) * 5;
+    if (!deltaMin) {
+      mpCalRenderCurrent();
+      return;
+    }
     mpCommitShowtimeResize(st, deltaMin);
   }
   document.addEventListener("mousemove", onMove);
   document.addEventListener("mouseup", onUp);
 };
 
-function mpCommitShowtimeResize(st, deltaMin){
+function mpCommitShowtimeResize(st, deltaMin) {
   const startMin = mpCalToMin(st.startTime);
-  const newEndMin = Math.max(startMin + 15, Math.min(1440, mpCalToMin(st.endTime) + deltaMin));
+  const newEndMin = Math.max(
+    startMin + 15,
+    Math.min(1440, mpCalToMin(st.endTime) + deltaMin),
+  );
   const newEnd = mpMinToHHMM(newEndMin);
 
   const dateKey = mpFindShowtimeDateKey(st.showtimeId);
-  const conflict = (window.mpCalRawByDate[dateKey] || []).find(o => {
+  const conflict = (window.mpCalRawByDate[dateKey] || []).find((o) => {
     if (o.showtimeId === st.showtimeId || o.roomId !== st.roomId) return false;
-    const os = mpCalToMin(o.startTime), oe = mpCalToMin(o.endTime);
+    const os = mpCalToMin(o.startTime),
+      oe = mpCalToMin(o.endTime);
     return startMin < oe && newEndMin > os;
   });
   if (conflict) {
-    alert(`Không thể đổi thời lượng: trùng với "${conflict.movieTitle}" tại ${mpCalRoomLabel(st.roomId)}.`);
+    alert(
+      `Không thể đổi thời lượng: trùng với "${conflict.movieTitle}" tại ${mpCalRoomLabel(st.roomId)}.`,
+    );
     mpCalRenderCurrent();
     return;
   }
 
   mpSetShowtimeOverride(st.showtimeId, { endTime: newEnd });
   mpPatchRawShowtime(st.showtimeId, { endTime: newEnd });
-  alert(`Đã đổi giờ kết thúc "${st.movieTitle}" thành ${newEnd} (lưu tạm trên trình duyệt).`);
+  alert(
+    `Đã đổi giờ kết thúc "${st.movieTitle}" thành ${newEnd} (lưu tạm trên trình duyệt).`,
+  );
   mpCalRenderCurrent();
 }
 
 // --- Popover sửa/xóa nhanh 1 suất chiếu ---
-function mpEnsureEvtPopoverEl(){
+function mpEnsureEvtPopoverEl() {
   let el = document.getElementById("mp-evt-popover");
   if (!el) {
     el = document.createElement("div");
@@ -1846,12 +2260,17 @@ function mpEnsureEvtPopoverEl(){
   return el;
 }
 
-window.mpOpenShowtimePopover = function(showtimeId, anchorEl){
+window.mpOpenShowtimePopover = function (showtimeId, anchorEl) {
   const st = mpFindRawShowtime(showtimeId);
   if (!st) return;
   const el = mpEnsureEvtPopoverEl();
-  const roomOptions = window.MP_ROOMS.slice().sort((a, b) => a.id - b.id)
-    .map(r => `<option value="${r.id}" ${r.id === st.roomId ? "selected" : ""}>${r.label}</option>`).join("");
+  const roomOptions = window.MP_ROOMS.slice()
+    .sort((a, b) => a.id - b.id)
+    .map(
+      (r) =>
+        `<option value="${r.id}" ${r.id === st.roomId ? "selected" : ""}>${r.label}</option>`,
+    )
+    .join("");
 
   // 🌟 ĐÃ SỬA: Lấy trạng thái hiện tại của suất chiếu từ Database (Mặc định là ACTIVE nếu trống)
   const currentStatus = st.status || "ACTIVE";
@@ -1886,31 +2305,40 @@ window.mpOpenShowtimePopover = function(showtimeId, anchorEl){
   const rect = anchorEl.getBoundingClientRect();
   const popW = 250;
   let left = window.scrollX + rect.right + 10;
-  if (left + popW > window.scrollX + window.innerWidth) left = window.scrollX + rect.left - popW - 10;
+  if (left + popW > window.scrollX + window.innerWidth)
+    left = window.scrollX + rect.left - popW - 10;
   el.style.top = Math.max(10, window.scrollY + rect.top) + "px";
   el.style.left = Math.max(10, left) + "px";
   el.classList.add("open");
   window.mpEvtPopoverOpenId = showtimeId;
 };
 
-window.mpCloseShowtimePopover = function(){
+window.mpCloseShowtimePopover = function () {
   const el = document.getElementById("mp-evt-popover");
   if (el) el.classList.remove("open");
   window.mpEvtPopoverOpenId = null;
 };
 
-window.mpSaveShowtimeFromPopover = function(showtimeId){
-  const st = mpFindRawShowtime(showtimeId); if (!st) return;
+window.mpSaveShowtimeFromPopover = function (showtimeId) {
+  const st = mpFindRawShowtime(showtimeId);
+  if (!st) return;
   const newStart = document.getElementById("mpep-start").value;
   const newRoom = parseInt(document.getElementById("mpep-room").value);
-  const newPrice = parseFloat(document.getElementById("mpep-price").value) || st.ticketPrice;
+  const newPrice =
+    parseFloat(document.getElementById("mpep-price").value) || st.ticketPrice;
   const newStatus = document.getElementById("mpep-status").value;
-  
-  if (!newStart) { alert("Vui lòng chọn giờ bắt đầu!"); return; }
+
+  if (!newStart) {
+    alert("Vui lòng chọn giờ bắt đầu!");
+    return;
+  }
 
   // 🟢 GỘP CHUNG VÀ ĐƯA LÊN ĐẦU: Định nghĩa biến dateKey/selectedDate ngay lập tức từ hàm tạo sẵn
   const dateKey = mpFindShowtimeDateKey(showtimeId);
-  if (!dateKey) { alert("Không xác định được ngày của suất chiếu!"); return; }
+  if (!dateKey) {
+    alert("Không xác định được ngày của suất chiếu!");
+    return;
+  }
   const selectedDate = dateKey; // Gán hai biến bằng nhau để các đoạn code payload phía dưới không bị lỗi logic
 
   const durMin = mpCalToMin(st.endTime) - mpCalToMin(st.startTime);
@@ -1922,15 +2350,18 @@ window.mpSaveShowtimeFromPopover = function(showtimeId){
   const newStartMin = mpCalToMin(newStart);
   const newEndMin = newStartMin + durMin;
 
-  const conflict = (window.mpCalRawByDate[dateKey] || []).find(o => {
-    if (String(o.showtimeId) === String(showtimeId) || o.roomId !== newRoom) return false;
+  const conflict = (window.mpCalRawByDate[dateKey] || []).find((o) => {
+    if (String(o.showtimeId) === String(showtimeId) || o.roomId !== newRoom)
+      return false;
     const os = mpCalToMin(o.startTime);
     const oe = mpCalToMin(o.endTime);
     return newStartMin < oe && newEndMin > os;
   });
 
   if (conflict) {
-    alert(`❌ KHÔNG THỂ CẬP NHẬT!\n\nKhung giờ bạn chọn (${newStart} - ${newEnd}) đã bị trùng lịch với phim "${conflict.movieTitle}" (${conflict.startTime} - ${conflict.endTime}) tại ${mpCalRoomLabel(newRoom)}.\nVui lòng chọn khung giờ khác!`);
+    alert(
+      `❌ KHÔNG THỂ CẬP NHẬT!\n\nKhung giờ bạn chọn (${newStart} - ${newEnd}) đã bị trùng lịch với phim "${conflict.movieTitle}" (${conflict.startTime} - ${conflict.endTime}) tại ${mpCalRoomLabel(newRoom)}.\nVui lòng chọn khung giờ khác!`,
+    );
     return;
   }
   const payload = {
@@ -1939,67 +2370,79 @@ window.mpSaveShowtimeFromPopover = function(showtimeId){
     endTime: `${selectedDate}T${newEnd}:00`,
     ticketPrice: newPrice,
     status: newStatus,
-    updatedBy: 1
+    updatedBy: 1,
   };
 
   // 🟢 Đã sửa: Khớp chuẩn xác 100% với endpoint update tường minh của Spring Boot
-fetch(`http://localhost:8080/api/showtimes/update/${showtimeId}`, {
+  fetch(`http://localhost:8080/api/showtimes/update/${showtimeId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   })
-  .then(res => { if (!res.ok) throw new Error("Lỗi cập nhật!"); return res.json(); })
-  .then(() => {
-    alert("Hệ thống đã cập nhật suất chiếu xuống SQL Server thành công!");
-    window.mpCalRawByDate = {}; // Xóa cache sạch
-    mpCloseShowtimePopover(); loadManagerMatrix();
-  })
-  .catch(err => alert("Cập nhật lên Server thất bại: " + err.message));
+    .then((res) => {
+      if (!res.ok) throw new Error("Lỗi cập nhật!");
+      return res.json();
+    })
+    .then(() => {
+      alert("Hệ thống đã cập nhật suất chiếu xuống SQL Server thành công!");
+      window.mpCalRawByDate = {}; // Xóa cache sạch
+      mpCloseShowtimePopover();
+      loadManagerMatrix();
+    })
+    .catch((err) => alert("Cập nhật lên Server thất bại: " + err.message));
 };
 
 // ==========================================================================
 // 🟢 ĐÃ SỬA: Hàm xóa suất chiếu - Kết nối API DELETE thực tế 100% với SQL Server
 // ==========================================================================
-window.mpDeleteShowtimeFromPopover = function(showtimeId){
+window.mpDeleteShowtimeFromPopover = function (showtimeId) {
   const st = mpFindRawShowtime(showtimeId);
   if (!st) return;
-  
+
   // Hộp thoại confirm gốc của trình duyệt giữ nguyên logic để lấy kết quả đồng bộ
-  if (!confirm(`Bạn có chắc chắn muốn gỡ bỏ hoàn toàn suất chiếu phim "${st.movieTitle}" lúc ${st.startTime} khỏi hệ thống không?`)) return;
+  if (
+    !confirm(
+      `Bạn có chắc chắn muốn gỡ bỏ hoàn toàn suất chiếu phim "${st.movieTitle}" lúc ${st.startTime} khỏi hệ thống không?`,
+    )
+  )
+    return;
 
   console.log("✈️ Gửi API DELETE xóa suất chiếu ID:", showtimeId);
 
   // Bắn lệnh DELETE lên Server Spring Boot
   fetch(`http://localhost:8080/api/showtimes/delete/${showtimeId}`, {
-    method: "DELETE"
+    method: "DELETE",
   })
-  .then(res => {
-    if (!res.ok) throw new Error("Mạng hoặc Server báo lỗi không thể xóa!");
-    return res.json();
-  })
-  .then(data => {
-    alert("Hệ thống đã gỡ suất chiếu khỏi SQL Server thành công!");
-    
-    // 🌟 Làm sạch hoàn toàn bộ nhớ runtime để buộc hệ thống quét mới dữ liệu từ Database
-    window.mpCalRawByDate = {}; 
-    
-    mpCloseShowtimePopover();
-    loadManagerMatrix(); // Tải lại ma trận để cập nhật giao diện mất hẳn ô lịch đó
-  })
-  .catch(err => {
-    console.error(err);
-    alert("Xóa thất bại! Lỗi kết nối hoặc suất chiếu đã dính hóa đơn đặt vé: " + err.message);
-  });
+    .then((res) => {
+      if (!res.ok) throw new Error("Mạng hoặc Server báo lỗi không thể xóa!");
+      return res.json();
+    })
+    .then((data) => {
+      alert("Hệ thống đã gỡ suất chiếu khỏi SQL Server thành công!");
+
+      // 🌟 Làm sạch hoàn toàn bộ nhớ runtime để buộc hệ thống quét mới dữ liệu từ Database
+      window.mpCalRawByDate = {};
+
+      mpCloseShowtimePopover();
+      loadManagerMatrix(); // Tải lại ma trận để cập nhật giao diện mất hẳn ô lịch đó
+    })
+    .catch((err) => {
+      console.error(err);
+      alert(
+        "Xóa thất bại! Lỗi kết nối hoặc suất chiếu đã dính hóa đơn đặt vé: " +
+          err.message,
+      );
+    });
 };
 
 // --- Click vùng trống trên ma trận (view Ngày/Tuần) để tạo nhanh suất chiếu ---
-window.mpDayColClick = function(evt, dateStr){
+window.mpDayColClick = function (evt, dateStr) {
   if (evt.target.closest(".mpcal-evt")) return; // đã có handler riêng cho sự kiện
   mpCloseShowtimePopover();
   const daycol = evt.currentTarget;
   const rect = daycol.getBoundingClientRect();
   const offsetY = evt.clientY - rect.top;
-  const rawMin = Math.round((offsetY / MPCAL_HOUR_H * 60) / 15) * 15;
+  const rawMin = Math.round(((offsetY / MPCAL_HOUR_H) * 60) / 15) * 15;
   const clampedMin = Math.max(0, Math.min(23 * 60 + 45, rawMin));
   const timeStr = mpMinToHHMM(clampedMin);
 
@@ -2016,18 +2459,18 @@ window.mpDayColClick = function(evt, dateStr){
 // ==========================================================================
 
 // Hàm mở Modal và tự động cào danh sách phim thật từ DB đổ vào ô Dropdown chọn phim
-window.openAddShowtimeModal = function() {
+window.openAddShowtimeModal = function () {
   const movieSelect = document.getElementById("st-movie-select");
   if (!movieSelect) return;
 
   movieSelect.innerHTML = "";
-  
+
   if (!window.moviesList || window.moviesList.length === 0) {
     alert("Không tìm thấy danh sách phim trong bộ nhớ! Đang tải lại...");
     return;
   }
 
-  window.moviesList.forEach(m => {
+  window.moviesList.forEach((m) => {
     movieSelect.innerHTML += `<option value="${m.movieId}">${m.title} (${m.duration || m.durationMinutes || 0} phút)</option>`;
   });
 
@@ -2035,7 +2478,7 @@ window.openAddShowtimeModal = function() {
   if (roomSelect) {
     roomSelect.innerHTML = window.MP_ROOMS.slice()
       .sort((a, b) => a.id - b.id)
-      .map(r => `<option value="${r.id}">${r.label}</option>`)
+      .map((r) => `<option value="${r.id}">${r.label}</option>`)
       .join("");
   }
 
@@ -2061,7 +2504,10 @@ window.openAddShowtimeModal = function() {
         </select>
       `;
       // Chèn lên trước ô giá vé
-      priceInput.parentElement.insertBefore(statusGroup, priceInput.previousSibling);
+      priceInput.parentElement.insertBefore(
+        statusGroup,
+        priceInput.previousSibling,
+      );
     }
   } else {
     // Nếu dropdown đã tồn tại từ lần mở trước, reset nó về mặc định ACTIVE
@@ -2071,58 +2517,90 @@ window.openAddShowtimeModal = function() {
   document.getElementById("mp-add-showtime-modal").style.display = "flex";
 };
 
-window.closeAddShowtimeModal = function() {
+window.closeAddShowtimeModal = function () {
   document.getElementById("mp-add-showtime-modal").style.display = "none";
 };
 
 // Hàm đóng gói dữ liệu và đẩy xuống SQL Server thông qua Spring Boot
-window.submitAddShowtimeForm = function() {
+window.submitAddShowtimeForm = function () {
+  // 1. Tạo mảng gom lỗi để né việc hiện alert chồng chéo
+  const errors = [];
+
+  // Bốc dữ liệu trực tiếp từ các ô input trên Form
   const movieId = document.getElementById("st-movie-select").value;
   const roomId = parseInt(document.getElementById("st-room-select").value) || 1;
-  const startTimeRaw = document.getElementById("st-start-time").value; 
-  const ticketPrice = parseFloat(document.getElementById("st-ticket-price").value) || 0;
-  
-  // 🌟 THÊM MỚI: Bốc trạng thái được chọn từ Form (Mặc định phòng hờ là ACTIVE)
+  const showDate = document.getElementById("st-date").value; // 🎯 ĐÃ SỬA: Lấy ngày trực tiếp từ Form để không bao giờ bị sai ngày!
+  const startTimeRaw = document.getElementById("st-start-time").value;
+
+  // Bốc trạng thái được chọn từ Form (Mặc định phòng hờ là ACTIVE)
   const statusSelect = document.getElementById("st-status");
   const showtimeStatus = statusSelect ? statusSelect.value : "ACTIVE";
-  
-  const selectedDate = document.getElementById("mp-matrix-date-input").value;
 
-  if (!startTimeRaw) {
-    alert("Vui lòng chọn Giờ bắt đầu chiếu phim!");
+  // ==========================================================================
+  // 🛑 CHỐT CHẶN VALIDATION GOM LỖI CHUYÊN NGHIỆP
+  // ==========================================================================
+  if (!movieId) errors.push("- Vui lòng chọn bộ phim.");
+  if (!roomId) errors.push("- Vui lòng chọn phòng chiếu.");
+  if (!showDate) errors.push("- Vui lòng chọn Ngày chiếu phim.");
+  if (!startTimeRaw) errors.push("- Vui lòng chọn Giờ bắt đầu chiếu phim.");
+
+  // Ràng buộc ngày chiếu phim không được nằm ở quá khứ
+  if (showDate) {
+    const selectedDateTime = new Date(showDate);
+    selectedDateTime.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDateTime < today) {
+      errors.push(
+        "- Ngày chiếu phim phải từ ngày hôm nay trở về sau, không được xếp lịch cho quá khứ.",
+      );
+    }
+  }
+
+  // Nếu phát hiện có bất kỳ lỗi nào, bắn 1 alert tổng hợp độc nhất và dừng luồng
+  if (errors.length > 0) {
+    alert(
+      "🚨 Không thể xếp lịch. Vui lòng hoàn thành các mục sau:\n\n" +
+        errors.join("\n"),
+    );
     return;
   }
-  if (ticketPrice <= 0) {
-    alert("Giá vé cơ bản phải lớn hơn 0 đ!");
-    return;
-  }
 
-  const formattedStartTime = `${selectedDate}T${startTimeRaw}:00`;
+  // ==========================================================================
+  // 📦 ĐÓNG GÓI DỮ LIỆU SẠCH (ĐÃ SỬA NGÀY THEO FORM & BỎ TICKET PRICE THỪA)
+  // ==========================================================================
+  const formattedStartTime = `${showDate}T${startTimeRaw}:00`;
 
-  const targetMovie = window.moviesList.find(m => String(m.movieId) === String(movieId));
-  const duration = targetMovie ? (targetMovie.duration || targetMovie.durationMinutes || 120) : 120;
-  
-  const startDateTime = new Date(`${selectedDate} ${startTimeRaw}`);
+  const targetMovie = window.moviesList.find(
+    (m) => String(m.movieId) === String(movieId),
+  );
+  const duration = targetMovie
+    ? targetMovie.duration || targetMovie.durationMinutes || 120
+    : 120;
+
+  // Tính toán thời gian kết thúc chuẩn xác dựa trên showDate của Form
+  const startDateTime = new Date(`${showDate} ${startTimeRaw}`);
   const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
-  
+
   const endH = String(endDateTime.getHours()).padStart(2, "0");
   const endM = String(endDateTime.getMinutes()).padStart(2, "0");
-  const formattedEndTime = `${selectedDate}T${endH}:${endM}:00`;
+  const formattedEndTime = `${showDate}T${endH}:${endM}:00`;
 
-  // 📦 ĐÃ SỬA: Đóng gói thêm thuộc tính "status" đồng bộ sang map payload của Java
   const payload = {
     movie: { movieId: parseInt(movieId) },
     roomId: roomId,
     startTime: formattedStartTime,
     endTime: formattedEndTime,
-    ticketPrice: ticketPrice,
-    status: showtimeStatus, // 🌟 Đẩy trạng thái sang Backend xử lý
-    createdBy: 1
+    status: showtimeStatus, // Đẩy trạng thái sang Backend xử lý
+    createdBy: 1,
+    // 🎯 Đã loại bỏ ticketPrice nhập tay thừa thải, DB sẽ tự động map theo cấu hình ghế/phòng ngầm!
   };
 
-  console.log("🚀 Payload gửi lên Spring Boot tạo suất chiếu:", payload);
+  console.log("🚀 Payload sạch gửi lên Spring Boot tạo suất chiếu:", payload);
 
-  // --- Đoạn check trùng lịch Google Calendar động của nhóm em giữ nguyên 100% ---
+  // ==========================================================================
+  // 🔍 LUỒNG KIỂM TRA TRÙNG LỊCH (GIỮ NGUYÊN VẸN LOGIC GOOGLE CALENDAR CỦA EM)
+  // ==========================================================================
   const timeToMinutes = (timeStr) => {
     const [h, m] = timeStr.split(":").map(Number);
     return h * 60 + m;
@@ -2131,9 +2609,15 @@ window.submitAddShowtimeForm = function() {
   const newStartMin = timeToMinutes(startTimeRaw);
   const newEndMin = newStartMin + duration;
 
+  // Gọi check trùng lịch dựa trên showDate lấy từ Form
   const checkPromises = window.moviesList.map((movie) => {
-    return API.getShowtimes(movie.movieId, selectedDate)
-      .then((resData) => (resData.showtimes || []).map(st => ({ ...st, movieTitle: movie.title })))
+    return API.getShowtimes(movie.movieId, showDate)
+      .then((resData) =>
+        (resData.showtimes || []).map((st) => ({
+          ...st,
+          movieTitle: movie.title,
+        })),
+      )
       .catch(() => []);
   });
 
@@ -2157,18 +2641,22 @@ window.submitAddShowtimeForm = function() {
       }
 
       if (isTimeConflict) {
-        alert(`KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`);
-        return; 
+        alert(
+          `🚨 KHÔNG THỂ XẾP LỊCH!\n\nThời gian bạn chọn (${startTimeRaw} - ${endH}:${endM}) đã bị trùng/giao thoa với phim "${conflictMovieTitle}" trong cùng Phòng ${roomId}.\nVui lòng chọn khung giờ khác!`,
+        );
+        return;
       }
 
-      // Nếu an toàn, thực hiện gọi API lưu xuống database
+      // Nếu hoàn toàn an toàn, thực hiện lưu xuống Database
       API.addShowtime(payload)
         .then(() => {
-          alert("Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.");
+          alert(
+            "🎉 Xếp lịch chiếu mới thành công! Suất chiếu đã được lưu xuống SQL Server.",
+          );
           closeAddShowtimeModal();
-          
-          // Xóa mảng dữ liệu thô cũ để ép hệ thống gọi API nạp mới hoàn toàn từ DB về, hiển thị ẩn ngay tức thì
-          window.mpCalRawByDate = {}; 
+
+          // Xóa mảng dữ liệu thô cũ để ép hệ thống gọi API nạp mới hoàn toàn từ DB về
+          window.mpCalRawByDate = {};
           loadManagerMatrix();
         })
         .catch((err) => {
@@ -2187,46 +2675,47 @@ window.submitAddShowtimeForm = function() {
 // ==========================================================================
 
 // Hàm ẩn/hiện Modal gốc
-window.openCreatePromoModal = function() {
+window.openCreatePromoModal = function () {
   const modal = document.getElementById("mp-create-promo-modal");
   if (modal) modal.style.display = "flex";
 };
 
-window.closeCreatePromoModal = function() {
+window.closeCreatePromoModal = function () {
   const modal = document.getElementById("mp-create-promo-modal");
   if (modal) modal.style.display = "none";
 };
 
 // 🌟 BỔ SUNG 1: Hàm co giãn khối điều kiện tự động ngầm khi Manager chọn AUTO
-window.toggleVoucherConditionFields = function() {
+window.toggleVoucherConditionFields = function () {
   const applyType = document.getElementById("v-apply-type").value;
   const conditionsBlock = document.getElementById("v-auto-conditions-block");
   if (conditionsBlock) {
-    conditionsBlock.style.display = (applyType === "AUTO") ? "block" : "none";
+    conditionsBlock.style.display = applyType === "AUTO" ? "block" : "none";
   }
 };
 
 // 🌟 BỔ SUNG 2: Hàm ẩn/hiện ô điền giá trị thứ trong tuần (Thứ 4 điền số 3)
-window.toggleConditionValueField = function() {
+window.toggleConditionValueField = function () {
   const condType = document.getElementById("v-condition-type").value;
   const valueGroup = document.getElementById("v-condition-value-group");
   if (valueGroup) {
-    valueGroup.style.display = (condType === "DAY_OF_WEEK") ? "block" : "none";
+    valueGroup.style.display = condType === "DAY_OF_WEEK" ? "block" : "none";
   }
 };
 
 // 1. Tải danh sách Voucher từ database lên bảng Admin thông qua API tổng
-window.loadManagerVouchers = function() {
+window.loadManagerVouchers = function () {
   const tbody = document.getElementById("mp-promo-tbody");
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:15px;">Đang quét danh sách chiến dịch khuyến mãi...</td></tr>';
+  tbody.innerHTML =
+    '<tr><td colspan="8" style="text-align:center; padding:15px;">Đang quét danh sách chiến dịch khuyến mãi...</td></tr>';
 
   API.getManagerVouchers()
     .then((vouchers) => {
       window.vouchersList = vouchers;
       renderVoucherRows(vouchers);
-      
+
       // 🌟 TIỆN ÍCH KÈM THEO: Tự động nạp luôn dữ liệu vào select box của tab Chiến dịch (nếu tab này đang mở)
       window.loadVouchersToSelectDropdown();
     })
@@ -2237,7 +2726,7 @@ window.loadManagerVouchers = function() {
 };
 
 // 🌟 BỔ SUNG 3: Hàm bốc danh sách Voucher đổ vào select box của tab Chiến dịch/Events
-window.loadVouchersToSelectDropdown = function() {
+window.loadVouchersToSelectDropdown = function () {
   const selectBox = document.getElementById("event-voucher-select");
   if (!selectBox) return;
 
@@ -2246,8 +2735,10 @@ window.loadVouchersToSelectDropdown = function() {
 
   if (window.vouchersList && window.vouchersList.length > 0) {
     // Chỉ nạp các voucher đang ACTIVE để liên kết chiến dịch truyền thông
-    const activeVouchers = window.vouchersList.filter(v => v.status === "ACTIVE" || v.status == null);
-    activeVouchers.forEach(v => {
+    const activeVouchers = window.vouchersList.filter(
+      (v) => v.status === "ACTIVE" || v.status == null,
+    );
+    activeVouchers.forEach((v) => {
       let unit = v.discountType === "PERCENT" ? "%" : "đ";
       optionsHtml += `<option value="${v.voucherId}">${v.voucherCode} (Giảm ${v.discountValue.toLocaleString("vi-VN")}${unit})</option>`;
     });
@@ -2256,7 +2747,7 @@ window.loadVouchersToSelectDropdown = function() {
 };
 
 // 2. Mở modal để THÊM MỚI Voucher (Xóa sạch dữ liệu cũ trong form)
-window.openAddVoucherModal = function() {
+window.openAddVoucherModal = function () {
   document.getElementById("v-id").value = "";
   document.getElementById("v-code").value = "";
   document.getElementById("v-apply-type").value = "MANUAL";
@@ -2272,13 +2763,14 @@ window.openAddVoucherModal = function() {
 
   window.toggleVoucherConditionFields();
   window.toggleConditionValueField();
-  document.getElementById("mp-promo-modal-title").innerText = "Thêm Mới Chiến Dịch Khuyến Mãi";
+  document.getElementById("mp-promo-modal-title").innerText =
+    "Thêm Mới Chiến Dịch Khuyến Mãi";
   window.openCreatePromoModal();
 };
 
 // 3. Mở modal để CHỈNH SỬA Voucher đã có
-window.openEditVoucherModal = function(id) {
-  const v = window.vouchersList.find(x => x.voucherId === id);
+window.openEditVoucherModal = function (id) {
+  const v = window.vouchersList.find((x) => x.voucherId === id);
   if (!v) return;
 
   document.getElementById("v-id").value = v.voucherId;
@@ -2291,7 +2783,7 @@ window.openEditVoucherModal = function(id) {
   document.getElementById("v-max").value = v.maxDiscount || 0;
   document.getElementById("v-min").value = v.minimumOrder || 0;
   document.getElementById("v-limit").value = v.usageLimit;
-  
+
   if (v.expiredDate) {
     document.getElementById("v-expired").value = v.expiredDate.substring(0, 16);
   }
@@ -2299,17 +2791,20 @@ window.openEditVoucherModal = function(id) {
 
   window.toggleVoucherConditionFields();
   window.toggleConditionValueField();
-  document.getElementById("mp-promo-modal-title").innerText = "Cập Nhật Chiến Dịch Khuyến Mãi";
+  document.getElementById("mp-promo-modal-title").innerText =
+    "Cập Nhật Chiến Dịch Khuyến Mãi";
   window.openCreatePromoModal();
 };
 
 // 4. Xử lý bấm nút "Lưu chiến dịch" (Form Submit)
-window.submitVoucherForm = function() {
+window.submitVoucherForm = function () {
   const id = document.getElementById("v-id").value;
   const code = document.getElementById("v-code").value.trim().toUpperCase();
   const applyType = document.getElementById("v-apply-type").value;
   const conditionType = document.getElementById("v-condition-type").value;
-  const conditionValue = document.getElementById("v-condition-value").value.trim();
+  const conditionValue = document
+    .getElementById("v-condition-value")
+    .value.trim();
   const type = document.getElementById("v-type").value;
   const value = parseFloat(document.getElementById("v-value").value) || 0;
   const max = parseFloat(document.getElementById("v-max").value) || 0;
@@ -2318,8 +2813,14 @@ window.submitVoucherForm = function() {
   const expired = document.getElementById("v-expired").value;
   const status = document.getElementById("v-status").value;
 
-  if (!code) { alert("Vui lòng nhập mã Voucher!"); return; }
-  if (value <= 0) { alert("Giá trị giảm phải lớn hơn 0!"); return; }
+  if (!code) {
+    alert("Vui lòng nhập mã Voucher!");
+    return;
+  }
+  if (value <= 0) {
+    alert("Giá trị giảm phải lớn hơn 0!");
+    return;
+  }
 
   const voucherData = {
     voucherCode: code,
@@ -2332,35 +2833,48 @@ window.submitVoucherForm = function() {
     status: status,
     applyType: applyType,
     conditionType: applyType === "AUTO" ? conditionType : "NONE",
-    conditionValue: (applyType === "AUTO" && conditionType === "DAY_OF_WEEK") ? conditionValue : "NONE",
+    conditionValue:
+      applyType === "AUTO" && conditionType === "DAY_OF_WEEK"
+        ? conditionValue
+        : "NONE",
     createdBy: parseInt(sessionStorage.getItem("roleId")) || 1,
-    updatedBy: parseInt(sessionStorage.getItem("roleId")) || 1
+    updatedBy: parseInt(sessionStorage.getItem("roleId")) || 1,
   };
 
-  const apiCall = id ? API.updateVoucher(id, voucherData) : API.addVoucher(voucherData);
+  const apiCall = id
+    ? API.updateVoucher(id, voucherData)
+    : API.addVoucher(voucherData);
 
   apiCall
     .then(() => {
-      alert(id ? "Cập nhật chiến dịch thành công!" : "Tạo mã Voucher khuyến mãi mới thành công!");
+      alert(
+        id
+          ? "Cập nhật chiến dịch thành công!"
+          : "Tạo mã Voucher khuyến mãi mới thành công!",
+      );
       window.closeCreatePromoModal();
       loadManagerVouchers();
     })
-    .catch(err => alert("Lỗi xử lý Voucher: " + err.message));
+    .catch((err) => alert("Lỗi xử lý Voucher: " + err.message));
 };
 
 // 6. Lọc/tìm kiếm danh sách voucher theo mã, loại giảm giá, trạng thái
-window.filterManagerPromo = function() {
+window.filterManagerPromo = function () {
   const tbody = document.getElementById("mp-promo-tbody");
   if (!tbody || !window.vouchersList) return;
 
-  const keyword = (document.getElementById("mp-promo-search-input").value || "").trim().toUpperCase();
+  const keyword = (document.getElementById("mp-promo-search-input").value || "")
+    .trim()
+    .toUpperCase();
   const typeFilter = document.getElementById("mp-promo-filter-type").value;
   const statusFilter = document.getElementById("mp-promo-filter-status").value;
 
   const filtered = window.vouchersList.filter((v) => {
-    const matchKeyword = !keyword || (v.voucherCode || "").toUpperCase().includes(keyword);
+    const matchKeyword =
+      !keyword || (v.voucherCode || "").toUpperCase().includes(keyword);
     const matchType = typeFilter === "all" || v.discountType === typeFilter;
-    const matchStatus = statusFilter === "all" || (v.status || "ACTIVE") === statusFilter;
+    const matchStatus =
+      statusFilter === "all" || (v.status || "ACTIVE") === statusFilter;
     return matchKeyword && matchType && matchStatus;
   });
 
@@ -2372,16 +2886,23 @@ function renderVoucherRows(vouchers) {
   tbody.innerHTML = "";
 
   if (!vouchers || vouchers.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888; padding:15px;">Không tìm thấy chiến dịch khuyến mãi phù hợp!</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="8" style="text-align:center; color:#888; padding:15px;">Không tìm thấy chiến dịch khuyến mãi phù hợp!</td></tr>';
     return;
   }
 
   vouchers.forEach((v, index) => {
-    let expiryDate = v.expiredDate ? new Date(v.expiredDate).toLocaleDateString("vi-VN") : "Vô thời hạn";
-    let discountText = v.discountType === "PERCENT" ? `${v.discountValue}%` : `${v.discountValue.toLocaleString("vi-VN")} đ`;
-    let statusText = v.status === "INACTIVE"
-      ? '<span style="color:#9a9aa3;">Ngừng hoạt động</span>'
-      : '<span style="color:#4ade80; font-weight:bold;">Đang hoạt động</span>';
+    let expiryDate = v.expiredDate
+      ? new Date(v.expiredDate).toLocaleDateString("vi-VN")
+      : "Vô thời hạn";
+    let discountText =
+      v.discountType === "PERCENT"
+        ? `${v.discountValue}%`
+        : `${v.discountValue.toLocaleString("vi-VN")} đ`;
+    let statusText =
+      v.status === "INACTIVE"
+        ? '<span style="color:#9a9aa3;">Ngừng hoạt động</span>'
+        : '<span style="color:#4ade80; font-weight:bold;">Đang hoạt động</span>';
 
     tbody.innerHTML += `
       <tr>
@@ -2404,14 +2925,18 @@ function renderVoucherRows(vouchers) {
 }
 
 // 5. Xử lý Xóa Voucher qua API tổng
-window.submitDeleteVoucher = function(id) {
-  if (confirm("Bạn có chắc chắn muốn gỡ bỏ hoàn toàn mã Voucher này khỏi hệ thống không?")) {
+window.submitDeleteVoucher = function (id) {
+  if (
+    confirm(
+      "Bạn có chắc chắn muốn gỡ bỏ hoàn toàn mã Voucher này khỏi hệ thống không?",
+    )
+  ) {
     API.deleteVoucher(id)
       .then(() => {
         alert("Đã gỡ chiến dịch khuyến mãi thành công!");
         loadManagerVouchers();
       })
-      .catch(err => alert("Lỗi khi xóa voucher: " + err.message));
+      .catch((err) => alert("Lỗi khi xóa voucher: " + err.message));
   }
 };
 /* =========================================================
@@ -2423,8 +2948,7 @@ window.submitDeleteVoucher = function(id) {
 let MP_MANAGER_NOTIFICATIONS = [];
 let mpNotificationRefreshTimer = null;
 
-const MP_SEEN_NOTIFICATION_KEY =
-  "mp_seen_manager_notifications";
+const MP_SEEN_NOTIFICATION_KEY = "mp_seen_manager_notifications";
 
 function mpEscapeHtml(value) {
   const element = document.createElement("div");
@@ -2435,7 +2959,7 @@ function mpEscapeHtml(value) {
 function mpGetSeenNotifications() {
   try {
     const value = JSON.parse(
-      localStorage.getItem(MP_SEEN_NOTIFICATION_KEY) || "[]"
+      localStorage.getItem(MP_SEEN_NOTIFICATION_KEY) || "[]",
     );
 
     return new Set(Array.isArray(value) ? value : []);
@@ -2447,7 +2971,7 @@ function mpGetSeenNotifications() {
 function mpSaveSeenNotifications(seen) {
   localStorage.setItem(
     MP_SEEN_NOTIFICATION_KEY,
-    JSON.stringify(Array.from(seen))
+    JSON.stringify(Array.from(seen)),
   );
 }
 
@@ -2481,16 +3005,14 @@ window.loadManagerNotifications = async function () {
   const results = await Promise.allSettled([
     API.getFnbItems(),
     API.getManagerVouchers(),
-    API.getAuditReportData(mpGetTodayString())
+    API.getAuditReportData(mpGetTodayString()),
   ]);
 
   const notifications = [];
 
   // 1. Cảnh báo F&B
   if (results[0].status === "fulfilled") {
-    const items = Array.isArray(results[0].value)
-      ? results[0].value
-      : [];
+    const items = Array.isArray(results[0].value) ? results[0].value : [];
 
     items.forEach((item) => {
       const stock = Number(item.stockQuantity || 0);
@@ -2501,7 +3023,7 @@ window.loadManagerNotifications = async function () {
           level: "error",
           title: `${item.itemName} đã hết hàng`,
           detail: "Cần nhập thêm hàng.",
-          tab: "fnb"
+          tab: "fnb",
         });
       } else if (stock <= 30) {
         notifications.push({
@@ -2509,7 +3031,7 @@ window.loadManagerNotifications = async function () {
           level: "warning",
           title: `${item.itemName} sắp hết hàng`,
           detail: `Số lượng tồn hiện tại: ${stock}.`,
-          tab: "fnb"
+          tab: "fnb",
         });
       }
     });
@@ -2517,26 +3039,20 @@ window.loadManagerNotifications = async function () {
 
   // 2. Cảnh báo Voucher
   if (results[1].status === "fulfilled") {
-    const vouchers = Array.isArray(results[1].value)
-      ? results[1].value
-      : [];
+    const vouchers = Array.isArray(results[1].value) ? results[1].value : [];
 
     const now = new Date();
     const threeDays = 3 * 24 * 60 * 60 * 1000;
 
     vouchers.forEach((voucher) => {
-      if (
-        String(voucher.status || "ACTIVE").toUpperCase() !==
-        "ACTIVE"
-      ) {
+      if (String(voucher.status || "ACTIVE").toUpperCase() !== "ACTIVE") {
         return;
       }
 
       if (!voucher.expiredDate) return;
 
       const expiredDate = new Date(voucher.expiredDate);
-      const remainingTime =
-        expiredDate.getTime() - now.getTime();
+      const remainingTime = expiredDate.getTime() - now.getTime();
 
       if (Number.isNaN(remainingTime)) return;
 
@@ -2546,19 +3062,17 @@ window.loadManagerNotifications = async function () {
           level: "error",
           title: `Voucher ${voucher.voucherCode} đã hết hạn`,
           detail: "Voucher vẫn đang ở trạng thái hoạt động.",
-          tab: "promo"
+          tab: "promo",
         });
       } else if (remainingTime <= threeDays) {
-        const hours = Math.ceil(
-          remainingTime / (60 * 60 * 1000)
-        );
+        const hours = Math.ceil(remainingTime / (60 * 60 * 1000));
 
         notifications.push({
           id: `voucher-${voucher.voucherId}-soon`,
           level: "warning",
           title: `Voucher ${voucher.voucherCode} sắp hết hạn`,
           detail: `Còn khoảng ${hours} giờ.`,
-          tab: "promo"
+          tab: "promo",
         });
       }
     });
@@ -2568,32 +3082,26 @@ window.loadManagerNotifications = async function () {
   if (results[2].status === "fulfilled") {
     const rows = results[2].value?.auditRows || [];
 
-    const mismatchRows = rows.filter(
-      (row) => Number(row.deviation || 0) !== 0
-    );
+    const mismatchRows = rows.filter((row) => Number(row.deviation || 0) !== 0);
 
     if (mismatchRows.length > 0) {
       const totalDeviation = mismatchRows.reduce(
-        (total, row) =>
-          total + Math.abs(Number(row.deviation || 0)),
-        0
+        (total, row) => total + Math.abs(Number(row.deviation || 0)),
+        0,
       );
 
       notifications.push({
         id:
           "audit-" +
           mismatchRows
-            .map(
-              (row) =>
-                `${row.labelDate}-${row.deviation}`
-            )
+            .map((row) => `${row.labelDate}-${row.deviation}`)
             .join("_"),
         level: "error",
         title: "Phát hiện chênh lệch doanh thu",
         detail:
           `${mismatchRows.length} ngày bị lệch, tổng ` +
           `${totalDeviation.toLocaleString("vi-VN")}đ.`,
-        tab: "audit"
+        tab: "audit",
       });
     }
   }
@@ -2601,14 +3109,11 @@ window.loadManagerNotifications = async function () {
   const priority = {
     error: 1,
     warning: 2,
-    info: 3
+    info: 3,
   };
 
   MP_MANAGER_NOTIFICATIONS = notifications
-    .sort(
-      (first, second) =>
-        priority[first.level] - priority[second.level]
-    )
+    .sort((first, second) => priority[first.level] - priority[second.level])
     .slice(0, 10);
 
   renderManagerNotifications();
@@ -2617,37 +3122,32 @@ window.loadManagerNotifications = async function () {
 function renderManagerNotifications() {
   const listElement = document.getElementById("mp-notif-list");
   const badge = document.getElementById("mp-notif-count");
-  const unreadLabel = document.getElementById(
-    "mp-notif-unread-label"
-  );
+  const unreadLabel = document.getElementById("mp-notif-unread-label");
 
-if (!listElement) {
-  console.error("Thiếu phần tử #mp-notif-list");
-  return;
-}
+  if (!listElement) {
+    console.error("Thiếu phần tử #mp-notif-list");
+    return;
+  }
 
   const seen = mpGetSeenNotifications();
 
   const unreadCount = MP_MANAGER_NOTIFICATIONS.filter(
-    (item) => !seen.has(item.id)
+    (item) => !seen.has(item.id),
   ).length;
 
- if (badge) {
-  if (unreadCount > 0) {
-    badge.textContent = unreadCount > 99
-      ? "99+"
-      : unreadCount;
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount > 99 ? "99+" : unreadCount;
 
-    badge.style.display = "flex";
-  } else {
-    badge.style.display = "none";
+      badge.style.display = "flex";
+    } else {
+      badge.style.display = "none";
+    }
   }
-}
 
   if (unreadLabel) {
-    unreadLabel.textContent = unreadCount > 0
-      ? `${unreadCount} chưa xem`
-      : "Đã xem hết";
+    unreadLabel.textContent =
+      unreadCount > 0 ? `${unreadCount} chưa xem` : "Đã xem hết";
   }
 
   if (MP_MANAGER_NOTIFICATIONS.length === 0) {
@@ -2659,17 +3159,12 @@ if (!listElement) {
     return;
   }
 
-  listElement.innerHTML = MP_MANAGER_NOTIFICATIONS
-    .map((item) => {
-      const icon =
-        item.level === "error" ? "!" : "⚠";
+  listElement.innerHTML = MP_MANAGER_NOTIFICATIONS.map((item) => {
+    const icon = item.level === "error" ? "!" : "⚠";
 
-      const color =
-        item.level === "error"
-          ? "#ef4444"
-          : "#f59e0b";
+    const color = item.level === "error" ? "#ef4444" : "#f59e0b";
 
-      return `
+    return `
         <div
           class="mp-notif-item"
           onclick="openManagerNotificationTab('${item.tab}')"
@@ -2695,8 +3190,7 @@ if (!listElement) {
           </div>
         </div>
       `;
-    })
-    .join("");
+  }).join("");
 }
 
 window.markManagerNotificationsRead = function () {
@@ -2713,9 +3207,7 @@ window.markManagerNotificationsRead = function () {
 window.openManagerNotificationTab = function (tabId) {
   markManagerNotificationsRead();
 
-  const dropdown = document.getElementById(
-    "mp-notif-dropdown"
-  );
+  const dropdown = document.getElementById("mp-notif-dropdown");
 
   if (dropdown) {
     dropdown.classList.remove("open");
@@ -2730,9 +3222,133 @@ document.addEventListener("DOMContentLoaded", function () {
   loadManagerNotifications();
 
   if (!mpNotificationRefreshTimer) {
-    mpNotificationRefreshTimer = setInterval(
-      loadManagerNotifications,
-      60000
-    );
+    mpNotificationRefreshTimer = setInterval(loadManagerNotifications, 60000);
   }
 });
+
+// ==========================================================================
+// CẬP NHẬT HỢP NHẤT TỪ manager(1).js: VALIDATION GIAO DIỆN
+// ==========================================================================
+
+window.updateCharCount = function (inputId, counterId, maxLength) {
+  const inputEl = document.getElementById(inputId);
+  const counterEl = document.getElementById(counterId);
+
+  if (inputEl && counterEl) {
+    const currentLength = inputEl.value.length;
+    const remaining = maxLength - currentLength;
+
+    // Cập nhật giao diện đếm số ký tự còn lại
+    counterEl.innerText = `${remaining}/${maxLength}`;
+
+    // Mẹo UX nâng cao: Nếu gõ gần hết (còn dưới 10 ký tự), đổi chữ sang màu cam/đỏ để cảnh báo
+    if (remaining <= 10) {
+      counterEl.style.color = "#ff6b35"; // Màu cam thương hiệu của em
+    } else {
+      counterEl.style.color = "#a8a8b3"; // Màu xám mặc định ban đầu
+    }
+  }
+};
+
+window.validateFieldOnBlur = function (inputId, errorMessage) {
+  const element = document.getElementById(inputId);
+  if (element && !element.value.trim()) {
+    alert(`🚨 Cảnh báo hệ thống:\n${errorMessage}`);
+  }
+};
+
+window.validateDurationOnBlur = function () {
+  const durationInput = document.getElementById("add-duration").value;
+  const duration = parseInt(durationInput) || 0;
+
+  if (!durationInput || isNaN(duration) || duration <= 0) {
+    alert(
+      "🚨 Cảnh báo hệ thống:\n- Thời lượng phim phải là số nguyên dương lớn hơn 0 phút.",
+    );
+  } else if (duration > 500) {
+    alert(
+      "🚨 Cảnh báo hệ thống:\n- Thời lượng phim không thực tế (Tối đa 500 phút).",
+    );
+  }
+};
+
+window.validateReleaseDateOnBlur = function () {
+  const releaseDateVal = document.getElementById("add-release").value;
+  if (!releaseDateVal) {
+    alert("🚨 Cảnh báo hệ thống:\n- Vui lòng chọn Ngày phát hành.");
+    return;
+  }
+
+  const selectedDate = new Date(releaseDateVal);
+  selectedDate.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (selectedDate < today) {
+    alert(
+      "🚨 Cảnh báo hệ thống:\n- Ngày phát hành phim phải từ ngày hôm nay trở về sau, không được chọn ngày trong quá khứ.",
+    );
+  }
+};
+
+window.validateUpdateDurationOnBlur = function () {
+  const durationInput = document.getElementById("upd-duration").value;
+  const duration = parseInt(durationInput) || 0;
+
+  if (!durationInput || isNaN(duration) || duration <= 0) {
+    alert(
+      "🚨 Cảnh báo hệ thống:\n- Thời lượng phim phải là số nguyên dương lớn hơn 0 phút.",
+    );
+  } else if (duration > 500) {
+    alert(
+      "🚨 Cảnh báo hệ thống:\n- Thời lượng phim không thực tế (Tối đa 500 phút).",
+    );
+  }
+};
+
+window.validateUpdateReleaseDateOnBlur = function () {
+  const releaseDateVal = document.getElementById("upd-release").value;
+  if (!releaseDateVal) {
+    alert("🚨 Cảnh báo hệ thống:\n- Vui lòng chọn Ngày phát hành.");
+    return;
+  }
+
+  const selectedDate = new Date(releaseDateVal);
+  selectedDate.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (selectedDate < today) {
+    alert(
+      "🚨 Cảnh báo hệ thống:\n- Ngày phát hành phim phải từ ngày hôm nay trở về sau, không được chọn ngày trong quá khứ.",
+    );
+  }
+};
+
+window.validateShowtimeField = function (id, message) {
+  const el = document.getElementById(id);
+  if (el && !el.value) {
+    alert(`🚨 Cảnh báo suất chiếu:\n- ${message}`);
+  }
+};
+
+window.validateShowtimeDate = function () {
+  const dateVal = document.getElementById("st-date").value;
+  if (!dateVal) {
+    alert("🚨 Cảnh báo suất chiếu:\n- Vui lòng chọn Ngày chiếu phim.");
+    return;
+  }
+
+  const selectedDate = new Date(dateVal);
+  selectedDate.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (selectedDate < today) {
+    alert(
+      "🚨 Cảnh báo suất chiếu:\n- Ngày chiếu phim phải từ ngày hôm nay trở về sau, không được xếp lịch cho quá khứ.",
+    );
+  }
+};
