@@ -566,8 +566,25 @@ function viewMovieDetailText(title, genre) {
   }
 
   const bookBtn = document.getElementById("btn-detail-book-now");
+
   if (bookBtn) {
+    const movieIsComingSoon =
+      typeof window.isComingSoonMovie === "function"
+        ? window.isComingSoonMovie(targetMovie)
+        : String(targetMovie?.status || "")
+            .trim()
+            .toUpperCase() === "COMING_SOON";
+
+    bookBtn.innerText = movieIsComingSoon ? "XEM SUẤT CHIẾU" : "MUA VÉ NGAY";
+
     bookBtn.onclick = () => {
+      /*
+       * Cả hai trạng thái đều được vào
+       * màn hình lịch chiếu.
+       *
+       * Phim sắp chiếu sẽ bị chặn khi
+       * bấm nút Tiếp tục.
+       */
       quickBookMovie(title);
     };
   }
@@ -1442,12 +1459,88 @@ function switchMovieFilterTab(filter) {
 }
 
 function quickBookMovie(movieTitle) {
-  // switchCgvTab("panel-booking") đã chịu trách nhiệm dọn đơn cũ.
-  // Không reset lần thứ hai ở đây để tránh gọi lặp và render dư thừa.
+  if (
+    typeof window.isBookingRestrictedRole === "function" &&
+    window.isBookingRestrictedRole()
+  ) {
+    if (typeof window.showBookingRestrictedModal === "function") {
+      window.showBookingRestrictedModal();
+    }
+
+    return;
+  }
+
+  if (!window.isVnpayReturn) {
+    startFreshBookingSession();
+  }
+
+  const movieList =
+    typeof serverData !== "undefined" && Array.isArray(serverData.movies)
+      ? serverData.movies
+      : [];
+
+  const selectedMovieObject = movieList.find(
+    (movie) =>
+      String(movie.title || "")
+        .trim()
+        .toLowerCase() ===
+      String(movieTitle || "")
+        .trim()
+        .toLowerCase(),
+  );
+
+  const rawMovieStatus =
+    selectedMovieObject?.status ||
+    selectedMovieObject?.movieStatus ||
+    selectedMovieObject?.movie_status ||
+    "";
+
+  const normalizedStatus = String(rawMovieStatus)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+  window.currentBookingMovieTitle = movieTitle;
+
+  window.currentBookingMovieStatus = rawMovieStatus;
+
+  window.blockComingSoonCheckout =
+    normalizedStatus === "comingsoon" ||
+    normalizedStatus === "upcoming" ||
+    normalizedStatus === "sapchieu";
+
+  console.log("[MOVIE BOOKING STATE]", {
+    title: window.currentBookingMovieTitle,
+    status: window.currentBookingMovieStatus,
+    blocked: window.blockComingSoonCheckout,
+  });
+
   switchCgvTab("panel-booking");
 
   const selectCombo = document.getElementById("cgv-combo-movie");
+
   if (selectCombo) {
+    /*
+     * Dropdown mặc định chỉ chứa phim
+     * NOW_SHOWING. Khi xem phim
+     * COMING_SOON, thêm option tạm thời
+     * để vẫn xem được suất chiếu.
+     */
+    const optionExists = [...selectCombo.options].some(
+      (option) =>
+        String(option.value).trim().toLowerCase() ===
+        String(movieTitle).trim().toLowerCase(),
+    );
+
+    if (!optionExists) {
+      const previewOption = new Option(movieTitle, movieTitle);
+
+      previewOption.dataset.previewOnly = "true";
+
+      selectCombo.add(previewOption);
+    }
+
     selectCombo.value = movieTitle;
 
     if (typeof window.onMovieOrTimeChange === "function") {
@@ -1455,6 +1548,10 @@ function quickBookMovie(movieTitle) {
     } else if (typeof onMovieOrTimeChange === "function") {
       onMovieOrTimeChange();
     }
+  }
+
+  if (typeof goToBookingStep === "function") {
+    goToBookingStep(1);
   }
 }
 
@@ -1545,6 +1642,29 @@ function closeLoginRequiredModal() {
 }
 window.showLoginRequiredModal = showLoginRequiredModal;
 window.closeLoginRequiredModal = closeLoginRequiredModal;
+
+function showComingSoonBookingModal() {
+  const modal = document.getElementById("coming-soon-booking-modal");
+
+  if (modal) {
+    modal.classList.add("open");
+    return;
+  }
+
+  window.showCgvToast("Phim sắp chiếu hiện chưa mở bán vé.", "error");
+}
+
+function closeComingSoonBookingModal() {
+  const modal = document.getElementById("coming-soon-booking-modal");
+
+  if (modal) {
+    modal.classList.remove("open");
+  }
+}
+
+window.showComingSoonBookingModal = showComingSoonBookingModal;
+
+window.closeComingSoonBookingModal = closeComingSoonBookingModal;
 
 function switchCgvTab(panelId, filterType = "now_showing") {
   const profilePanel = document.getElementById("panel-profile");
