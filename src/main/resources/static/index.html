@@ -1557,22 +1557,124 @@
       </div>
     </div>
 
-    <!-- POPUP YÊU CẦU ĐĂNG NHẬP TRƯỚC KHI ĐẶT VÉ - thay cho alert() mặc định -->
-    <div class="cgv-modal-overlay" id="login-required-modal">
-      <div class="dash-confirm-box">
-        <div class="dash-confirm-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #ff6b35;"><rect x="5" y="11" width="14" height="10" rx="2.2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.4" fill="currentColor" stroke="none"/></svg>
-        </div>
-        <h3 class="dash-confirm-title">Yêu cầu đăng nhập</h3>
-        <p class="dash-confirm-text">
-          Bạn phải <b>đăng nhập tài khoản thành viên</b><br />
-          mới có thể tiến hành đặt vé!
-        </p>
-        <div class="dash-confirm-actions">
-          <button class="dash-btn dash-btn-ok" style="flex: 1;" onclick="closeLoginRequiredModal()">Đăng nhập ngay</button>
-        </div>
-      </div>
+    <!-- POPUP CHẶN MUA VÉ PHIM SẮP CHIẾU -->
+<div
+  class="cgv-modal-overlay"
+  id="coming-soon-booking-modal"
+>
+  <div class="dash-confirm-box">
+    <div class="dash-confirm-icon">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        style="color: #ff6b35"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="9"
+        ></circle>
+
+        <path
+          d="M12 7v5l3 2"
+        ></path>
+      </svg>
     </div>
+
+    <h3 class="dash-confirm-title">
+      Phim chưa mở bán vé
+    </h3>
+
+    <p class="dash-confirm-text">
+      Đây là phim
+      <b>sắp chiếu</b> nên hiện tại
+      chưa thể tiến hành đặt vé.
+      <br />
+
+      Bạn vẫn có thể xem thông tin
+      và lịch chiếu dự kiến.
+    </p>
+
+    <div class="dash-confirm-actions">
+      <button
+        type="button"
+        class="dash-btn dash-btn-ok"
+        style="flex: 1"
+        onclick="closeComingSoonBookingModal()"
+      >
+        Đã hiểu
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- POPUP YÊU CẦU ĐĂNG NHẬP -->
+<div
+  class="cgv-modal-overlay"
+  id="login-required-modal"
+>
+  <div class="dash-confirm-box">
+    <div class="dash-confirm-icon">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        style="color: #ff6b35"
+      >
+        <rect
+          x="5"
+          y="11"
+          width="14"
+          height="10"
+          rx="2.2"
+        ></rect>
+
+        <path
+          d="M8 11V7a4 4 0 0 1 8 0v4"
+        ></path>
+
+        <circle
+          cx="12"
+          cy="16"
+          r="1.4"
+          fill="currentColor"
+          stroke="none"
+        ></circle>
+      </svg>
+    </div>
+
+    <h3 class="dash-confirm-title">
+      Yêu cầu đăng nhập
+    </h3>
+
+    <p class="dash-confirm-text">
+      Bạn phải
+      <b>đăng nhập tài khoản thành viên</b>
+      <br />
+
+      mới có thể tiến hành đặt vé!
+    </p>
+
+    <div class="dash-confirm-actions">
+      <button
+        type="button"
+        class="dash-btn dash-btn-ok"
+        style="flex: 1"
+        onclick="closeLoginRequiredModal()"
+      >
+        Đăng nhập ngay
+      </button>
+    </div>
+  </div>
+</div>
 
 
     <div id="las-chatbot-bubble" onclick="window.toggleLasChatbox()" style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background-color: #ff6b35; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4); z-index: 3000; transition: transform 0.2s;">

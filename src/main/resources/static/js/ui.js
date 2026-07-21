@@ -523,10 +523,28 @@ function renderCgvInterface() {
           actualShowtimes.forEach((st) => {
             const isSelected = st.startTime === selectedShowtime;
             const activeClass = isSelected ? "active" : "";
+<<<<<<< Updated upstream
             const roomDisplayName =
               st.roomId === 2 || st.room_id === 2
                 ? "Phòng 2 (IMAX Siêu Đại)"
                 : "Phòng 1 (3D Standard)";
+=======
+            const roomId = Number(st.roomId ?? st.room_id ?? 0);
+
+            const roomNames = {
+              1: "Phòng Chiếu 1 (3D Standard)",
+              2: "Phòng Chiếu 2 (IMAX Siêu Đại)",
+              3: "Phòng Chiếu 3 (Dự phòng)",
+              4: "Phòng Chiếu 4",
+              5: "Phòng Chiếu 5",
+            };
+
+            const roomDisplayName =
+              st.roomName ||
+              st.room_name ||
+              roomNames[roomId] ||
+              `Phòng Chiếu ${roomId}`;
+>>>>>>> Stashed changes
 
             timeGrid.innerHTML += `
               <div class="showtime-btn ${activeClass}" onclick="selectCgvShowtimeSlot('${st.startTime}', ${st.showtimeId})">
