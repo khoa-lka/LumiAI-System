@@ -1453,3 +1453,133 @@ window.showToast = function (message, isSuccess = false, title = null) {
     toast.style.display = "none";
   }, 3000);
 };
+
+// Biến toàn cục để lưu trữ vòng lặp polling
+let paymentPollingInterval = null;
+
+/**
+ * Hàm bắt đầu lắng nghe trạng thái thanh toán
+ * @param {string} orderCode - Mã đơn hàng vừa tạo (ví dụ: ORD-1784303784451)
+ */
+function startPaymentPolling(orderCode) {
+    // 1. Dọn dẹp vòng lặp cũ (nếu có) để tránh chạy chồng chéo
+    stopPaymentPolling();
+
+    const qrStatusText = document.getElementById("qrStatusText"); 
+
+    // Cập nhật giao diện sang trạng thái chờ
+    if (qrStatusText) {
+        qrStatusText.textContent = "Đang chờ thanh toán...";
+        qrStatusText.className = "qr-status qr-status-wait"; 
+    }
+
+    // 2. Bắt đầu vòng lặp kiểm tra mỗi 3 giây
+    paymentPollingInterval = setInterval(async () => {
+        try {
+            // Gọi API tìm kiếm đơn hàng đã có sẵn ở Backend
+            const response = await fetch(`/api/pos/orders/search?code=${orderCode}`);
+            
+            if (response.ok) {
+                const orderData = await response.json();
+                
+                // Nếu Webhook ở Backend đã cập nhật trạng thái thành SUCCESS
+                if (orderData.paymentStatus === "SUCCESS") {
+                    
+                    // Dừng việc kiểm tra
+                    stopPaymentPolling();
+                    
+                    // Hiển thị trạng thái thành công trên giao diện
+                    if (qrStatusText) {
+                        qrStatusText.textContent = "Thanh toán thành công! Đang xuất vé...";
+                        qrStatusText.className = "qr-status qr-status-success"; 
+                    }
+                    
+                    // Đợi 1.5 giây cho thu ngân nhìn thấy thông báo, sau đó tự động xuất vé
+                    setTimeout(() => {
+                        closeQRModal(); 
+                        
+                        // Gọi hàm hiển thị popup vé thành công của bạn
+                        // Ví dụ: showTicketSuccessModal(orderData);
+                    }, 1500);
+                }
+            }
+        } catch (error) {
+            console.error("Lỗi khi kiểm tra trạng thái thanh toán:", error);
+        }
+    }, 3000); // 3000ms = 3 giây
+}
+
+/**
+ * Hàm dừng việc lắng nghe (gọi khi thanh toán xong, hoặc khi thu ngân chủ động tắt mã QR)
+ */
+function stopPaymentPolling() {
+    if (paymentPollingInterval) {
+        clearInterval(paymentPollingInterval);
+        paymentPollingInterval = null;
+    }
+}
+
+// =========================================================================
+// LƯU Ý TÍCH HỢP VÀO CODE CŨ CỦA BẠN:
+// =========================================================================
+
+// 1. Khi bạn tạo đơn hàng thành công và mở Modal mã QR lên, hãy gọi hàm:
+// startPaymentPolling(orderCodeVuaTao);
+
+// 2. Đừng quên sửa lại hàm closeQRModal() hiện tại của bạn để gọi thêm hàm stop:
+function closeQRModal() {
+    document.getElementById("qrModal").style.display = "none";
+    stopPaymentPolling(); // Dừng hỏi API nếu thu ngân bấm nút (X) tắt mã QR
+}
+function printTicketSpecific() {
+    // Lấy nội dung của vé từ modal
+    var ticketContent = document.getElementById('ticketSuccessModal').innerHTML;
+    
+    // Tạo một cửa sổ in tạm thời
+    var printWindow = window.open('', '_blank', 'height=600,width=800');
+    
+    printWindow.document.write('<html><head><title>In vé</title>');
+    // Thêm link CSS của bạn vào đây để bản in có giao diện đẹp
+    printWindow.document.write('<link rel="stylesheet" href="staff.css" type="text/css" />');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(ticketContent);
+    printWindow.document.write('</body></html>');
+    
+    printWindow.document.close(); // Đóng document để trình duyệt load xong nội dung
+    
+    // Đợi một chút để CSS load xong rồi mới gọi lệnh in
+    setTimeout(function() {
+        printWindow.print();
+        printWindow.close();
+    }, 500);
+}
+function printTicket() {
+    // Lấy nội dung cụ thể của vé từ modal
+    var ticketElement = document.getElementById('ticketSuccessModal');
+    
+    if (!ticketElement) {
+        console.error("Không tìm thấy ticketSuccessModal");
+        return;
+    }
+
+    // Tạo nội dung in bằng cách lấy HTML của modal
+    var printContent = ticketElement.innerHTML;
+    
+    // Mở một cửa sổ mới để in, giúp cách ly hoàn toàn với CSS của trang chính
+    var printWindow = window.open('', '_blank', 'height=600,width=800');
+    
+    printWindow.document.write('<html><head><title>In vé</title>');
+    // Link lại file CSS để bản in giữ được định dạng
+    printWindow.document.write('<link rel="stylesheet" href="staff.css" type="text/css" />');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(printContent);
+    printWindow.document.write('</body></html>');
+    
+    printWindow.document.close();
+    
+    // Đợi 300ms để trình duyệt kịp load CSS trước khi gọi lệnh in
+    setTimeout(function() {
+        printWindow.print();
+        printWindow.close();
+    }, 300);
+}
