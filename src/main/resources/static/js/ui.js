@@ -534,6 +534,9 @@ function renderCgvInterface() {
             };
 
             const roomDisplayName =
+            const roomId = Number(st.roomId ?? st.room_id ?? 0);
+
+            const roomDisplayName =
               st.roomName ||
               st.room_name ||
               roomNames[roomId] ||

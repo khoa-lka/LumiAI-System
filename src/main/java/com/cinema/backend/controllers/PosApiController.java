@@ -43,6 +43,11 @@ import com.cinema.backend.repositories.TicketRepository;
 import com.cinema.backend.repositories.VoucherRepository;
 import org.springframework.http.HttpStatus;
 
+import com.cinema.backend.entities.WebhookLog;
+import com.cinema.backend.repositories.WebhookLogRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
+import java.math.BigDecimal; // Import thêm BigDecimal
 // ==========================================================================
 // 🖥️ API DÀNH RIÊNG CHO MÁY POS CỦA STAFF (bán vé/bắp nước tại quầy)
 // Toàn bộ endpoint nằm dưới /api/pos, độc lập với luồng đặt vé online hiện
@@ -86,10 +91,18 @@ public class PosApiController {
     // Gọi Service VNPAY
     @Autowired
     private com.cinema.backend.Payment.VNPayService vnPayService;
-
+    @Autowired
+private WebhookLogRepository webhookLogRepository;
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+@GetMapping("/webhooks")
+    public ResponseEntity<List<WebhookLog>> getAllWebhooks() {
+        // Sử dụng hàm bạn vừa tạo để trả về danh sách Webhook mới nhất lên đầu
+        return ResponseEntity.ok(webhookLogRepository.findAllByOrderByIdDesc());
+    }
     @GetMapping("/movies")
     public ResponseEntity<List<Movie>> getActiveMovies() {
         List<Movie> movies = movieRepository.findByStatus("now_showing");
@@ -154,7 +167,7 @@ public class PosApiController {
             Order1 order = new Order1();
             String orderCode = "ORD-" + timestamp;
             order.setOrderCode(orderCode);
-
+            order.setCreatedDate(java.time.LocalDateTime.now());
             order.setFinalAmount(java.math.BigDecimal.valueOf(request.getTotalAmount()));
             order.setGrossAmount(java.math.BigDecimal.valueOf(request.getTotalAmount()));
 
@@ -308,6 +321,28 @@ Showtime showtime = showtimeRepository
             return ResponseEntity.internalServerError().body("Lỗi hệ thống: " + e.getMessage());
         }
     }
+    private void saveWebhookLog(String endpoint, int code, String status, long responseMs, Object payloadObj) {
+    try {
+        WebhookLog log = new WebhookLog();
+        log.setEndpoint(endpoint);
+        log.setCode(code);
+        log.setStatus(status);
+        log.setResponseMs(responseMs);
+        log.setTime(java.time.LocalDateTime.now());
+
+        // Chuyển Object thành chuỗi JSON
+        String payload = objectMapper.writeValueAsString(payloadObj);
+        log.setPayload(payload);
+        
+        // Tính dung lượng KB của Payload và chuyển sang BigDecimal
+        double sizeInKb = payload.getBytes(StandardCharsets.UTF_8).length / 1024.0;
+        log.setSizeKb(BigDecimal.valueOf(sizeInKb));
+
+        webhookLogRepository.save(log);
+    } catch (Exception e) {
+        System.err.println("Lỗi lưu Webhook: " + e.getMessage());
+    }
+}
 
     @GetMapping("/orders/search")
 public ResponseEntity<?> searchOrderByCode(

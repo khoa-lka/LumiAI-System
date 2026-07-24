@@ -1880,3 +1880,74 @@ button {
   background: #e26735;
   color: white;
 }
+@media print {
+  /* 1. Ẩn tất cả mọi thứ không cần thiết */
+  body * {
+    visibility: hidden;
+  }
+
+  /* 2. Chỉ hiển thị thành phần cần in */
+  #ticketSuccessModal,
+  #ticketSuccessModal * {
+    visibility: visible;
+  }
+
+  /* 3. Đặt lại vị trí cho modal để nó hiển thị đúng khi in */
+  #ticketSuccessModal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 4. Loại bỏ bóng đổ, màu nền và các chi tiết giao diện dư thừa */
+  .ticket-success-box {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+  }
+
+  /* 5. Ẩn nút "Tải/In" và "Về trang chủ" trên bản in */
+  .action-buttons {
+    display: none !important;
+  }
+}
+@media print {
+  /* Ẩn mọi thành phần trên trang web */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Chỉ hiển thị đúng phần tử chứa vé */
+  #ticketSuccessModal,
+  #ticketSuccessModal * {
+    visibility: visible;
+  }
+
+  /* Đưa vé lên góc trên cùng và chiếm trọn chiều rộng */
+  #ticketSuccessModal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Loại bỏ viền và bóng đổ để in sạch sẽ */
+  .ticket-success-box {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    padding: 10px !important;
+    background: #ffffff !important; /* Đảm bảo nền trắng khi in */
+    color: #000000 !important;      /* Chữ đen khi in */
+  }
+
+  /* Ẩn các nút hành động (In/Về trang chủ) */
+  .action-buttons {
+    display: none !important;
+  }
+}

@@ -2502,3 +2502,33 @@ if (document.readyState === "loading") {
   activatePayOSPaymentFlow();
 }
 window.addEventListener("load", checkVnpayReturn);
+function printTicket() {
+    // Lấy nội dung cụ thể của vé từ modal
+    var ticketElement = document.getElementById('ticketSuccessModal');
+    
+    if (!ticketElement) {
+        console.error("Không tìm thấy ticketSuccessModal");
+        return;
+    }
+
+    // Tạo nội dung in bằng cách lấy HTML của modal
+    var printContent = ticketElement.innerHTML;
+    
+    // Mở một cửa sổ mới để in, giúp cách ly hoàn toàn với CSS của trang chính
+    var printWindow = window.open('', '_blank', 'height=600,width=800');
+    
+    printWindow.document.write('<html><head><title>In vé</title>');
+    // Link lại file CSS để bản in giữ được định dạng
+    printWindow.document.write('<link rel="stylesheet" href="staff.css" type="text/css" />');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(printContent);
+    printWindow.document.write('</body></html>');
+    
+    printWindow.document.close();
+    
+    // Đợi 300ms để trình duyệt kịp load CSS trước khi gọi lệnh in
+    setTimeout(function() {
+        printWindow.print();
+        printWindow.close();
+    }, 300);
+}
