@@ -1,3 +1,10 @@
+// MERGED VERSION
+// Base: staff(4).js
+// Added/synchronized from: Pasted text(50).txt
+// - Giữ polling PayOS hiện tại của Staff 4
+// - Không chép closeQRModal() trùng lặp từ file bổ sung
+// - Thêm chức năng in riêng popup vé thành công
+
 function getLoggedUser() {
   try {
     const raw = localStorage.getItem("las_logged_in_user");
@@ -990,6 +997,56 @@ function showTicketSuccessModal(
 window.closeTicketSuccessModal = function () {
   document.getElementById("ticketSuccessModal").style.display = "none";
 };
+
+// In riêng vé vừa bán thành công.
+// Tích hợp từ file bổ sung nhưng dùng tên riêng để không ghi đè window.printTicket()
+// đang phục vụ chức năng tra cứu/in vé ở tab "In vé".
+window.printTicketSuccess = function () {
+  const ticketModal = document.getElementById("ticketSuccessModal");
+
+  if (!ticketModal) {
+    console.error("Không tìm thấy #ticketSuccessModal");
+    if (typeof showToast === "function") {
+      showToast("Không tìm thấy nội dung vé để in.", false);
+    }
+    return;
+  }
+
+  const printWindow = window.open("", "_blank", "height=700,width=900");
+
+  if (!printWindow) {
+    if (typeof showToast === "function") {
+      showToast("Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup.", false);
+    }
+    return;
+  }
+
+  printWindow.document.write(`
+    <!doctype html>
+    <html lang="vi">
+      <head>
+        <meta charset="UTF-8">
+        <title>In vé LAS Cinemas</title>
+        <link rel="stylesheet" href="staff.css">
+      </head>
+      <body>
+        ${ticketModal.innerHTML}
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+
+  // Cho CSS có thời gian tải trước khi gọi hộp thoại in.
+  setTimeout(() => {
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  }, 500);
+};
+
+// Giữ tương thích nếu HTML cũ đang gọi printTicketSpecific().
+window.printTicketSpecific = window.printTicketSuccess;
 // ======================= TOOLS (SEARCH, FEEDBACK) =======================
 // Tra cứu đơn hàng/vé thật trong DB qua /api/pos/orders/search — trước đây
 // hàm này chỉ so khớp với đơn vừa bán gần nhất lưu trong localStorage của
@@ -1031,7 +1088,7 @@ window.searchTicket = async function () {
 
     setText("resultOrderCode", order.orderCode || "N/A");
 
-    setText("resultTicketCode", order.ticketCode || "N/A");
+    setText("resultRoom", order.roomName || "N/A");
 
     setText("resultMovie", order.movie || "N/A");
 
@@ -1041,12 +1098,19 @@ window.searchTicket = async function () {
 
     setText("resultShowtime", showtimeText || "N/A");
 
-    setText(
-      "resultSeats",
-      Array.isArray(order.seats) && order.seats.length > 0
-        ? order.seats.join(", ")
-        : "N/A",
-    );
+    const seatList =
+      Array.isArray(order.seats) && order.seats.length > 0 ? order.seats : [];
+
+    setText("resultSeats", seatList.length > 0 ? seatList.join(", ") : "N/A");
+
+    setText("resultSeatStub", seatList.length > 0 ? seatList.join(" · ") : "—");
+
+    const qrImg = document.getElementById("resultQrImg");
+    if (qrImg) {
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=0&data=${encodeURIComponent(
+        order.orderCode || order.ticketCode || "LAS-CINEMAS",
+      )}`;
+    }
 
     ticketResult?.classList.add("show");
 

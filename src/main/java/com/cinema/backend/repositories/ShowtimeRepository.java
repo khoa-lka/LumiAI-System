@@ -25,9 +25,9 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Integer> {
     // Dùng riêng cho Máy POS (Staff): trả kèm tên phòng chiếu (native query),
     // đặt tên khác với findShowtimesByMovieAndDate ở trên để không đụng hàng
     // với luồng đặt vé online đang dùng method đó.
-    @Query(value = "SELECT s.showtime_id AS showtimeId, s.start_time AS startTime, r.room_name AS roomName, s.ticket_price AS ticketPrice " +
+    @Query(value = "SELECT s.showtime_id AS \"showtimeId\", s.start_time AS \"startTime\", r.room_name AS \"roomName\", s.ticket_price AS \"ticketPrice\" " +
                    "FROM showtime s JOIN room r ON s.room_id = r.room_id " +
-                   "WHERE s.movie_id = :movieId AND CAST(s.start_time AS DATE) = :showDate " +
+                   "WHERE s.movie_id = :movieId AND CAST(s.start_time AS DATE) = CAST(:showDate AS DATE) " +
                    "ORDER BY s.start_time ASC",
            nativeQuery = true)
     List<Map<String, Object>> findPosShowtimesByMovieAndDate(

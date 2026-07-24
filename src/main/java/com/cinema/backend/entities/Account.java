@@ -51,6 +51,19 @@ public class Account {
     @OneToMany(mappedBy = "staff")
     private List<Order1> staffOrders;
 
-    @Column(name = "status", length = 20)
-    private String status;
+      @Column(name = "status", length = 20, nullable = false)
+private String status = "Active";
+@PrePersist
+@PreUpdate
+private void normalizeStatus() {
+    if (status == null || status.trim().isEmpty()) {
+        status = "Active";
+    } else if ("ACTIVE".equalsIgnoreCase(status)) {
+        status = "Active";
+    } else if ("BANNED".equalsIgnoreCase(status)) {
+        status = "Banned";
+    } else if ("PENDING".equalsIgnoreCase(status)) {
+        status = "PENDING";
+    }
+}
 }

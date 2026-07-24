@@ -460,14 +460,51 @@ function calculateCgvCart() {
   let discount = 0;
 
   if (window.currentVoucher) {
-    if (currentVoucher.discountType === "PERCENT") {
-      discount = (currentPriceTotal * currentVoucher.discountValue) / 100;
+    const voucher = window.currentVoucher;
 
-      if (currentVoucher.maxDiscount != null) {
-        discount = Math.min(discount, Number(currentVoucher.maxDiscount));
+    const voucherStatus = String(voucher.status || "ACTIVE").toUpperCase();
+
+    const minimumOrder = Number(
+      voucher.minimumOrder ?? voucher.minimum_order ?? 0,
+    );
+
+    const usageLimit = Number(voucher.usageLimit ?? voucher.usage_limit ?? 0);
+
+    const expiredDate = voucher.expiredDate ?? voucher.expired_date;
+
+    const isExpired =
+      expiredDate && new Date(expiredDate).getTime() < Date.now();
+
+    const canApplyVoucher =
+      voucherStatus === "ACTIVE" &&
+      usageLimit > 0 &&
+      !isExpired &&
+      currentPriceTotal >= minimumOrder;
+
+    if (canApplyVoucher) {
+      const discountType = String(
+        voucher.discountType ?? voucher.discount_type ?? "",
+      ).toUpperCase();
+
+      const discountValue = Number(
+        voucher.discountValue ?? voucher.discount_value ?? 0,
+      );
+
+      if (discountType === "PERCENT") {
+        discount = (currentPriceTotal * discountValue) / 100;
+
+        const maxDiscount = Number(
+          voucher.maxDiscount ?? voucher.max_discount ?? 0,
+        );
+
+        if (maxDiscount > 0) {
+          discount = Math.min(discount, maxDiscount);
+        }
+      } else if (discountType === "FIXED" || discountType === "AMOUNT") {
+        discount = discountValue;
       }
     } else {
-      discount = Number(currentVoucher.discountValue);
+      discount = 0;
     }
   }
 
@@ -488,6 +525,23 @@ function calculateCgvCart() {
 window.calculateCgvCart = calculateCgvCart;
 
 function goToBookingStep(step) {
+  const targetStep = Number(step);
+
+  const shouldBlockComingSoon =
+    window.blockComingSoonCheckout === true ||
+    (typeof window.isCurrentMovieComingSoon === "function" &&
+      window.isCurrentMovieComingSoon());
+
+  if (targetStep > 1 && shouldBlockComingSoon) {
+    if (typeof window.showComingSoonBookingModal === "function") {
+      window.showComingSoonBookingModal();
+    } else {
+      window.showCgvToast("Phim sắp chiếu hiện chưa mở bán vé.", "error");
+    }
+
+    return;
+  }
+
   console.log("goToBookingStep =", step);
   document
     .querySelectorAll(".las-step-bar-container .step-item")
@@ -695,6 +749,90 @@ function goToBookingStep(step) {
     bookingPanel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function normalizeMovieStatus(status) {
+  return String(status || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function isComingSoonMovie(movie) {
+  if (!movie) {
+    return false;
+  }
+
+  const normalizedStatus = normalizeMovieStatus(
+    movie.status || movie.movieStatus || movie.movie_status,
+  );
+
+  return (
+    normalizedStatus === "comingsoon" ||
+    normalizedStatus === "upcoming" ||
+    normalizedStatus === "sapchieu"
+  );
+}
+
+function getCurrentBookingMovie() {
+  const movieList =
+    typeof serverData !== "undefined" && Array.isArray(serverData.movies)
+      ? serverData.movies
+      : Array.isArray(window.serverData?.movies)
+        ? window.serverData.movies
+        : [];
+
+  const movieSelect = document.getElementById("cgv-combo-movie");
+
+  const detailTitle =
+    document.getElementById("detail-movie-title")?.innerText?.trim() || "";
+
+  const selectedMovieTitle =
+    movieSelect?.value?.trim() ||
+    window.currentBookingMovieTitle ||
+    detailTitle;
+
+  if (!selectedMovieTitle || movieList.length === 0) {
+    return null;
+  }
+
+  return movieList.find(
+    (movie) =>
+      String(movie.title || "")
+        .trim()
+        .toLowerCase() === String(selectedMovieTitle).trim().toLowerCase(),
+  );
+}
+
+function isCurrentMovieComingSoon() {
+  /*
+   * Cờ được lưu trực tiếp khi người dùng
+   * bấm XEM SUẤT CHIẾU.
+   */
+  if (window.blockComingSoonCheckout === true) {
+    return true;
+  }
+
+  const currentMovie = getCurrentBookingMovie();
+
+  if (currentMovie) {
+    return isComingSoonMovie(currentMovie);
+  }
+
+  /*
+   * Fallback khi chưa tìm thấy movie
+   * trong dropdown.
+   */
+  return isComingSoonMovie({
+    status: window.currentBookingMovieStatus,
+  });
+}
+
+window.isCurrentMovieComingSoon = isCurrentMovieComingSoon;
+
+window.isComingSoonMovie = isComingSoonMovie;
+
+window.isCurrentMovieComingSoon = isCurrentMovieComingSoon;
+
 function handleMainAction() {
   if (
     typeof window.isBookingRestrictedRole === "function" &&
@@ -714,6 +852,34 @@ function handleMainAction() {
       );
       openAuthModal();
     }
+    return;
+  }
+
+  // =====================================================
+  // CHẶN CUSTOMER MUA VÉ PHIM SẮP CHIẾU
+  // =====================================================
+  const shouldBlockComingSoon =
+    window.blockComingSoonCheckout === true ||
+    (typeof window.isCurrentMovieComingSoon === "function" &&
+      window.isCurrentMovieComingSoon());
+
+  console.log("[COMING SOON CONTINUE CHECK]", {
+    shouldBlockComingSoon: shouldBlockComingSoon,
+
+    status: window.currentBookingMovieStatus,
+
+    title: window.currentBookingMovieTitle,
+
+    step: currentBookingStep,
+  });
+
+  if (shouldBlockComingSoon) {
+    if (typeof window.showComingSoonBookingModal === "function") {
+      window.showComingSoonBookingModal();
+    } else {
+      window.showCgvToast("Phim sắp chiếu hiện chưa mở bán vé.", "error");
+    }
+
     return;
   }
 
@@ -795,36 +961,129 @@ function closeCheckoutReview() {
   calculateCgvCart();
 }
 
-function processToPaymentGateway() {
-  const finalTotal = Number(window.finalPriceTotal) || 0;
+function buildPricePayload() {
+  let accountId = Number(sessionStorage.getItem("accountId"));
 
+  if (!accountId) {
+    try {
+      const user = JSON.parse(
+        localStorage.getItem("las_logged_in_user") || "{}",
+      );
+
+      accountId = Number(user.accountId || user.account_id);
+    } catch (error) {
+      accountId = 0;
+    }
+  }
+
+  return {
+    accountId,
+
+    showtimeId: window.currentSelectedShowtimeId,
+
+    seats: [...selectedSeats],
+
+    voucherCode: document.getElementById("voucher-input")?.value?.trim() || "",
+
+    paymentMethod: "QR",
+
+    fnb: (window.fnbMenu || [])
+      .filter((item) => Number(item.qty) > 0)
+      .map((item) => ({
+        foodItemId: item.id,
+        quantity: Number(item.qty),
+      })),
+  };
+}
+
+async function getServerFinalAmount() {
+  const response = await fetch(
+    "http://localhost:8080/api/booking-price/preview",
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify(buildPricePayload()),
+    },
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Không thể tính giá đơn hàng");
+  }
+
+  const serverAmount = Number(data.finalAmount);
+
+  if (!Number.isFinite(serverAmount) || serverAmount <= 0) {
+    throw new Error("Giá thanh toán từ máy chủ không hợp lệ");
+  }
+
+  return serverAmount;
+}
+
+async function processToPaymentGateway() {
   const reviewModal = document.getElementById("checkout-review-modal");
+
   if (reviewModal?.classList.contains("open")) {
     closeCheckoutReview();
   }
 
-  if (finalTotal <= 0) {
-    window.showCgvToast("Tổng tiền không hợp lệ!", "error");
-    return;
-  }
-
   const gateway = window.selectedPaymentGateway;
+
   if (!gateway) {
     window.showCgvToast("Vui lòng chọn phương thức thanh toán!", "error");
+
     return;
   }
 
-  if (gateway === "qr") {
-    openQrPayment(finalTotal);
-    return;
-  }
+  try {
+    /*
+     * Không sử dụng giá tự tính
+     * của trình duyệt để thanh toán.
+     */
+    const serverFinalAmount = await getServerFinalAmount();
 
-  if (gateway === "vnpay") {
-    openVnpayPayment(finalTotal);
-    return;
-  }
+    window.finalPriceTotal = serverFinalAmount;
 
-  window.showCgvToast("Phương thức thanh toán không hợp lệ!", "error");
+    const sumTotal = document.getElementById("sum-total");
+
+    if (sumTotal) {
+      sumTotal.innerText = serverFinalAmount.toLocaleString("vi-VN") + " đ";
+    }
+
+    const reviewTotal = document.getElementById("review-final-total");
+
+    if (reviewTotal) {
+      reviewTotal.innerText = serverFinalAmount.toLocaleString("vi-VN") + " đ";
+    }
+
+    console.log("SERVER FINAL AMOUNT:", serverFinalAmount);
+
+    if (gateway === "qr") {
+      openQrPayment(serverFinalAmount);
+
+      return;
+    }
+
+    if (gateway === "vnpay") {
+      openVnpayPayment(serverFinalAmount);
+
+      return;
+    }
+
+    window.showCgvToast("Phương thức thanh toán không hợp lệ!", "error");
+  } catch (error) {
+    console.error("Lỗi đồng bộ giá:", error);
+
+    window.showCgvToast(
+      error.message || "Không thể đồng bộ giá thanh toán",
+      "error",
+    );
+  }
 }
 
 function openQrPayment(finalTotal) {
@@ -1916,7 +2175,7 @@ function executeFinalCheckout() {
             </div>
 
             <div class="bc-actions">
-              <button class="bc-btn bc-btn-primary" onclick="window.print()">${ICON_DOWNLOAD}Tải / In vé</button>
+              <button class="bc-btn bc-btn-primary" onclick="printTicket()">${ICON_DOWNLOAD}Tải / In vé</button>
               <button class="bc-btn bc-btn-ghost" onclick="goHomeFromBc()">Về trang chủ</button>
             </div>
           </div>
@@ -2243,3 +2502,95 @@ if (document.readyState === "loading") {
   activatePayOSPaymentFlow();
 }
 window.addEventListener("load", checkVnpayReturn);
+
+// ============================================================================
+// MERGE từ file bổ sung: In riêng phần vé thay vì in toàn bộ trang.
+// Đã đồng bộ với Booking 22: dùng #final-ticket-result và copy stylesheet hiện tại.
+// ============================================================================
+function printTicket() {
+  const ticketElement = document.getElementById("final-ticket-result");
+
+  if (!ticketElement || !ticketElement.innerHTML.trim()) {
+    console.error("Không tìm thấy nội dung vé trong #final-ticket-result");
+
+    if (typeof window.showCgvToast === "function") {
+      window.showCgvToast("Không tìm thấy nội dung vé để in.", "error");
+    }
+
+    return;
+  }
+
+  const printWindow = window.open("", "_blank", "height=700,width=900");
+
+  if (!printWindow) {
+    if (typeof window.showCgvToast === "function") {
+      window.showCgvToast(
+        "Trình duyệt đang chặn cửa sổ in. Vui lòng cho phép popup.",
+        "error",
+      );
+    }
+
+    return;
+  }
+
+  // Dùng chính các stylesheet hiện tại của trang để vé in ra giữ đúng giao diện.
+  const stylesheetLinks = Array.from(
+    document.querySelectorAll('link[rel="stylesheet"]'),
+  )
+    .map((link) => `<link rel="stylesheet" href="${link.href}">`)
+    .join("");
+
+  const inlineStyles = Array.from(document.querySelectorAll("style"))
+    .map((style) => `<style>${style.innerHTML}</style>`)
+    .join("");
+
+  printWindow.document.write(`
+    <!doctype html>
+    <html lang="vi">
+      <head>
+        <meta charset="UTF-8">
+        <title>Vé LAS Cinemas</title>
+        ${stylesheetLinks}
+        ${inlineStyles}
+        <style>
+          body {
+            margin: 0;
+            padding: 24px;
+          }
+
+          #final-ticket-result {
+            display: block !important;
+            max-width: 900px;
+            margin: 0 auto;
+          }
+
+          .bc-actions {
+            display: none !important;
+          }
+        </style>
+      </head>
+      <body>
+        <div id="final-ticket-result">
+          ${ticketElement.innerHTML}
+        </div>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+
+  const runPrint = () => {
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
+  // Cho stylesheet và ảnh QR có thời gian tải trước khi mở hộp thoại in.
+  if (printWindow.document.readyState === "complete") {
+    setTimeout(runPrint, 300);
+  } else {
+    printWindow.onload = () => setTimeout(runPrint, 300);
+  }
+}
+
+window.printTicket = printTicket;

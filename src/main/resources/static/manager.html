@@ -658,10 +658,7 @@
         >
           ✕
         </div>
-        <div
-          class="mp-modal-header"
-          style="margin-bottom: 20px"
-        >
+        <div class="mp-modal-header" style="margin-bottom: 20px">
           Thêm Phim Mới
         </div>
 
@@ -835,19 +832,9 @@
         "
       >
         <input type="hidden" id="upd-movie-id" />
-
-        <div
-          class="mp-modal-close"
-          onclick="closeUpdateMovie()"
-          style="cursor: pointer; float: right; font-weight: bold"
-        >
-          ✕
-        </div>
-        <div
-          class="mp-modal-header"
-          style="font-weight: bold; font-size: 18px; margin-bottom: 20px"
-        >
-          Cập Nhật Phim
+        <div class="mp-modal-close" onclick="closeUpdateMovie()" style="cursor: pointer; float: right; font-weight: bold">✕</div>
+        <div class="mp-modal-header" style="font-weight: bold; font-size: 18px; margin-bottom: 20px">
+          Cập Nhật Thông Tin Phim
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px">
@@ -1511,7 +1498,6 @@
       // bản trong js/manager.js (vì script inline luôn load sau cùng, thắng bản
       // trong file .js). Giờ chỉ còn đúng 1 nguồn duy nhất tại js/manager.js —
       // xem chi tiết ghi chú tại đó. Ở đây chỉ giữ lại 2 hàm dropdown tiện ích.
-      
       function toggleUserDropdown() {
         document.getElementById("mp-user-dropdown").classList.toggle("open");
       }
@@ -1684,34 +1670,39 @@
       </div>
     </div>
 
+    <!-- ========================================================================== -->
+    <!-- 📅 MODAL: TẠO SUẤT CHIẾU MỚI (ĐÃ BỎ GIÁ VÉ & THÊM CHECK VALIDATION)          -->
+    <!-- ========================================================================== -->
     <div class="mp-modal-overlay" id="mp-add-showtime-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
       <div class="mp-modal-box" style="width: 450px; padding: 26px; border-radius: 16px; box-sizing: border-box;">
         <div class="mp-modal-close" onclick="closeAddShowtimeModal()" style="cursor: pointer; float: right; font-weight: bold;">✕</div>
         <div class="mp-modal-header" style="margin-bottom: 20px;">Tạo Suất Chiếu Mới</div>
         
         <div class="mp-form-group" style="margin-bottom: 15px;">
-          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Chọn bộ phim</label>
-          <select id="st-movie-select" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></select>
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Chọn bộ phim <span style="color:red">*</span></label>
+          <select id="st-movie-select" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" required onblur="validateShowtimeField('st-movie-select', 'Vui lòng chọn bộ phim.')"></select>
         </div>
         
         <div class="mp-form-group" style="margin-bottom: 15px;">
-          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Chọn phòng chiếu</label>
-          <select id="st-room-select" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></select>
-        </div>
-        
-        <div class="mp-form-group" style="margin-bottom: 15px;">
-          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Giờ bắt đầu (Ví dụ: 14:30, 19:00)</label>
-          <input type="time" id="st-start-time" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Chọn phòng chiếu <span style="color:red">*</span></label>
+          <select id="st-room-select" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" required onblur="validateShowtimeField('st-room-select', 'Vui lòng chọn phòng chiếu.')"></select>
         </div>
 
-        <div class="mp-form-group" style="margin-bottom: 20px;">
-          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Giá vé cơ bản (VND)</label>
-          <input type="number" id="st-ticket-price" class="cgv-input-text" value="90000" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+        <!-- 🟢 THÊM MỚI: Ngày chiếu phim -->
+        <div class="mp-form-group" style="margin-bottom: 15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Ngày chiếu phim <span style="color:red">*</span></label>
+          <input type="date" id="st-date" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" required onblur="validateShowtimeDate()" />
         </div>
         
-        <div style="display: flex; gap: 10px;">
-          <button class="btn-cgv-cancel" onclick="closeAddShowtimeModal()" style="flex: 1; cursor: pointer;">Hủy bỏ</button>
-          <button class="btn-cgv-submit" onclick="submitAddShowtimeForm()" style="flex: 1; cursor: pointer; background:var(--cgv-red, #ff6b35); color:white; border:none; padding:10px; border-radius:4px; font-weight:bold;">XẾP LỊCH NGAY</button>
+        <div class="mp-form-group" style="margin-bottom: 20px;">
+          <label style="display:block; margin-bottom:5px; font-weight:bold; font-size:13px;">Giờ bắt đầu <span style="color:red">*</span></label>
+          <input type="time" id="st-start-time" class="cgv-input-text" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" required onblur="validateShowtimeField('st-start-time', 'Vui lòng chọn giờ bắt đầu cho suất chiếu.')" />
+        </div>
+        
+        <!-- 🟢 ĐÃ ĐỒNG BỘ NÚT: Cân bằng kích thước theo CSS chuẩn của em -->
+        <div style="display: flex; gap: 12px;">
+          <button class="btn-cgv-cancel" onclick="closeAddShowtimeModal()" style="flex: 1; cursor: pointer;">HỦY BỎ</button>
+          <button class="btn-cgv-submit" onclick="submitAddShowtimeForm()" style="flex: 1; cursor: pointer; margin-top:0;">XẾP LỊCH NGAY</button>
         </div>
       </div>
     </div>
