@@ -649,7 +649,6 @@ window.submitAddMovie = function () {
     })
     .catch((err) => alert("Lỗi khi thêm phim: " + err));
 };
-
 // ==========================================================================
 // --- PHẦN DÙNG CHUNG: HIỂN THỊ DANH SÁCH SUẤT CHIẾU (NGÀY / GIỜ / PHÒNG) ---
 // Dùng cho cả Modal "Xem" ở tab Ma trận và phần thông tin trong Modal "Sửa Phim"
@@ -862,15 +861,11 @@ window.openUpdateMovie = function (id) {
   document.getElementById("upd-director").value = movie.director || "";
   document.getElementById("upd-performer").value = movie.performer || "";
   document.getElementById("upd-synopsis").value = movie.synopsis || "";
-  document.getElementById("upd-mainposter").value =
-    movie.mainposterUrl || movie.mainposter_url || "";
-  document.getElementById("upd-subposter").value =
-    movie.subposterUrl || movie.subposter_url || "";
+  document.getElementById("upd-mainposter").value = movie.mainposterUrl || movie.mainposter_url || "";
+  document.getElementById("upd-subposter").value = movie.subposterUrl || movie.subposter_url || "";
   document.getElementById("upd-age").value = movie.ageRating || "0";
 
-  const statusRadio = document.querySelector(
-    `input[name="upd_status"][value="${movie.status}"]`,
-  );
+  const statusRadio = document.querySelector(`input[name="upd_status"][value="${movie.status}"]`);
   if (statusRadio) statusRadio.checked = true;
 
   document.getElementById("mp-update-movie-modal").style.display = "flex";
