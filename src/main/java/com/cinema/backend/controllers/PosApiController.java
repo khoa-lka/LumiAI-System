@@ -154,7 +154,7 @@ public class PosApiController {
             Order1 order = new Order1();
             String orderCode = "ORD-" + timestamp;
             order.setOrderCode(orderCode);
-
+            order.setCreatedDate(java.time.LocalDateTime.now());
             order.setFinalAmount(java.math.BigDecimal.valueOf(request.getTotalAmount()));
             order.setGrossAmount(java.math.BigDecimal.valueOf(request.getTotalAmount()));
 

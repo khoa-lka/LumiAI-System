@@ -2175,7 +2175,7 @@ function executeFinalCheckout() {
             </div>
 
             <div class="bc-actions">
-              <button class="bc-btn bc-btn-primary" onclick="window.print()">${ICON_DOWNLOAD}Tải / In vé</button>
+              <button class="bc-btn bc-btn-primary" onclick="printTicket()">${ICON_DOWNLOAD}Tải / In vé</button>
               <button class="bc-btn bc-btn-ghost" onclick="goHomeFromBc()">Về trang chủ</button>
             </div>
           </div>
@@ -2502,3 +2502,95 @@ if (document.readyState === "loading") {
   activatePayOSPaymentFlow();
 }
 window.addEventListener("load", checkVnpayReturn);
+
+// ============================================================================
+// MERGE từ file bổ sung: In riêng phần vé thay vì in toàn bộ trang.
+// Đã đồng bộ với Booking 22: dùng #final-ticket-result và copy stylesheet hiện tại.
+// ============================================================================
+function printTicket() {
+  const ticketElement = document.getElementById("final-ticket-result");
+
+  if (!ticketElement || !ticketElement.innerHTML.trim()) {
+    console.error("Không tìm thấy nội dung vé trong #final-ticket-result");
+
+    if (typeof window.showCgvToast === "function") {
+      window.showCgvToast("Không tìm thấy nội dung vé để in.", "error");
+    }
+
+    return;
+  }
+
+  const printWindow = window.open("", "_blank", "height=700,width=900");
+
+  if (!printWindow) {
+    if (typeof window.showCgvToast === "function") {
+      window.showCgvToast(
+        "Trình duyệt đang chặn cửa sổ in. Vui lòng cho phép popup.",
+        "error",
+      );
+    }
+
+    return;
+  }
+
+  // Dùng chính các stylesheet hiện tại của trang để vé in ra giữ đúng giao diện.
+  const stylesheetLinks = Array.from(
+    document.querySelectorAll('link[rel="stylesheet"]'),
+  )
+    .map((link) => `<link rel="stylesheet" href="${link.href}">`)
+    .join("");
+
+  const inlineStyles = Array.from(document.querySelectorAll("style"))
+    .map((style) => `<style>${style.innerHTML}</style>`)
+    .join("");
+
+  printWindow.document.write(`
+    <!doctype html>
+    <html lang="vi">
+      <head>
+        <meta charset="UTF-8">
+        <title>Vé LAS Cinemas</title>
+        ${stylesheetLinks}
+        ${inlineStyles}
+        <style>
+          body {
+            margin: 0;
+            padding: 24px;
+          }
+
+          #final-ticket-result {
+            display: block !important;
+            max-width: 900px;
+            margin: 0 auto;
+          }
+
+          .bc-actions {
+            display: none !important;
+          }
+        </style>
+      </head>
+      <body>
+        <div id="final-ticket-result">
+          ${ticketElement.innerHTML}
+        </div>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+
+  const runPrint = () => {
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
+  // Cho stylesheet và ảnh QR có thời gian tải trước khi mở hộp thoại in.
+  if (printWindow.document.readyState === "complete") {
+    setTimeout(runPrint, 300);
+  } else {
+    printWindow.onload = () => setTimeout(runPrint, 300);
+  }
+}
+
+window.printTicket = printTicket;
